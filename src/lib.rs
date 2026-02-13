@@ -9,6 +9,7 @@ pub mod reporter;
 pub mod source_file;
 pub mod source_span;
 pub mod token;
+pub mod versioning_types;
 
 #[cfg(test)]
 mod golden_test;

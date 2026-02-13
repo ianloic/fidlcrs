@@ -1,13 +1,12 @@
+use crate::compile_step::CompileStep;
+use crate::consume_step::ConsumeStep;
 use crate::json_generator::*;
 use crate::raw_ast;
+use crate::resolve_step::ResolveStep;
+use crate::step::Step;
+use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use indexmap::IndexMap;
-use crate::step::Step;
-use crate::consume_step::ConsumeStep;
-use crate::resolve_step::ResolveStep;
-use crate::compile_step::CompileStep;
-
 
 fn to_camel_case(s: &str) -> String {
     let mut camel = String::new();
@@ -24,7 +23,6 @@ fn to_camel_case(s: &str) -> String {
     }
     camel
 }
-
 
 pub fn compute_method_ordinal(selector: &str) -> u64 {
     let mut hasher = Sha256::new();
@@ -62,13 +60,13 @@ pub struct Compiler<'node, 'src> {
     // Compiled shapes for types
     pub shapes: HashMap<String, TypeShapeV2>,
     pub source_files: Vec<&'src SourceFile>,
-    
+
     // State
     pub library_name: String,
     pub raw_decls: HashMap<String, RawDecl<'node, 'src>>,
     pub decl_kinds: HashMap<String, &'static str>,
     pub sorted_names: Vec<String>,
-    
+
     // Outputs
     pub bits_declarations: Vec<BitsDeclaration>,
     pub const_declarations: Vec<ConstDeclaration>,
@@ -78,7 +76,7 @@ pub struct Compiler<'node, 'src> {
     pub struct_declarations: Vec<StructDeclaration>,
     pub table_declarations: Vec<TableDeclaration>,
     pub union_declarations: Vec<UnionDeclaration>,
-    
+
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
 }
@@ -133,35 +131,45 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.protocol_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.service_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.protocol_declarations
+            .sort_by(|a, b| a.name.cmp(&b.name));
+        self.service_declarations
+            .sort_by(|a, b| a.name.cmp(&b.name));
         self.struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
 
         for decl in &self.bits_declarations {
-            self.declarations.insert(decl.name.clone(), "bits".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "bits".to_string());
         }
         for decl in &self.const_declarations {
-            self.declarations.insert(decl.name.clone(), "const".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "const".to_string());
         }
         for decl in &self.enum_declarations {
-            self.declarations.insert(decl.name.clone(), "enum".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "enum".to_string());
         }
         for decl in &self.protocol_declarations {
-            self.declarations.insert(decl.name.clone(), "protocol".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "protocol".to_string());
         }
         for decl in &self.service_declarations {
-            self.declarations.insert(decl.name.clone(), "service".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "service".to_string());
         }
         for decl in &self.struct_declarations {
-            self.declarations.insert(decl.name.clone(), "struct".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "struct".to_string());
         }
         for decl in &self.table_declarations {
-            self.declarations.insert(decl.name.clone(), "table".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "table".to_string());
         }
         for decl in &self.union_declarations {
-            self.declarations.insert(decl.name.clone(), "union".to_string());
+            self.declarations
+                .insert(decl.name.clone(), "union".to_string());
         }
 
         self.declaration_order = self.topological_sort(true);
@@ -173,7 +181,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
             ])),
-            maybe_attributes: files.iter()
+            maybe_attributes: files
+                .iter()
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
@@ -300,7 +309,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if attributes.iter().any(|a| a.name == "unknown") {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
-                if let Ok(val) = compiled_value.literal.value.get().trim_matches('"').parse::<u32>() {
+                if let Ok(val) = compiled_value
+                    .literal
+                    .value
+                    .get()
+                    .trim_matches('"')
+                    .parse::<u32>()
+                {
                     maybe_unknown_value = Some(val);
                 }
             }
@@ -404,7 +419,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             // Calculate mask
-            if let Ok(val) = compiled_value.literal.value.get().trim_matches('"').parse::<u64>() {
+            if let Ok(val) = compiled_value
+                .literal
+                .value
+                .get()
+                .trim_matches('"')
+                .parse::<u64>()
+            {
                 mask |= val;
             }
             // TODO: Handle non-u64 values if needed?
@@ -503,7 +524,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let mut ctx = vec![name.to_string()]; if let Some(m_name) = &member.name { ctx.push(m_name.data().to_string()); } else { ctx.push(format!("{}", ordinal)); }; let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
+                let mut ctx = vec![name.to_string()];
+                if let Some(m_name) = &member.name {
+                    ctx.push(m_name.data().to_string());
+                } else {
+                    ctx.push(format!("{}", ordinal));
+                };
+                let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -632,7 +659,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let mut ctx = vec![name.to_string()]; if let Some(m_name) = &member.name { ctx.push(m_name.data().to_string()); } else { ctx.push(format!("{}", ordinal)); }; let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
+                let mut ctx = vec![name.to_string()];
+                if let Some(m_name) = &member.name {
+                    ctx.push(m_name.data().to_string());
+                } else {
+                    ctx.push(format!("{}", ordinal));
+                };
+                let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -765,7 +798,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut depth: u32 = 0;
 
         for member in &decl.members {
-            let mut ctx = naming_context.clone().unwrap_or_else(|| vec![name.to_string()]); ctx.push(member.name.data().to_string()); let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
+            let mut ctx = naming_context
+                .clone()
+                .unwrap_or_else(|| vec![name.to_string()]);
+            ctx.push(member.name.data().to_string());
+            let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
             let type_shape = &type_obj.type_shape_v2;
 
             let align = type_shape.alignment;
@@ -870,7 +907,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-    pub fn resolve_type(&mut self, type_ctor: &raw_ast::TypeConstructor<'src>, library_name: &str, naming_context: &[String]) -> Type {
+    pub fn resolve_type(
+        &mut self,
+        type_ctor: &raw_ast::TypeConstructor<'src>,
+        library_name: &str,
+        naming_context: &[String],
+    ) -> Type {
         let name = match &type_ctor.layout {
             raw_ast::LayoutParameter::Identifier(id) => id.to_string(),
             raw_ast::LayoutParameter::Literal(_) => {
@@ -882,22 +924,67 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             raw_ast::LayoutParameter::Inline(layout) => {
                 let (_, default_name, attrs) = match &**layout {
-                    raw_ast::Layout::Struct(s) => (s.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_struct", s.attributes.as_deref()),
-                    raw_ast::Layout::Enum(e) => (e.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_enum", e.attributes.as_deref()),
-                    raw_ast::Layout::Bits(b) => (b.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_bits", b.attributes.as_deref()),
-                    raw_ast::Layout::Union(u) => (u.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_union", u.attributes.as_deref()),
-                    raw_ast::Layout::Table(t) => (t.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_table", t.attributes.as_deref()),
+                    raw_ast::Layout::Struct(s) => (
+                        s.attributes.as_ref().is_some_and(|a| {
+                            a.attributes
+                                .iter()
+                                .any(|attr| attr.name.data() == "generated_name")
+                        }),
+                        "inline_struct",
+                        s.attributes.as_deref(),
+                    ),
+                    raw_ast::Layout::Enum(e) => (
+                        e.attributes.as_ref().is_some_and(|a| {
+                            a.attributes
+                                .iter()
+                                .any(|attr| attr.name.data() == "generated_name")
+                        }),
+                        "inline_enum",
+                        e.attributes.as_deref(),
+                    ),
+                    raw_ast::Layout::Bits(b) => (
+                        b.attributes.as_ref().is_some_and(|a| {
+                            a.attributes
+                                .iter()
+                                .any(|attr| attr.name.data() == "generated_name")
+                        }),
+                        "inline_bits",
+                        b.attributes.as_deref(),
+                    ),
+                    raw_ast::Layout::Union(u) => (
+                        u.attributes.as_ref().is_some_and(|a| {
+                            a.attributes
+                                .iter()
+                                .any(|attr| attr.name.data() == "generated_name")
+                        }),
+                        "inline_union",
+                        u.attributes.as_deref(),
+                    ),
+                    raw_ast::Layout::Table(t) => (
+                        t.attributes.as_ref().is_some_and(|a| {
+                            a.attributes
+                                .iter()
+                                .any(|attr| attr.name.data() == "generated_name")
+                        }),
+                        "inline_table",
+                        t.attributes.as_deref(),
+                    ),
                     raw_ast::Layout::TypeConstructor(_) => (false, "inline_type", None),
                 };
 
                 let generated_name = if let Some(a_list) = attrs {
-                    a_list.attributes.iter().find(|a| a.name.data() == "generated_name").and_then(|a| a.args.first()).map(|arg| {
-                        if let raw_ast::Constant::Literal(l) = &arg.value {
-                            l.literal.value.trim_matches('"').to_string()
-                        } else {
-                            default_name.to_string()
-                        }
-                    })
+                    a_list
+                        .attributes
+                        .iter()
+                        .find(|a| a.name.data() == "generated_name")
+                        .and_then(|a| a.args.first())
+                        .map(|arg| {
+                            if let raw_ast::Constant::Literal(l) = &arg.value {
+                                l.literal.value.trim_matches('"').to_string()
+                            } else {
+                                default_name.to_string()
+                            }
+                        })
                 } else {
                     None
                 };
@@ -905,7 +992,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let unknown_str = "Unknown".to_string();
                 let last = naming_context.last().unwrap_or(&unknown_str);
                 let final_short_name = generated_name.unwrap_or_else(|| {
-                    if naming_context.len() >= 2 && (last == "Request" || last == "Response" || last == "Error" || last == "Result") {
+                    if naming_context.len() >= 2
+                        && (last == "Request"
+                            || last == "Response"
+                            || last == "Error"
+                            || last == "Result")
+                    {
                         if last == "Request" {
                             naming_context.join("")
                         } else {
@@ -915,32 +1007,47 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         to_camel_case(last)
                     }
                 });
-                
+
                 let mut decl_context = naming_context.to_vec();
                 if let Some(list) = attrs
-                    && list.attributes.iter().any(|a| a.name.data() == "generated_name") {
-                        decl_context = vec![final_short_name.clone()];
-                    }
+                    && list
+                        .attributes
+                        .iter()
+                        .any(|a| a.name.data() == "generated_name")
+                {
+                    decl_context = vec![final_short_name.clone()];
+                }
 
                 match &**layout {
                     raw_ast::Layout::Struct(s) => {
-                        let compiled = self.compile_struct(&final_short_name, s, library_name, None, Some(decl_context), None);
+                        let compiled = self.compile_struct(
+                            &final_short_name,
+                            s,
+                            library_name,
+                            None,
+                            Some(decl_context),
+                            None,
+                        );
                         self.struct_declarations.push(compiled);
                     }
                     raw_ast::Layout::Enum(e) => {
-                        let compiled = self.compile_enum(&final_short_name, e, library_name, None, None);
+                        let compiled =
+                            self.compile_enum(&final_short_name, e, library_name, None, None);
                         self.enum_declarations.push(compiled);
                     }
                     raw_ast::Layout::Bits(b) => {
-                        let compiled = self.compile_bits(&final_short_name, b, library_name, None, None);
+                        let compiled =
+                            self.compile_bits(&final_short_name, b, library_name, None, None);
                         self.bits_declarations.push(compiled);
                     }
                     raw_ast::Layout::Union(u) => {
-                        let compiled = self.compile_union(&final_short_name, u, library_name, None, None);
+                        let compiled =
+                            self.compile_union(&final_short_name, u, library_name, None, None);
                         self.union_declarations.push(compiled);
                     }
                     raw_ast::Layout::Table(t) => {
-                        let compiled = self.compile_table(&final_short_name, t, library_name, None, None);
+                        let compiled =
+                            self.compile_table(&final_short_name, t, library_name, None, None);
                         self.table_declarations.push(compiled);
                     }
                     _ => {}
@@ -954,10 +1061,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             // Check constraints for "optional"
             for constraint in &type_ctor.constraints {
                 if let raw_ast::Constant::Identifier(id) = constraint
-                    && id.identifier.to_string() == "optional" {
-                        nullable = true;
-                        break;
-                    }
+                    && id.identifier.to_string() == "optional"
+                {
+                    nullable = true;
+                    break;
+                }
             }
         }
 
@@ -1247,14 +1355,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     }
                 } else if let Some(param) = type_ctor.parameters.first()
-                    && let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
-                        let proto_name = id.to_string();
-                        if proto_name.contains('/') {
-                            protocol = proto_name;
-                        } else {
-                            protocol = format!("{}/{}", library_name, proto_name);
-                        }
+                    && let raw_ast::LayoutParameter::Identifier(id) = &param.layout
+                {
+                    let proto_name = id.to_string();
+                    if proto_name.contains('/') {
+                        protocol = proto_name;
+                    } else {
+                        protocol = format!("{}/{}", library_name, proto_name);
                     }
+                }
 
                 Type {
                     kind_v2: "endpoint".to_string(),
@@ -1509,12 +1618,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 type_: "string".to_string(),
                 value: Constant {
                     kind: "literal".to_string(),
-                    value: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_value).unwrap()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_expression).unwrap()).unwrap(),
+                    value: serde_json::value::RawValue::from_string(
+                        serde_json::to_string(&combined_value).unwrap(),
+                    )
+                    .unwrap(),
+                    expression: serde_json::value::RawValue::from_string(
+                        serde_json::to_string(&combined_expression).unwrap(),
+                    )
+                    .unwrap(),
                     literal: Literal {
                         kind: "string".to_string(),
-                        value: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_value).unwrap()).unwrap(),
-                        expression: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_expression).unwrap()).unwrap(),
+                        value: serde_json::value::RawValue::from_string(
+                            serde_json::to_string(&combined_value).unwrap(),
+                        )
+                        .unwrap(),
+                        expression: serde_json::value::RawValue::from_string(
+                            serde_json::to_string(&combined_expression).unwrap(),
+                        )
+                        .unwrap(),
                     },
                 },
                 location: loc.clone(),
@@ -1537,13 +1658,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
     fn generate_json_string_literal(&self, s: &str) -> String {
         let mut out = String::new();
         out.push('"');
-        
+
         let s_inner = if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
             &s[1..s.len() - 1]
         } else {
             s
         };
-        
+
         let mut chars = s_inner.chars().peekable();
         while let Some(c) = chars.next() {
             if c == '\\' {
@@ -1559,20 +1680,25 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 chars.next();
                                 let mut hex = String::new();
                                 while let Some(&hc) = chars.peek() {
-                                    if hc == '}' { break; }
+                                    if hc == '}' {
+                                        break;
+                                    }
                                     hex.push(hc);
                                     chars.next();
                                 }
                                 chars.next(); // consume }
                                 if let Ok(code) = u32::from_str_radix(&hex, 16)
-                                    && let Some(ch) = char::from_u32(code) {
-                                        let mut b = [0; 2];
-                                        for u in ch.encode_utf16(&mut b) {
-                                            out.push_str(&format!("\\u{:04x}", u));
-                                        }
-                                        continue;
+                                    && let Some(ch) = char::from_u32(code)
+                                {
+                                    let mut b = [0; 2];
+                                    for u in ch.encode_utf16(&mut b) {
+                                        out.push_str(&format!("\\u{:04x}", u));
                                     }
-                                out.push_str("\\u{"); out.push_str(&hex); out.push('}');
+                                    continue;
+                                }
+                                out.push_str("\\u{");
+                                out.push_str(&hex);
+                                out.push('}');
                             } else {
                                 out.push_str("\\u");
                             }
@@ -1589,12 +1715,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     out.push_str("\\\\");
                 }
-            } else if c == '"' { out.push_str("\\\""); }
-            else if c == '\\' { out.push_str("\\\\"); }
-            else if c == '\n' { out.push_str("\\n"); }
-            else if c == '\r' { out.push_str("\\r"); }
-            else if c == '\t' { out.push_str("\\t"); }
-            else { out.push(c); }
+            } else if c == '"' {
+                out.push_str("\\\"");
+            } else if c == '\n' {
+                out.push_str("\\n");
+            } else if c == '\r' {
+                out.push_str("\\r");
+            } else if c == '\t' {
+                out.push_str("\\t");
+            } else {
+                out.push(c);
+            }
         }
         out.push('"');
         out
@@ -1622,11 +1753,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         } else {
                             val.clone()
                         };
-                        ("numeric", serde_json::to_string(&n_str).unwrap(), serde_json::to_string(&val).unwrap())
+                        (
+                            "numeric",
+                            serde_json::to_string(&n_str).unwrap(),
+                            serde_json::to_string(&val).unwrap(),
+                        )
                     }
                     raw_ast::LiteralKind::Bool(b) => {
                         let s = b.to_string();
-                        ("bool", serde_json::to_string(&s).unwrap(), serde_json::to_string(&s).unwrap())
+                        (
+                            "bool",
+                            serde_json::to_string(&s).unwrap(),
+                            serde_json::to_string(&s).unwrap(),
+                        )
                     }
                     raw_ast::LiteralKind::DocComment => {
                         ("doc_comment", "\"\"".to_string(), "\"\"".to_string())
@@ -1636,7 +1775,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 Constant {
                     kind: "literal".to_string(),
                     value: serde_json::value::RawValue::from_string(value_json.clone()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(expr_json.clone()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string(expr_json.clone())
+                        .unwrap(),
                     literal: Literal {
                         kind: kind.to_string(),
                         value: serde_json::value::RawValue::from_string(value_json).unwrap(),
@@ -1651,7 +1791,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 literal: Literal {
                     kind: "numeric".to_string(),
                     value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string())
+                        .unwrap(),
                 },
             },
             raw_ast::Constant::BinaryOperator(_) => Constant {
@@ -1661,7 +1802,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 literal: Literal {
                     kind: "numeric".to_string(),
                     value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string())
+                        .unwrap(),
                 },
             },
         }
@@ -1759,10 +1901,15 @@ fn get_dependencies<'node, 'src>(
                 if let Some(ref res) = m.response_payload {
                     if let raw_ast::Layout::Struct(_) = res {
                         let synth_name = if m.has_error {
-        format!("{}_{}_Response", p.name.data(), m.name.data())
-    } else {
-        format!("{}{}{}Response", p.name.data(), m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..])
-    };
+                            format!("{}_{}_Response", p.name.data(), m.name.data())
+                        } else {
+                            format!(
+                                "{}{}{}Response",
+                                p.name.data(),
+                                m.name.data().chars().next().unwrap().to_uppercase(),
+                                &m.name.data()[1..]
+                            )
+                        };
                         deps.push(format!("{}/{}", library_name, synth_name));
                     }
                     collect_deps_from_layout(res, library_name, &mut deps, skip_optional);
@@ -1845,9 +1992,10 @@ fn collect_deps_from_ctor(
         // Check if it has an `:optional` constraint
         for constraint in &ctor.constraints {
             if let raw_ast::Constant::Identifier(id_const) = constraint
-                && id_const.identifier.to_string() == "optional" {
-                    return;
-                }
+                && id_const.identifier.to_string() == "optional"
+            {
+                return;
+            }
         }
     }
 
@@ -1912,7 +2060,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         for member in &decl.members {
-            let ctx = vec![name.to_string(), member.name.data().to_string()]; let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
+            let ctx = vec![name.to_string(), member.name.data().to_string()];
+            let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
             let member_name = member.name.data().to_string();
             let attributes = self.compile_attribute_list(&member.attributes);
 
@@ -1942,8 +2091,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let name = decl.name.data();
         let full_name = format!("{}/{}", library_name, name);
         let location = self.get_location(&decl.name.element);
-        
-        let ctx = vec![name.to_string()]; let type_obj = self.resolve_type(&decl.type_ctor, library_name, &ctx);
+
+        let ctx = vec![name.to_string()];
+        let type_obj = self.resolve_type(&decl.type_ctor, library_name, &ctx);
         let constant = self.compile_constant(&decl.value);
 
         ConstDeclaration {
@@ -1969,9 +2119,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let has_request = m.has_request;
             let maybe_request_payload = if let Some(ref l) = m.request_payload {
                 match l {
-                    raw_ast::Layout::TypeConstructor(tc) => {
-                        Some(self.resolve_type(tc, library_name, &[short_name.to_string(), m.name.data().to_string(), "Request".to_string()]))
-                    }
+                    raw_ast::Layout::TypeConstructor(tc) => Some(self.resolve_type(
+                        tc,
+                        library_name,
+                        &[
+                            short_name.to_string(),
+                            m.name.data().to_string(),
+                            "Request".to_string(),
+                        ],
+                    )),
                     raw_ast::Layout::Struct(s) => {
                         let method_name_camel = format!(
                             "{}{}",
@@ -2028,9 +2184,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let has_response = m.has_response;
             let maybe_response_payload = if let Some(ref l) = m.response_payload {
                 match l {
-                    raw_ast::Layout::TypeConstructor(tc) => {
-                        Some(self.resolve_type(tc, library_name, &[short_name.to_string(), m.name.data().to_string(), "Response".to_string()]))
-                    }
+                    raw_ast::Layout::TypeConstructor(tc) => Some(self.resolve_type(
+                        tc,
+                        library_name,
+                        &[
+                            short_name.to_string(),
+                            m.name.data().to_string(),
+                            "Response".to_string(),
+                        ],
+                    )),
                     raw_ast::Layout::Struct(s) => {
                         let method_name_camel = format!(
                             "{}{}",
@@ -2038,10 +2200,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             &m.name.data()[1..]
                         );
                         let synth_name = if m.has_error {
-        format!("{}_{}_Response", short_name, m.name.data())
-    } else {
-        format!("{}{}{}Response", short_name, m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..])
-    };
+                            format!("{}_{}_Response", short_name, m.name.data())
+                        } else {
+                            format!(
+                                "{}{}{}Response",
+                                short_name,
+                                m.name.data().chars().next().unwrap().to_uppercase(),
+                                &m.name.data()[1..]
+                            )
+                        };
                         let compiled = self.compile_struct(
                             &synth_name,
                             s,
@@ -2091,9 +2258,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let maybe_response_err_type = if let Some(ref l) = m.error_payload {
                 match l {
-                    raw_ast::Layout::TypeConstructor(tc) => {
-                        Some(self.resolve_type(tc, library_name, &[short_name.to_string(), m.name.data().to_string(), "Error".to_string()]))
-                    }
+                    raw_ast::Layout::TypeConstructor(tc) => Some(self.resolve_type(
+                        tc,
+                        library_name,
+                        &[
+                            short_name.to_string(),
+                            m.name.data().to_string(),
+                            "Error".to_string(),
+                        ],
+                    )),
                     _ => None,
                 }
             } else {
@@ -2115,13 +2288,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 for attr in &attr_list.attributes {
                     if attr.name.data() == "selector"
                         && let Some(arg) = attr.args.first()
-                            && let raw_ast::Constant::Literal(ref l) = arg.value
-                                && l.literal.kind == raw_ast::LiteralKind::String {
-                                    // The string literal includes quotes, but wait, usually we want
-                                    // to strip them if the parser leaves them. Let's just use the value.
-                                    // Our scanner keeps quotes? Let's assume we need to trim '\"'
-                                    selector = l.literal.value.trim_matches('"').to_string();
-                                }
+                        && let raw_ast::Constant::Literal(ref l) = arg.value
+                        && l.literal.kind == raw_ast::LiteralKind::String
+                    {
+                        // The string literal includes quotes, but wait, usually we want
+                        // to strip them if the parser leaves them. Let's just use the value.
+                        // Our scanner keeps quotes? Let's assume we need to trim '\"'
+                        selector = l.literal.value.trim_matches('"').to_string();
+                    }
                 }
             }
 

@@ -61,6 +61,30 @@ FILES=(
 
 for file in "${FILES[@]}"; do
     name="${file%.test.fidl}"
+    
+    public_deps=( "//zircon/vdso/zx" )
+    experimental_flags=()
+    versioned=""
+    contains_drivers=false
+
+    if [ "$file" == "handles.test.fidl" ]; then
+        public_deps+=( "//sdk/fidl/fdf" )
+    fi
+
+    if [ "$file" == "new_type.test.fidl" ]; then
+        experimental_flags+=( "allow_new_types" )
+    elif [ "$file" == "experimental_zx_c_types.test.fidl" ] || [ "$file" == "string_arrays.test.fidl" ] || [ "$file" == "overlay.test.fidl" ]; then
+        experimental_flags+=( "zx_c_types" )
+    fi
+
+    if [ "$file" == "versions.test.fidl" ]; then
+        versioned="test:1"
+    fi
+
+    if [[ "$file" == "driver_handle.test.fidl" || "$file" == "driver_one_way.test.fidl" || "$file" == "driver_service.test.fidl" || "$file" == "driver_two_way.test.fidl" || "$file" == "handles.test.fidl" || "$file" == "unknown_interactions.test.fidl" ]]; then
+        contains_drivers=true
+    fi
+
     echo "Generating JSON IR for $file -> $name.json"
     ./target/debug/fidlcrs --json "goldens/$name.json" --files "fidlc/testdata/$file"
     diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true

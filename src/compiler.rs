@@ -25,7 +25,7 @@ use crate::source_file::SourceFile;
 pub struct Compiler<'src> {
     // Compiled shapes for types
     shapes: HashMap<String, TypeShapeV2>,
-    source_file: Option<&'src SourceFile>,
+    source_files: Vec<&'src SourceFile>,
 }
 
 #[derive(Clone)]
@@ -45,97 +45,97 @@ impl<'src> Compiler<'src> {
     pub fn new() -> Self {
         Self {
             shapes: HashMap::new(),
-            source_file: None,
+            source_files: Vec::new(),
         }
     }
 
     pub fn compile(
         &mut self,
-        file: raw_ast::File<'src>,
-        source_file: &'src SourceFile,
+        files: &[raw_ast::File<'src>],
+        source_files: &[&'src SourceFile],
     ) -> JsonRoot {
-        self.source_file = Some(source_file);
-        let library_name = file
-            .library_decl
-            .as_ref()
-            .map(|l| l.path.to_string())
+        self.source_files = source_files.to_vec();
+        let library_name = files.iter()
+            .find_map(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
         // 1. Collect all declarations
         // We let rust infer lifetimes for the keys/values, or explicit if needed.
         let mut raw_decls: HashMap<String, RawDecl<'_, 'src>> = HashMap::new();
 
-        for decl in &file.type_decls {
-            let name = format!("{}/{}", library_name, decl.name.data());
-            raw_decls.insert(name, RawDecl::Type(decl));
-        }
+        for file in files {
+            for decl in &file.type_decls {
+                let name = format!("{}/{}", library_name, decl.name.data());
+                raw_decls.insert(name, RawDecl::Type(decl));
+            }
 
-        for decl in &file.struct_decls {
-            let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Struct(decl));
-        }
+            for decl in &file.struct_decls {
+                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Struct(decl));
+            }
 
-        for decl in &file.enum_decls {
-            let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Enum(decl));
-        }
+            for decl in &file.enum_decls {
+                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Enum(decl));
+            }
 
-        for decl in &file.bits_decls {
-            let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Bits(decl));
-        }
+            for decl in &file.bits_decls {
+                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Bits(decl));
+            }
 
-        for decl in &file.union_decls {
-            let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Union(decl));
-        }
+            for decl in &file.union_decls {
+                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Union(decl));
+            }
 
-        for decl in &file.table_decls {
-            let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Table(decl));
-        }
+            for decl in &file.table_decls {
+                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Table(decl));
+            }
 
-        for decl in &file.protocol_decls {
-            let name = decl.name.data();
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Protocol(decl));
+            for decl in &file.protocol_decls {
+                let name = decl.name.data();
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Protocol(decl));
 
-            for method in &decl.methods {
-                let method_name_camel = format!(
-                    "{}{}",
-                    method.name.data().chars().next().unwrap().to_uppercase(),
-                    &method.name.data()[1..]
-                );
-                if let Some(raw_ast::Layout::Struct(s)) = &method.request_payload {
-                    let synth_name = format!("{}Request", method_name_camel);
-                    let full_synth =
-                        format!("{}/{}", library_name, format!("{}{}", name, synth_name));
-                    raw_decls.insert(full_synth, RawDecl::Struct(s));
-                }
-                if let Some(raw_ast::Layout::Struct(s)) = &method.response_payload {
-                    let synth_name = format!("{}Response", method_name_camel);
-                    let full_synth =
-                        format!("{}/{}", library_name, format!("{}{}", name, synth_name));
-                    raw_decls.insert(full_synth, RawDecl::Struct(s));
+                for method in &decl.methods {
+                    let method_name_camel = format!(
+                        "{}{}",
+                        method.name.data().chars().next().unwrap().to_uppercase(),
+                        &method.name.data()[1..]
+                    );
+                    if let Some(raw_ast::Layout::Struct(s)) = &method.request_payload {
+                        let synth_name = format!("{}Request", method_name_camel);
+                        let full_synth =
+                            format!("{}/{}", library_name, format!("{}{}", name, synth_name));
+                        raw_decls.insert(full_synth, RawDecl::Struct(s));
+                    }
+                    if let Some(raw_ast::Layout::Struct(s)) = &method.response_payload {
+                        let synth_name = format!("{}Response", method_name_camel);
+                        let full_synth =
+                            format!("{}/{}", library_name, format!("{}{}", name, synth_name));
+                        raw_decls.insert(full_synth, RawDecl::Struct(s));
+                    }
                 }
             }
-        }
 
-        for decl in &file.service_decls {
-            let name = decl.name.data();
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Service(decl));
-        }
+            for decl in &file.service_decls {
+                let name = decl.name.data();
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Service(decl));
+            }
 
-        for decl in &file.const_decls {
-            let name = decl.name.data();
-            let full_name = format!("{}/{}", library_name, name);
-            raw_decls.insert(full_name, RawDecl::Const(decl));
+            for decl in &file.const_decls {
+                let name = decl.name.data();
+                let full_name = format!("{}/{}", library_name, name);
+                raw_decls.insert(full_name, RawDecl::Const(decl));
+            }
         }
 
         // 2. Build Dependency Graph
@@ -372,9 +372,8 @@ impl<'src> Compiler<'src> {
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
             ])),
-            maybe_attributes: file
-                .library_decl
-                .as_ref()
+            maybe_attributes: files.iter()
+                .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
             library_dependencies: vec![],
@@ -1527,22 +1526,12 @@ impl<'src> Compiler<'src> {
     }
 
     fn get_location(&self, element: &raw_ast::SourceElement<'_>) -> Location {
-        if let Some(source) = self.source_file {
-            let start_span = element.start_token.span;
-            let end_span = element.end_token.span;
+        let start_span = element.start_token.span;
+        let end_span = element.end_token.span;
+        let view = start_span.data;
 
-            // Calculate length from start of start_token to end of end_token
-            // This is annoying because SourceElement stores Tokens, not full span range directly.
-            // But we can approximate or use the tokens.
-            // Ideally SourceElement should have a method to get full string.
-            // For now, let's just use the start token's location and length of the whole element?
-            // Wait, SourceElement::span() is not implemented fully in raw_ast.rs?
-            // Let's use start_token.
-
-            let view = start_span.data;
+        for source in &self.source_files {
             if let Some((_, pos)) = source.line_containing(view) {
-                // Calculate true length: end_token.span.data.as_ptr() + end_token.span.data.len() - start_token.span.data.as_ptr()
-                // Assuming they are in the same buffer.
                 let start_ptr = view.as_ptr() as usize;
                 let end_ptr = end_span.data.as_ptr() as usize + end_span.data.len();
                 let length = end_ptr.saturating_sub(start_ptr);

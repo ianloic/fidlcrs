@@ -4,15 +4,15 @@ use crate::reporter::Reporter;
 use crate::token::{Token, TokenKind, TokenSubkind};
 
 #[allow(dead_code)]
-pub struct Parser<'a> {
-    lexer: &'a mut Lexer<'a>,
+pub struct Parser<'a, 'b> {
+    lexer: &'b mut Lexer<'a>,
     reporter: &'a Reporter<'a>,
     last_token: Token<'a>,
     previous_token: Option<Token<'a>>,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: &'a mut Lexer<'a>, reporter: &'a Reporter<'a>) -> Self {
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn new(lexer: &'b mut Lexer<'a>, reporter: &'a Reporter<'a>) -> Self {
         let last_token = lexer.lex();
         Self {
             lexer,

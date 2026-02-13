@@ -190,64 +190,63 @@ fn main() {
         fail_with_usage("No files provided");
     }
 
-    // Since our compiler currently just parses and compiles one file, we read the first one.
-    // In the future this should handle multiple files.
-    let filename = &filenames[0];
-    let content = match fs::read_to_string(filename) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Error reading file {}: {}", filename, e);
-            process::exit(1);
-        }
-    };
+    let mut source_files = Vec::new();
+    for filename in &filenames {
+        let content = match fs::read_to_string(filename) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error reading file {}: {}", filename, e);
+                process::exit(1);
+            }
+        };
+        source_files.push(SourceFile::new(filename.to_string(), content));
+    }
 
-    let source = SourceFile::new(filename.to_string(), content);
     let reporter = Reporter::new();
-    let mut lexer = Lexer::new(&source, &reporter);
-    let mut parser = Parser::new(&mut lexer, &reporter);
+    let mut files = Vec::new();
 
-    parser
-        .consume_token(TokenKind::StartOfFile)
-        .expect("Failed to consume StartOfFile");
+    for source in &source_files {
+        let mut lexer = Lexer::new(source, &reporter);
+        let mut parser = Parser::new(&mut lexer, &reporter);
 
-    match parser.parse_file() {
-        Some(file) => {
-            let mut compiler = Compiler::new();
-            let json_root = compiler.compile(file, &source);
+        parser
+            .consume_token(TokenKind::StartOfFile)
+            .expect("Failed to consume StartOfFile");
 
-            let json_string = serde_json::to_string_pretty(&json_root).unwrap();
-
-            if let Some(ref out_path) = json_path {
-                // Ensure parent directory exists?
-                if let Some(p) = std::path::Path::new(&out_path).parent() {
-                    fs::create_dir_all(p).unwrap_or(());
-                }
-                let mut f = match fs::File::create(out_path) {
-                    Ok(f) => f,
-                    Err(_e) => {
-                        fail(&format!("Could not open file: {}\n", out_path));
-                    }
-                };
-                f.write_all(json_string.as_bytes()).unwrap();
-                f.write_all(b"\n").unwrap();
-                // To keep stdout clean like the original main.rs? Wait, original C++ does not output things to stdout
-                // So no println!
-            } else {
-                // Wait! main.cc doesn't print JSON to stdout unless --json is an empty string? No, json_path is required.
-                // Wait, main.cc only outputs to files specified by --json, it doesn't output to stdout.
-            }
-
-            if let Some(dep_path) = dep_file_path {
-                let mut f = fs::File::create(&dep_path).unwrap();
-                if let Some(ref jp) = json_path {
-                    let input_files = filenames.join(" ");
-                    write!(f, "{} : {}\n", jp, input_files).unwrap();
-                }
+        match parser.parse_file() {
+            Some(file) => files.push(file),
+            None => {
+                eprintln!("Failed to parse file: {}", source.filename());
+                process::exit(1);
             }
         }
-        None => {
-            eprintln!("Failed to parse file.");
-            process::exit(1);
+    }
+
+    let mut compiler = Compiler::new();
+    let source_refs: Vec<&SourceFile> = source_files.iter().collect();
+    let json_root = compiler.compile(&files, &source_refs);
+
+    let json_string = serde_json::to_string_pretty(&json_root).unwrap();
+
+    if let Some(ref out_path) = json_path {
+        if let Some(p) = std::path::Path::new(&out_path).parent() {
+            fs::create_dir_all(p).unwrap_or(());
+        }
+        let mut f = match fs::File::create(out_path) {
+            Ok(f) => f,
+            Err(_e) => {
+                fail(&format!("Could not open file: {}\n", out_path));
+            }
+        };
+        f.write_all(json_string.as_bytes()).unwrap();
+        f.write_all(b"\n").unwrap();
+    }
+
+    if let Some(dep_path) = dep_file_path {
+        let mut f = fs::File::create(&dep_path).unwrap();
+        if let Some(ref jp) = json_path {
+            let input_files = filenames.join(" ");
+            write!(f, "{} : {}\n", jp, input_files).unwrap();
         }
     }
 }

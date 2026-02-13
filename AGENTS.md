@@ -30,3 +30,6 @@ Test runner: `src/golden_test.rs`.
 ## Debugging
 - Use `eprintln!` for debugging as `println!` might be captured or messy.
 - Compare output with `fidlc/goldens/<name>.json.golden`.
+
+## Rules
+ - NEVER modify any files in the `fidlc` directory. These are for reference ONLY.

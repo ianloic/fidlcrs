@@ -111,11 +111,11 @@ fn main() {
     }
 
     let mut json_path: Option<String> = None;
-    let mut warnings_as_errors = false;
-    let mut format = "text".to_string();
-    let mut expected_library_name: Option<String> = None;
-    let mut expected_platform: Option<String> = None;
-    let mut expected_version_added: Option<String> = None;
+    let mut _warnings_as_errors = false;
+    let mut _format = "text".to_string();
+    let mut _expected_library_name: Option<String> = None;
+    let _expected_platform: Option<String> = None;
+    let _expected_version_added: Option<String> = None;
     let mut dep_file_path: Option<String> = None;
 
     // We collect files divided by `--files` chunks
@@ -135,23 +135,23 @@ fn main() {
             println!("{{}}"); // not genuinely implementing it right now
             process::exit(0);
         } else if flag == "--werror" {
-            warnings_as_errors = true;
+            _warnings_as_errors = true;
         } else if flag.starts_with("--format=") {
             let format_val = &flag["--format=".len()..];
             if format_val != "text" && format_val != "json" {
                 fail_with_usage(&format!("Unknown value `{}` for flag `format`\n", format_val));
             }
-            format = format_val.to_string();
+            _format = format_val.to_string();
         } else if flag == "--json" {
             json_path = Some(args.claim());
         } else if flag == "--available" {
-            let arg = args.claim();
+            let _arg = args.claim();
             // Not fully implementing parsed available versions right now, just skipping
         } else if flag == "--versioned" {
-            let arg = args.claim();
+            let _arg = args.claim();
             // fake parsing platform and version
         } else if flag == "--name" {
-            expected_library_name = Some(args.claim());
+            _expected_library_name = Some(args.claim());
         } else if flag == "--experimental" {
             let _flag_name = args.claim();
         } else if flag == "--depfile" {

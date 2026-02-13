@@ -44,7 +44,7 @@ impl Arguments {
             let filename = &arg[1..];
             let content = match fs::read_to_string(filename) {
                 Ok(c) => c,
-                Err(e) => {
+                Err(_e) => {
                     eprintln!("Could not open file: {}", filename);
                     process::exit(1);
                 }

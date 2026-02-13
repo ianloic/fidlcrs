@@ -7,6 +7,8 @@ pub struct JsonRoot {
     pub platform: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub available: Option<BTreeMap<String, Vec<String>>>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     pub experiments: Vec<String>,
     pub library_dependencies: Vec<LibraryDependency>,
     pub bits_declarations: Vec<BitsDeclaration>,
@@ -67,6 +69,18 @@ pub struct Type {
     pub element_type: Option<Box<Type>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol_transport: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub obj_type: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rights: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_identifier: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -87,6 +101,8 @@ pub struct StructMember {
     pub name: String,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     pub field_shape_v2: FieldShapeV2,
 }
 
@@ -96,6 +112,8 @@ pub struct StructDeclaration {
     pub naming_context: Vec<String>,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     pub members: Vec<StructMember>,
     pub resource: bool,
     pub is_empty_success_struct: bool,
@@ -114,6 +132,8 @@ pub struct BitsDeclaration {
     pub naming_context: Vec<String>,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     #[serde(rename = "type")]
     pub type_: Type,
     pub mask: String,
@@ -139,6 +159,8 @@ pub struct EnumDeclaration {
     pub naming_context: Vec<String>,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     #[serde(rename = "type")]
     pub type_: String,
     pub members: Vec<EnumMember>,
@@ -173,9 +195,18 @@ pub struct Literal {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub struct AttributeArg {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub value: Constant,
+    pub location: Location,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct Attribute {
     pub name: String,
-    pub arguments: Vec<String>, // simplified
+    pub arguments: Vec<AttributeArg>,
     pub location: Location,
 }
 #[derive(Serialize, Clone, Debug)]

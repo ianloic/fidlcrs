@@ -170,6 +170,7 @@ impl<'src> Compiler<'src> {
                                 &library_name,
                                 Some(&t.name.element),
                                 None,
+                                t.attributes.as_deref(),
                             );
                             struct_declarations.push(compiled);
                         } else if let raw_ast::Layout::Enum(ref e) = t.layout {
@@ -178,6 +179,7 @@ impl<'src> Compiler<'src> {
                                 e,
                                 &library_name,
                                 Some(&t.name.element),
+                                t.attributes.as_deref(),
                             );
                             enum_declarations.push(compiled);
                         } else if let raw_ast::Layout::Bits(ref b) = t.layout {
@@ -186,6 +188,7 @@ impl<'src> Compiler<'src> {
                                 b,
                                 &library_name,
                                 Some(&t.name.element),
+                                t.attributes.as_deref(),
                             );
                             bits_declarations.push(compiled);
                         } else if let raw_ast::Layout::Table(ref ta) = t.layout {
@@ -218,21 +221,21 @@ impl<'src> Compiler<'src> {
                         // We need short name for compile_struct
                         let short_name = s.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
                         let compiled =
-                            self.compile_struct(short_name, s, &library_name, None, None);
+                            self.compile_struct(short_name, s, &library_name, None, None, s.attributes.as_deref());
                         if s.name.is_some() {
                             struct_declarations.push(compiled);
                         }
                     }
                     RawDecl::Enum(e) => {
                         let short_name = e.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_enum(short_name, e, &library_name, None);
+                        let compiled = self.compile_enum(short_name, e, &library_name, None, e.attributes.as_deref());
                         if e.name.is_some() {
                             enum_declarations.push(compiled);
                         }
                     }
                     RawDecl::Bits(b) => {
                         let short_name = b.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_bits(short_name, b, &library_name, None);
+                        let compiled = self.compile_bits(short_name, b, &library_name, None, b.attributes.as_deref());
                         if b.name.is_some() {
                             bits_declarations.push(compiled);
                         }
@@ -316,6 +319,7 @@ impl<'src> Compiler<'src> {
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
             ])),
+            maybe_attributes: file.library_decl.as_ref().map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
             library_dependencies: vec![],
             bits_declarations,
@@ -415,6 +419,7 @@ impl<'src> Compiler<'src> {
         decl: &raw_ast::EnumDeclaration<'_>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
+        inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> EnumDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
@@ -504,6 +509,14 @@ impl<'src> Compiler<'src> {
             members,
             strict,
             maybe_unknown_value,
+            maybe_attributes: {
+                let mut attrs = self.compile_attribute_list(&decl.attributes);
+                if let Some(inherited) = inherited_attributes {
+                    let extra = self.compile_attributes_from_ref(inherited);
+                    attrs.extend(extra);
+                }
+                attrs
+            },
         }
     }
 
@@ -513,6 +526,7 @@ impl<'src> Compiler<'src> {
         decl: &raw_ast::BitsDeclaration<'_>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
+        inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> BitsDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
@@ -584,6 +598,14 @@ impl<'src> Compiler<'src> {
             naming_context: vec![name.to_string()],
             location,
             deprecated: false,
+            maybe_attributes: {
+                let mut attrs = self.compile_attribute_list(&decl.attributes);
+                if let Some(inherited) = inherited_attributes {
+                    let extra = self.compile_attributes_from_ref(inherited);
+                    attrs.extend(extra);
+                }
+                attrs
+            },
             type_: Type {
                 kind_v2: "primitive".to_string(),
                 subtype: Some(subtype_name),
@@ -592,7 +614,8 @@ impl<'src> Compiler<'src> {
                 element_type: None,
                 element_count: None,
                 maybe_element_count: None,
-                deprecated: None,
+                role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                 maybe_attributes: vec![],
                 field_shape_v2: None,
                 type_shape_v2,
@@ -876,6 +899,7 @@ impl<'src> Compiler<'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         naming_context: Option<Vec<String>>,
+        inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> StructDeclaration {
         let full_name = format!("{}/{}", library_name, name);
 
@@ -916,6 +940,7 @@ impl<'src> Compiler<'src> {
                 name: member.name.data().to_string(),
                 location,
                 deprecated: false,
+                maybe_attributes: self.compile_attribute_list(&member.attributes),
                 field_shape_v2: FieldShapeV2 {
                     offset: field_offset,
                     padding: 0,
@@ -976,6 +1001,14 @@ impl<'src> Compiler<'src> {
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: false,
+            maybe_attributes: {
+                let mut attrs = self.compile_attribute_list(&decl.attributes);
+                if let Some(inherited) = inherited_attributes {
+                    let extra = self.compile_attributes_from_ref(inherited);
+                    attrs.extend(extra);
+                }
+                attrs
+            },
             members,
             resource: decl.is_resource,
             is_empty_success_struct: false,
@@ -1025,6 +1058,7 @@ impl<'src> Compiler<'src> {
                     element_type: None,
                     element_count: None,
                     maybe_element_count: None,
+                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
@@ -1050,6 +1084,7 @@ impl<'src> Compiler<'src> {
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
+                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
                     element_type: None,
                     element_count: None,
                     maybe_element_count: if max_len == u32::MAX {
@@ -1082,7 +1117,8 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        deprecated: None,
+                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: TypeShapeV2 {
@@ -1123,6 +1159,7 @@ impl<'src> Compiler<'src> {
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
+                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
                     element_type: Some(Box::new(inner_type.clone())),
                     element_count: None,
                     maybe_element_count: if max_count == u32::MAX {
@@ -1155,7 +1192,8 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        deprecated: None,
+                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: TypeShapeV2 {
@@ -1186,6 +1224,7 @@ impl<'src> Compiler<'src> {
                     element_type: Some(Box::new(inner_type.clone())),
                     element_count: Some(count),
                     maybe_element_count: None,
+                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
@@ -1223,6 +1262,7 @@ impl<'src> Compiler<'src> {
                     element_type: None,
                     element_count: None,
                     maybe_element_count: None,
+                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
@@ -1256,7 +1296,8 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        deprecated: None,
+                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: shape.clone(),
@@ -1272,7 +1313,8 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        deprecated: None,
+                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: TypeShapeV2 {
@@ -1371,17 +1413,101 @@ impl<'src> Compiler<'src> {
         &self,
         attributes: &raw_ast::AttributeList<'_>,
     ) -> Vec<Attribute> {
-        attributes
-            .attributes
-            .iter()
-            .map(|attr| {
-                Attribute {
-                    name: attr.name.data().to_string(),
-                    arguments: vec![], // TODO: compile arguments
-                    location: self.get_location(&attr.element),
+        let mut compiled_attrs = vec![];
+        let mut doc_comment_buffer: Vec<&raw_ast::Attribute<'_>> = vec![];
+
+        for attr in &attributes.attributes {
+            if attr.provenance == raw_ast::AttributeProvenance::DocComment {
+                doc_comment_buffer.push(attr);
+            } else {
+                if !doc_comment_buffer.is_empty() {
+                    compiled_attrs.push(self.compile_doc_comments(&doc_comment_buffer));
+                    doc_comment_buffer.clear();
                 }
-            })
-            .collect()
+
+                // Compile regular attribute
+                let args = attr.args.iter().map(|arg| {
+                    let arg_name = arg.name.as_ref()
+                        .map(|n| n.element.start_token.span.data.to_string())
+                        .unwrap_or_else(|| "value".to_string());
+                    let value = self.compile_constant(&arg.value);
+                    crate::json_generator::AttributeArg {
+                        name: arg_name,
+                        type_: value.literal.kind.clone(), // This isn't generally correct natively but good enough for now
+                        value,
+                        location: self.get_location(&arg.element),
+                    }
+                }).collect();
+
+                compiled_attrs.push(Attribute {
+                    name: attr.name.element.start_token.span.data.to_string(),
+                    arguments: args,
+                    location: self.get_location(&attr.element),
+                });
+            }
+        }
+
+        if !doc_comment_buffer.is_empty() {
+            compiled_attrs.push(self.compile_doc_comments(&doc_comment_buffer));
+        }
+
+        compiled_attrs
+    }
+
+    fn compile_doc_comments(&self, doc_comments: &[&raw_ast::Attribute<'_>]) -> Attribute {
+        let mut combined_value = String::new();
+        for attr in doc_comments.iter() {
+            let text = attr.name.element.start_token.span.data;
+
+            let stripped = if text.starts_with("///") {
+                &text[3..]
+            } else {
+                text
+            };
+            combined_value.push_str(stripped);
+            combined_value.push('\n');
+        }
+
+        let first = doc_comments.first().unwrap();
+        let last = doc_comments.last().unwrap();
+        
+        let start_ptr = first.name.element.start_token.span.data.as_ptr() as usize;
+        let end_ptr = last.name.element.start_token.span.data.as_ptr() as usize;
+        let end_len = last.name.element.start_token.span.data.len();
+        
+        let len = (end_ptr + end_len).saturating_sub(start_ptr);
+        
+        let raw_expr = unsafe {
+            let slice = std::slice::from_raw_parts(start_ptr as *const u8, len);
+            std::str::from_utf8_unchecked(slice)
+        };
+        let combined_expression = raw_expr.to_string();
+
+        let synthetic_element = raw_ast::SourceElement::new(
+            first.element.start_token.clone(),
+            last.element.end_token.clone(),
+        );
+        let loc = self.get_location(&synthetic_element);
+
+        Attribute {
+            name: "doc".to_string(),
+            arguments: vec![crate::json_generator::AttributeArg {
+                name: "value".to_string(),
+                type_: "string".to_string(),
+                value: Constant {
+                    kind: "literal".to_string(),
+                    value: combined_value.clone(),
+                    expression: combined_expression.clone(),
+                    literal: Literal {
+                        kind: "string".to_string(),
+                        value: combined_value,
+                        expression: combined_expression,
+                    }
+                },
+                location: loc.clone(),
+            }],
+            location: loc,
+        }
     }
 
     fn compile_attribute_list(
@@ -1728,9 +1854,10 @@ impl<'src> Compiler<'src> {
                             None,
                             Some(vec![
                                 short_name.to_string(),
-                                method_name_camel,
+                                method_name_camel.clone(),
                                 "Request".to_string(),
                             ]),
+                            None,
                         );
                         struct_declarations.push(compiled);
                         let full_synth = format!("{}/{}", library_name, synth_name);
@@ -1744,7 +1871,8 @@ impl<'src> Compiler<'src> {
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
-                            deprecated: None,
+                            role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                             maybe_attributes: vec![],
                             field_shape_v2: None,
                             type_shape_v2: shape,
@@ -1784,6 +1912,7 @@ impl<'src> Compiler<'src> {
                                 method_name_camel.clone(),
                                 "Response".to_string(),
                             ]),
+                            None,
                         );
                         struct_declarations.push(compiled);
                         let full_synth = format!("{}/{}", library_name, synth_name);
@@ -1797,7 +1926,8 @@ impl<'src> Compiler<'src> {
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
-                            deprecated: None,
+                            role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    deprecated: None,
                             maybe_attributes: vec![],
                             field_shape_v2: None,
                             type_shape_v2: shape,
@@ -1863,7 +1993,7 @@ impl<'src> Compiler<'src> {
                 strict: true,
                 location: self.get_location(&m.name.element),
                 deprecated: false,
-                maybe_attributes: vec![],
+                maybe_attributes: self.compile_attribute_list(&m.attributes),
                 has_request,
                 maybe_request_payload,
                 has_response,
@@ -1879,7 +2009,7 @@ impl<'src> Compiler<'src> {
             name,
             location: self.get_location(&decl.name.element),
             deprecated: false,
-            maybe_attributes: vec![],
+            maybe_attributes: self.compile_attribute_list(&decl.attributes),
             openness: "closed".to_string(),
             composed_protocols: vec![],
             methods,

@@ -12,16 +12,18 @@ FILES=(
     "enum.test.fidl"
     "struct.test.fidl"
     "table.test.fidl"
-    "union.test.fidl"
-  
-
+    "union.test.fidl"  
+    "arrays.test.fidl"
+    "vectors.test.fidl"
+    # "nullable.test.fidl"
+    "doc_comments.test.fidl"
     # "anonymous.test.fidl"
-    # "arrays.test.fidl"
+
+
     # "bits_constants.test.fidl"
     # "byte_and_bytes.test.fidl"
     # "constants.test.fidl"
     # "consts.test.fidl"
-    # "doc_comments.test.fidl"
     # "driver_handle.test.fidl"
     # "driver_one_way.test.fidl"
     # "driver_service.test.fidl"
@@ -38,7 +40,6 @@ FILES=(
     # "inheritance_with_recursive_decl.test.fidl"
     # "large_messages.test.fidl"
     # "new_type.test.fidl"
-    # "nullable.test.fidl"
     # "overlay.test.fidl"
     # "padding.test.fidl"
     # "protocol_request.test.fidl"
@@ -51,7 +52,6 @@ FILES=(
     # "types_in_protocols.test.fidl"
     # "union_sandwich.test.fidl"
     # "unknown_interactions.test.fidl"
-    # "vectors.test.fidl"
     # "versions.test.fidl"
 )
 
@@ -59,7 +59,7 @@ for file in "${FILES[@]}"; do
     name="${file%.test.fidl}"
     echo "Generating JSON IR for $file -> $name.json"
     ./target/debug/fidlcrs "fidlc/testdata/$file" --json "goldens/$name.json"
-    diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json"
+    diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true
 done
 
 echo "Done generating goldens."

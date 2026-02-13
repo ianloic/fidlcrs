@@ -97,7 +97,11 @@ impl<'a> Parser<'a> {
                 } else {
                     self.last_token = self.lexer.lex();
                 }
-            } else if self.last_token.subkind == TokenSubkind::Protocol {
+            } else if self.last_token.subkind == TokenSubkind::Protocol
+                || self.last_token.subkind == TokenSubkind::Closed
+                || self.last_token.subkind == TokenSubkind::Open
+                || self.last_token.subkind == TokenSubkind::Ajar
+            {
                 if let Some(decl) = self.parse_protocol_declaration(attributes.take()) {
                     protocol_decls.push(decl);
                 } else {
@@ -524,8 +528,23 @@ impl<'a> Parser<'a> {
 
         if self.last_token.kind == TokenKind::Colon {
             self.consume_token(TokenKind::Colon)?;
-            if let Some(constant) = self.parse_constant() {
-                constraints.push(constant);
+            if self.last_token.kind == TokenKind::LeftAngle {
+                self.consume_token(TokenKind::LeftAngle)?;
+                loop {
+                    if let Some(constant) = self.parse_constant() {
+                        constraints.push(constant);
+                    }
+                    if self.last_token.kind == TokenKind::Comma {
+                        self.consume_token(TokenKind::Comma)?;
+                    } else {
+                        break;
+                    }
+                }
+                self.consume_token(TokenKind::RightAngle)?;
+            } else {
+                if let Some(constant) = self.parse_constant() {
+                    constraints.push(constant);
+                }
             }
         }
 

@@ -82,6 +82,12 @@ pub struct Compiler<'node, 'src> {
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
 }
+impl<'node, 'src> Default for Compiler<'node, 'src> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'node, 'src> Compiler<'node, 'src> {
     pub fn new() -> Self {
         Self {
@@ -704,7 +710,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             alignment: 8,
             depth,
             max_handles,
-            max_out_of_line: max_out_of_line as u32,
+            max_out_of_line,
             has_padding,
             has_flexible_envelope: !strict,
         };
@@ -876,11 +882,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             raw_ast::LayoutParameter::Inline(layout) => {
                 let (_, default_name, attrs) = match &**layout {
-                    raw_ast::Layout::Struct(s) => (s.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_struct", s.attributes.as_deref()),
-                    raw_ast::Layout::Enum(e) => (e.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_enum", e.attributes.as_deref()),
-                    raw_ast::Layout::Bits(b) => (b.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_bits", b.attributes.as_deref()),
-                    raw_ast::Layout::Union(u) => (u.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_union", u.attributes.as_deref()),
-                    raw_ast::Layout::Table(t) => (t.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_table", t.attributes.as_deref()),
+                    raw_ast::Layout::Struct(s) => (s.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_struct", s.attributes.as_deref()),
+                    raw_ast::Layout::Enum(e) => (e.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_enum", e.attributes.as_deref()),
+                    raw_ast::Layout::Bits(b) => (b.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_bits", b.attributes.as_deref()),
+                    raw_ast::Layout::Union(u) => (u.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_union", u.attributes.as_deref()),
+                    raw_ast::Layout::Table(t) => (t.attributes.as_ref().is_some_and(|a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_table", t.attributes.as_deref()),
                     raw_ast::Layout::TypeConstructor(_) => (false, "inline_type", None),
                 };
 
@@ -911,11 +917,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 });
                 
                 let mut decl_context = naming_context.to_vec();
-                if let Some(ref list) = attrs {
-                    if list.attributes.iter().any(|a| a.name.data() == "generated_name") {
+                if let Some(list) = attrs
+                    && list.attributes.iter().any(|a| a.name.data() == "generated_name") {
                         decl_context = vec![final_short_name.clone()];
                     }
-                }
 
                 match &**layout {
                     raw_ast::Layout::Struct(s) => {
@@ -948,12 +953,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if !nullable {
             // Check constraints for "optional"
             for constraint in &type_ctor.constraints {
-                if let raw_ast::Constant::Identifier(id) = constraint {
-                    if id.identifier.to_string() == "optional" {
+                if let raw_ast::Constant::Identifier(id) = constraint
+                    && id.identifier.to_string() == "optional" {
                         nullable = true;
                         break;
                     }
-                }
             }
         }
 
@@ -1114,7 +1118,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_handles,
                         max_out_of_line: max_ool,
                         has_padding: inner_type.type_shape_v2.has_padding
-                            || (inner_type.type_shape_v2.inline_size % 8 != 0),
+                            || !inner_type.type_shape_v2.inline_size.is_multiple_of(8),
                         has_flexible_envelope: false,
                     },
                 }
@@ -1242,8 +1246,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             protocol = format!("{}/{}", library_name, proto_name);
                         }
                     }
-                } else if let Some(param) = type_ctor.parameters.first() {
-                    if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
+                } else if let Some(param) = type_ctor.parameters.first()
+                    && let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
                         let proto_name = id.to_string();
                         if proto_name.contains('/') {
                             protocol = proto_name;
@@ -1251,7 +1255,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             protocol = format!("{}/{}", library_name, proto_name);
                         }
                     }
-                }
 
                 Type {
                     kind_v2: "endpoint".to_string(),
@@ -1312,8 +1315,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_shape_v2: shape.clone(),
                     }
                 } else {
-                    eprintln!("Warning: Type not found: {} (tried {})", name, full_name);
-                    eprintln!("Available shapes: {:?}", self.shapes.keys());
+                    // eprintln!("Warning: Type not found: {} (tried {})", name, full_name);
+                    // eprintln!("Available shapes: {:?}", self.shapes.keys());
                     Type {
                         kind_v2: "unknown".to_string(),
                         subtype: None,
@@ -1561,15 +1564,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     chars.next();
                                 }
                                 chars.next(); // consume }
-                                if let Ok(code) = u32::from_str_radix(&hex, 16) {
-                                    if let Some(ch) = char::from_u32(code) {
+                                if let Ok(code) = u32::from_str_radix(&hex, 16)
+                                    && let Some(ch) = char::from_u32(code) {
                                         let mut b = [0; 2];
                                         for u in ch.encode_utf16(&mut b) {
                                             out.push_str(&format!("\\u{:04x}", u));
                                         }
                                         continue;
                                     }
-                                }
                                 out.push_str("\\u{"); out.push_str(&hex); out.push('}');
                             } else {
                                 out.push_str("\\u");
@@ -1587,14 +1589,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     out.push_str("\\\\");
                 }
-            } else {
-                if c == '"' { out.push_str("\\\""); }
-                else if c == '\\' { out.push_str("\\\\"); }
-                else if c == '\n' { out.push_str("\\n"); }
-                else if c == '\r' { out.push_str("\\r"); }
-                else if c == '\t' { out.push_str("\\t"); }
-                else { out.push(c); }
-            }
+            } else if c == '"' { out.push_str("\\\""); }
+            else if c == '\\' { out.push_str("\\\\"); }
+            else if c == '\n' { out.push_str("\\n"); }
+            else if c == '\r' { out.push_str("\\r"); }
+            else if c == '\t' { out.push_str("\\t"); }
+            else { out.push(c); }
         }
         out.push('"');
         out
@@ -1844,11 +1844,10 @@ fn collect_deps_from_ctor(
 
         // Check if it has an `:optional` constraint
         for constraint in &ctor.constraints {
-            if let raw_ast::Constant::Identifier(id_const) = constraint {
-                if id_const.identifier.to_string() == "optional" {
+            if let raw_ast::Constant::Identifier(id_const) = constraint
+                && id_const.identifier.to_string() == "optional" {
                     return;
                 }
-            }
         }
     }
 
@@ -2114,18 +2113,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             // Check for @selector attribute
             if let Some(ref attr_list) = m.attributes {
                 for attr in &attr_list.attributes {
-                    if attr.name.data() == "selector" {
-                        if let Some(arg) = attr.args.first() {
-                            if let raw_ast::Constant::Literal(ref l) = arg.value {
-                                if l.literal.kind == raw_ast::LiteralKind::String {
+                    if attr.name.data() == "selector"
+                        && let Some(arg) = attr.args.first()
+                            && let raw_ast::Constant::Literal(ref l) = arg.value
+                                && l.literal.kind == raw_ast::LiteralKind::String {
                                     // The string literal includes quotes, but wait, usually we want
                                     // to strip them if the parser leaves them. Let's just use the value.
                                     // Our scanner keeps quotes? Let's assume we need to trim '\"'
                                     selector = l.literal.value.trim_matches('"').to_string();
                                 }
-                            }
-                        }
-                    }
                 }
             }
 

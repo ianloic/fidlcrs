@@ -59,11 +59,10 @@ impl Arguments {
     }
 
     pub fn remaining(&self) -> bool {
-        if let Some(ref response_args) = self.response_file_args {
-            if self.response_file_index < response_args.len() {
+        if let Some(ref response_args) = self.response_file_args
+            && self.response_file_index < response_args.len() {
                 return true;
             }
-        }
         self.index < self.count
     }
 }

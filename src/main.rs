@@ -136,8 +136,7 @@ fn main() {
             process::exit(0);
         } else if flag == "--werror" {
             _warnings_as_errors = true;
-        } else if flag.starts_with("--format=") {
-            let format_val = &flag["--format=".len()..];
+        } else if let Some(format_val) = flag.strip_prefix("--format=") {
             if format_val != "text" && format_val != "json" {
                 fail_with_usage(&format!("Unknown value `{}` for flag `format`\n", format_val));
             }
@@ -246,7 +245,7 @@ fn main() {
         let mut f = fs::File::create(&dep_path).unwrap();
         if let Some(ref jp) = json_path {
             let input_files = filenames.join(" ");
-            write!(f, "{} : {}\n", jp, input_files).unwrap();
+            writeln!(f, "{} : {}", jp, input_files).unwrap();
         }
     }
 }

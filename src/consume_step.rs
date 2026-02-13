@@ -66,7 +66,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
                     if let Some(raw_ast::Layout::Struct(s)) = &method.response_payload {
-                        let (synth_name, full_synth) = if method.has_error {
+                        let (_, full_synth) = if method.has_error {
                             let sn = format!("_{}_Response", method.name.data());
                             (sn.clone(), format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)))
                         } else {

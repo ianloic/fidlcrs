@@ -8,6 +8,12 @@ pub struct Reporter<'a> {
     warnings_as_errors: bool,
 }
 
+impl<'a> Default for Reporter<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> Reporter<'a> {
     pub fn new() -> Self {
         Self {

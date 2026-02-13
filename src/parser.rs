@@ -549,10 +549,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                     }
                 }
                 self.consume_token(TokenKind::RightAngle)?;
-            } else {
-                if let Some(constant) = self.parse_constant() {
-                    constraints.push(constant);
-                }
+            } else if let Some(constant) = self.parse_constant() {
+                constraints.push(constant);
             }
         }
 
@@ -1083,16 +1081,14 @@ impl<'a, 'b> Parser<'a, 'b> {
                     {
                         request_payload = Some(Layout::Union(u));
                     }
-                } else {
-                    if let Some(tc) = self.parse_type_constructor() {
-                        request_payload = Some(Layout::TypeConstructor(tc));
-                    }
+                } else if let Some(tc) = self.parse_type_constructor() {
+                    request_payload = Some(Layout::TypeConstructor(tc));
                 }
 
                 while self.last_token.kind != TokenKind::RightParen
                     && self.last_token.kind != TokenKind::EndOfFile
                 {
-                    self.consume_token(self.last_token.kind.clone())?; // Skip others
+                    self.consume_token(self.last_token.kind)?; // Skip others
                 }
             }
             self.consume_token(TokenKind::RightParen)?;
@@ -1124,16 +1120,14 @@ impl<'a, 'b> Parser<'a, 'b> {
                     {
                         response_payload = Some(Layout::Union(u));
                     }
-                } else {
-                    if let Some(tc) = self.parse_type_constructor() {
-                        response_payload = Some(Layout::TypeConstructor(tc));
-                    }
+                } else if let Some(tc) = self.parse_type_constructor() {
+                    response_payload = Some(Layout::TypeConstructor(tc));
                 }
 
                 while self.last_token.kind != TokenKind::RightParen
                     && self.last_token.kind != TokenKind::EndOfFile
                 {
-                    self.consume_token(self.last_token.kind.clone())?; // Skip others
+                    self.consume_token(self.last_token.kind)?; // Skip others
                 }
             }
             self.consume_token(TokenKind::RightParen)?;

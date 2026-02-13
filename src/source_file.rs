@@ -51,7 +51,11 @@ impl SourceFile {
         // Actually the C++ logic handles \0 as newline too?
         // "if (*it == '\n' || *it == '\0')"
 
-        Self { filename, data, lines }
+        Self {
+            filename,
+            data,
+            lines,
+        }
     }
 
     pub fn filename(&self) -> &str {
@@ -80,7 +84,10 @@ impl SourceFile {
                 // Position is line number (1-based), column (1-based)
                 return Some((
                     line_str,
-                    Position { line: self.lines.len(), column: last_line.len() + 1 },
+                    Position {
+                        line: self.lines.len(),
+                        column: last_line.len() + 1,
+                    },
                 ));
             }
             return None;
@@ -135,7 +142,13 @@ impl SourceFile {
         let line_str = &self.data[line_range.clone()];
         let column = offset - line_range.start + 1;
 
-        Some((line_str, Position { line: line_idx + 1, column }))
+        Some((
+            line_str,
+            Position {
+                line: line_idx + 1,
+                column,
+            },
+        ))
     }
 }
 

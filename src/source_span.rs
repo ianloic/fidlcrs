@@ -1,4 +1,4 @@
-use crate::source_file::{SourceFile, Position};
+use crate::source_file::{Position, SourceFile};
 
 #[derive(Clone, Copy, Debug)]
 pub struct SourceSpan<'a> {
@@ -12,12 +12,20 @@ impl<'a> SourceSpan<'a> {
     }
 
     pub fn position(&self) -> Position {
-        self.source_file.line_containing(self.data).expect("span data must be part of source file").1
+        self.source_file
+            .line_containing(self.data)
+            .expect("span data must be part of source file")
+            .1
     }
 
     pub fn position_str(&self) -> String {
         let pos = self.position();
-        format!("{}:{}:{}", self.source_file.filename(), pos.line, pos.column)
+        format!(
+            "{}:{}:{}",
+            self.source_file.filename(),
+            pos.line,
+            pos.column
+        )
     }
 }
 

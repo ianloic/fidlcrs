@@ -1,7 +1,7 @@
 use std::env;
 use std::fs;
-use std::process;
 use std::io::Write;
+use std::process;
 
 use fidlcrs::compiler::Compiler;
 use fidlcrs::lexer::Lexer;
@@ -24,7 +24,7 @@ fn main() {
     while i < args.len() {
         if args[i] == "--json" {
             if i + 1 < args.len() {
-                json_output = Some(&args[i+1]);
+                json_output = Some(&args[i + 1]);
                 i += 2;
             } else {
                 eprintln!("Missing argument for --json");
@@ -49,7 +49,9 @@ fn main() {
     let mut parser = Parser::new(&mut lexer, &reporter);
 
     // Prime the parser
-    parser.consume_token(TokenKind::StartOfFile).expect("Failed to consume StartOfFile");
+    parser
+        .consume_token(TokenKind::StartOfFile)
+        .expect("Failed to consume StartOfFile");
 
     // println!("Parsing {}...", filename);
     match parser.parse_file() {

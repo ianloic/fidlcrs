@@ -22,12 +22,23 @@ impl ErrorDef {
 }
 
 pub const ERR_INVALID_CHARACTER: ErrorDef = ErrorDef::new(1, "invalid character '{}'");
-pub const ERR_UNEXPECTED_LINE_BREAK: ErrorDef = ErrorDef::new(2, "unexpected line-break in string literal");
+pub const ERR_UNEXPECTED_LINE_BREAK: ErrorDef =
+    ErrorDef::new(2, "unexpected line-break in string literal");
 pub const ERR_INVALID_ESCAPE_SEQUENCE: ErrorDef = ErrorDef::new(3, "invalid escape sequence '{}'");
 pub const ERR_INVALID_HEX_DIGIT: ErrorDef = ErrorDef::new(4, "invalid hex digit '{}'");
-pub const ERR_UNEXPECTED_CONTROL_CHARACTER: ErrorDef = ErrorDef::new(184, "unexpected control character in string literal; use the Unicode escape `\\u{{{:x}}}` instead");
-pub const ERR_UNICODE_ESCAPE_MISSING_BRACES: ErrorDef = ErrorDef::new(185, "Unicode escape must use braces, like `\\u{{a}}` for U+000A");
-pub const ERR_UNICODE_ESCAPE_UNTERMINATED: ErrorDef = ErrorDef::new(186, "Unicode escape is missing a closing brace '}}'");
-pub const ERR_UNICODE_ESCAPE_EMPTY: ErrorDef = ErrorDef::new(187, "Unicode escape must have at least 1 hex digit");
-pub const ERR_UNICODE_ESCAPE_TOO_LONG: ErrorDef = ErrorDef::new(188, "Unicode escape must have at most 6 hex digits");
-pub const ERR_UNICODE_ESCAPE_TOO_LARGE: ErrorDef = ErrorDef::new(189, "invalid Unicode code point '{}'; maximum is 10FFFF");
+pub const ERR_UNEXPECTED_CONTROL_CHARACTER: ErrorDef = ErrorDef::new(
+    184,
+    "unexpected control character in string literal; use the Unicode escape `\\u{{{:x}}}` instead",
+);
+pub const ERR_UNICODE_ESCAPE_MISSING_BRACES: ErrorDef = ErrorDef::new(
+    185,
+    "Unicode escape must use braces, like `\\u{{a}}` for U+000A",
+);
+pub const ERR_UNICODE_ESCAPE_UNTERMINATED: ErrorDef =
+    ErrorDef::new(186, "Unicode escape is missing a closing brace '}}'");
+pub const ERR_UNICODE_ESCAPE_EMPTY: ErrorDef =
+    ErrorDef::new(187, "Unicode escape must have at least 1 hex digit");
+pub const ERR_UNICODE_ESCAPE_TOO_LONG: ErrorDef =
+    ErrorDef::new(188, "Unicode escape must have at most 6 hex digits");
+pub const ERR_UNICODE_ESCAPE_TOO_LARGE: ErrorDef =
+    ErrorDef::new(189, "invalid Unicode code point '{}'; maximum is 10FFFF");

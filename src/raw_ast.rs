@@ -9,7 +9,10 @@ pub struct SourceElement<'a> {
 
 impl<'a> SourceElement<'a> {
     pub fn new(start: Token<'a>, end: Token<'a>) -> Self {
-        Self { start_token: start, end_token: end }
+        Self {
+            start_token: start,
+            end_token: end,
+        }
     }
 
     pub fn span(&self) -> SourceSpan<'a> {

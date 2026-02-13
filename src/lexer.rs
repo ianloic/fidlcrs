@@ -64,7 +64,12 @@ impl<'a> Lexer<'a> {
 
     fn finish(&mut self, kind: TokenKind) -> Token<'a> {
         let (newlines, data) = self.reset(TokenKind::Identifier); // kind arg to reset is ignored in C++ too?
-        Token::new(SourceSpan::new(data, self.source_file), kind, TokenSubkind::None, newlines)
+        Token::new(
+            SourceSpan::new(data, self.source_file),
+            kind,
+            TokenSubkind::None,
+            newlines,
+        )
     }
 
     // Lexer implementation methods...

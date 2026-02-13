@@ -12,7 +12,7 @@ FILES=(
     "enum.test.fidl"
     "struct.test.fidl"
     "table.test.fidl"
-    # "union.test.fidl"
+    "union.test.fidl"
   
 
     # "anonymous.test.fidl"

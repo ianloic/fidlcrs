@@ -14,7 +14,12 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(lexer: &'a mut Lexer<'a>, reporter: &'a Reporter<'a>) -> Self {
         let last_token = lexer.lex();
-        Self { lexer, reporter, last_token, previous_token: None }
+        Self {
+            lexer,
+            reporter,
+            last_token,
+            previous_token: None,
+        }
     }
 
     pub fn parse_file(&mut self) -> Option<File<'a>> {
@@ -54,104 +59,116 @@ impl<'a> Parser<'a> {
                     self.last_token = self.lexer.lex();
                 }
             } else if self.last_token.subkind == TokenSubkind::Type {
-                 if let Some(decl) = self.parse_type_declaration(attributes.take()) {
+                if let Some(decl) = self.parse_type_declaration(attributes.take()) {
                     type_decls.push(decl);
                 } else {
                     self.last_token = self.lexer.lex();
                 }
             } else if self.last_token.subkind == TokenSubkind::Struct {
-                 if let Some(decl) = self.parse_struct_declaration(attributes.take(), false) {
+                if let Some(decl) = self.parse_struct_declaration(attributes.take(), false) {
                     struct_decls.push(decl);
-                 } else {
+                } else {
                     self.last_token = self.lexer.lex();
-                 }
+                }
             } else if self.last_token.subkind == TokenSubkind::Enum {
-                 if let Some(decl) = self.parse_enum_declaration(attributes.take(), None) {
+                if let Some(decl) = self.parse_enum_declaration(attributes.take(), None) {
                     enum_decls.push(decl);
-                 } else {
+                } else {
                     self.last_token = self.lexer.lex();
-                 }
+                }
             } else if self.last_token.subkind == TokenSubkind::Bits {
-                 if let Some(decl) = self.parse_bits_declaration(attributes.take(), None) {
+                if let Some(decl) = self.parse_bits_declaration(attributes.take(), None) {
                     bits_decls.push(decl);
-                 } else {
+                } else {
                     self.last_token = self.lexer.lex();
-                 }
+                }
             } else if self.last_token.subkind == TokenSubkind::Union {
-                 // Default to Flexible if not specified by Strict/Flexible keywords
-                 if let Some(decl) = self.parse_union_declaration(attributes.take(), Strictness::Flexible, false) {
+                // Default to Flexible if not specified by Strict/Flexible keywords
+                if let Some(decl) =
+                    self.parse_union_declaration(attributes.take(), Strictness::Flexible, false)
+                {
                     union_decls.push(decl);
-                 } else {
+                } else {
                     self.last_token = self.lexer.lex();
-                 }
+                }
             } else if self.last_token.subkind == TokenSubkind::Table {
-                 if let Some(decl) = self.parse_table_declaration(attributes.take(), false) {
+                if let Some(decl) = self.parse_table_declaration(attributes.take(), false) {
                     table_decls.push(decl);
-                 } else {
+                } else {
                     self.last_token = self.lexer.lex();
-                 }
+                }
             } else if self.last_token.subkind == TokenSubkind::Protocol {
-                 if let Some(decl) = self.parse_protocol_declaration(attributes.take()) {
+                if let Some(decl) = self.parse_protocol_declaration(attributes.take()) {
                     protocol_decls.push(decl);
-                 } else {
+                } else {
                     self.last_token = self.lexer.lex();
-                 }
+                }
             } else if self.last_token.subkind == TokenSubkind::Resource {
-                 self.consume_token_with_subkind(TokenSubkind::Resource);
-                 if self.last_token.subkind == TokenSubkind::Struct {
-                     if let Some(decl) = self.parse_struct_declaration(attributes.take(), true) {
-                         struct_decls.push(decl);
-                     } else {
+                self.consume_token_with_subkind(TokenSubkind::Resource);
+                if self.last_token.subkind == TokenSubkind::Struct {
+                    if let Some(decl) = self.parse_struct_declaration(attributes.take(), true) {
+                        struct_decls.push(decl);
+                    } else {
                         self.last_token = self.lexer.lex();
-                     }
-                 } else if self.last_token.subkind == TokenSubkind::Union {
-                     let strictness = self.parse_strictness();
-                     if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, true) {
-                         union_decls.push(decl);
-                     } else {
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Union {
+                    let strictness = self.parse_strictness();
+                    if let Some(decl) =
+                        self.parse_union_declaration(attributes.take(), strictness, true)
+                    {
+                        union_decls.push(decl);
+                    } else {
                         self.last_token = self.lexer.lex();
-                     }
-                 } else if self.last_token.subkind == TokenSubkind::Table {
-                     if let Some(decl) = self.parse_table_declaration(attributes.take(), true) {
-                         table_decls.push(decl);
-                     } else {
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Table {
+                    if let Some(decl) = self.parse_table_declaration(attributes.take(), true) {
+                        table_decls.push(decl);
+                    } else {
                         self.last_token = self.lexer.lex();
-                     }
-                 } else {
-                     // If 'resource' is followed by something unexpected
-                     self.last_token = self.lexer.lex();
-                 }
-            } else if self.last_token.subkind == TokenSubkind::Strict || self.last_token.subkind == TokenSubkind::Flexible {
-                 let strictness = self.parse_strictness();
-                 let is_resource = if self.last_token.subkind == TokenSubkind::Resource {
-                     self.consume_token_with_subkind(TokenSubkind::Resource);
-                     true
-                 } else {
-                     false
-                 };
+                    }
+                } else {
+                    // If 'resource' is followed by something unexpected
+                    self.last_token = self.lexer.lex();
+                }
+            } else if self.last_token.subkind == TokenSubkind::Strict
+                || self.last_token.subkind == TokenSubkind::Flexible
+            {
+                let strictness = self.parse_strictness();
+                let is_resource = if self.last_token.subkind == TokenSubkind::Resource {
+                    self.consume_token_with_subkind(TokenSubkind::Resource);
+                    true
+                } else {
+                    false
+                };
 
-                 if self.last_token.subkind == TokenSubkind::Union {
-                     if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, is_resource) {
-                         union_decls.push(decl);
-                     } else {
+                if self.last_token.subkind == TokenSubkind::Union {
+                    if let Some(decl) =
+                        self.parse_union_declaration(attributes.take(), strictness, is_resource)
+                    {
+                        union_decls.push(decl);
+                    } else {
                         self.last_token = self.lexer.lex();
-                     }
-                 } else if self.last_token.subkind == TokenSubkind::Enum {
-                     if let Some(decl) = self.parse_enum_declaration(attributes.take(), Some(strictness)) {
-                         enum_decls.push(decl);
-                     } else {
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Enum {
+                    if let Some(decl) =
+                        self.parse_enum_declaration(attributes.take(), Some(strictness))
+                    {
+                        enum_decls.push(decl);
+                    } else {
                         self.last_token = self.lexer.lex();
-                     }
-                 } else if self.last_token.subkind == TokenSubkind::Bits {
-                     if let Some(decl) = self.parse_bits_declaration(attributes.take(), Some(strictness)) {
-                         bits_decls.push(decl);
-                     } else {
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Bits {
+                    if let Some(decl) =
+                        self.parse_bits_declaration(attributes.take(), Some(strictness))
+                    {
+                        bits_decls.push(decl);
+                    } else {
                         self.last_token = self.lexer.lex();
-                     }
-                 } else {
-                     // If 'strict'/'flexible' is followed by something unexpected
-                     self.last_token = self.lexer.lex();
-                 }
+                    }
+                } else {
+                    // If 'strict'/'flexible' is followed by something unexpected
+                    self.last_token = self.lexer.lex();
+                }
             } else {
                 // If attributes were parsed but not consumed by a declaration,
                 // or if an unexpected token is encountered.
@@ -210,7 +227,10 @@ impl<'a> Parser<'a> {
         }
 
         let end = self.previous_token.as_ref().unwrap().clone();
-        Some(CompoundIdentifier { element: SourceElement::new(start, end), components })
+        Some(CompoundIdentifier {
+            element: SourceElement::new(start, end),
+            components,
+        })
     }
 
     pub fn maybe_parse_attribute_list(&mut self) -> Option<AttributeList<'a>> {
@@ -327,7 +347,10 @@ impl<'a> Parser<'a> {
         }
 
         let end = self.previous_token.as_ref().unwrap().clone();
-        Some(AttributeList { element: SourceElement::new(start, end), attributes })
+        Some(AttributeList {
+            element: SourceElement::new(start, end),
+            attributes,
+        })
     }
 
     pub fn parse_const_declaration(
@@ -500,10 +523,10 @@ impl<'a> Parser<'a> {
         }
 
         if self.last_token.kind == TokenKind::Colon {
-             self.consume_token(TokenKind::Colon)?;
-             if let Some(constant) = self.parse_constant() {
-                 constraints.push(constant);
-             }
+            self.consume_token(TokenKind::Colon)?;
+            if let Some(constant) = self.parse_constant() {
+                constraints.push(constant);
+            }
         }
 
         let nullable = if self.last_token.kind == TokenKind::Question {
@@ -532,12 +555,16 @@ impl<'a> Parser<'a> {
             // Let's assume compound identifier for now
             let id = self.parse_compound_identifier()?;
             return Some(LayoutParameter::Identifier(id));
-        } else if self.last_token.kind == TokenKind::NumericLiteral || self.last_token.kind == TokenKind::StringLiteral || self.last_token.subkind == TokenSubkind::True || self.last_token.subkind == TokenSubkind::False {
-             let literal = self.parse_literal()?;
-             return Some(LayoutParameter::Literal(LiteralConstant {
-                 element: literal.element.clone(),
-                 literal,
-             }));
+        } else if self.last_token.kind == TokenKind::NumericLiteral
+            || self.last_token.kind == TokenKind::StringLiteral
+            || self.last_token.subkind == TokenSubkind::True
+            || self.last_token.subkind == TokenSubkind::False
+        {
+            let literal = self.parse_literal()?;
+            return Some(LayoutParameter::Literal(LiteralConstant {
+                element: literal.element.clone(),
+                literal,
+            }));
         }
         None
     }
@@ -570,7 +597,10 @@ impl<'a> Parser<'a> {
             || self.last_token.kind == TokenKind::NumericLiteral
         {
             let literal = self.parse_literal()?;
-            Some(Constant::Literal(LiteralConstant { element: literal.element.clone(), literal }))
+            Some(Constant::Literal(LiteralConstant {
+                element: literal.element.clone(),
+                literal,
+            }))
         } else {
             None
         }
@@ -673,9 +703,9 @@ impl<'a> Parser<'a> {
         self.consume_token_with_subkind(TokenSubkind::Enum)?;
 
         let name = if self.last_token.kind == TokenKind::Identifier {
-             Some(self.parse_identifier()?)
+            Some(self.parse_identifier()?)
         } else {
-             None
+            None
         };
 
         let subtype = if self.last_token.kind == TokenKind::Colon {
@@ -746,9 +776,9 @@ impl<'a> Parser<'a> {
         self.consume_token_with_subkind(TokenSubkind::Bits)?;
 
         let name = if self.last_token.kind == TokenKind::Identifier {
-             Some(self.parse_identifier()?)
+            Some(self.parse_identifier()?)
         } else {
-             None
+            None
         };
 
         let subtype = if self.last_token.kind == TokenKind::Colon {
@@ -821,9 +851,9 @@ impl<'a> Parser<'a> {
         self.consume_token_with_subkind(TokenSubkind::Union)?;
 
         let name = if self.last_token.kind == TokenKind::Identifier {
-             Some(self.parse_identifier()?)
+            Some(self.parse_identifier()?)
         } else {
-             None
+            None
         };
 
         let mut members = vec![];
@@ -866,9 +896,9 @@ impl<'a> Parser<'a> {
         self.consume_token_with_subkind(TokenSubkind::Table)?;
 
         let name = if self.last_token.kind == TokenKind::Identifier {
-             Some(self.parse_identifier()?)
+            Some(self.parse_identifier()?)
         } else {
-             None
+            None
         };
 
         let mut members = vec![];
@@ -907,9 +937,12 @@ impl<'a> Parser<'a> {
             .unwrap_or_else(|| self.last_token.clone());
 
         let mut openness = None;
-        if self.last_token.subkind == TokenSubkind::Closed || self.last_token.subkind == TokenSubkind::Open || self.last_token.subkind == TokenSubkind::Ajar {
-             openness = Some(self.last_token.clone());
-             self.consume_token(TokenKind::Identifier)?;
+        if self.last_token.subkind == TokenSubkind::Closed
+            || self.last_token.subkind == TokenSubkind::Open
+            || self.last_token.subkind == TokenSubkind::Ajar
+        {
+            openness = Some(self.last_token.clone());
+            self.consume_token(TokenKind::Identifier)?;
         }
 
         self.consume_token_with_subkind(TokenSubkind::Protocol)?;
@@ -923,10 +956,10 @@ impl<'a> Parser<'a> {
         {
             let attrs = self.maybe_parse_attribute_list();
             if self.last_token.subkind == TokenSubkind::Compose {
-                 // Compose is mostly ignored for now by our AST simplification
-                 self.consume_token_with_subkind(TokenSubkind::Compose)?;
-                 self.parse_compound_identifier()?;
-                 self.consume_token(TokenKind::Semicolon)?;
+                // Compose is mostly ignored for now by our AST simplification
+                self.consume_token_with_subkind(TokenSubkind::Compose)?;
+                self.parse_compound_identifier()?;
+                self.consume_token(TokenKind::Semicolon)?;
             } else if let Some(method) = self.parse_protocol_method(attrs) {
                 methods.push(method);
             } else {
@@ -955,16 +988,18 @@ impl<'a> Parser<'a> {
             .unwrap_or_else(|| self.last_token.clone());
 
         let mut strictness = None;
-        if self.last_token.subkind == TokenSubkind::Strict || self.last_token.subkind == TokenSubkind::Flexible {
-             strictness = Some(self.last_token.clone());
-             self.consume_token(TokenKind::Identifier)?;
+        if self.last_token.subkind == TokenSubkind::Strict
+            || self.last_token.subkind == TokenSubkind::Flexible
+        {
+            strictness = Some(self.last_token.clone());
+            self.consume_token(TokenKind::Identifier)?;
         }
 
         let is_event = if self.last_token.kind == TokenKind::Arrow {
-             self.consume_token(TokenKind::Arrow)?;
-             true
+            self.consume_token(TokenKind::Arrow)?;
+            true
         } else {
-             false
+            false
         };
 
         let name = self.parse_identifier()?;
@@ -973,35 +1008,38 @@ impl<'a> Parser<'a> {
         let mut request_payload = None;
 
         if !is_event {
-             has_request = true;
-             // Expect parameter list for requests
-             self.consume_token(TokenKind::LeftParen)?;
-             if self.last_token.kind != TokenKind::RightParen {
-                  // Actually FIDL methods specify parameters inside paren: Method(payload PayloadType); or Method(struct { ... });
-                  // For simplicity in JSON IR, if there's an identifier, treat parameter as payload type.
-                  if self.last_token.subkind == TokenSubkind::Struct {
-                       if let Some(s) = self.parse_struct_declaration(None, false) {
-                           request_payload = Some(Layout::Struct(s));
-                       }
-                  } else if self.last_token.subkind == TokenSubkind::Table {
-                       if let Some(t) = self.parse_table_declaration(None, false) {
-                           request_payload = Some(Layout::Table(t));
-                       }
-                  } else if self.last_token.subkind == TokenSubkind::Union {
-                       if let Some(u) = self.parse_union_declaration(None, Strictness::Flexible, false) {
-                           request_payload = Some(Layout::Union(u));
-                       }
-                  } else {
-                       if let Some(tc) = self.parse_type_constructor() {
-                           request_payload = Some(Layout::TypeConstructor(tc));
-                       }
-                  }
+            has_request = true;
+            // Expect parameter list for requests
+            self.consume_token(TokenKind::LeftParen)?;
+            if self.last_token.kind != TokenKind::RightParen {
+                // Actually FIDL methods specify parameters inside paren: Method(payload PayloadType); or Method(struct { ... });
+                // For simplicity in JSON IR, if there's an identifier, treat parameter as payload type.
+                if self.last_token.subkind == TokenSubkind::Struct {
+                    if let Some(s) = self.parse_struct_declaration(None, false) {
+                        request_payload = Some(Layout::Struct(s));
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Table {
+                    if let Some(t) = self.parse_table_declaration(None, false) {
+                        request_payload = Some(Layout::Table(t));
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Union {
+                    if let Some(u) = self.parse_union_declaration(None, Strictness::Flexible, false)
+                    {
+                        request_payload = Some(Layout::Union(u));
+                    }
+                } else {
+                    if let Some(tc) = self.parse_type_constructor() {
+                        request_payload = Some(Layout::TypeConstructor(tc));
+                    }
+                }
 
-                  while self.last_token.kind != TokenKind::RightParen && self.last_token.kind != TokenKind::EndOfFile {
-                       self.consume_token(self.last_token.kind.clone())?; // Skip others
-                  }
-             }
-             self.consume_token(TokenKind::RightParen)?;
+                while self.last_token.kind != TokenKind::RightParen
+                    && self.last_token.kind != TokenKind::EndOfFile
+                {
+                    self.consume_token(self.last_token.kind.clone())?; // Skip others
+                }
+            }
+            self.consume_token(TokenKind::RightParen)?;
         }
 
         let mut has_response = false;
@@ -1010,44 +1048,47 @@ impl<'a> Parser<'a> {
         let mut error_payload = None;
 
         if is_event || self.last_token.kind == TokenKind::Arrow {
-             if !is_event {
-                 self.consume_token(TokenKind::Arrow)?;
-             }
-             has_response = true;
+            if !is_event {
+                self.consume_token(TokenKind::Arrow)?;
+            }
+            has_response = true;
 
-             self.consume_token(TokenKind::LeftParen)?;
-             if self.last_token.kind != TokenKind::RightParen {
-                  if self.last_token.subkind == TokenSubkind::Struct {
-                       if let Some(s) = self.parse_struct_declaration(None, false) {
-                           response_payload = Some(Layout::Struct(s));
-                       }
-                  } else if self.last_token.subkind == TokenSubkind::Table {
-                       if let Some(t) = self.parse_table_declaration(None, false) {
-                           response_payload = Some(Layout::Table(t));
-                       }
-                  } else if self.last_token.subkind == TokenSubkind::Union {
-                       if let Some(u) = self.parse_union_declaration(None, Strictness::Flexible, false) {
-                           response_payload = Some(Layout::Union(u));
-                       }
-                  } else {
-                       if let Some(tc) = self.parse_type_constructor() {
-                           response_payload = Some(Layout::TypeConstructor(tc));
-                       }
-                  }
+            self.consume_token(TokenKind::LeftParen)?;
+            if self.last_token.kind != TokenKind::RightParen {
+                if self.last_token.subkind == TokenSubkind::Struct {
+                    if let Some(s) = self.parse_struct_declaration(None, false) {
+                        response_payload = Some(Layout::Struct(s));
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Table {
+                    if let Some(t) = self.parse_table_declaration(None, false) {
+                        response_payload = Some(Layout::Table(t));
+                    }
+                } else if self.last_token.subkind == TokenSubkind::Union {
+                    if let Some(u) = self.parse_union_declaration(None, Strictness::Flexible, false)
+                    {
+                        response_payload = Some(Layout::Union(u));
+                    }
+                } else {
+                    if let Some(tc) = self.parse_type_constructor() {
+                        response_payload = Some(Layout::TypeConstructor(tc));
+                    }
+                }
 
-                  while self.last_token.kind != TokenKind::RightParen && self.last_token.kind != TokenKind::EndOfFile {
-                       self.consume_token(self.last_token.kind.clone())?; // Skip others
-                  }
-             }
-             self.consume_token(TokenKind::RightParen)?;
+                while self.last_token.kind != TokenKind::RightParen
+                    && self.last_token.kind != TokenKind::EndOfFile
+                {
+                    self.consume_token(self.last_token.kind.clone())?; // Skip others
+                }
+            }
+            self.consume_token(TokenKind::RightParen)?;
 
-             if self.last_token.subkind == TokenSubkind::Error {
-                  self.consume_token_with_subkind(TokenSubkind::Error)?;
-                  has_error = true;
-                  if let Some(tc) = self.parse_type_constructor() {
-                      error_payload = Some(Layout::TypeConstructor(tc));
-                  }
-             }
+            if self.last_token.subkind == TokenSubkind::Error {
+                self.consume_token_with_subkind(TokenSubkind::Error)?;
+                has_error = true;
+                if let Some(tc) = self.parse_type_constructor() {
+                    error_payload = Some(Layout::TypeConstructor(tc));
+                }
+            }
         }
 
         self.consume_token(TokenKind::Semicolon)?;
@@ -1095,7 +1136,6 @@ impl<'a> Parser<'a> {
             self.consume_token_with_subkind(TokenSubkind::Strict);
             strictness = Some(Strictness::Strict);
         } else if self.last_token.subkind == TokenSubkind::Flexible {
-
             self.consume_token_with_subkind(TokenSubkind::Flexible);
             strictness = Some(Strictness::Flexible);
         }
@@ -1170,7 +1210,9 @@ impl<'a> Parser<'a> {
         let _token = self.consume_token(TokenKind::Identifier)?;
         let end = self.previous_token.as_ref()?.clone();
 
-        Some(Identifier { element: SourceElement::new(start, end) })
+        Some(Identifier {
+            element: SourceElement::new(start, end),
+        })
     }
 }
 
@@ -1187,9 +1229,13 @@ mod tests {
         let reporter = Reporter::new();
         let mut lexer = Lexer::new(&source, &reporter);
         let mut parser = Parser::new(&mut lexer, &reporter);
-        parser.consume_token(TokenKind::StartOfFile).expect("failed to consume StartOfFile");
+        parser
+            .consume_token(TokenKind::StartOfFile)
+            .expect("failed to consume StartOfFile");
 
-        let id = parser.parse_identifier().expect("failed to parse identifier");
+        let id = parser
+            .parse_identifier()
+            .expect("failed to parse identifier");
         assert_eq!(id.data(), "foobar");
     }
 
@@ -1202,7 +1248,9 @@ mod tests {
 
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
-        let lib = parser.parse_library_declaration(None).expect("parse library");
+        let lib = parser
+            .parse_library_declaration(None)
+            .expect("parse library");
         assert_eq!(lib.path.components.len(), 2);
         assert_eq!(lib.path.components[0].data(), "foo");
         assert_eq!(lib.path.components[1].data(), "bar");
@@ -1223,15 +1271,19 @@ mod tests {
 
     #[test]
     fn test_parse_struct_decl() {
-        let source =
-            SourceFile::new("test.fidl".to_string(), "struct Foo { bar uint8; };".to_string());
+        let source = SourceFile::new(
+            "test.fidl".to_string(),
+            "struct Foo { bar uint8; };".to_string(),
+        );
         let reporter = Reporter::new();
         let mut lexer = Lexer::new(&source, &reporter);
         let mut parser = Parser::new(&mut lexer, &reporter);
 
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
-        let decl = parser.parse_struct_declaration(None, false).expect("parse struct");
+        let decl = parser
+            .parse_struct_declaration(None, false)
+            .expect("parse struct");
         assert_eq!(decl.name.as_ref().unwrap().data(), "Foo");
         assert_eq!(decl.members.len(), 1);
         assert_eq!(decl.members[0].name.data(), "bar");
@@ -1258,7 +1310,10 @@ struct MyStruct {
         assert_eq!(file.const_decls.len(), 1);
         assert_eq!(file.struct_decls.len(), 1);
         assert_eq!(file.const_decls[0].name.data(), "FOO");
-        assert_eq!(file.struct_decls[0].name.as_ref().unwrap().data(), "MyStruct");
+        assert_eq!(
+            file.struct_decls[0].name.as_ref().unwrap().data(),
+            "MyStruct"
+        );
     }
 
     #[test]
@@ -1271,7 +1326,9 @@ struct MyStruct {
 
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
-        let decl = parser.parse_enum_declaration(None, None).expect("Failed to parse enum");
+        let decl = parser
+            .parse_enum_declaration(None, None)
+            .expect("Failed to parse enum");
         assert_eq!(decl.name.as_ref().unwrap().data(), "Color");
         assert!(decl.subtype.is_some());
         assert_eq!(decl.members.len(), 2);
@@ -1288,7 +1345,9 @@ struct MyStruct {
 
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
-        let decl = parser.parse_bits_declaration(None, None).expect("parse bits");
+        let decl = parser
+            .parse_bits_declaration(None, None)
+            .expect("parse bits");
         assert_eq!(decl.name.as_ref().unwrap().data(), "Flags");
         assert_eq!(decl.members.len(), 2);
     }
@@ -1303,7 +1362,9 @@ struct MyStruct {
 
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
-        let decl = parser.parse_union_declaration(None, Strictness::Flexible, false).expect("parse union");
+        let decl = parser
+            .parse_union_declaration(None, Strictness::Flexible, false)
+            .expect("parse union");
         assert_eq!(decl.name.as_ref().unwrap().data(), "MyUnion");
         assert_eq!(decl.members.len(), 2);
         assert!(decl.members[0].ordinal.is_some());
@@ -1319,7 +1380,9 @@ struct MyStruct {
 
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
-        let decl = parser.parse_table_declaration(None, false).expect("parse table");
+        let decl = parser
+            .parse_table_declaration(None, false)
+            .expect("parse table");
         assert_eq!(decl.name.as_ref().unwrap().data(), "MyTable");
         assert_eq!(decl.members.len(), 2);
         assert!(decl.members[1].name.is_none()); // Reserved
@@ -1336,12 +1399,15 @@ struct MyStruct {
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
         if parser.peek().kind == TokenKind::EndOfFile {
-             panic!("Parser got EndOfFile immediately! Source data: '{}'", source.data());
+            panic!(
+                "Parser got EndOfFile immediately! Source data: '{}'",
+                source.data()
+            );
         }
 
         let decl = parser.parse_type_declaration(None);
         if decl.is_none() {
-             panic!("parse type failed. Current token: {:?}", parser.peek());
+            panic!("parse type failed. Current token: {:?}", parser.peek());
         }
         let decl = decl.unwrap();
         assert_eq!(decl.name.data(), "MyStruct");

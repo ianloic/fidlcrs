@@ -76,7 +76,12 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
-    pub fn new(span: SourceSpan<'a>, kind: TokenKind, subkind: TokenSubkind, leading_newlines: u16) -> Self {
+    pub fn new(
+        span: SourceSpan<'a>,
+        kind: TokenKind,
+        subkind: TokenSubkind,
+        leading_newlines: u16,
+    ) -> Self {
         Self {
             span,
             kind,

@@ -9,8 +9,10 @@ use std::path::PathBuf;
 
 fn get_workspace_root() -> PathBuf {
     // Try to find the root by traversing up from the current directory or executable path
-    let mut current =
-        std::env::current_exe().ok().or_else(|| std::env::current_dir().ok()).unwrap();
+    let mut current = std::env::current_exe()
+        .ok()
+        .or_else(|| std::env::current_dir().ok())
+        .unwrap();
     loop {
         if current.join(".jiri_root").exists() {
             return current;
@@ -131,7 +133,11 @@ fn compare_json(path: &str, actual: &Value, expected: &Value) -> bool {
                 if k == "has_padding" {
                     continue;
                 }
-                let new_path = if path.is_empty() { k.clone() } else { format!("{}.{}", path, k) };
+                let new_path = if path.is_empty() {
+                    k.clone()
+                } else {
+                    format!("{}.{}", path, k)
+                };
                 if let Some(av) = a.get(k) {
                     if !compare_json(&new_path, av, v) {
                         is_match = false;
@@ -147,7 +153,11 @@ fn compare_json(path: &str, actual: &Value, expected: &Value) -> bool {
                     continue;
                 }
                 if !e.contains_key(k) {
-                    let new_path = if path.is_empty() { k.clone() } else { format!("{}.{}", path, k) };
+                    let new_path = if path.is_empty() {
+                        k.clone()
+                    } else {
+                        format!("{}.{}", path, k)
+                    };
                     println!("Extra key: {}", new_path);
                     is_match = false;
                 }
@@ -163,12 +173,20 @@ fn compare_json(path: &str, actual: &Value, expected: &Value) -> bool {
                 e_sorted.sort_by(|v1, v2| v1.as_str().unwrap().cmp(v2.as_str().unwrap()));
 
                 if a_sorted != e_sorted {
-                     println!("Value mismatch at {}: actual {:?}, expected {:?}", path, a_sorted, e_sorted);
-                     is_match = false;
+                    println!(
+                        "Value mismatch at {}: actual {:?}, expected {:?}",
+                        path, a_sorted, e_sorted
+                    );
+                    is_match = false;
                 }
             } else {
                 if a.len() != e.len() {
-                    println!("Array length mismatch at {}: actual {}, expected {}", path, a.len(), e.len());
+                    println!(
+                        "Array length mismatch at {}: actual {}, expected {}",
+                        path,
+                        a.len(),
+                        e.len()
+                    );
                     is_match = false;
                 }
                 for (i, (v1, v2)) in a.iter().zip(e.iter()).enumerate() {
@@ -181,7 +199,10 @@ fn compare_json(path: &str, actual: &Value, expected: &Value) -> bool {
         }
         (a, e) => {
             if a != e {
-                println!("Value mismatch at {}: actual {:?}, expected {:?}", path, a, e);
+                println!(
+                    "Value mismatch at {}: actual {:?}, expected {:?}",
+                    path, a, e
+                );
                 is_match = false;
             }
         }

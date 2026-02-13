@@ -10,7 +10,10 @@ pub struct Reporter<'a> {
 
 impl<'a> Reporter<'a> {
     pub fn new() -> Self {
-        Self { diagnostics: RefCell::new(Vec::new()), warnings_as_errors: false }
+        Self {
+            diagnostics: RefCell::new(Vec::new()),
+            warnings_as_errors: false,
+        }
     }
 
     pub fn fail(&self, def: ErrorDef, span: SourceSpan<'a>, args: &[&dyn std::fmt::Debug]) {

@@ -84,8 +84,20 @@ for file in "${FILES[@]}"; do
         contains_drivers=true
     fi
 
+    CMD=("./target/debug/fidlcrs" "--json" "goldens/$name.json")
+
+    for flag in "${experimental_flags[@]}"; do
+        CMD+=("--experimental" "$flag")
+    done
+
+    if [ -n "$versioned" ]; then
+        CMD+=("--versioned" "$versioned")
+    fi
+
+    CMD+=("--files" "fidlc/testdata/$file")
+
     echo "Generating JSON IR for $file -> $name.json"
-    ./target/debug/fidlcrs --json "goldens/$name.json" --files "fidlc/testdata/$file"
+    "${CMD[@]}"
     diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true
 done
 

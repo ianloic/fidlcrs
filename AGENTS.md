@@ -35,6 +35,7 @@ Test runner: `src/golden_test.rs`.
  - NEVER modify any files in the `fidlc` directory. These are for reference ONLY.
  - there's a JSON Schema for FIDL JSON IR files at `fidlc/schema.json`.
  - If you need to understand how to implement a feature, look at the C++ implementation in `fidlc/src` and try to replicate it in Rust.
+ - If you need to create temporary files as part of your work, ONLY create them in the `tmp` directory, and NEVER commit files in `tmp`.
 
 ## Discoveries & Gotchas
 - **Serde Attributes:** Use `#[serde(skip_serializing_if = "Vec::is_empty", default)]` for optional list fields like `maybe_attributes` in `json_generator.rs` to match the exact JSON emission from the canonical `fidlc` compiler, which completely omits them instead of outputting `[]`.

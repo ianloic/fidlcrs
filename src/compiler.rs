@@ -1,6 +1,6 @@
 use crate::json_generator::*;
 use crate::raw_ast;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::source_file::SourceFile;
 
@@ -17,6 +17,7 @@ enum RawDecl<'node, 'src> {
     Bits(&'node raw_ast::BitsDeclaration<'src>),
     Union(&'node raw_ast::UnionDeclaration<'src>),
     Table(&'node raw_ast::TableDeclaration<'src>),
+    Protocol(&'node raw_ast::ProtocolDeclaration<'src>),
     Type(&'node raw_ast::TypeDeclaration<'src>),
 }
 
@@ -72,6 +73,12 @@ impl<'src> Compiler<'src> {
              raw_decls.insert(full_name, RawDecl::Table(decl));
         }
 
+        for decl in &file.protocol_decls {
+             let name = decl.name.data();
+             let full_name = format!("{}/{}", library_name, name);
+             raw_decls.insert(full_name, RawDecl::Protocol(decl));
+        }
+
         // 2. Build Dependency Graph
         let mut decl_kinds = HashMap::new();
         for (name, decl) in &raw_decls {
@@ -79,6 +86,7 @@ impl<'src> Compiler<'src> {
                 RawDecl::Struct(_) => "struct",
                 RawDecl::Union(_) => "union",
                 RawDecl::Table(_) => "table",
+                RawDecl::Protocol(_) => "protocol",
                 RawDecl::Enum(_) => "enum",
                 RawDecl::Bits(_) => "bits",
                 RawDecl::Type(t) => match t.layout {
@@ -101,7 +109,8 @@ impl<'src> Compiler<'src> {
         let mut bits_declarations = vec![];
         let mut union_declarations = vec![];
         let mut table_declarations = vec![];
-        let mut declarations = HashMap::new();
+        let mut protocol_declarations = vec![];
+        let mut declarations_ignored = indexmap::IndexMap::new();
         let mut declaration_order = vec![];
 
         for name in &sorted_names {
@@ -111,30 +120,25 @@ impl<'src> Compiler<'src> {
                     RawDecl::Type(t) => {
                         if let raw_ast::Layout::Struct(ref s) = t.layout {
                              // It is a struct defined via type alias syntax: type S = struct { ... };
-                             let compiled = self.compile_struct(t.name.data(), s, &library_name, Some(&t.name.element));
+                             let compiled = self.compile_struct(t.name.data(), s, &library_name, Some(&t.name.element), None);
                              struct_declarations.push(compiled);
-                             declarations.insert(name.clone(), "struct".to_string());
                              declaration_order.push(name.clone());
                         } else if let raw_ast::Layout::Enum(ref e) = t.layout {
                              let compiled = self.compile_enum(t.name.data(), e, &library_name, Some(&t.name.element));
                              enum_declarations.push(compiled);
-                             declarations.insert(name.clone(), "enum".to_string());
                              declaration_order.push(name.clone());
 
                         } else if let raw_ast::Layout::Bits(ref b) = t.layout {
                              let compiled = self.compile_bits(t.name.data(), b, &library_name, Some(&t.name.element));
                              bits_declarations.push(compiled);
-                             declarations.insert(name.clone(), "bits".to_string());
                              declaration_order.push(name.clone());
                         } else if let raw_ast::Layout::Table(ref ta) = t.layout {
                              let compiled = self.compile_table(t.name.data(), ta, &library_name, Some(&t.name.element), t.attributes.as_deref());
                              table_declarations.push(compiled);
-                             declarations.insert(name.clone(), "table".to_string());
                              declaration_order.push(name.clone());
                         } else if let raw_ast::Layout::Union(ref u) = t.layout {
                              let compiled = self.compile_union(t.name.data(), u, &library_name, Some(&t.name.element), t.attributes.as_deref());
                              union_declarations.push(compiled);
-                             declarations.insert(name.clone(), "union".to_string());
                              declaration_order.push(name.clone());
                         }
                     }
@@ -144,11 +148,10 @@ impl<'src> Compiler<'src> {
                         // We need short name for compile_struct
                         // The key in map is full_name.
                         let short_name = s.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_struct(short_name, s, &library_name, None);
+                        let compiled = self.compile_struct(short_name, s, &library_name, None, None);
                         if s.name.is_some() {
                             struct_declarations.push(compiled);
-                            declarations.insert(name.clone(), "struct".to_string());
-                            declaration_order.push(name.clone());
+                            declaration_order.push(format!("{}/{}", library_name, s.name.as_ref().unwrap().data()));
                         }
                     }
                     RawDecl::Enum(e) => {
@@ -156,8 +159,7 @@ impl<'src> Compiler<'src> {
                         let compiled = self.compile_enum(short_name, e, &library_name, None);
                         if e.name.is_some() {
                             enum_declarations.push(compiled);
-                            declarations.insert(name.clone(), "enum".to_string());
-                            declaration_order.push(name.clone());
+                            declaration_order.push(format!("{}/{}", library_name, e.name.as_ref().unwrap().data()));
                         }
                     }
                     RawDecl::Bits(b) => {
@@ -165,8 +167,7 @@ impl<'src> Compiler<'src> {
                          let compiled = self.compile_bits(short_name, b, &library_name, None);
                          if b.name.is_some() {
                              bits_declarations.push(compiled);
-                             declarations.insert(name.clone(), "bits".to_string());
-                             declaration_order.push(name.clone());
+                             declaration_order.push(format!("{}/{}", library_name, b.name.as_ref().unwrap().data()));
                          }
                     },
                     RawDecl::Union(u) => {
@@ -174,7 +175,6 @@ impl<'src> Compiler<'src> {
                          let compiled = self.compile_union(short_name, u, &library_name, None, None);
                          if u.name.is_some() {
                              union_declarations.push(compiled);
-                             declarations.insert(format!("{}/{}", library_name, u.name.as_ref().unwrap().data()), "union".to_string());
                              declaration_order.push(format!("{}/{}", library_name, u.name.as_ref().unwrap().data()));
                          }
                     },
@@ -183,24 +183,40 @@ impl<'src> Compiler<'src> {
                          let compiled = self.compile_table(short_name, t, &library_name, None, None);
                          if t.name.is_some() {
                              table_declarations.push(compiled);
-                             declarations.insert(format!("{}/{}", library_name, t.name.as_ref().unwrap().data()), "table".to_string());
                              declaration_order.push(format!("{}/{}", library_name, t.name.as_ref().unwrap().data()));
                          }
                     },
+                    RawDecl::Protocol(p) => {
+                         let short_name = p.name.data();
+                         let compiled = self.compile_protocol(short_name, p, &library_name, &mut struct_declarations, &mut declarations_ignored, &mut declaration_order);
+                         protocol_declarations.push(compiled);
+                         declaration_order.push(format!("{}/{}", library_name, short_name));
+                    }
                 }
             }
         }
 
         // Sort declarations by name to match fidlc output order (alphabetical)
+        bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        protocol_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         // declaration_order.sort(); // Don't sort declaration_order, allow native order
 
+        let mut declarations = indexmap::IndexMap::new();
+        for decl in &bits_declarations { declarations.insert(decl.name.clone(), "bits".to_string()); }
+        for decl in &enum_declarations { declarations.insert(decl.name.clone(), "enum".to_string()); }
+        for decl in &protocol_declarations { declarations.insert(decl.name.clone(), "protocol".to_string()); }
+        for decl in &struct_declarations { declarations.insert(decl.name.clone(), "struct".to_string()); }
+        for decl in &table_declarations { declarations.insert(decl.name.clone(), "table".to_string()); }
+        for decl in &union_declarations { declarations.insert(decl.name.clone(), "union".to_string()); }
+
         JsonRoot {
             name: library_name,
             platform: "unversioned".to_string(),
-            available: Some(HashMap::from([
+            available: Some(BTreeMap::from([
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
             ])),
@@ -210,7 +226,7 @@ impl<'src> Compiler<'src> {
             const_declarations: vec![],
             enum_declarations,
             experimental_resource_declarations: vec![],
-            protocol_declarations: vec![],
+            protocol_declarations,
             service_declarations: vec![],
             struct_declarations,
             external_struct_declarations: vec![],
@@ -495,7 +511,7 @@ impl<'src> Compiler<'src> {
                  reserved,
                  type_,
                  name,
-                 location: Some(self.get_location(&member.element)),
+                 location: member.name.as_ref().map(|n| self.get_location(&n.element)),
                  deprecated: Some(false),
                  maybe_attributes: attributes,
              });
@@ -508,6 +524,7 @@ impl<'src> Compiler<'src> {
         let mut max_handles = 0u32;
         let mut max_out_of_line = 0u32;
         let mut depth = 0u32;
+        let mut has_padding = false;
 
         // First pass: find max_ordinal and sum up member sizes
         for member in &members {
@@ -524,21 +541,25 @@ impl<'src> Compiler<'src> {
                  let shape = &type_obj.type_shape_v2;
                  max_handles = max_handles.saturating_add(shape.max_handles);
 
-                 // Content is out of line of the envelope.
-                 // Content is aligned to 8 bytes.
-                 let content_size = shape.inline_size.saturating_add(shape.max_out_of_line);
-                 let content_aligned = if content_size % 8 == 0 { content_size } else { content_size.saturating_add(8u32 - (content_size % 8u32)) };
-                 max_out_of_line = max_out_of_line.saturating_add(content_aligned);
+                 let inlined = shape.inline_size <= 4;
+                 let padding = if inlined { (4 - (shape.inline_size % 4)) % 4 } else { (8 - (shape.inline_size % 8)) % 8 };
 
-                 if shape.depth > depth {
-                     depth = shape.depth;
+                 let env_has_padding = shape.has_padding || padding != 0;
+                 has_padding = has_padding || env_has_padding;
+
+                 let env_max_out_of_line = shape.max_out_of_line.saturating_add(
+                      if inlined { 0 } else { shape.inline_size.saturating_add(padding) }
+                 );
+                 max_out_of_line = max_out_of_line.saturating_add(env_max_out_of_line);
+
+                 let env_depth = shape.depth.saturating_add(1);
+                 if env_depth > depth {
+                     depth = env_depth;
                  }
             }
         }
 
-        // Depth is 1 (table vector) + 1 (table envelope) if items present.
-        // If empty, just vector depth (1).
-        depth += if max_ordinal > 0 { 2 } else { 1 };
+        depth = depth.saturating_add(1);
 
         let type_shape_v2 = TypeShapeV2 {
              inline_size: 16,
@@ -546,7 +567,7 @@ impl<'src> Compiler<'src> {
              depth,
              max_handles,
              max_out_of_line,
-             has_padding: false,
+             has_padding, // Tables calculate padding based on envelopes
              has_flexible_envelope: true,
         };
 
@@ -613,7 +634,7 @@ impl<'src> Compiler<'src> {
                  reserved,
                  name,
                  type_,
-                 location: Some(self.get_location(&member.element)),
+                 location: member.name.as_ref().map(|n| self.get_location(&n.element)),
                  deprecated: Some(false),
                  maybe_attributes: attributes,
              });
@@ -634,6 +655,7 @@ impl<'src> Compiler<'src> {
         let mut max_handles = 0;
         let mut max_out_of_line = 0u32;
         let mut depth = 0;
+        let mut has_padding = false;
 
         for member in &members {
             if let Some(type_obj) = &member.type_ {
@@ -642,40 +664,28 @@ impl<'src> Compiler<'src> {
                      max_handles = shape.max_handles;
                  }
 
-                 // Union payload is potentially out of line.
-                 // If payload fits in envelope (<= 4 bytes), it's inline.
-                 // Otherwise it's out of line.
-                 // Wait, FIDL V2 union: 16 bytes inline.
-                 // Tag (8) + Envelope (8).
-                 // Envelope contains inlined data if <= 4 bytes.
-                 // Else contains pointer.
-                 // So max_out_of_line depends on if it's inlined.
+                 let inlined = shape.inline_size <= 4;
+                 let padding = if inlined { (4 - (shape.inline_size % 4)) % 4 } else { (8 - (shape.inline_size % 8)) % 8 };
 
-                 let is_inlined = shape.inline_size <= 4;
-                 if !is_inlined {
-                     // 8 byte alignment for OOL content.
-                     let content_size = shape.inline_size.saturating_add(shape.max_out_of_line);
-                     let content_aligned = if content_size % 8 == 0 { content_size } else { content_size.saturating_add(8u32 - (content_size % 8u32)) };
-                     if content_aligned > max_out_of_line {
-                         max_out_of_line = content_aligned;
-                     }
-                 } else {
-                     // If inlined, does it contribute to OOL? No.
-                     // But does it have OOL children? Yes.
-                     if shape.max_out_of_line > max_out_of_line {
-                         max_out_of_line = shape.max_out_of_line;
-                     }
+                 let env_has_padding = shape.has_padding || padding != 0;
+                 has_padding = has_padding || env_has_padding;
+
+                 let env_max_out_of_line = shape.max_out_of_line.saturating_add(
+                      if inlined { 0 } else { shape.inline_size.saturating_add(padding) }
+                 );
+                 if env_max_out_of_line > max_out_of_line {
+                      max_out_of_line = env_max_out_of_line;
                  }
 
-                 if shape.depth > depth {
-                     depth = shape.depth;
+                 let env_depth = shape.depth.saturating_add(1);
+                 if env_depth > depth {
+                     depth = env_depth;
                  }
             }
         }
 
         // Union depth is 1 + max(member depth).
-        // Union depth is 1 + max(member depth).
-        depth = if members.is_empty() { 0 } else { depth + 1 };
+        // Zero fields or reserved fields = 0 depth.
 
         let type_shape_v2 = TypeShapeV2 {
              inline_size: 16,
@@ -683,7 +693,7 @@ impl<'src> Compiler<'src> {
              depth,
              max_handles,
              max_out_of_line: max_out_of_line as u32,
-             has_padding: false,
+             has_padding,
              has_flexible_envelope: !strict,
         };
 
@@ -712,7 +722,7 @@ impl<'src> Compiler<'src> {
                 depth,
                 max_handles,
                 max_out_of_line,
-                has_padding: false, // Unions in V2 are 16 bytes (8 tag + 8 envelope), no inline padding.
+                has_padding,
                 has_flexible_envelope: !strict,
             },
         }
@@ -724,6 +734,7 @@ impl<'src> Compiler<'src> {
         decl: &raw_ast::StructDeclaration<'_>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
+        naming_context: Option<Vec<String>>,
     ) -> StructDeclaration {
         let full_name = format!("{}/{}", library_name, name);
 
@@ -815,7 +826,7 @@ impl<'src> Compiler<'src> {
 
         StructDeclaration {
             name: full_name,
-            naming_context: vec![name.to_string()],
+            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: false,
             members,
@@ -937,7 +948,7 @@ impl<'src> Compiler<'src> {
                      subtype: None,
                      identifier: None,
                      nullable: Some(nullable),
-                     element_type: Some(Box::new(inner_type)),
+                     element_type: Some(Box::new(inner_type.clone())),
                      element_count: None,
                      maybe_element_count: if max_count == u32::MAX { None } else { Some(max_count) },
                      deprecated: None,
@@ -949,7 +960,7 @@ impl<'src> Compiler<'src> {
                          depth: new_depth,
                          max_handles,
                          max_out_of_line: max_ool,
-                         has_padding: true,
+                         has_padding: inner_type.type_shape_v2.has_padding || (inner_type.type_shape_v2.inline_size % 8 != 0),
                          has_flexible_envelope: false
                      }
                  }
@@ -1141,7 +1152,11 @@ impl<'src> Compiler<'src> {
                  let length = end_ptr.saturating_sub(start_ptr);
 
                  return Location {
-                     filename: source.filename().to_string(),
+                     filename: if source.filename().starts_with("fidlc/") {
+                         format!("../../tools/fidl/{}", source.filename())
+                     } else {
+                         source.filename().to_string()
+                     },
                      line: pos.line,
                      column: pos.column,
                      length,
@@ -1294,6 +1309,19 @@ fn get_dependencies(decl: &RawDecl<'_, '_>, library_name: &str, _decl_kinds: &Ha
                   }
              }
         }
+        RawDecl::Protocol(p) => {
+             for m in &p.methods {
+                  if let Some(ref req) = m.request_payload {
+                       collect_deps_from_layout(req, library_name, &mut deps);
+                  }
+                  if let Some(ref res) = m.response_payload {
+                       collect_deps_from_layout(res, library_name, &mut deps);
+                  }
+                  if let Some(ref err) = m.error_payload {
+                       collect_deps_from_layout(err, library_name, &mut deps);
+                  }
+             }
+        }
     }
 
         deps
@@ -1354,5 +1382,114 @@ fn collect_deps_from_ctor(ctor: &raw_ast::TypeConstructor<'_>, library_name: &st
 
     for param in &ctor.parameters {
         collect_deps_from_ctor(param, library_name, deps);
+    }
+}
+
+fn collect_deps_from_layout(layout: &raw_ast::Layout<'_>, library_name: &str, deps: &mut Vec<String>) {
+    if let raw_ast::Layout::TypeConstructor(tc) = layout {
+        collect_deps_from_ctor(tc, library_name, deps);
+    }
+}
+
+impl<'src> Compiler<'src> {
+    pub fn compile_protocol(
+        &mut self,
+        short_name: &str,
+        decl: &raw_ast::ProtocolDeclaration<'src>,
+        library_name: &str,
+        struct_declarations: &mut Vec<StructDeclaration>,
+        declarations: &mut indexmap::IndexMap<String, String>,
+        declaration_order: &mut Vec<String>,
+    ) -> ProtocolDeclaration {
+        let name = format!("{}/{}", library_name, short_name);
+        
+        let mut methods = vec![];
+        for m in &decl.methods {
+             let has_request = m.has_request;
+             let maybe_request_payload = if let Some(ref l) = m.request_payload {
+                  match l {
+                       raw_ast::Layout::TypeConstructor(tc) => {
+                            Some(self.resolve_type(tc, library_name))
+                       },
+                       raw_ast::Layout::Struct(s) => {
+                            let method_name_camel = format!("{}{}", m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..]);
+                            let synth_name = format!("{}{}{}Request", short_name, m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..]);
+                            let compiled = self.compile_struct(&synth_name, s, library_name, None, Some(vec![short_name.to_string(), method_name_camel, "Request".to_string()]));
+                            struct_declarations.push(compiled);
+                            let full_synth = format!("{}/{}", library_name, synth_name);
+                            declarations.insert(full_synth.clone(), "struct".to_string());
+                            declaration_order.push(full_synth.clone());
+                            let shape = self.shapes.get(&full_synth).cloned().unwrap();
+                            Some(Type {
+                                kind_v2: "identifier".to_string(), subtype: None, identifier: Some(full_synth), nullable: Some(false), element_type: None, element_count: None, maybe_element_count: None, deprecated: None, maybe_attributes: vec![], field_shape_v2: None, type_shape_v2: shape
+                            })
+                       }
+                       _ => None
+                  }
+             } else { None };
+
+             let has_response = m.has_response;
+             let maybe_response_payload = if let Some(ref l) = m.response_payload {
+                  match l {
+                       raw_ast::Layout::TypeConstructor(tc) => {
+                            Some(self.resolve_type(tc, library_name))
+                       },
+                       raw_ast::Layout::Struct(s) => {
+                            let method_name_camel = format!("{}{}", m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..]);
+                            let synth_name = format!("{}{}{}Response", short_name, m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..]);
+                            let compiled = self.compile_struct(&synth_name, s, library_name, None, Some(vec![short_name.to_string(), method_name_camel, "Response".to_string()]));
+                            struct_declarations.push(compiled);
+                            let full_synth = format!("{}/{}", library_name, synth_name);
+                            declarations.insert(full_synth.clone(), "struct".to_string());
+                            declaration_order.push(full_synth.clone());
+                            let shape = self.shapes.get(&full_synth).cloned().unwrap();
+                            Some(Type {
+                                kind_v2: "identifier".to_string(), subtype: None, identifier: Some(full_synth), nullable: Some(false), element_type: None, element_count: None, maybe_element_count: None, deprecated: None, maybe_attributes: vec![], field_shape_v2: None, type_shape_v2: shape
+                            })
+                       }
+                       _ => None
+                  }
+             } else { None };
+             
+             let maybe_response_success_type = maybe_response_payload.clone();
+             
+             let maybe_response_err_type = if let Some(ref l) = m.error_payload {
+                  match l {
+                       raw_ast::Layout::TypeConstructor(tc) => {
+                            Some(self.resolve_type(tc, library_name))
+                       }
+                       _ => None
+                  }
+             } else { None };
+
+             let kind = if has_request && has_response { "twoway".to_string() } else if has_request { "oneway".to_string() } else { "event".to_string() };
+             methods.push(ProtocolMethod {
+                  kind,
+                  ordinal: 0, // Need ordinal calculation
+                  name: m.name.data().to_string(),
+                  strict: true,
+                  location: self.get_location(&m.name.element),
+                  deprecated: false,
+                  maybe_attributes: vec![],
+                  has_request,
+                  maybe_request_payload,
+                  has_response,
+                  maybe_response_payload,
+                  is_composed: false,
+                  has_error: m.has_error,
+                  maybe_response_success_type,
+                  maybe_response_err_type,
+             });
+        }
+
+        ProtocolDeclaration {
+            name,
+            location: self.get_location(&decl.name.element),
+            deprecated: false,
+            maybe_attributes: vec![],
+            openness: "closed".to_string(),
+            composed_protocols: vec![],
+            methods,
+        }
     }
 }

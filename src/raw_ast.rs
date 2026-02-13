@@ -191,6 +191,7 @@ pub struct File<'a> {
     pub bits_decls: Vec<BitsDeclaration<'a>>,
     pub union_decls: Vec<UnionDeclaration<'a>>,
     pub table_decls: Vec<TableDeclaration<'a>>,
+    pub protocol_decls: Vec<ProtocolDeclaration<'a>>,
     pub tokens: Vec<Token<'a>>,
 }
 
@@ -310,3 +311,24 @@ pub enum Strictness {
 }
 
 // Add to File
+
+#[derive(Debug, Clone)]
+pub struct ProtocolDeclaration<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub name: Identifier<'a>,
+    pub methods: Vec<ProtocolMethod<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtocolMethod<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub name: Identifier<'a>,
+    pub has_request: bool,
+    pub request_payload: Option<Layout<'a>>,
+    pub has_response: bool,
+    pub response_payload: Option<Layout<'a>>,
+    pub has_error: bool,
+    pub error_payload: Option<Layout<'a>>,
+}

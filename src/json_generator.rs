@@ -1,12 +1,12 @@
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct JsonRoot {
     pub name: String,
     pub platform: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub available: Option<HashMap<String, Vec<String>>>,
+    pub available: Option<BTreeMap<String, Vec<String>>>,
     pub experiments: Vec<String>,
     pub library_dependencies: Vec<LibraryDependency>,
     pub bits_declarations: Vec<BitsDeclaration>,
@@ -22,13 +22,13 @@ pub struct JsonRoot {
     pub alias_declarations: Vec<AliasDeclaration>,
     pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub declaration_order: Vec<String>,
-    pub declarations: HashMap<String, String>,
+    pub declarations: indexmap::IndexMap<String, String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
 pub struct LibraryDependency {
     pub name: String,
-    pub declarations: HashMap<String, String>,
+    pub declarations: indexmap::IndexMap<String, String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -64,8 +64,6 @@ pub struct Type {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub element_type: Option<Box<Type>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
@@ -77,6 +75,8 @@ pub struct Type {
     pub element_count: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_element_count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
     pub type_shape_v2: TypeShapeV2,
 }
 
@@ -181,7 +181,40 @@ pub struct Attribute {
 #[derive(Serialize, Clone, Debug)]
 pub struct ExperimentalResourceDeclaration {}
 #[derive(Serialize, Clone, Debug)]
-pub struct ProtocolDeclaration {}
+pub struct ProtocolDeclaration {
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    pub openness: String,
+    pub composed_protocols: Vec<String>,
+    pub methods: Vec<ProtocolMethod>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ProtocolMethod {
+    pub kind: String,
+    pub ordinal: u64,
+    pub name: String,
+    pub strict: bool,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    pub has_request: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_request_payload: Option<Type>,
+    pub has_response: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_response_payload: Option<Type>,
+    pub is_composed: bool,
+    pub has_error: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_response_success_type: Option<Type>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_response_err_type: Option<Type>,
+}
 #[derive(Serialize, Clone, Debug)]
 pub struct ServiceDeclaration {}
 #[derive(Serialize, Clone, Debug)]
@@ -190,11 +223,11 @@ pub struct TableDeclaration {
     pub naming_context: Vec<String>,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     pub members: Vec<TableMember>,
     pub strict: bool,
     pub resource: bool,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub maybe_attributes: Vec<Attribute>,
     pub type_shape_v2: TypeShapeV2,
 }
 
@@ -222,12 +255,12 @@ pub struct UnionDeclaration {
     pub naming_context: Vec<String>,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     pub members: Vec<UnionMember>,
     pub strict: bool,
     pub resource: bool,
     pub is_result: bool,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub maybe_attributes: Vec<Attribute>,
     pub type_shape_v2: TypeShapeV2,
 }
 

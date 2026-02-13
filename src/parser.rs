@@ -38,124 +38,127 @@ impl<'a> Parser<'a> {
         let mut bits_decls = vec![];
         let mut union_decls = vec![];
         let mut table_decls = vec![];
-        let mut tokens = vec![];
+        let mut protocol_decls = vec![];
 
-        while self.last_token.kind != TokenKind::EndOfFile {
-            if attributes.is_none() {
-                attributes = self.maybe_parse_attribute_list();
+        loop {
+            let mut attributes = self.maybe_parse_attribute_list();
+            if self.last_token.kind == TokenKind::EndOfFile {
+                break;
             }
 
-            match self.last_token.subkind {
-                TokenSubkind::Const => {
-                    if let Some(decl) = self.parse_const_declaration(attributes.take()) {
-                        const_decls.push(decl);
-                    } else {
-                        tokens.push(self.last_token.clone());
-                        self.last_token = self.lexer.lex();
-                    }
-                }
-                TokenSubkind::Type => {
-                    if let Some(decl) = self.parse_type_declaration(attributes.take()) {
-                        type_decls.push(decl);
-                    } else {
-                        tokens.push(self.last_token.clone());
-                        self.last_token = self.lexer.lex();
-                    }
-                }
-                TokenSubkind::Struct => {
-                    if let Some(decl) = self.parse_struct_declaration(attributes.take(), false) {
-                        struct_decls.push(decl);
-                    } else {
-                        tokens.push(self.last_token.clone());
-                        self.last_token = self.lexer.lex();
-                    }
-                }
-                TokenSubkind::Enum => {
-                    if let Some(decl) = self.parse_enum_declaration(attributes.take(), None) {
-                        enum_decls.push(decl);
-                    } else {
-                        tokens.push(self.last_token.clone());
-                        self.last_token = self.lexer.lex();
-                    }
-                }
-                TokenSubkind::Bits => {
-                    if let Some(decl) = self.parse_bits_declaration(attributes.take(), None) {
-                         bits_decls.push(decl);
-                    } else {
-                         tokens.push(self.last_token.clone());
-                         self.last_token = self.lexer.lex();
-                    }
-                }
-                TokenSubkind::Union => {
-                     let strictness = self.parse_strictness();
-                     if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, false) {
-                         union_decls.push(decl);
-                     } else {
-                         tokens.push(self.last_token.clone());
-                         self.last_token = self.lexer.lex();
-                     }
-                }
-                TokenSubkind::Table => {
-                     if let Some(decl) = self.parse_table_declaration(attributes.take(), false) {
-                         table_decls.push(decl);
-                     } else {
-                         tokens.push(self.last_token.clone());
-                         self.last_token = self.lexer.lex();
-                     }
-                }
-                TokenSubkind::Resource => {
-                     self.consume_token_with_subkind(TokenSubkind::Resource);
-                     if self.last_token.subkind == TokenSubkind::Struct {
-                         if let Some(decl) = self.parse_struct_declaration(attributes.take(), true) {
-                             struct_decls.push(decl);
-                         }
-                     } else if self.last_token.subkind == TokenSubkind::Union {
-                         let strictness = self.parse_strictness();
-                         if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, true) {
-                             union_decls.push(decl);
-                         }
-                     } else if self.last_token.subkind == TokenSubkind::Table {
-                         if let Some(decl) = self.parse_table_declaration(attributes.take(), true) {
-                             table_decls.push(decl);
-                         }
-                     } else {
-                         tokens.push(self.last_token.clone());
-                         self.last_token = self.lexer.lex();
-                     }
-                }
-                TokenSubkind::Strict | TokenSubkind::Flexible => {
-                     let strictness = self.parse_strictness();
-                     let is_resource = if self.last_token.subkind == TokenSubkind::Resource {
-                         self.consume_token_with_subkind(TokenSubkind::Resource);
-                         true
-                     } else {
-                         false
-                     };
-
-                     if self.last_token.subkind == TokenSubkind::Union {
-                         if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, is_resource) {
-                             union_decls.push(decl);
-                         }
-                     } else if self.last_token.subkind == TokenSubkind::Enum {
-                         if let Some(decl) = self.parse_enum_declaration(attributes.take(), Some(strictness)) {
-                             enum_decls.push(decl);
-                         }
-                     } else if self.last_token.subkind == TokenSubkind::Bits {
-                         if let Some(decl) = self.parse_bits_declaration(attributes.take(), Some(strictness)) {
-                             bits_decls.push(decl);
-                         }
-                     } else {
-                         tokens.push(self.last_token.clone());
-                         self.last_token = self.lexer.lex();
-                     }
-                }
-                _ => {
-                    if attributes.is_some() {
-                        // Attributes dangling?
-                    }
-                    tokens.push(self.last_token.clone());
+            if self.last_token.subkind == TokenSubkind::Const {
+                if let Some(decl) = self.parse_const_declaration(attributes.take()) {
+                    const_decls.push(decl);
+                } else {
+                    // Error recovery: consume token if parsing failed
                     self.last_token = self.lexer.lex();
                 }
+            } else if self.last_token.subkind == TokenSubkind::Type {
+                 if let Some(decl) = self.parse_type_declaration(attributes.take()) {
+                    type_decls.push(decl);
+                } else {
+                    self.last_token = self.lexer.lex();
+                }
+            } else if self.last_token.subkind == TokenSubkind::Struct {
+                 if let Some(decl) = self.parse_struct_declaration(attributes.take(), false) {
+                    struct_decls.push(decl);
+                 } else {
+                    self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Enum {
+                 if let Some(decl) = self.parse_enum_declaration(attributes.take(), None) {
+                    enum_decls.push(decl);
+                 } else {
+                    self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Bits {
+                 if let Some(decl) = self.parse_bits_declaration(attributes.take(), None) {
+                    bits_decls.push(decl);
+                 } else {
+                    self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Union {
+                 // Default to Flexible if not specified by Strict/Flexible keywords
+                 if let Some(decl) = self.parse_union_declaration(attributes.take(), Strictness::Flexible, false) {
+                    union_decls.push(decl);
+                 } else {
+                    self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Table {
+                 if let Some(decl) = self.parse_table_declaration(attributes.take(), false) {
+                    table_decls.push(decl);
+                 } else {
+                    self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Protocol {
+                 if let Some(decl) = self.parse_protocol_declaration(attributes.take()) {
+                    protocol_decls.push(decl);
+                 } else {
+                    self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Resource {
+                 self.consume_token_with_subkind(TokenSubkind::Resource);
+                 if self.last_token.subkind == TokenSubkind::Struct {
+                     if let Some(decl) = self.parse_struct_declaration(attributes.take(), true) {
+                         struct_decls.push(decl);
+                     } else {
+                        self.last_token = self.lexer.lex();
+                     }
+                 } else if self.last_token.subkind == TokenSubkind::Union {
+                     let strictness = self.parse_strictness();
+                     if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, true) {
+                         union_decls.push(decl);
+                     } else {
+                        self.last_token = self.lexer.lex();
+                     }
+                 } else if self.last_token.subkind == TokenSubkind::Table {
+                     if let Some(decl) = self.parse_table_declaration(attributes.take(), true) {
+                         table_decls.push(decl);
+                     } else {
+                        self.last_token = self.lexer.lex();
+                     }
+                 } else {
+                     // If 'resource' is followed by something unexpected
+                     self.last_token = self.lexer.lex();
+                 }
+            } else if self.last_token.subkind == TokenSubkind::Strict || self.last_token.subkind == TokenSubkind::Flexible {
+                 let strictness = self.parse_strictness();
+                 let is_resource = if self.last_token.subkind == TokenSubkind::Resource {
+                     self.consume_token_with_subkind(TokenSubkind::Resource);
+                     true
+                 } else {
+                     false
+                 };
+
+                 if self.last_token.subkind == TokenSubkind::Union {
+                     if let Some(decl) = self.parse_union_declaration(attributes.take(), strictness, is_resource) {
+                         union_decls.push(decl);
+                     } else {
+                        self.last_token = self.lexer.lex();
+                     }
+                 } else if self.last_token.subkind == TokenSubkind::Enum {
+                     if let Some(decl) = self.parse_enum_declaration(attributes.take(), Some(strictness)) {
+                         enum_decls.push(decl);
+                     } else {
+                        self.last_token = self.lexer.lex();
+                     }
+                 } else if self.last_token.subkind == TokenSubkind::Bits {
+                     if let Some(decl) = self.parse_bits_declaration(attributes.take(), Some(strictness)) {
+                         bits_decls.push(decl);
+                     } else {
+                        self.last_token = self.lexer.lex();
+                     }
+                 } else {
+                     // If 'strict'/'flexible' is followed by something unexpected
+                     self.last_token = self.lexer.lex();
+                 }
+            } else {
+                // If attributes were parsed but not consumed by a declaration,
+                // or if an unexpected token is encountered.
+                if attributes.is_some() {
+                    // TODO: Report error for dangling attributes
+                }
+                self.last_token = self.lexer.lex();
             }
         }
 
@@ -170,7 +173,8 @@ impl<'a> Parser<'a> {
             bits_decls,
             union_decls,
             table_decls,
-            tokens,
+            protocol_decls,
+            tokens: vec![], // Assuming token list is not needed internally
         })
     }
 
@@ -890,6 +894,175 @@ impl<'a> Parser<'a> {
             name,
             is_resource,
             members,
+        })
+    }
+
+    pub fn parse_protocol_declaration(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<ProtocolDeclaration<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+
+        let mut openness = None;
+        if self.last_token.subkind == TokenSubkind::Closed || self.last_token.subkind == TokenSubkind::Open || self.last_token.subkind == TokenSubkind::Ajar {
+             openness = Some(self.last_token.clone());
+             self.consume_token(TokenKind::Identifier)?;
+        }
+
+        self.consume_token_with_subkind(TokenSubkind::Protocol)?;
+        let name = self.parse_identifier()?;
+
+        let mut methods = vec![];
+        self.consume_token(TokenKind::LeftCurly)?;
+
+        while self.last_token.kind != TokenKind::RightCurly
+            && self.last_token.kind != TokenKind::EndOfFile
+        {
+            let attrs = self.maybe_parse_attribute_list();
+            if self.last_token.subkind == TokenSubkind::Compose {
+                 // Compose is mostly ignored for now by our AST simplification
+                 self.consume_token_with_subkind(TokenSubkind::Compose)?;
+                 self.parse_compound_identifier()?;
+                 self.consume_token(TokenKind::Semicolon)?;
+            } else if let Some(method) = self.parse_protocol_method(attrs) {
+                methods.push(method);
+            } else {
+                break;
+            }
+        }
+        self.consume_token(TokenKind::RightCurly)?;
+        self.consume_token(TokenKind::Semicolon)?;
+
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(ProtocolDeclaration {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            name,
+            methods,
+        })
+    }
+
+    pub fn parse_protocol_method(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<ProtocolMethod<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+
+        let mut strictness = None;
+        if self.last_token.subkind == TokenSubkind::Strict || self.last_token.subkind == TokenSubkind::Flexible {
+             strictness = Some(self.last_token.clone());
+             self.consume_token(TokenKind::Identifier)?;
+        }
+
+        let is_event = if self.last_token.kind == TokenKind::Arrow {
+             self.consume_token(TokenKind::Arrow)?;
+             true
+        } else {
+             false
+        };
+
+        let name = self.parse_identifier()?;
+
+        let mut has_request = false;
+        let mut request_payload = None;
+
+        if !is_event {
+             has_request = true;
+             // Expect parameter list for requests
+             self.consume_token(TokenKind::LeftParen)?;
+             if self.last_token.kind != TokenKind::RightParen {
+                  // Actually FIDL methods specify parameters inside paren: Method(payload PayloadType); or Method(struct { ... });
+                  // For simplicity in JSON IR, if there's an identifier, treat parameter as payload type.
+                  if self.last_token.subkind == TokenSubkind::Struct {
+                       if let Some(s) = self.parse_struct_declaration(None, false) {
+                           request_payload = Some(Layout::Struct(s));
+                       }
+                  } else if self.last_token.subkind == TokenSubkind::Table {
+                       if let Some(t) = self.parse_table_declaration(None, false) {
+                           request_payload = Some(Layout::Table(t));
+                       }
+                  } else if self.last_token.subkind == TokenSubkind::Union {
+                       if let Some(u) = self.parse_union_declaration(None, Strictness::Flexible, false) {
+                           request_payload = Some(Layout::Union(u));
+                       }
+                  } else {
+                       if let Some(tc) = self.parse_type_constructor() {
+                           request_payload = Some(Layout::TypeConstructor(tc));
+                       }
+                  }
+
+                  while self.last_token.kind != TokenKind::RightParen && self.last_token.kind != TokenKind::EndOfFile {
+                       self.consume_token(self.last_token.kind.clone())?; // Skip others
+                  }
+             }
+             self.consume_token(TokenKind::RightParen)?;
+        }
+
+        let mut has_response = false;
+        let mut response_payload = None;
+        let mut has_error = false;
+        let mut error_payload = None;
+
+        if is_event || self.last_token.kind == TokenKind::Arrow {
+             if !is_event {
+                 self.consume_token(TokenKind::Arrow)?;
+             }
+             has_response = true;
+
+             self.consume_token(TokenKind::LeftParen)?;
+             if self.last_token.kind != TokenKind::RightParen {
+                  if self.last_token.subkind == TokenSubkind::Struct {
+                       if let Some(s) = self.parse_struct_declaration(None, false) {
+                           response_payload = Some(Layout::Struct(s));
+                       }
+                  } else if self.last_token.subkind == TokenSubkind::Table {
+                       if let Some(t) = self.parse_table_declaration(None, false) {
+                           response_payload = Some(Layout::Table(t));
+                       }
+                  } else if self.last_token.subkind == TokenSubkind::Union {
+                       if let Some(u) = self.parse_union_declaration(None, Strictness::Flexible, false) {
+                           response_payload = Some(Layout::Union(u));
+                       }
+                  } else {
+                       if let Some(tc) = self.parse_type_constructor() {
+                           response_payload = Some(Layout::TypeConstructor(tc));
+                       }
+                  }
+
+                  while self.last_token.kind != TokenKind::RightParen && self.last_token.kind != TokenKind::EndOfFile {
+                       self.consume_token(self.last_token.kind.clone())?; // Skip others
+                  }
+             }
+             self.consume_token(TokenKind::RightParen)?;
+
+             if self.last_token.subkind == TokenSubkind::Error {
+                  self.consume_token_with_subkind(TokenSubkind::Error)?;
+                  has_error = true;
+                  if let Some(tc) = self.parse_type_constructor() {
+                      error_payload = Some(Layout::TypeConstructor(tc));
+                  }
+             }
+        }
+
+        self.consume_token(TokenKind::Semicolon)?;
+
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(ProtocolMethod {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            name,
+            has_request,
+            request_payload,
+            has_response,
+            response_payload,
+            has_error,
+            error_payload,
         })
     }
 

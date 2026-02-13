@@ -9,10 +9,10 @@ mkdir -p goldens
 # List of filenames within fidlc/testdata
 FILES=(
     "bits.test.fidl"
-    #"enum.test.fidl"
-    #"struct.test.fidl"
-    #"table.test.fidl"
-    #"union.test.fidl"
+    "enum.test.fidl"
+    "struct.test.fidl"
+    "table.test.fidl"
+    # "union.test.fidl"
   
 
     # "anonymous.test.fidl"

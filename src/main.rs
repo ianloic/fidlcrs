@@ -63,6 +63,7 @@ fn main() {
             if let Some(out_path) = json_output {
                 let mut f = fs::File::create(out_path).unwrap();
                 f.write_all(json_string.as_bytes()).unwrap();
+                f.write_all(b"\n").unwrap();
                 println!("Wrote JSON to {}", out_path);
             } else {
                 println!("{}", json_string);

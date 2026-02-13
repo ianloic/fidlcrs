@@ -33,3 +33,5 @@ Test runner: `src/golden_test.rs`.
 
 ## Rules
  - NEVER modify any files in the `fidlc` directory. These are for reference ONLY.
+ - there's a JSON Schema for FIDL JSON IR files at `fidlc/schema.json`.
+ - If you need to understand how to implement a feature, look at the C++ implementation in `fidlc/src` and try to replicate it in Rust.

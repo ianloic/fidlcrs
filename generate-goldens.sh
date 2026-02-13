@@ -63,7 +63,7 @@ for file in "${FILES[@]}"; do
     
     public_deps=( "//zircon/vdso/zx" )
     experimental_flags=()
-    versioned=""
+    versioned="fuchsia:42,NEXT,HEAD"
     contains_drivers=false
 
     if [ "$file" == "handles.test.fidl" ]; then

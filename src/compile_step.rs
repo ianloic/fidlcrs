@@ -131,11 +131,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                     }
                     RawDecl::Protocol(p) => {
                         let short_name = p.name.data();
-                        let compiled = compiler.compile_protocol(
-                            short_name,
-                            p,
-                            &library_name,
-                        );
+                        let compiled = compiler.compile_protocol(short_name, p, &library_name);
                         compiler.protocol_declarations.push(compiled);
                     }
                     RawDecl::Service(s) => {

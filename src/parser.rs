@@ -591,15 +591,29 @@ impl<'a, 'b> Parser<'a, 'b> {
         };
 
         if self.last_token.subkind == TokenSubkind::Struct {
-            return Some(LayoutParameter::Inline(Box::new(Layout::Struct(self.parse_struct_declaration(attrs, is_resource)?))));
+            return Some(LayoutParameter::Inline(Box::new(Layout::Struct(
+                self.parse_struct_declaration(attrs, is_resource)?,
+            ))));
         } else if self.last_token.subkind == TokenSubkind::Union {
-            return Some(LayoutParameter::Inline(Box::new(Layout::Union(self.parse_union_declaration(attrs, strictness.unwrap_or(Strictness::Flexible), is_resource)?))));
+            return Some(LayoutParameter::Inline(Box::new(Layout::Union(
+                self.parse_union_declaration(
+                    attrs,
+                    strictness.unwrap_or(Strictness::Flexible),
+                    is_resource,
+                )?,
+            ))));
         } else if self.last_token.subkind == TokenSubkind::Table {
-            return Some(LayoutParameter::Inline(Box::new(Layout::Table(self.parse_table_declaration(attrs, is_resource)?))));
+            return Some(LayoutParameter::Inline(Box::new(Layout::Table(
+                self.parse_table_declaration(attrs, is_resource)?,
+            ))));
         } else if self.last_token.subkind == TokenSubkind::Enum {
-            return Some(LayoutParameter::Inline(Box::new(Layout::Enum(self.parse_enum_declaration(attrs, strictness)?))));
+            return Some(LayoutParameter::Inline(Box::new(Layout::Enum(
+                self.parse_enum_declaration(attrs, strictness)?,
+            ))));
         } else if self.last_token.subkind == TokenSubkind::Bits {
-            return Some(LayoutParameter::Inline(Box::new(Layout::Bits(self.parse_bits_declaration(attrs, strictness)?))));
+            return Some(LayoutParameter::Inline(Box::new(Layout::Bits(
+                self.parse_bits_declaration(attrs, strictness)?,
+            ))));
         }
 
         if attrs.is_some() || strictness.is_some() || is_resource {

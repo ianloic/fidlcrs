@@ -201,7 +201,8 @@ impl Clone for Constant {
         Self {
             kind: self.kind.clone(),
             value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
+                .unwrap(),
             literal: self.literal.clone(),
         }
     }
@@ -219,7 +220,8 @@ impl Clone for Literal {
         Self {
             kind: self.kind.clone(),
             value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
+                .unwrap(),
         }
     }
 }

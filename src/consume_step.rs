@@ -8,7 +8,9 @@ pub struct ConsumeStep<'node, 'src> {
 
 impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
     fn run(&mut self, compiler: &mut Compiler<'node, 'src>) {
-        compiler.library_name = self.files.iter()
+        compiler.library_name = self
+            .files
+            .iter()
             .find_map(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
@@ -51,7 +53,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             for decl in &file.protocol_decls {
                 let name = decl.name.data();
                 let full_name = format!("{}/{}", compiler.library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Protocol(decl));
+                compiler
+                    .raw_decls
+                    .insert(full_name, RawDecl::Protocol(decl));
 
                 for method in &decl.methods {
                     let method_name_camel = format!(
@@ -61,17 +65,26 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     );
                     if let Some(raw_ast::Layout::Struct(s)) = &method.request_payload {
                         let synth_name = format!("{}Request", method_name_camel);
-                        let full_synth =
-                            format!("{}/{}", compiler.library_name, format!("{}{}", name, synth_name));
+                        let full_synth = format!(
+                            "{}/{}",
+                            compiler.library_name,
+                            format!("{}{}", name, synth_name)
+                        );
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
                     if let Some(raw_ast::Layout::Struct(s)) = &method.response_payload {
                         let (_, full_synth) = if method.has_error {
                             let sn = format!("_{}_Response", method.name.data());
-                            (sn.clone(), format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)))
+                            (
+                                sn.clone(),
+                                format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)),
+                            )
                         } else {
                             let sn = format!("{}Response", method_name_camel);
-                            (sn.clone(), format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)))
+                            (
+                                sn.clone(),
+                                format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)),
+                            )
                         };
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }

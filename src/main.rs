@@ -13,7 +13,8 @@ use fidlcrs::source_file::SourceFile;
 use fidlcrs::token::TokenKind;
 
 fn usage() {
-    println!(r#"The FIDL compiler
+    println!(
+        r#"The FIDL compiler
 
 Usage: fidlc [--json JSON_PATH]
              [--available PLATFORM:VERSION[,VERSION]...]
@@ -85,7 +86,8 @@ Options:
  * `--werror`. Treats warnings as errors.
 
  * `--help`. Prints this help, and exit immediately.
-"#);
+"#
+    );
 }
 
 fn fail_with_usage(msg: &str) -> ! {
@@ -138,7 +140,10 @@ fn main() {
             _warnings_as_errors = true;
         } else if let Some(format_val) = flag.strip_prefix("--format=") {
             if format_val != "text" && format_val != "json" {
-                fail_with_usage(&format!("Unknown value `{}` for flag `format`\n", format_val));
+                fail_with_usage(&format!(
+                    "Unknown value `{}` for flag `format`\n",
+                    format_val
+                ));
             }
             _format = format_val.to_string();
         } else if flag == "--json" {

@@ -49,7 +49,10 @@ impl Arguments {
                     process::exit(1);
                 }
             };
-            let parsed_args = content.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
+            let parsed_args = content
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
             self.response_file_args = Some(parsed_args);
             self.response_file_index = 0;
             return self.claim();
@@ -60,9 +63,10 @@ impl Arguments {
 
     pub fn remaining(&self) -> bool {
         if let Some(ref response_args) = self.response_file_args
-            && self.response_file_index < response_args.len() {
-                return true;
-            }
+            && self.response_file_index < response_args.len()
+        {
+            return true;
+        }
         self.index < self.count
     }
 }

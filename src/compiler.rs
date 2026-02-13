@@ -37,6 +37,7 @@ enum RawDecl<'node, 'src> {
     Table(&'node raw_ast::TableDeclaration<'src>),
     Protocol(&'node raw_ast::ProtocolDeclaration<'src>),
     Service(&'node raw_ast::ServiceDeclaration<'src>),
+    Const(&'node raw_ast::ConstDeclaration<'src>),
     Type(&'node raw_ast::TypeDeclaration<'src>),
 }
 
@@ -131,6 +132,12 @@ impl<'src> Compiler<'src> {
             raw_decls.insert(full_name, RawDecl::Service(decl));
         }
 
+        for decl in &file.const_decls {
+            let name = decl.name.data();
+            let full_name = format!("{}/{}", library_name, name);
+            raw_decls.insert(full_name, RawDecl::Const(decl));
+        }
+
         // 2. Build Dependency Graph
         let mut decl_kinds = HashMap::new();
         for (name, decl) in &raw_decls {
@@ -140,6 +147,7 @@ impl<'src> Compiler<'src> {
                 RawDecl::Table(_) => "table",
                 RawDecl::Protocol(_) => "protocol",
                 RawDecl::Service(_) => "service",
+                RawDecl::Const(_) => "const",
                 RawDecl::Enum(_) => "enum",
                 RawDecl::Bits(_) => "bits",
                 RawDecl::Type(t) => match t.layout {
@@ -160,6 +168,7 @@ impl<'src> Compiler<'src> {
         let mut struct_declarations = vec![];
         let mut enum_declarations = vec![];
         let mut bits_declarations = vec![];
+        let mut const_declarations = vec![];
         let mut union_declarations = vec![];
         let mut table_declarations = vec![];
         let mut protocol_declarations = vec![];
@@ -309,12 +318,17 @@ impl<'src> Compiler<'src> {
                         let compiled = self.compile_service(short_name, s, &library_name);
                         service_declarations.push(compiled);
                     }
+                    RawDecl::Const(c) => {
+                        let compiled = self.compile_const(c, &library_name);
+                        const_declarations.push(compiled);
+                    }
                 }
             }
         }
 
         // Sort declarations by name to match fidlc output order (alphabetical)
         bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         protocol_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         service_declarations.sort_by(|a, b| a.name.cmp(&b.name));
@@ -326,6 +340,9 @@ impl<'src> Compiler<'src> {
         let mut declarations = indexmap::IndexMap::new();
         for decl in &bits_declarations {
             declarations.insert(decl.name.clone(), "bits".to_string());
+        }
+        for decl in &const_declarations {
+            declarations.insert(decl.name.clone(), "const".to_string());
         }
         for decl in &enum_declarations {
             declarations.insert(decl.name.clone(), "enum".to_string());
@@ -362,7 +379,7 @@ impl<'src> Compiler<'src> {
             experiments: vec!["output_index_json".to_string()],
             library_dependencies: vec![],
             bits_declarations,
-            const_declarations: vec![],
+            const_declarations,
             enum_declarations,
             experimental_resource_declarations: vec![],
             protocol_declarations,
@@ -490,7 +507,7 @@ impl<'src> Compiler<'src> {
             if attributes.iter().any(|a| a.name == "unknown") {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
-                if let Ok(val) = compiled_value.value.parse::<u32>() {
+                if let Ok(val) = compiled_value.literal.value.get().trim_matches('"').parse::<u32>() {
                     maybe_unknown_value = Some(val);
                 }
             }
@@ -594,7 +611,7 @@ impl<'src> Compiler<'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             // Calculate mask
-            if let Ok(val) = compiled_value.value.parse::<u64>() {
+            if let Ok(val) = compiled_value.literal.value.get().trim_matches('"').parse::<u64>() {
                 mask |= val;
             }
             // TODO: Handle non-u64 values if needed?
@@ -1643,12 +1660,12 @@ impl<'src> Compiler<'src> {
                 type_: "string".to_string(),
                 value: Constant {
                     kind: "literal".to_string(),
-                    value: combined_value.clone(),
-                    expression: combined_expression.clone(),
+                    value: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_value).unwrap()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_expression).unwrap()).unwrap(),
                     literal: Literal {
                         kind: "string".to_string(),
-                        value: combined_value,
-                        expression: combined_expression,
+                        value: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_value).unwrap()).unwrap(),
+                        expression: serde_json::value::RawValue::from_string(serde_json::to_string(&combined_expression).unwrap()).unwrap(),
                     },
                 },
                 location: loc.clone(),
@@ -1668,63 +1685,137 @@ impl<'src> Compiler<'src> {
         }
     }
 
+    fn generate_json_string_literal(&self, s: &str) -> String {
+        let mut out = String::new();
+        out.push('"');
+        
+        let s_inner = if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
+            &s[1..s.len() - 1]
+        } else {
+            s
+        };
+        
+        let mut chars = s_inner.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == '\\' {
+                if let Some(next) = chars.next() {
+                    match next {
+                        '\\' => out.push_str("\\\\"),
+                        '"' => out.push_str("\\\""),
+                        'n' => out.push_str("\\n"),
+                        'r' => out.push_str("\\r"),
+                        't' => out.push_str("\\t"),
+                        'u' => {
+                            if chars.peek() == Some(&'{') {
+                                chars.next();
+                                let mut hex = String::new();
+                                while let Some(&hc) = chars.peek() {
+                                    if hc == '}' { break; }
+                                    hex.push(hc);
+                                    chars.next();
+                                }
+                                chars.next(); // consume }
+                                if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                                    if let Some(ch) = char::from_u32(code) {
+                                        let mut b = [0; 2];
+                                        for u in ch.encode_utf16(&mut b) {
+                                            out.push_str(&format!("\\u{:04x}", u));
+                                        }
+                                        continue;
+                                    }
+                                }
+                                out.push_str("\\u{"); out.push_str(&hex); out.push('}');
+                            } else {
+                                out.push_str("\\u");
+                            }
+                        }
+                        _ => {
+                            out.push_str("\\\\");
+                            if next == '"' || next == '\\' {
+                                out.push_str(&format!("\\{}", next));
+                            } else {
+                                out.push(next);
+                            }
+                        }
+                    }
+                } else {
+                    out.push_str("\\\\");
+                }
+            } else {
+                if c == '"' { out.push_str("\\\""); }
+                else if c == '\\' { out.push_str("\\\\"); }
+                else if c == '\n' { out.push_str("\\n"); }
+                else if c == '\r' { out.push_str("\\r"); }
+                else if c == '\t' { out.push_str("\\t"); }
+                else { out.push(c); }
+            }
+        }
+        out.push('"');
+        out
+    }
+
     fn compile_constant(&self, constant: &raw_ast::Constant<'_>) -> Constant {
         match constant {
             raw_ast::Constant::Literal(lit) => {
-                let (kind, value, expression) = match &lit.literal.kind {
-                    raw_ast::LiteralKind::String => (
-                        "string",
-                        lit.literal.value.clone(),
-                        lit.literal.value.clone(),
-                    ),
+                let (kind, value_json, expr_json) = match &lit.literal.kind {
+                    raw_ast::LiteralKind::String => {
+                        let inner_json = self.generate_json_string_literal(&lit.literal.value);
+                        let expr = lit.literal.value.clone();
+                        let expr_json = serde_json::to_string(&expr).unwrap();
+                        ("string", inner_json, expr_json)
+                    }
                     raw_ast::LiteralKind::Numeric => {
                         let val = lit.literal.value.clone();
-                        if val.starts_with("0x") || val.starts_with("0X") {
+                        let n_str = if val.starts_with("0x") || val.starts_with("0X") {
                             let without_prefix = &val[2..];
                             if let Ok(n) = u64::from_str_radix(without_prefix, 16) {
-                                ("numeric", n.to_string(), val)
+                                n.to_string()
                             } else {
-                                ("numeric", val.clone(), val)
+                                val.clone()
                             }
                         } else {
-                            ("numeric", val.clone(), val)
-                        }
+                            val.clone()
+                        };
+                        ("numeric", serde_json::to_string(&n_str).unwrap(), serde_json::to_string(&val).unwrap())
                     }
-                    raw_ast::LiteralKind::Bool(b) => ("bool", b.to_string(), b.to_string()),
+                    raw_ast::LiteralKind::Bool(b) => {
+                        let s = b.to_string();
+                        ("bool", serde_json::to_string(&s).unwrap(), serde_json::to_string(&s).unwrap())
+                    }
                     raw_ast::LiteralKind::DocComment => {
-                        ("doc_comment", "".to_string(), "".to_string())
-                    } // Should not happen in constants
+                        ("doc_comment", "\"\"".to_string(), "\"\"".to_string())
+                    }
                 };
 
                 Constant {
                     kind: "literal".to_string(),
-                    value: value.clone(),
-                    expression: expression.clone(),
+                    value: serde_json::value::RawValue::from_string(value_json.clone()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string(expr_json.clone()).unwrap(),
                     literal: Literal {
                         kind: kind.to_string(),
-                        value: value,
-                        expression: expression,
+                        value: serde_json::value::RawValue::from_string(value_json).unwrap(),
+                        expression: serde_json::value::RawValue::from_string(expr_json).unwrap(),
                     },
                 }
             }
             raw_ast::Constant::Identifier(_) => Constant {
                 kind: "identifier".to_string(),
-                value: "0".to_string(),
-                expression: "0".to_string(),
+                value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
+                expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
                 literal: Literal {
                     kind: "numeric".to_string(),
-                    value: "0".to_string(),
-                    expression: "0".to_string(),
+                    value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
                 },
             },
             raw_ast::Constant::BinaryOperator(_) => Constant {
                 kind: "binary_operator".to_string(),
-                value: "0".to_string(),
-                expression: "0".to_string(),
+                value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
+                expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
                 literal: Literal {
                     kind: "numeric".to_string(),
-                    value: "0".to_string(),
-                    expression: "0".to_string(),
+                    value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
+                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
                 },
             },
         }
@@ -1837,6 +1928,7 @@ fn get_dependencies<'node, 'src>(
             }
         }
         RawDecl::Service(_) => {}
+        RawDecl::Const(_) => {}
     }
 
     deps
@@ -1995,6 +2087,28 @@ impl<'src> Compiler<'src> {
             deprecated: false,
             maybe_attributes: self.compile_attribute_list(&decl.attributes),
             members,
+        }
+    }
+
+    fn compile_const(
+        &mut self,
+        decl: &raw_ast::ConstDeclaration<'src>,
+        library_name: &str,
+    ) -> ConstDeclaration {
+        let name = decl.name.data();
+        let full_name = format!("{}/{}", library_name, name);
+        let location = self.get_location(&decl.name.element);
+        
+        let type_obj = self.resolve_type(&decl.type_ctor, library_name);
+        let constant = self.compile_constant(&decl.value);
+
+        ConstDeclaration {
+            name: full_name,
+            location,
+            deprecated: false,
+            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            type_: type_obj,
+            value: constant,
         }
     }
 

@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::collections::BTreeMap;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Debug)]
 pub struct JsonRoot {
     pub name: String,
     pub platform: String,
@@ -152,7 +152,16 @@ pub struct BitsMember {
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct ConstDeclaration {}
+pub struct ConstDeclaration {
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    #[serde(rename = "type")]
+    pub type_: Type,
+    pub value: Constant,
+}
 #[derive(Serialize, Clone, Debug)]
 pub struct EnumDeclaration {
     pub name: String,
@@ -179,19 +188,40 @@ pub struct EnumMember {
     pub maybe_attributes: Vec<Attribute>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Debug)]
 pub struct Constant {
     pub kind: String,
-    pub value: String,
-    pub expression: String,
+    pub value: Box<serde_json::value::RawValue>,
+    pub expression: Box<serde_json::value::RawValue>,
     pub literal: Literal,
 }
 
-#[derive(Serialize, Clone, Debug)]
+impl Clone for Constant {
+    fn clone(&self) -> Self {
+        Self {
+            kind: self.kind.clone(),
+            value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string()).unwrap(),
+            literal: self.literal.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
 pub struct Literal {
     pub kind: String,
-    pub value: String,
-    pub expression: String,
+    pub value: Box<serde_json::value::RawValue>,
+    pub expression: Box<serde_json::value::RawValue>,
+}
+
+impl Clone for Literal {
+    fn clone(&self) -> Self {
+        Self {
+            kind: self.kind.clone(),
+            value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string()).unwrap(),
+        }
+    }
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -266,7 +296,7 @@ pub struct ServiceMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
 }
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Debug)]
 pub struct TableDeclaration {
     pub name: String,
     pub naming_context: Vec<String>,
@@ -280,7 +310,7 @@ pub struct TableDeclaration {
     pub type_shape_v2: TypeShapeV2,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Debug)]
 pub struct TableMember {
     pub ordinal: u32,
     #[serde(skip_serializing_if = "Option::is_none")]

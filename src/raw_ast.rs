@@ -181,6 +181,7 @@ pub enum LayoutParameter<'a> {
     Identifier(CompoundIdentifier<'a>),
     Literal(LiteralConstant<'a>),
     Type(Box<TypeConstructor<'a>>),
+    Inline(Box<Layout<'a>>),
 }
 
 #[derive(Debug, Clone)]

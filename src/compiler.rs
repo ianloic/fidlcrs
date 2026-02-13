@@ -8,6 +8,24 @@ use crate::consume_step::ConsumeStep;
 use crate::resolve_step::ResolveStep;
 use crate::compile_step::CompileStep;
 
+
+fn to_camel_case(s: &str) -> String {
+    let mut camel = String::new();
+    let mut capitalize_next = true;
+    for c in s.chars() {
+        if c == '_' {
+            capitalize_next = true;
+        } else if capitalize_next {
+            camel.extend(c.to_uppercase());
+            capitalize_next = false;
+        } else {
+            camel.push(c);
+        }
+    }
+    camel
+}
+
+
 pub fn compute_method_ordinal(selector: &str) -> u64 {
     let mut hasher = Sha256::new();
     hasher.update(selector.as_bytes());
@@ -241,7 +259,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_enum(
         &mut self,
         name: &str,
-        decl: &raw_ast::EnumDeclaration<'_>,
+        decl: &raw_ast::EnumDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
@@ -348,7 +366,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_bits(
         &mut self,
         name: &str,
-        decl: &raw_ast::BitsDeclaration<'_>,
+        decl: &raw_ast::BitsDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
@@ -479,7 +497,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let type_obj = self.resolve_type(type_ctor, library_name);
+                let mut ctx = vec![name.to_string()]; if let Some(m_name) = &member.name { ctx.push(m_name.data().to_string()); } else { ctx.push(format!("{}", ordinal)); }; let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -608,7 +626,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let type_obj = self.resolve_type(type_ctor, library_name);
+                let mut ctx = vec![name.to_string()]; if let Some(m_name) = &member.name { ctx.push(m_name.data().to_string()); } else { ctx.push(format!("{}", ordinal)); }; let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -725,7 +743,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_struct(
         &mut self,
         name: &str,
-        decl: &raw_ast::StructDeclaration<'_>,
+        decl: &raw_ast::StructDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         naming_context: Option<Vec<String>>,
@@ -741,7 +759,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut depth: u32 = 0;
 
         for member in &decl.members {
-            let type_obj = self.resolve_type(&member.type_ctor, library_name);
+            let mut ctx = naming_context.clone().unwrap_or_else(|| vec![name.to_string()]); ctx.push(member.name.data().to_string()); let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
             let type_shape = &type_obj.type_shape_v2;
 
             let align = type_shape.alignment;
@@ -846,7 +864,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-    fn resolve_type(&self, type_ctor: &raw_ast::TypeConstructor<'_>, library_name: &str) -> Type {
+    pub fn resolve_type(&mut self, type_ctor: &raw_ast::TypeConstructor<'src>, library_name: &str, naming_context: &[String]) -> Type {
         let name = match &type_ctor.layout {
             raw_ast::LayoutParameter::Identifier(id) => id.to_string(),
             raw_ast::LayoutParameter::Literal(_) => {
@@ -854,6 +872,75 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             raw_ast::LayoutParameter::Type(_) => {
                 panic!("Type layout not supported in resolve_type yet")
+            }
+
+            raw_ast::LayoutParameter::Inline(layout) => {
+                let (_, default_name, attrs) = match &**layout {
+                    raw_ast::Layout::Struct(s) => (s.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_struct", s.attributes.as_deref()),
+                    raw_ast::Layout::Enum(e) => (e.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_enum", e.attributes.as_deref()),
+                    raw_ast::Layout::Bits(b) => (b.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_bits", b.attributes.as_deref()),
+                    raw_ast::Layout::Union(u) => (u.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_union", u.attributes.as_deref()),
+                    raw_ast::Layout::Table(t) => (t.attributes.as_ref().map_or(false, |a| a.attributes.iter().any(|attr| attr.name.data() == "generated_name")), "inline_table", t.attributes.as_deref()),
+                    raw_ast::Layout::TypeConstructor(_) => (false, "inline_type", None),
+                };
+
+                let generated_name = if let Some(a_list) = attrs {
+                    a_list.attributes.iter().find(|a| a.name.data() == "generated_name").and_then(|a| a.args.first()).map(|arg| {
+                        if let raw_ast::Constant::Literal(l) = &arg.value {
+                            l.literal.value.trim_matches('"').to_string()
+                        } else {
+                            default_name.to_string()
+                        }
+                    })
+                } else {
+                    None
+                };
+
+                let unknown_str = "Unknown".to_string();
+                let last = naming_context.last().unwrap_or(&unknown_str);
+                let final_short_name = generated_name.unwrap_or_else(|| {
+                    if naming_context.len() >= 2 && (last == "Request" || last == "Response" || last == "Error" || last == "Result") {
+                        if last == "Request" {
+                            naming_context.join("")
+                        } else {
+                            naming_context.join("_")
+                        }
+                    } else {
+                        to_camel_case(last)
+                    }
+                });
+                
+                let mut decl_context = naming_context.to_vec();
+                if let Some(ref list) = attrs {
+                    if list.attributes.iter().any(|a| a.name.data() == "generated_name") {
+                        decl_context = vec![final_short_name.clone()];
+                    }
+                }
+
+                match &**layout {
+                    raw_ast::Layout::Struct(s) => {
+                        let compiled = self.compile_struct(&final_short_name, s, library_name, None, Some(decl_context), None);
+                        self.struct_declarations.push(compiled);
+                    }
+                    raw_ast::Layout::Enum(e) => {
+                        let compiled = self.compile_enum(&final_short_name, e, library_name, None, None);
+                        self.enum_declarations.push(compiled);
+                    }
+                    raw_ast::Layout::Bits(b) => {
+                        let compiled = self.compile_bits(&final_short_name, b, library_name, None, None);
+                        self.bits_declarations.push(compiled);
+                    }
+                    raw_ast::Layout::Union(u) => {
+                        let compiled = self.compile_union(&final_short_name, u, library_name, None, None);
+                        self.union_declarations.push(compiled);
+                    }
+                    raw_ast::Layout::Table(t) => {
+                        let compiled = self.compile_table(&final_short_name, t, library_name, None, None);
+                        self.table_declarations.push(compiled);
+                    }
+                    _ => {}
+                }
+                format!("{}/{}", library_name, final_short_name)
             }
         };
 
@@ -978,7 +1065,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                 }
                 let inner = &type_ctor.parameters[0];
-                let inner_type = self.resolve_type(inner, library_name);
+                let inner_type = self.resolve_type(inner, library_name, naming_context);
 
                 let max_count = if let Some(c) = type_ctor.constraints.first() {
                     self.eval_constant_usize(c).unwrap_or(u32::MAX as usize) as u32
@@ -1066,7 +1153,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let size_param = &type_ctor.parameters[1];
                 let count = self.eval_type_constant_usize(size_param).unwrap_or(0) as u32;
 
-                let inner_type = self.resolve_type(inner, library_name);
+                let inner_type = self.resolve_type(inner, library_name, naming_context);
 
                 let total_size = count * inner_type.type_shape_v2.inline_size;
                 let max_ool = count * inner_type.type_shape_v2.max_out_of_line;
@@ -1671,12 +1758,11 @@ fn get_dependencies<'node, 'src>(
                 }
                 if let Some(ref res) = m.response_payload {
                     if let raw_ast::Layout::Struct(_) = res {
-                        let synth_name = format!(
-                            "{}{}{}Response",
-                            p.name.data(),
-                            m.name.data().chars().next().unwrap().to_uppercase(),
-                            &m.name.data()[1..]
-                        );
+                        let synth_name = if m.has_error {
+        format!("{}_{}_Response", p.name.data(), m.name.data())
+    } else {
+        format!("{}{}{}Response", p.name.data(), m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..])
+    };
                         deps.push(format!("{}/{}", library_name, synth_name));
                     }
                     collect_deps_from_layout(res, library_name, &mut deps, skip_optional);
@@ -1827,7 +1913,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         for member in &decl.members {
-            let type_obj = self.resolve_type(&member.type_ctor, library_name);
+            let ctx = vec![name.to_string(), member.name.data().to_string()]; let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
             let member_name = member.name.data().to_string();
             let attributes = self.compile_attribute_list(&member.attributes);
 
@@ -1858,7 +1944,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let full_name = format!("{}/{}", library_name, name);
         let location = self.get_location(&decl.name.element);
         
-        let type_obj = self.resolve_type(&decl.type_ctor, library_name);
+        let ctx = vec![name.to_string()]; let type_obj = self.resolve_type(&decl.type_ctor, library_name, &ctx);
         let constant = self.compile_constant(&decl.value);
 
         ConstDeclaration {
@@ -1885,7 +1971,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let maybe_request_payload = if let Some(ref l) = m.request_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
-                        Some(self.resolve_type(tc, library_name))
+                        Some(self.resolve_type(tc, library_name, &[short_name.to_string(), m.name.data().to_string(), "Request".to_string()]))
                     }
                     raw_ast::Layout::Struct(s) => {
                         let method_name_camel = format!(
@@ -1944,7 +2030,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let maybe_response_payload = if let Some(ref l) = m.response_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
-                        Some(self.resolve_type(tc, library_name))
+                        Some(self.resolve_type(tc, library_name, &[short_name.to_string(), m.name.data().to_string(), "Response".to_string()]))
                     }
                     raw_ast::Layout::Struct(s) => {
                         let method_name_camel = format!(
@@ -1952,12 +2038,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             m.name.data().chars().next().unwrap().to_uppercase(),
                             &m.name.data()[1..]
                         );
-                        let synth_name = format!(
-                            "{}{}{}Response",
-                            short_name,
-                            m.name.data().chars().next().unwrap().to_uppercase(),
-                            &m.name.data()[1..]
-                        );
+                        let synth_name = if m.has_error {
+        format!("{}_{}_Response", short_name, m.name.data())
+    } else {
+        format!("{}{}{}Response", short_name, m.name.data().chars().next().unwrap().to_uppercase(), &m.name.data()[1..])
+    };
                         let compiled = self.compile_struct(
                             &synth_name,
                             s,
@@ -2008,7 +2093,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let maybe_response_err_type = if let Some(ref l) = m.error_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
-                        Some(self.resolve_type(tc, library_name))
+                        Some(self.resolve_type(tc, library_name, &[short_name.to_string(), m.name.data().to_string(), "Error".to_string()]))
                     }
                     _ => None,
                 }

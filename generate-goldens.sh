@@ -21,7 +21,7 @@ FILES=(
 
 
 
-    # "anonymous.test.fidl"
+    "anonymous.test.fidl"
     # "nullable.test.fidl"
 
 

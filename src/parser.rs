@@ -574,12 +574,41 @@ impl<'a, 'b> Parser<'a, 'b> {
     }
 
     pub fn parse_layout_parameter(&mut self) -> Option<LayoutParameter<'a>> {
-        // Identifier or Literal or Type?
-        // Check for identifier
+        let attrs = self.maybe_parse_attribute_list();
+
+        let mut strictness = None;
+        if self.last_token.subkind == TokenSubkind::Strict {
+            self.consume_token_with_subkind(TokenSubkind::Strict)?;
+            strictness = Some(Strictness::Strict);
+        } else if self.last_token.subkind == TokenSubkind::Flexible {
+            self.consume_token_with_subkind(TokenSubkind::Flexible)?;
+            strictness = Some(Strictness::Flexible);
+        }
+
+        let is_resource = if self.last_token.subkind == TokenSubkind::Resource {
+            self.consume_token_with_subkind(TokenSubkind::Resource)?;
+            true
+        } else {
+            false
+        };
+
+        if self.last_token.subkind == TokenSubkind::Struct {
+            return Some(LayoutParameter::Inline(Box::new(Layout::Struct(self.parse_struct_declaration(attrs, is_resource)?))));
+        } else if self.last_token.subkind == TokenSubkind::Union {
+            return Some(LayoutParameter::Inline(Box::new(Layout::Union(self.parse_union_declaration(attrs, strictness.unwrap_or(Strictness::Flexible), is_resource)?))));
+        } else if self.last_token.subkind == TokenSubkind::Table {
+            return Some(LayoutParameter::Inline(Box::new(Layout::Table(self.parse_table_declaration(attrs, is_resource)?))));
+        } else if self.last_token.subkind == TokenSubkind::Enum {
+            return Some(LayoutParameter::Inline(Box::new(Layout::Enum(self.parse_enum_declaration(attrs, strictness)?))));
+        } else if self.last_token.subkind == TokenSubkind::Bits {
+            return Some(LayoutParameter::Inline(Box::new(Layout::Bits(self.parse_bits_declaration(attrs, strictness)?))));
+        }
+
+        if attrs.is_some() || strictness.is_some() || is_resource {
+            return None; // parsed modifiers but didn't find inline layout
+        }
+
         if self.last_token.kind == TokenKind::Identifier {
-            // Could be compound identifier
-            // But layout parameter is usually Type or Id.
-            // Let's assume compound identifier for now
             let id = self.parse_compound_identifier()?;
             return Some(LayoutParameter::Identifier(id));
         } else if self.last_token.kind == TokenKind::NumericLiteral

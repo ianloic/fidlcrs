@@ -16,6 +16,7 @@ FILES=(
     "arrays.test.fidl"
     "vectors.test.fidl"
     "service.test.fidl"
+    "escaping.test.fidl"
 
     #"doc_comments.test.fidl"
 
@@ -36,7 +37,6 @@ FILES=(
     # "empty_struct.test.fidl"
     # "encapsulated_structs.test.fidl"
     # "error.test.fidl"
-    # "escaping.test.fidl"
     # "experimental_maybe_from_alias.test.fidl"
     # "experimental_zx_c_types.test.fidl"
     # "handles.test.fidl"

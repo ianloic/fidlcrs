@@ -17,8 +17,7 @@ FILES=(
     "vectors.test.fidl"
     "service.test.fidl"
     "escaping.test.fidl"
-
-    #"doc_comments.test.fidl"
+    "doc_comments.test.fidl"
 
 
 

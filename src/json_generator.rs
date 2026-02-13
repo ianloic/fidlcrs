@@ -261,11 +261,11 @@ pub struct ProtocolMethod {
     pub strict: bool,
     pub location: Location,
     pub deprecated: bool,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub maybe_attributes: Vec<Attribute>,
     pub has_request: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_request_payload: Option<Type>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
     pub has_response: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_response_payload: Option<Type>,

@@ -36,6 +36,7 @@ enum RawDecl<'node, 'src> {
     Union(&'node raw_ast::UnionDeclaration<'src>),
     Table(&'node raw_ast::TableDeclaration<'src>),
     Protocol(&'node raw_ast::ProtocolDeclaration<'src>),
+    Service(&'node raw_ast::ServiceDeclaration<'src>),
     Type(&'node raw_ast::TypeDeclaration<'src>),
 }
 
@@ -124,6 +125,12 @@ impl<'src> Compiler<'src> {
             }
         }
 
+        for decl in &file.service_decls {
+            let name = decl.name.data();
+            let full_name = format!("{}/{}", library_name, name);
+            raw_decls.insert(full_name, RawDecl::Service(decl));
+        }
+
         // 2. Build Dependency Graph
         let mut decl_kinds = HashMap::new();
         for (name, decl) in &raw_decls {
@@ -132,6 +139,7 @@ impl<'src> Compiler<'src> {
                 RawDecl::Union(_) => "union",
                 RawDecl::Table(_) => "table",
                 RawDecl::Protocol(_) => "protocol",
+                RawDecl::Service(_) => "service",
                 RawDecl::Enum(_) => "enum",
                 RawDecl::Bits(_) => "bits",
                 RawDecl::Type(t) => match t.layout {
@@ -155,6 +163,7 @@ impl<'src> Compiler<'src> {
         let mut union_declarations = vec![];
         let mut table_declarations = vec![];
         let mut protocol_declarations = vec![];
+        let mut service_declarations = vec![];
         let mut declarations_ignored = indexmap::IndexMap::new();
 
         for name in &sorted_names {
@@ -220,22 +229,40 @@ impl<'src> Compiler<'src> {
                         // name is already full name
                         // We need short name for compile_struct
                         let short_name = s.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled =
-                            self.compile_struct(short_name, s, &library_name, None, None, s.attributes.as_deref());
+                        let compiled = self.compile_struct(
+                            short_name,
+                            s,
+                            &library_name,
+                            None,
+                            None,
+                            s.attributes.as_deref(),
+                        );
                         if s.name.is_some() {
                             struct_declarations.push(compiled);
                         }
                     }
                     RawDecl::Enum(e) => {
                         let short_name = e.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_enum(short_name, e, &library_name, None, e.attributes.as_deref());
+                        let compiled = self.compile_enum(
+                            short_name,
+                            e,
+                            &library_name,
+                            None,
+                            e.attributes.as_deref(),
+                        );
                         if e.name.is_some() {
                             enum_declarations.push(compiled);
                         }
                     }
                     RawDecl::Bits(b) => {
                         let short_name = b.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_bits(short_name, b, &library_name, None, b.attributes.as_deref());
+                        let compiled = self.compile_bits(
+                            short_name,
+                            b,
+                            &library_name,
+                            None,
+                            b.attributes.as_deref(),
+                        );
                         if b.name.is_some() {
                             bits_declarations.push(compiled);
                         }
@@ -277,6 +304,11 @@ impl<'src> Compiler<'src> {
                         );
                         protocol_declarations.push(compiled);
                     }
+                    RawDecl::Service(s) => {
+                        let short_name = s.name.data();
+                        let compiled = self.compile_service(short_name, s, &library_name);
+                        service_declarations.push(compiled);
+                    }
                 }
             }
         }
@@ -285,6 +317,7 @@ impl<'src> Compiler<'src> {
         bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         protocol_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        service_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
@@ -299,6 +332,9 @@ impl<'src> Compiler<'src> {
         }
         for decl in &protocol_declarations {
             declarations.insert(decl.name.clone(), "protocol".to_string());
+        }
+        for decl in &service_declarations {
+            declarations.insert(decl.name.clone(), "service".to_string());
         }
         for decl in &struct_declarations {
             declarations.insert(decl.name.clone(), "struct".to_string());
@@ -319,7 +355,10 @@ impl<'src> Compiler<'src> {
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
             ])),
-            maybe_attributes: file.library_decl.as_ref().map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
+            maybe_attributes: file
+                .library_decl
+                .as_ref()
+                .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
             library_dependencies: vec![],
             bits_declarations,
@@ -327,7 +366,7 @@ impl<'src> Compiler<'src> {
             enum_declarations,
             experimental_resource_declarations: vec![],
             protocol_declarations,
-            service_declarations: vec![],
+            service_declarations,
             struct_declarations,
             external_struct_declarations: vec![],
             table_declarations,
@@ -614,8 +653,13 @@ impl<'src> Compiler<'src> {
                 element_type: None,
                 element_count: None,
                 maybe_element_count: None,
-                role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                role: None,
+                protocol: None,
+                protocol_transport: None,
+                obj_type: None,
+                rights: None,
+                resource_identifier: None,
+                deprecated: None,
                 maybe_attributes: vec![],
                 field_shape_v2: None,
                 type_shape_v2,
@@ -1058,7 +1102,12 @@ impl<'src> Compiler<'src> {
                     element_type: None,
                     element_count: None,
                     maybe_element_count: None,
-                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
@@ -1084,7 +1133,12 @@ impl<'src> Compiler<'src> {
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
-                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
                     element_type: None,
                     element_count: None,
                     maybe_element_count: if max_len == u32::MAX {
@@ -1117,8 +1171,13 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: TypeShapeV2 {
@@ -1159,7 +1218,12 @@ impl<'src> Compiler<'src> {
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
-                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
                     element_type: Some(Box::new(inner_type.clone())),
                     element_count: None,
                     maybe_element_count: if max_count == u32::MAX {
@@ -1192,8 +1256,13 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: TypeShapeV2 {
@@ -1224,7 +1293,12 @@ impl<'src> Compiler<'src> {
                     element_type: Some(Box::new(inner_type.clone())),
                     element_count: Some(count),
                     maybe_element_count: None,
-                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
@@ -1239,19 +1313,15 @@ impl<'src> Compiler<'src> {
                     },
                 }
             }
-            "handle" | "client_end" | "server_end" => {
-                let subtype = if name == "handle" {
-                    if let Some(param) = type_ctor.parameters.first() {
-                        if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
-                            Some(id.to_string())
-                        } else {
-                            Some("handle".to_string())
-                        }
+            "handle" => {
+                let subtype = if let Some(param) = type_ctor.parameters.first() {
+                    if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
+                        Some(id.to_string())
                     } else {
                         Some("handle".to_string())
                     }
                 } else {
-                    Some("channel".to_string())
+                    Some("handle".to_string())
                 };
 
                 Type {
@@ -1262,7 +1332,68 @@ impl<'src> Compiler<'src> {
                     element_type: None,
                     element_count: None,
                     maybe_element_count: None,
-                    role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
+                    deprecated: None,
+                    maybe_attributes: vec![],
+                    field_shape_v2: None,
+                    type_shape_v2: TypeShapeV2 {
+                        inline_size: 4,
+                        alignment: 4,
+                        depth: 0,
+                        max_handles: 1,
+                        max_out_of_line: 0,
+                        has_padding: false,
+                        has_flexible_envelope: false,
+                    },
+                }
+            }
+            "client_end" | "server_end" => {
+                let role = if name == "client_end" {
+                    "client"
+                } else {
+                    "server"
+                };
+
+                let mut protocol = "".to_string();
+                if let Some(constraint) = type_ctor.constraints.first() {
+                    if let raw_ast::Constant::Identifier(id) = constraint {
+                        let proto_name = id.identifier.to_string();
+                        if proto_name.contains('/') {
+                            protocol = proto_name;
+                        } else {
+                            protocol = format!("{}/{}", library_name, proto_name);
+                        }
+                    }
+                } else if let Some(param) = type_ctor.parameters.first() {
+                    if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
+                        let proto_name = id.to_string();
+                        if proto_name.contains('/') {
+                            protocol = proto_name;
+                        } else {
+                            protocol = format!("{}/{}", library_name, proto_name);
+                        }
+                    }
+                }
+
+                Type {
+                    kind_v2: "endpoint".to_string(),
+                    subtype: None,
+                    identifier: None,
+                    nullable: Some(nullable),
+                    element_type: None,
+                    element_count: None,
+                    maybe_element_count: None,
+                    role: Some(role.to_string()),
+                    protocol: Some(protocol),
+                    protocol_transport: Some("Channel".to_string()),
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
@@ -1296,8 +1427,13 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: shape.clone(),
@@ -1313,8 +1449,13 @@ impl<'src> Compiler<'src> {
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
-                        role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
                         type_shape_v2: TypeShapeV2 {
@@ -1426,18 +1567,24 @@ impl<'src> Compiler<'src> {
                 }
 
                 // Compile regular attribute
-                let args = attr.args.iter().map(|arg| {
-                    let arg_name = arg.name.as_ref()
-                        .map(|n| n.element.start_token.span.data.to_string())
-                        .unwrap_or_else(|| "value".to_string());
-                    let value = self.compile_constant(&arg.value);
-                    crate::json_generator::AttributeArg {
-                        name: arg_name,
-                        type_: value.literal.kind.clone(), // This isn't generally correct natively but good enough for now
-                        value,
-                        location: self.get_location(&arg.element),
-                    }
-                }).collect();
+                let args = attr
+                    .args
+                    .iter()
+                    .map(|arg| {
+                        let arg_name = arg
+                            .name
+                            .as_ref()
+                            .map(|n| n.element.start_token.span.data.to_string())
+                            .unwrap_or_else(|| "value".to_string());
+                        let value = self.compile_constant(&arg.value);
+                        crate::json_generator::AttributeArg {
+                            name: arg_name,
+                            type_: value.literal.kind.clone(), // This isn't generally correct natively but good enough for now
+                            value,
+                            location: self.get_location(&arg.element),
+                        }
+                    })
+                    .collect();
 
                 compiled_attrs.push(Attribute {
                     name: attr.name.element.start_token.span.data.to_string(),
@@ -1470,13 +1617,13 @@ impl<'src> Compiler<'src> {
 
         let first = doc_comments.first().unwrap();
         let last = doc_comments.last().unwrap();
-        
+
         let start_ptr = first.name.element.start_token.span.data.as_ptr() as usize;
         let end_ptr = last.name.element.start_token.span.data.as_ptr() as usize;
         let end_len = last.name.element.start_token.span.data.len();
-        
+
         let len = (end_ptr + end_len).saturating_sub(start_ptr);
-        
+
         let raw_expr = unsafe {
             let slice = std::slice::from_raw_parts(start_ptr as *const u8, len);
             std::str::from_utf8_unchecked(slice)
@@ -1502,7 +1649,7 @@ impl<'src> Compiler<'src> {
                         kind: "string".to_string(),
                         value: combined_value,
                         expression: combined_expression,
-                    }
+                    },
                 },
                 location: loc.clone(),
             }],
@@ -1689,6 +1836,7 @@ fn get_dependencies<'node, 'src>(
                 }
             }
         }
+        RawDecl::Service(_) => {}
     }
 
     deps
@@ -1817,6 +1965,39 @@ fn collect_deps_from_layout(
 }
 
 impl<'src> Compiler<'src> {
+    fn compile_service(
+        &mut self,
+        name: &str,
+        decl: &raw_ast::ServiceDeclaration<'src>,
+        library_name: &str,
+    ) -> ServiceDeclaration {
+        let full_name = format!("{}/{}", library_name, name);
+        let location = self.get_location(&decl.name.element);
+
+        let mut members = vec![];
+        for member in &decl.members {
+            let type_obj = self.resolve_type(&member.type_ctor, library_name);
+            let member_name = member.name.data().to_string();
+            let attributes = self.compile_attribute_list(&member.attributes);
+
+            members.push(ServiceMember {
+                type_: type_obj,
+                name: member_name,
+                location: self.get_location(&member.name.element),
+                deprecated: false,
+                maybe_attributes: attributes,
+            });
+        }
+
+        ServiceDeclaration {
+            name: full_name,
+            location,
+            deprecated: false,
+            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            members,
+        }
+    }
+
     pub fn compile_protocol(
         &mut self,
         short_name: &str,
@@ -1871,8 +2052,13 @@ impl<'src> Compiler<'src> {
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
-                            role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
                             maybe_attributes: vec![],
                             field_shape_v2: None,
                             type_shape_v2: shape,
@@ -1926,8 +2112,13 @@ impl<'src> Compiler<'src> {
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
-                            role: None, protocol: None, protocol_transport: None, obj_type: None, rights: None, resource_identifier: None,
-                    deprecated: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
                             maybe_attributes: vec![],
                             field_shape_v2: None,
                             type_shape_v2: shape,

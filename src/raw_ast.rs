@@ -195,6 +195,7 @@ pub struct File<'a> {
     pub union_decls: Vec<UnionDeclaration<'a>>,
     pub table_decls: Vec<TableDeclaration<'a>>,
     pub protocol_decls: Vec<ProtocolDeclaration<'a>>,
+    pub service_decls: Vec<ServiceDeclaration<'a>>,
     pub tokens: Vec<Token<'a>>,
 }
 
@@ -334,4 +335,20 @@ pub struct ProtocolMethod<'a> {
     pub response_payload: Option<Layout<'a>>,
     pub has_error: bool,
     pub error_payload: Option<Layout<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ServiceDeclaration<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub name: Identifier<'a>,
+    pub members: Vec<ServiceMember<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ServiceMember<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub type_ctor: TypeConstructor<'a>,
+    pub name: Identifier<'a>,
 }

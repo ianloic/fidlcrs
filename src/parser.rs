@@ -44,6 +44,7 @@ impl<'a> Parser<'a> {
         let mut union_decls = vec![];
         let mut table_decls = vec![];
         let mut protocol_decls = vec![];
+        let mut service_decls = vec![];
 
         loop {
             let mut attributes = self.maybe_parse_attribute_list();
@@ -173,6 +174,12 @@ impl<'a> Parser<'a> {
                     // If 'strict'/'flexible' is followed by something unexpected
                     self.last_token = self.lexer.lex();
                 }
+            } else if self.last_token.subkind == TokenSubkind::Service {
+                if let Some(decl) = self.parse_service_declaration(attributes.take()) {
+                    service_decls.push(decl);
+                } else {
+                    self.last_token = self.lexer.lex();
+                }
             } else {
                 // If attributes were parsed but not consumed by a declaration,
                 // or if an unexpected token is encountered.
@@ -195,6 +202,7 @@ impl<'a> Parser<'a> {
             union_decls,
             table_decls,
             protocol_decls,
+            service_decls,
             tokens: vec![], // Assuming token list is not needed internally
         })
     }
@@ -1192,6 +1200,65 @@ impl<'a> Parser<'a> {
             attributes: attributes.map(Box::new),
             name,
             layout,
+        })
+    }
+
+    pub fn parse_service_declaration(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<ServiceDeclaration<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+
+        self.consume_token_with_subkind(TokenSubkind::Service)?;
+        let name = self.parse_identifier()?;
+
+        let mut members = vec![];
+        self.consume_token(TokenKind::LeftCurly)?;
+
+        while self.last_token.kind != TokenKind::RightCurly
+            && self.last_token.kind != TokenKind::EndOfFile
+        {
+            let attrs = self.maybe_parse_attribute_list();
+            if let Some(member) = self.parse_service_member(attrs) {
+                members.push(member);
+            } else {
+                break;
+            }
+        }
+        self.consume_token(TokenKind::RightCurly)?;
+        self.consume_token(TokenKind::Semicolon)?;
+
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(ServiceDeclaration {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            name,
+            members,
+        })
+    }
+
+    pub fn parse_service_member(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<ServiceMember<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+
+        let name = self.parse_identifier()?;
+        let type_ctor = self.parse_type_constructor()?;
+        self.consume_token(TokenKind::Semicolon)?;
+
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(ServiceMember {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            type_ctor,
+            name,
         })
     }
 

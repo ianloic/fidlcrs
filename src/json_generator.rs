@@ -74,6 +74,12 @@ pub struct Type {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_element_count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol_transport: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub obj_type: Option<u32>,
@@ -85,12 +91,6 @@ pub struct Type {
     pub maybe_attributes: Vec<Attribute>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub field_shape_v2: Option<FieldShapeV2>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_count: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_element_count: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
     pub type_shape_v2: TypeShapeV2,
 }
 
@@ -247,7 +247,25 @@ pub struct ProtocolMethod {
     pub maybe_response_err_type: Option<Type>,
 }
 #[derive(Serialize, Clone, Debug)]
-pub struct ServiceDeclaration {}
+pub struct ServiceDeclaration {
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    pub members: Vec<ServiceMember>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ServiceMember {
+    #[serde(rename = "type")]
+    pub type_: Type,
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+}
 #[derive(Serialize, Clone, Debug)]
 pub struct TableDeclaration {
     pub name: String,

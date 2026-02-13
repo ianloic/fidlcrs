@@ -15,9 +15,14 @@ FILES=(
     "union.test.fidl"  
     "arrays.test.fidl"
     "vectors.test.fidl"
-    # "nullable.test.fidl"
-    "doc_comments.test.fidl"
+    "service.test.fidl"
+
+    #"doc_comments.test.fidl"
+
+
+
     # "anonymous.test.fidl"
+    # "nullable.test.fidl"
 
 
     # "bits_constants.test.fidl"
@@ -46,7 +51,6 @@ FILES=(
     # "protocols.test.fidl"
     # "request_flexible_envelope.test.fidl"
     # "serializable.test.fidl"
-    # "service.test.fidl"
     # "string_arrays.test.fidl"
     # "time.test.fidl"
     # "types_in_protocols.test.fidl"

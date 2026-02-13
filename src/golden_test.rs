@@ -58,7 +58,7 @@ fn run_golden_test(fidl_filename: &str, golden_filename: &str) {
 
     let ast = parser.parse_file().expect("Failed to parse FIDL file");
     let mut compiler = Compiler::new();
-    let compiled = compiler.compile(ast, &source);
+    let compiled = compiler.compile(&[ast], &[&source]);
 
     // Generate JSON string using serde_json directly
     let json_output = serde_json::to_string_pretty(&compiled).expect("Failed to serialize to JSON");

@@ -296,7 +296,7 @@ pub struct ServiceMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
 }
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TableDeclaration {
     pub name: String,
     pub naming_context: Vec<String>,
@@ -310,7 +310,7 @@ pub struct TableDeclaration {
     pub type_shape_v2: TypeShapeV2,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TableMember {
     pub ordinal: u32,
     #[serde(skip_serializing_if = "Option::is_none")]

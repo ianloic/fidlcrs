@@ -13,6 +13,11 @@ pub mod token;
 #[cfg(test)]
 mod golden_test;
 
+pub mod compile_step;
+pub mod consume_step;
+pub mod resolve_step;
+pub mod step;
+
 pub fn run() {
     println!("Hello from fidlcrs lib!");
 }

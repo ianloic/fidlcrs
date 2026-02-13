@@ -2,6 +2,11 @@ use crate::json_generator::*;
 use crate::raw_ast;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
+use indexmap::IndexMap;
+use crate::step::Step;
+use crate::consume_step::ConsumeStep;
+use crate::resolve_step::ResolveStep;
+use crate::compile_step::CompileStep;
 
 pub fn compute_method_ordinal(selector: &str) -> u64 {
     let mut hasher = Sha256::new();
@@ -22,14 +27,8 @@ pub fn compute_method_ordinal(selector: &str) -> u64 {
 
 use crate::source_file::SourceFile;
 
-pub struct Compiler<'src> {
-    // Compiled shapes for types
-    shapes: HashMap<String, TypeShapeV2>,
-    source_files: Vec<&'src SourceFile>,
-}
-
 #[derive(Clone)]
-enum RawDecl<'node, 'src> {
+pub enum RawDecl<'node, 'src> {
     Struct(&'node raw_ast::StructDeclaration<'src>),
     Enum(&'node raw_ast::EnumDeclaration<'src>),
     Bits(&'node raw_ast::BitsDeclaration<'src>),
@@ -41,332 +40,110 @@ enum RawDecl<'node, 'src> {
     Type(&'node raw_ast::TypeDeclaration<'src>),
 }
 
-impl<'src> Compiler<'src> {
+pub struct Compiler<'node, 'src> {
+    // Compiled shapes for types
+    pub shapes: HashMap<String, TypeShapeV2>,
+    pub source_files: Vec<&'src SourceFile>,
+    
+    // State
+    pub library_name: String,
+    pub raw_decls: HashMap<String, RawDecl<'node, 'src>>,
+    pub decl_kinds: HashMap<String, &'static str>,
+    pub sorted_names: Vec<String>,
+    
+    // Outputs
+    pub bits_declarations: Vec<BitsDeclaration>,
+    pub const_declarations: Vec<ConstDeclaration>,
+    pub enum_declarations: Vec<EnumDeclaration>,
+    pub protocol_declarations: Vec<ProtocolDeclaration>,
+    pub service_declarations: Vec<ServiceDeclaration>,
+    pub struct_declarations: Vec<StructDeclaration>,
+    pub table_declarations: Vec<TableDeclaration>,
+    pub union_declarations: Vec<UnionDeclaration>,
+    
+    pub declarations: IndexMap<String, String>,
+    pub declaration_order: Vec<String>,
+}
+impl<'node, 'src> Compiler<'node, 'src> {
     pub fn new() -> Self {
         Self {
             shapes: HashMap::new(),
             source_files: Vec::new(),
+            library_name: "unknown".to_string(),
+            raw_decls: HashMap::new(),
+            decl_kinds: HashMap::new(),
+            sorted_names: Vec::new(),
+            bits_declarations: Vec::new(),
+            const_declarations: Vec::new(),
+            enum_declarations: Vec::new(),
+            protocol_declarations: Vec::new(),
+            service_declarations: Vec::new(),
+            struct_declarations: Vec::new(),
+            table_declarations: Vec::new(),
+            union_declarations: Vec::new(),
+            declarations: IndexMap::new(),
+            declaration_order: Vec::new(),
         }
     }
 
     pub fn compile(
         &mut self,
-        files: &[raw_ast::File<'src>],
+        files: &'node [raw_ast::File<'src>],
         source_files: &[&'src SourceFile],
     ) -> JsonRoot {
         self.source_files = source_files.to_vec();
-        let library_name = files.iter()
-            .find_map(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
-            .unwrap_or_else(|| "unknown".to_string());
 
-        // 1. Collect all declarations
-        // We let rust infer lifetimes for the keys/values, or explicit if needed.
-        let mut raw_decls: HashMap<String, RawDecl<'_, 'src>> = HashMap::new();
+        // 1. Consume
+        let mut consume = ConsumeStep { files };
+        consume.run(self);
 
-        for file in files {
-            for decl in &file.type_decls {
-                let name = format!("{}/{}", library_name, decl.name.data());
-                raw_decls.insert(name, RawDecl::Type(decl));
-            }
+        // 2. Resolve
+        let mut resolve = ResolveStep;
+        resolve.run(self);
 
-            for decl in &file.struct_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Struct(decl));
-            }
-
-            for decl in &file.enum_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Enum(decl));
-            }
-
-            for decl in &file.bits_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Bits(decl));
-            }
-
-            for decl in &file.union_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Union(decl));
-            }
-
-            for decl in &file.table_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Table(decl));
-            }
-
-            for decl in &file.protocol_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Protocol(decl));
-
-                for method in &decl.methods {
-                    let method_name_camel = format!(
-                        "{}{}",
-                        method.name.data().chars().next().unwrap().to_uppercase(),
-                        &method.name.data()[1..]
-                    );
-                    if let Some(raw_ast::Layout::Struct(s)) = &method.request_payload {
-                        let synth_name = format!("{}Request", method_name_camel);
-                        let full_synth =
-                            format!("{}/{}", library_name, format!("{}{}", name, synth_name));
-                        raw_decls.insert(full_synth, RawDecl::Struct(s));
-                    }
-                    if let Some(raw_ast::Layout::Struct(s)) = &method.response_payload {
-                        let synth_name = format!("{}Response", method_name_camel);
-                        let full_synth =
-                            format!("{}/{}", library_name, format!("{}{}", name, synth_name));
-                        raw_decls.insert(full_synth, RawDecl::Struct(s));
-                    }
-                }
-            }
-
-            for decl in &file.service_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Service(decl));
-            }
-
-            for decl in &file.const_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", library_name, name);
-                raw_decls.insert(full_name, RawDecl::Const(decl));
-            }
-        }
-
-        // 2. Build Dependency Graph
-        let mut decl_kinds = HashMap::new();
-        for (name, decl) in &raw_decls {
-            let kind = match decl {
-                RawDecl::Struct(_) => "struct",
-                RawDecl::Union(_) => "union",
-                RawDecl::Table(_) => "table",
-                RawDecl::Protocol(_) => "protocol",
-                RawDecl::Service(_) => "service",
-                RawDecl::Const(_) => "const",
-                RawDecl::Enum(_) => "enum",
-                RawDecl::Bits(_) => "bits",
-                RawDecl::Type(t) => match t.layout {
-                    raw_ast::Layout::Struct(_) => "struct",
-                    raw_ast::Layout::Union(_) => "union",
-                    raw_ast::Layout::Table(_) => "table",
-                    raw_ast::Layout::Enum(_) => "enum",
-                    raw_ast::Layout::Bits(_) => "bits",
-                    _ => "unknown",
-                },
-            };
-            decl_kinds.insert(name.clone(), kind);
-        }
-
-        let sorted_names = self.topological_sort(&raw_decls, &library_name, &decl_kinds, false);
-
-        // 3. Compile in order
-        let mut struct_declarations = vec![];
-        let mut enum_declarations = vec![];
-        let mut bits_declarations = vec![];
-        let mut const_declarations = vec![];
-        let mut union_declarations = vec![];
-        let mut table_declarations = vec![];
-        let mut protocol_declarations = vec![];
-        let mut service_declarations = vec![];
-        let mut declarations_ignored = indexmap::IndexMap::new();
-
-        for name in &sorted_names {
-            if let Some(decl) = raw_decls.get(name) {
-                // Determine if it's a struct and compile it
-                match decl {
-                    RawDecl::Type(t) => {
-                        if let raw_ast::Layout::Struct(ref s) = t.layout {
-                            // It is a struct defined via type alias syntax: type S = struct { ... };
-                            let compiled = self.compile_struct(
-                                t.name.data(),
-                                s,
-                                &library_name,
-                                Some(&t.name.element),
-                                None,
-                                t.attributes.as_deref(),
-                            );
-                            struct_declarations.push(compiled);
-                        } else if let raw_ast::Layout::Enum(ref e) = t.layout {
-                            let compiled = self.compile_enum(
-                                t.name.data(),
-                                e,
-                                &library_name,
-                                Some(&t.name.element),
-                                t.attributes.as_deref(),
-                            );
-                            enum_declarations.push(compiled);
-                        } else if let raw_ast::Layout::Bits(ref b) = t.layout {
-                            let compiled = self.compile_bits(
-                                t.name.data(),
-                                b,
-                                &library_name,
-                                Some(&t.name.element),
-                                t.attributes.as_deref(),
-                            );
-                            bits_declarations.push(compiled);
-                        } else if let raw_ast::Layout::Table(ref ta) = t.layout {
-                            let compiled = self.compile_table(
-                                t.name.data(),
-                                ta,
-                                &library_name,
-                                Some(&t.name.element),
-                                t.attributes.as_deref(),
-                            );
-                            table_declarations.push(compiled);
-                        } else if let raw_ast::Layout::Union(ref u) = t.layout {
-                            let compiled = self.compile_union(
-                                t.name.data(),
-                                u,
-                                &library_name,
-                                Some(&t.name.element),
-                                t.attributes.as_deref(),
-                            );
-                            union_declarations.push(compiled);
-                        }
-                    }
-                    RawDecl::Struct(s) => {
-                        if s.name.is_none() {
-                            // It's an anonymous/synthetic struct, compile_protocol will compile it!
-                            continue;
-                        }
-                        // It is a struct defined via struct S { ... };
-                        // name is already full name
-                        // We need short name for compile_struct
-                        let short_name = s.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_struct(
-                            short_name,
-                            s,
-                            &library_name,
-                            None,
-                            None,
-                            s.attributes.as_deref(),
-                        );
-                        if s.name.is_some() {
-                            struct_declarations.push(compiled);
-                        }
-                    }
-                    RawDecl::Enum(e) => {
-                        let short_name = e.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_enum(
-                            short_name,
-                            e,
-                            &library_name,
-                            None,
-                            e.attributes.as_deref(),
-                        );
-                        if e.name.is_some() {
-                            enum_declarations.push(compiled);
-                        }
-                    }
-                    RawDecl::Bits(b) => {
-                        let short_name = b.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_bits(
-                            short_name,
-                            b,
-                            &library_name,
-                            None,
-                            b.attributes.as_deref(),
-                        );
-                        if b.name.is_some() {
-                            bits_declarations.push(compiled);
-                        }
-                    }
-                    RawDecl::Union(u) => {
-                        let short_name = u.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_union(
-                            short_name,
-                            u,
-                            &library_name,
-                            None,
-                            u.attributes.as_deref(),
-                        );
-                        if u.name.is_some() {
-                            union_declarations.push(compiled);
-                        }
-                    }
-                    RawDecl::Table(t) => {
-                        let short_name = t.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                        let compiled = self.compile_table(
-                            short_name,
-                            t,
-                            &library_name,
-                            None,
-                            t.attributes.as_deref(),
-                        );
-                        if t.name.is_some() {
-                            table_declarations.push(compiled);
-                        }
-                    }
-                    RawDecl::Protocol(p) => {
-                        let short_name = p.name.data();
-                        let compiled = self.compile_protocol(
-                            short_name,
-                            p,
-                            &library_name,
-                            &mut struct_declarations,
-                            &mut declarations_ignored,
-                        );
-                        protocol_declarations.push(compiled);
-                    }
-                    RawDecl::Service(s) => {
-                        let short_name = s.name.data();
-                        let compiled = self.compile_service(short_name, s, &library_name);
-                        service_declarations.push(compiled);
-                    }
-                    RawDecl::Const(c) => {
-                        let compiled = self.compile_const(c, &library_name);
-                        const_declarations.push(compiled);
-                    }
-                }
-            }
-        }
+        // 3. Compile
+        let mut compile = CompileStep;
+        compile.run(self);
 
         // Sort declarations by name to match fidlc output order (alphabetical)
-        bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        protocol_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        service_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        // declaration_order.sort(); // Don't sort declaration_order, allow native order
+        self.bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.protocol_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.service_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
 
-        let mut declarations = indexmap::IndexMap::new();
-        for decl in &bits_declarations {
-            declarations.insert(decl.name.clone(), "bits".to_string());
+        for decl in &self.bits_declarations {
+            self.declarations.insert(decl.name.clone(), "bits".to_string());
         }
-        for decl in &const_declarations {
-            declarations.insert(decl.name.clone(), "const".to_string());
+        for decl in &self.const_declarations {
+            self.declarations.insert(decl.name.clone(), "const".to_string());
         }
-        for decl in &enum_declarations {
-            declarations.insert(decl.name.clone(), "enum".to_string());
+        for decl in &self.enum_declarations {
+            self.declarations.insert(decl.name.clone(), "enum".to_string());
         }
-        for decl in &protocol_declarations {
-            declarations.insert(decl.name.clone(), "protocol".to_string());
+        for decl in &self.protocol_declarations {
+            self.declarations.insert(decl.name.clone(), "protocol".to_string());
         }
-        for decl in &service_declarations {
-            declarations.insert(decl.name.clone(), "service".to_string());
+        for decl in &self.service_declarations {
+            self.declarations.insert(decl.name.clone(), "service".to_string());
         }
-        for decl in &struct_declarations {
-            declarations.insert(decl.name.clone(), "struct".to_string());
+        for decl in &self.struct_declarations {
+            self.declarations.insert(decl.name.clone(), "struct".to_string());
         }
-        for decl in &table_declarations {
-            declarations.insert(decl.name.clone(), "table".to_string());
+        for decl in &self.table_declarations {
+            self.declarations.insert(decl.name.clone(), "table".to_string());
         }
-        for decl in &union_declarations {
-            declarations.insert(decl.name.clone(), "union".to_string());
+        for decl in &self.union_declarations {
+            self.declarations.insert(decl.name.clone(), "union".to_string());
         }
 
-        let declaration_order = self.topological_sort(&raw_decls, &library_name, &decl_kinds, true);
+        self.declaration_order = self.topological_sort(true);
 
         JsonRoot {
-            name: library_name,
+            name: self.library_name.clone(),
             platform: "unversioned".to_string(),
             available: Some(BTreeMap::from([
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
@@ -377,36 +154,29 @@ impl<'src> Compiler<'src> {
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
             library_dependencies: vec![],
-            bits_declarations,
-            const_declarations,
-            enum_declarations,
+            bits_declarations: self.bits_declarations.clone(),
+            const_declarations: self.const_declarations.clone(),
+            enum_declarations: self.enum_declarations.clone(),
             experimental_resource_declarations: vec![],
-            protocol_declarations,
-            service_declarations,
-            struct_declarations,
+            protocol_declarations: self.protocol_declarations.clone(),
+            service_declarations: self.service_declarations.clone(),
+            struct_declarations: self.struct_declarations.clone(),
             external_struct_declarations: vec![],
-            table_declarations,
-            union_declarations,
-            // bits_declarations.sort_by(|a, b| a.name.cmp(&b.name)); // when implemented
+            table_declarations: self.table_declarations.clone(),
+            union_declarations: self.union_declarations.clone(),
             alias_declarations: vec![],
             new_type_declarations: vec![],
-            declaration_order,
-            declarations,
+            declaration_order: self.declaration_order.clone(),
+            declarations: self.declarations.clone(),
         }
     }
 
-    fn topological_sort<'node>(
-        &self,
-        decls: &HashMap<String, RawDecl<'node, 'src>>,
-        library_name: &str,
-        decl_kinds: &HashMap<String, &str>,
-        skip_optional: bool,
-    ) -> Vec<String> {
+    pub fn topological_sort(&self, skip_optional: bool) -> Vec<String> {
         let mut visited = HashSet::new();
         let mut sorted = vec![];
         let mut temp_mark = HashSet::new(); // for cycle detection
 
-        let mut keys: Vec<&String> = decls.keys().collect();
+        let mut keys: Vec<&String> = self.raw_decls.keys().collect();
         keys.sort();
 
         fn visit(
@@ -455,12 +225,12 @@ impl<'src> Compiler<'src> {
         for name in keys {
             visit(
                 name,
-                decls,
-                library_name,
+                &self.raw_decls,
+                &self.library_name,
                 &mut visited,
                 &mut temp_mark,
                 &mut sorted,
-                decl_kinds,
+                &self.decl_kinds,
                 skip_optional,
             );
         }
@@ -468,7 +238,7 @@ impl<'src> Compiler<'src> {
         sorted
     }
 
-    fn compile_enum(
+    pub fn compile_enum(
         &mut self,
         name: &str,
         decl: &raw_ast::EnumDeclaration<'_>,
@@ -575,7 +345,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_bits(
+    pub fn compile_bits(
         &mut self,
         name: &str,
         decl: &raw_ast::BitsDeclaration<'_>,
@@ -686,7 +456,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_table(
+    pub fn compile_table(
         &mut self,
         name: &str,
         decl: &raw_ast::TableDeclaration<'src>,
@@ -811,7 +581,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_union(
+    pub fn compile_union(
         &mut self,
         name: &str,
         decl: &raw_ast::UnionDeclaration<'src>,
@@ -952,7 +722,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_struct(
+    pub fn compile_struct(
         &mut self,
         name: &str,
         decl: &raw_ast::StructDeclaration<'_>,
@@ -1556,7 +1326,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_attributes_from_ref(
+    pub fn compile_attributes_from_ref(
         &self,
         attributes: &raw_ast::AttributeList<'_>,
     ) -> Vec<Attribute> {
@@ -1607,7 +1377,7 @@ impl<'src> Compiler<'src> {
         compiled_attrs
     }
 
-    fn compile_doc_comments(&self, doc_comments: &[&raw_ast::Attribute<'_>]) -> Attribute {
+    pub fn compile_doc_comments(&self, doc_comments: &[&raw_ast::Attribute<'_>]) -> Attribute {
         let mut combined_value = String::new();
         for attr in doc_comments.iter() {
             let text = attr.name.element.start_token.span.data;
@@ -1663,7 +1433,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_attribute_list(
+    pub fn compile_attribute_list(
         &self,
         attributes: &Option<Box<raw_ast::AttributeList<'_>>>,
     ) -> Vec<Attribute> {
@@ -1743,7 +1513,7 @@ impl<'src> Compiler<'src> {
         out
     }
 
-    fn compile_constant(&self, constant: &raw_ast::Constant<'_>) -> Constant {
+    pub fn compile_constant(&self, constant: &raw_ast::Constant<'_>) -> Constant {
         match constant {
             raw_ast::Constant::Literal(lit) => {
                 let (kind, value_json, expr_json) = match &lit.literal.kind {
@@ -2045,8 +1815,8 @@ fn collect_deps_from_layout(
     }
 }
 
-impl<'src> Compiler<'src> {
-    fn compile_service(
+impl<'node, 'src> Compiler<'node, 'src> {
+    pub fn compile_service(
         &mut self,
         name: &str,
         decl: &raw_ast::ServiceDeclaration<'src>,
@@ -2079,7 +1849,7 @@ impl<'src> Compiler<'src> {
         }
     }
 
-    fn compile_const(
+    pub fn compile_const(
         &mut self,
         decl: &raw_ast::ConstDeclaration<'src>,
         library_name: &str,
@@ -2106,8 +1876,6 @@ impl<'src> Compiler<'src> {
         short_name: &str,
         decl: &raw_ast::ProtocolDeclaration<'src>,
         library_name: &str,
-        struct_declarations: &mut Vec<StructDeclaration>,
-        declarations: &mut indexmap::IndexMap<String, String>,
     ) -> ProtocolDeclaration {
         let name = format!("{}/{}", library_name, short_name);
 
@@ -2143,9 +1911,8 @@ impl<'src> Compiler<'src> {
                             ]),
                             None,
                         );
-                        struct_declarations.push(compiled);
+                        self.struct_declarations.push(compiled);
                         let full_synth = format!("{}/{}", library_name, synth_name);
-                        declarations.insert(full_synth.clone(), "struct".to_string());
                         let shape = self.shapes.get(&full_synth).cloned().unwrap();
                         Some(Type {
                             kind_v2: "identifier".to_string(),
@@ -2203,9 +1970,8 @@ impl<'src> Compiler<'src> {
                             ]),
                             None,
                         );
-                        struct_declarations.push(compiled);
+                        self.struct_declarations.push(compiled);
                         let full_synth = format!("{}/{}", library_name, synth_name);
-                        declarations.insert(full_synth.clone(), "struct".to_string());
                         let shape = self.shapes.get(&full_synth).cloned().unwrap();
                         Some(Type {
                             kind_v2: "identifier".to_string(),

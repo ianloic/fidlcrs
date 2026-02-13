@@ -62,7 +62,7 @@ FILES=(
 for file in "${FILES[@]}"; do
     name="${file%.test.fidl}"
     echo "Generating JSON IR for $file -> $name.json"
-    ./target/debug/fidlcrs "fidlc/testdata/$file" --json "goldens/$name.json"
+    ./target/debug/fidlcrs --json "goldens/$name.json" --files "fidlc/testdata/$file"
     diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true
 done
 

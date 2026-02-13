@@ -1529,7 +1529,7 @@ fn get_dependencies<'node, 'src>(
         }
         RawDecl::Protocol(p) => {
             for m in &p.methods {
-                let method_name_camel = format!(
+                let _method_name_camel = format!(
                     "{}{}",
                     m.name.data().chars().next().unwrap().to_uppercase(),
                     &m.name.data()[1..]

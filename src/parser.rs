@@ -936,12 +936,12 @@ impl<'a> Parser<'a> {
             .map(|a| a.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
-        let mut openness = None;
+        let mut _openness = None;
         if self.last_token.subkind == TokenSubkind::Closed
             || self.last_token.subkind == TokenSubkind::Open
             || self.last_token.subkind == TokenSubkind::Ajar
         {
-            openness = Some(self.last_token.clone());
+            _openness = Some(self.last_token.clone());
             self.consume_token(TokenKind::Identifier)?;
         }
 
@@ -987,11 +987,11 @@ impl<'a> Parser<'a> {
             .map(|a| a.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
-        let mut strictness = None;
+        let mut _strictness = None;
         if self.last_token.subkind == TokenSubkind::Strict
             || self.last_token.subkind == TokenSubkind::Flexible
         {
-            strictness = Some(self.last_token.clone());
+            _strictness = Some(self.last_token.clone());
             self.consume_token(TokenKind::Identifier)?;
         }
 

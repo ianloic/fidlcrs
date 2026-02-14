@@ -80,6 +80,7 @@ pub struct Compiler<'node, 'src> {
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<String, crate::versioning_types::Availability>,
+    pub version_selection: crate::versioning_types::VersionSelection,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -107,6 +108,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             declarations: IndexMap::new(),
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
+            version_selection: crate::versioning_types::VersionSelection::new(),
         }
     }
 

@@ -12,7 +12,7 @@ pub mod token;
 pub mod versioning_types;
 
 #[cfg(test)]
-mod golden_test;
+pub mod test_library;
 
 pub mod compile_step;
 pub mod consume_step;

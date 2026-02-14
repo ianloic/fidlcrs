@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
 const UNVERSIONED_NAME: &str = "unversioned";

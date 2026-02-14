@@ -72,7 +72,22 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         method.name.data().chars().next().unwrap().to_uppercase(),
                         &method.name.data()[1..]
                     );
-                    if let Some(raw_ast::Layout::Struct(s)) = &method.request_payload {
+                    let req_s = match &method.request_payload {
+                        Some(raw_ast::Layout::Struct(s)) => Some(s),
+                        Some(raw_ast::Layout::TypeConstructor(tc)) => {
+                            match &tc.layout {
+                                raw_ast::LayoutParameter::Inline(inline_layout) => {
+                                    match &**inline_layout {
+                                        raw_ast::Layout::Struct(s) => Some(s),
+                                        _ => None,
+                                    }
+                                }
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    };
+                    if let Some(s) = req_s {
                         let synth_name = format!("{}Request", method_name_camel);
                         let full_synth = format!(
                             "{}/{}",
@@ -81,7 +96,23 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         );
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
-                    if let Some(raw_ast::Layout::Struct(s)) = &method.response_payload {
+                    
+                    let res_s = match &method.response_payload {
+                        Some(raw_ast::Layout::Struct(s)) => Some(s),
+                        Some(raw_ast::Layout::TypeConstructor(tc)) => {
+                            match &tc.layout {
+                                raw_ast::LayoutParameter::Inline(inline_layout) => {
+                                    match &**inline_layout {
+                                        raw_ast::Layout::Struct(s) => Some(s),
+                                        _ => None,
+                                    }
+                                }
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    };
+                    if let Some(s) = res_s {
                         let (_, full_synth) = if method.has_error {
                             let sn = format!("_{}_Response", method.name.data());
                             (
@@ -89,7 +120,8 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                 format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)),
                             )
                         } else {
-                            let sn = format!("{}Response", method_name_camel);
+                            let suffix = if !method.has_request { "Request" } else { "Response" };
+                            let sn = format!("{}{}", method_name_camel, suffix);
                             (
                                 sn.clone(),
                                 format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)),

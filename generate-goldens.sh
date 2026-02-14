@@ -47,7 +47,7 @@ FILES=(
     # "overlay.test.fidl"
     # "padding.test.fidl"
     # "protocol_request.test.fidl"
-    # "protocols.test.fidl"
+    "protocols.test.fidl"
     # "request_flexible_envelope.test.fidl"
     # "serializable.test.fidl"
     # "string_arrays.test.fidl"

@@ -540,10 +540,24 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     pub fn parse_constant(&mut self) -> Option<Constant<'a>> {
         let start = self.last_token.clone();
+        let mut left = self.parse_constant_term()?;
+        while self.last_token.kind == TokenKind::Pipe {
+            self.consume_token(TokenKind::Pipe)?;
+            let right = self.parse_constant_term()?;
+            let end = self.previous_token.as_ref().unwrap().clone();
+            left = Constant::BinaryOperator(BinaryOperatorConstant {
+                element: SourceElement::new(start.clone(), end),
+                left: Box::new(left),
+                right: Box::new(right),
+                op: BinaryOperator::Or,
+            });
+        }
+        Some(left)
+    }
+
+    pub fn parse_constant_term(&mut self) -> Option<Constant<'a>> {
+        let start = self.last_token.clone();
         if self.last_token.kind == TokenKind::Identifier {
-            // Check if it is True/False subkind, treating as literal?
-            // Actually, if lexer tokenizes as Identifier with Subkind::True,
-            // we should consume it HERE or in parse_literal?
             if self.last_token.subkind == TokenSubkind::True
                 || self.last_token.subkind == TokenSubkind::False
             {

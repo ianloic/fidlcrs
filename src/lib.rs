@@ -13,6 +13,8 @@ pub mod versioning_types;
 
 #[cfg(test)]
 pub mod test_library;
+#[cfg(test)]
+pub mod enums_tests;
 
 pub mod compile_step;
 pub mod consume_step;

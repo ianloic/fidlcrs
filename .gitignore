@@ -1,3 +1,5 @@
 /fidlc/
+/sdk-fidl/
+/sdk-fidl-gen/
 /target/
 /goldens/

@@ -19,6 +19,8 @@ pub mod enums_tests;
 pub mod parsing_tests;
 #[cfg(test)]
 pub mod structs_tests;
+#[cfg(test)]
+pub mod array_tests;
 
 pub mod compile_step;
 pub mod consume_step;

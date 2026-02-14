@@ -476,3 +476,15 @@ impl VersionSelection {
         self.map.contains_key(platform)
     }
 }
+impl Default for Availability {
+    fn default() -> Self {
+        Self {
+            state: AvailabilityState::Narrowed,
+            added: Some(Version::NEG_INF),
+            deprecated: None,
+            removed: None,
+            ending: None,
+            legacy: None,
+        }
+    }
+}

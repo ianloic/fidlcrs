@@ -79,6 +79,7 @@ pub struct Compiler<'node, 'src> {
 
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
+    pub decl_availability: HashMap<String, crate::versioning_types::Availability>,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -105,6 +106,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             union_declarations: Vec::new(),
             declarations: IndexMap::new(),
             declaration_order: Vec::new(),
+            decl_availability: HashMap::new(),
         }
     }
 
@@ -120,6 +122,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         consume.run(self);
 
         // 2. Resolve
+        // 1.5. Availability
+        let mut avail = crate::availability_step::AvailabilityStep;
+        avail.run(self);
+
         let mut resolve = ResolveStep;
         resolve.run(self);
 

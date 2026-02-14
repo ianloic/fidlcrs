@@ -23,6 +23,8 @@ pub mod structs_tests;
 pub mod array_tests;
 #[cfg(test)]
 pub mod bits_tests;
+#[cfg(test)]
+pub mod protocol_tests;
 
 pub mod compile_step;
 pub mod consume_step;

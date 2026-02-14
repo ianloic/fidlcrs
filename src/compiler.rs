@@ -2699,12 +2699,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             });
         }
 
-        let openness = if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Open) {
-            "open"
-        } else if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Ajar) {
+        let openness = if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Ajar) {
             "ajar"
-        } else {
+        } else if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Closed) {
             "closed"
+        } else {
+            "open"
         };
 
         let mut compiled_composed = vec![];

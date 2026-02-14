@@ -31,3 +31,4 @@ mod tests {
     }
 }
 pub mod availability_step;
+pub mod replacement_step;

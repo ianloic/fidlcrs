@@ -53,7 +53,25 @@ pub enum RawDecl<'node, 'src> {
     Protocol(&'node raw_ast::ProtocolDeclaration<'src>),
     Service(&'node raw_ast::ServiceDeclaration<'src>),
     Const(&'node raw_ast::ConstDeclaration<'src>),
+    Alias(&'node raw_ast::AliasDeclaration<'src>),
     Type(&'node raw_ast::TypeDeclaration<'src>),
+}
+
+impl<'node, 'src> RawDecl<'node, 'src> {
+    pub fn attributes(&self) -> Option<&'node raw_ast::AttributeList<'src>> {
+        match self {
+            RawDecl::Struct(d) => d.attributes.as_deref(),
+            RawDecl::Enum(d) => d.attributes.as_deref(),
+            RawDecl::Bits(d) => d.attributes.as_deref(),
+            RawDecl::Union(d) => d.attributes.as_deref(),
+            RawDecl::Table(d) => d.attributes.as_deref(),
+            RawDecl::Protocol(d) => d.attributes.as_deref(),
+            RawDecl::Service(d) => d.attributes.as_deref(),
+            RawDecl::Const(d) => d.attributes.as_deref(),
+            RawDecl::Alias(d) => d.attributes.as_deref(),
+            RawDecl::Type(d) => d.attributes.as_deref(),
+        }
+    }
 }
 
 pub struct Compiler<'node, 'src> {
@@ -63,11 +81,13 @@ pub struct Compiler<'node, 'src> {
 
     // State
     pub library_name: String,
+    pub library_decl: Option<crate::raw_ast::LibraryDeclaration<'src>>,
     pub raw_decls: HashMap<String, RawDecl<'node, 'src>>,
     pub decl_kinds: HashMap<String, &'static str>,
     pub sorted_names: Vec<String>,
 
     // Outputs
+    pub alias_declarations: Vec<AliasDeclaration>,
     pub bits_declarations: Vec<BitsDeclaration>,
     pub const_declarations: Vec<ConstDeclaration>,
     pub enum_declarations: Vec<EnumDeclaration>,
@@ -94,9 +114,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             shapes: HashMap::new(),
             source_files: Vec::new(),
             library_name: "unknown".to_string(),
+            library_decl: None,
             raw_decls: HashMap::new(),
             decl_kinds: HashMap::new(),
             sorted_names: Vec::new(),
+            alias_declarations: Vec::new(),
             bits_declarations: Vec::new(),
             const_declarations: Vec::new(),
             enum_declarations: Vec::new(),
@@ -136,6 +158,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         compile.run(self);
 
         // Sort declarations by name to match fidlc output order (alphabetical)
+        self.alias_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
@@ -146,6 +169,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+
 
         for decl in &self.bits_declarations {
             self.declarations
@@ -179,12 +203,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.declarations
                 .insert(decl.name.clone(), "union".to_string());
         }
+        for decl in &self.alias_declarations {
+            self.declarations
+                .insert(decl.name.clone(), "alias".to_string());
+        }
 
         self.declaration_order = self.topological_sort(true);
 
+        let platform = if self.is_versioned_library() {
+            self.library_name.split('.').next().unwrap_or(&self.library_name).to_string()
+        } else {
+            "unversioned".to_string()
+        };
+
         JsonRoot {
             name: self.library_name.clone(),
-            platform: "unversioned".to_string(),
+            platform,
             available: Some(BTreeMap::from([
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
@@ -205,7 +239,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             external_struct_declarations: vec![],
             table_declarations: self.table_declarations.clone(),
             union_declarations: self.union_declarations.clone(),
-            alias_declarations: vec![],
+            alias_declarations: self.alias_declarations.clone(),
             new_type_declarations: vec![],
             declaration_order: self.declaration_order.clone(),
             declarations: self.declarations.clone(),
@@ -317,21 +351,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if attributes.iter().any(|a| a.name == "unknown") {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
-                if let Ok(val) = compiled_value
-                    .literal
-                    .value
-                    .get()
-                    .trim_matches('"')
-                    .parse::<u32>()
-                {
-                    maybe_unknown_value = Some(val);
+                if let Some(literal) = &compiled_value.literal {
+                    if let Ok(val) = literal
+                        .value
+                        .get()
+                        .trim_matches('"')
+                        .parse::<u32>()
+                    {
+                        maybe_unknown_value = Some(val);
+                    }
                 }
             }
 
             members.push(EnumMember {
                 name: member.name.data().to_string(),
                 location: self.get_location(&member.name.element),
-                deprecated: false,
+                deprecated: self.is_deprecated(member.attributes.as_deref()),
                 value: compiled_value,
                 maybe_attributes: attributes,
             });
@@ -359,7 +394,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         // Strictness default: Flexible?
-        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict);
+        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
 
         if !strict && maybe_unknown_value.is_none() {
             maybe_unknown_value = match subtype_name.as_str() {
@@ -375,7 +410,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: vec![name.to_string()],
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             type_: subtype_name,
             members,
             strict,
@@ -426,21 +461,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             // Calculate mask
-            if let Ok(val) = compiled_value
-                .literal
-                .value
-                .get()
-                .trim_matches('"')
-                .parse::<u64>()
-            {
-                mask |= val;
+            if let Some(literal) = &compiled_value.literal {
+                if let Ok(val) = literal
+                    .value
+                    .get()
+                    .trim_matches('"')
+                    .parse::<u64>()
+                {
+                    mask |= val;
+                }
             }
             // TODO: Handle non-u64 values if needed?
 
             members.push(BitsMember {
                 name: member.name.data().to_string(),
                 location: self.get_location(&member.name.element),
-                deprecated: false,
+                deprecated: self.is_deprecated(member.attributes.as_deref()),
                 value: compiled_value,
                 maybe_attributes: attributes,
             });
@@ -467,13 +503,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.shapes.insert(full_name.clone(), type_shape_v2.clone());
 
         // Strictness default: Flexible?
-        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict);
+        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
 
         BitsDeclaration {
             name: full_name,
             naming_context: vec![name.to_string()],
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -551,7 +587,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 type_,
                 name,
                 location: member.name.as_ref().map(|n| self.get_location(&n.element)),
-                deprecated: Some(false),
+                deprecated: Some(self.is_deprecated(member.attributes.as_deref())),
                 maybe_attributes: attributes,
             });
         }
@@ -622,7 +658,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: vec![name.to_string()],
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             members,
             strict: false,
             resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
@@ -686,7 +722,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 name,
                 type_,
                 location: member.name.as_ref().map(|n| self.get_location(&n.element)),
-                deprecated: Some(false),
+                deprecated: Some(self.is_deprecated(member.attributes.as_deref())),
                 maybe_attributes: attributes,
             });
         }
@@ -701,7 +737,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             attributes.extend(extra);
         }
 
-        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict);
+        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
 
         let mut max_handles = 0;
         let mut max_out_of_line = 0u32;
@@ -760,7 +796,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: vec![name.to_string()],
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             members,
             strict,
             resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
@@ -836,7 +872,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 type_: type_obj,
                 name: member.name.data().to_string(),
                 location,
-                deprecated: false,
+                deprecated: self.is_deprecated(member.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&member.attributes),
                 field_shape_v2: FieldShapeV2 {
                     offset: field_offset,
@@ -897,7 +933,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -1560,7 +1596,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let value = self.compile_constant(&arg.value);
                         crate::json_generator::AttributeArg {
                             name: arg_name,
-                            type_: value.literal.kind.clone(), // This isn't generally correct natively but good enough for now
+                            type_: if attr.name.element.start_token.span.data == "available" {
+                                "uint32".to_string()
+                            } else {
+                                value.literal.as_ref().map(|l| l.kind.clone()).unwrap_or_else(|| "string".to_string())
+                            },
                             value,
                             location: self.get_location(&arg.element),
                         }
@@ -1632,7 +1672,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         serde_json::to_string(&combined_expression).unwrap(),
                     )
                     .unwrap(),
-                    literal: Literal {
+                    literal: Some(Literal {
                         kind: "string".to_string(),
                         value: serde_json::value::RawValue::from_string(
                             serde_json::to_string(&combined_value).unwrap(),
@@ -1642,12 +1682,87 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             serde_json::to_string(&combined_expression).unwrap(),
                         )
                         .unwrap(),
-                    },
+                    }),
+                    identifier: None,
                 },
                 location: loc.clone(),
             }],
             location: loc,
         }
+    }
+
+    pub fn is_versioned_library(&self) -> bool {
+        if let Some(lib) = &self.library_decl {
+            if let Some(attrs) = &lib.attributes {
+                for attr in &attrs.attributes {
+                    if attr.name.data() == "available" {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_deprecated(&self, attributes: Option<&raw_ast::AttributeList<'_>>) -> bool {
+        if let Some(attrs) = attributes {
+            for attr in &attrs.attributes {
+                if attr.name.data() == "available" {
+                    for arg in &attr.args {
+                        let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
+                        if arg_name == "deprecated" {
+                            let val_str = match &arg.value {
+                                crate::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                                crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                                _ => continue,
+                            };
+                            let d = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
+                            let is_depr = d <= crate::versioning_types::Version::HEAD;
+                            println!("is_deprecated check: attr={}, arg={}, val_str={}, parsed={:?}, is_depr={}", attr.name.data(), arg_name, val_str, d, is_depr);
+                            if is_depr {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_active(&self, attributes: Option<&raw_ast::AttributeList<'_>>) -> bool {
+        if let Some(attrs) = attributes {
+            for attr in &attrs.attributes {
+                // For regular declarations, the name is "available".
+                // For modifiers, the name is the modifier itself (e.g. "strict").
+                // We can just check the arguments directly.
+                for arg in &attr.args {
+                    let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
+                    if arg_name == "removed" {
+                        let val_str = match &arg.value {
+                            crate::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                            crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                            _ => continue,
+                        };
+                        let r = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
+                        if r <= crate::versioning_types::Version::HEAD {
+                            return false;
+                        }
+                    } else if arg_name == "added" {
+                        let val_str = match &arg.value {
+                            crate::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                            crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                            _ => continue,
+                        };
+                        let a = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
+                        if a > crate::versioning_types::Version::HEAD {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        true
     }
 
     pub fn compile_attribute_list(
@@ -1783,34 +1898,53 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     value: serde_json::value::RawValue::from_string(value_json.clone()).unwrap(),
                     expression: serde_json::value::RawValue::from_string(expr_json.clone())
                         .unwrap(),
-                    literal: Literal {
+                    literal: Some(Literal {
                         kind: kind.to_string(),
                         value: serde_json::value::RawValue::from_string(value_json).unwrap(),
                         expression: serde_json::value::RawValue::from_string(expr_json).unwrap(),
-                    },
+                    }),
+                    identifier: None,
                 }
             }
-            raw_ast::Constant::Identifier(_) => Constant {
-                kind: "identifier".to_string(),
-                value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                literal: Literal {
-                    kind: "numeric".to_string(),
-                    value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string())
-                        .unwrap(),
-                },
-            },
+            raw_ast::Constant::Identifier(id) => {
+                let id_str = id.identifier.to_string();
+                let (val, expr, ident) = if id_str == "HEAD" {
+                    ("4292870144", "HEAD", "fidl/HEAD")
+                } else if id_str == "NEXT" {
+                    ("4291821568", "NEXT", "fidl/NEXT")
+                } else {
+                    ("0", "0", "0") // Default
+                };
+
+                let mut c = Constant {
+                    kind: "identifier".to_string(),
+                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", val)).unwrap(),
+                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr)).unwrap(),
+                    literal: if id_str == "HEAD" || id_str == "NEXT" { None } else {
+                        Some(Literal {
+                            kind: "numeric".to_string(),
+                            value: serde_json::value::RawValue::from_string(format!("\"{}\"", val)).unwrap(),
+                            expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr)).unwrap(),
+                        })
+                    },
+                    identifier: None,
+                };
+                if id_str == "HEAD" || id_str == "NEXT" {
+                    c.identifier = Some(ident.to_string());
+                }
+                c
+            }
             raw_ast::Constant::BinaryOperator(_) => Constant {
                 kind: "binary_operator".to_string(),
                 value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
                 expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                literal: Literal {
+                literal: Some(Literal {
                     kind: "numeric".to_string(),
                     value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
                     expression: serde_json::value::RawValue::from_string("\"0\"".to_string())
                         .unwrap(),
-                },
+                }),
+                identifier: None,
             },
         }
     }
@@ -1927,6 +2061,9 @@ fn get_dependencies<'node, 'src>(
         }
         RawDecl::Service(_) => {}
         RawDecl::Const(_) => {}
+        RawDecl::Alias(a) => {
+            collect_deps_from_ctor(&a.type_ctor, library_name, &mut deps, skip_optional);
+        }
     }
 
     deps
@@ -2075,7 +2212,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 type_: type_obj,
                 name: member_name,
                 location: self.get_location(&member.name.element),
-                deprecated: false,
+                deprecated: self.is_deprecated(member.attributes.as_deref()),
                 maybe_attributes: attributes,
             });
         }
@@ -2083,9 +2220,32 @@ impl<'node, 'src> Compiler<'node, 'src> {
         ServiceDeclaration {
             name: full_name,
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()),
             maybe_attributes: self.compile_attribute_list(&decl.attributes),
             members,
+        }
+    }
+
+    pub fn compile_alias(
+        &mut self,
+        decl: &raw_ast::AliasDeclaration<'src>,
+        library_name: &str,
+    ) -> AliasDeclaration {
+        AliasDeclaration {
+            name: format!("{}/{}", library_name, decl.name.data()),
+            location: self.get_location(&decl.name.element),
+            deprecated: self.is_deprecated(decl.attributes.as_deref()),
+            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            partial_type_ctor: crate::json_generator::PartialTypeCtor {
+                name: if let raw_ast::LayoutParameter::Identifier(id) = &decl.type_ctor.layout {
+                    id.to_string()
+                } else {
+                    "".to_string()
+                },
+                args: vec![],
+                nullable: decl.type_ctor.nullable,
+            },
+            type_: self.resolve_type(&decl.type_ctor, library_name, &vec![]),
         }
     }
 
@@ -2105,7 +2265,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         ConstDeclaration {
             name: full_name,
             location,
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()),
             maybe_attributes: self.compile_attribute_list(&decl.attributes),
             type_: type_obj,
             value: constant,
@@ -2313,7 +2473,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 name: m.name.data().to_string(),
                 strict: true,
                 location: self.get_location(&m.name.element),
-                deprecated: false,
+                deprecated: self.is_deprecated(m.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&m.attributes),
                 has_request,
                 maybe_request_payload,
@@ -2326,13 +2486,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
             });
         }
 
+        let openness = if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Open) {
+            "open"
+        } else if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Ajar) {
+            "ajar"
+        } else {
+            "closed"
+        };
+
+        let mut compiled_composed = vec![];
+        for composed in &decl.composed_protocols {
+            compiled_composed.push(crate::json_generator::ProtocolCompose {
+                name: format!("{}/{}", library_name, composed.protocol_name.to_string()),
+                location: self.get_location(&composed.protocol_name.element),
+                deprecated: self.is_deprecated(composed.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&composed.attributes),
+            });
+        }
+
         ProtocolDeclaration {
             name,
             location: self.get_location(&decl.name.element),
-            deprecated: false,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()),
             maybe_attributes: self.compile_attribute_list(&decl.attributes),
-            openness: "closed".to_string(),
-            composed_protocols: vec![],
+            openness: openness.to_string(),
+            composed_protocols: compiled_composed,
             methods,
         }
     }

@@ -193,7 +193,10 @@ pub struct Constant {
     pub kind: String,
     pub value: Box<serde_json::value::RawValue>,
     pub expression: Box<serde_json::value::RawValue>,
-    pub literal: Literal,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub literal: Option<Literal>,
 }
 
 impl Clone for Constant {
@@ -203,6 +206,7 @@ impl Clone for Constant {
             value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
             expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
                 .unwrap(),
+            identifier: self.identifier.clone(),
             literal: self.literal.clone(),
         }
     }
@@ -251,8 +255,17 @@ pub struct ProtocolDeclaration {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
     pub openness: String,
-    pub composed_protocols: Vec<String>,
+    pub composed_protocols: Vec<ProtocolCompose>,
     pub methods: Vec<ProtocolMethod>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ProtocolCompose {
+    pub name: String,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    pub location: Location,
+    pub deprecated: bool,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -363,6 +376,22 @@ pub struct UnionMember {
     pub maybe_attributes: Vec<Attribute>,
 }
 #[derive(Serialize, Clone, Debug)]
-pub struct AliasDeclaration {}
+pub struct PartialTypeCtor {
+    pub name: String,
+    pub args: Vec<String>,
+    pub nullable: bool,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct AliasDeclaration {
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    pub partial_type_ctor: PartialTypeCtor,
+    #[serde(rename = "type")]
+    pub type_: Type,
+}
 #[derive(Serialize, Clone, Debug)]
 pub struct NewTypeDeclaration {}

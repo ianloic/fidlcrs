@@ -16,6 +16,7 @@ impl<'node, 'src> Step<'node, 'src> for ResolveStep {
                 RawDecl::Const(_) => "const",
                 RawDecl::Enum(_) => "enum",
                 RawDecl::Bits(_) => "bits",
+                RawDecl::Alias(_) => "alias",
                 RawDecl::Type(t) => match t.layout {
                     raw_ast::Layout::Struct(_) => "struct",
                     raw_ast::Layout::Union(_) => "union",

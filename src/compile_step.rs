@@ -143,6 +143,10 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                         let compiled = compiler.compile_const(c, &library_name);
                         compiler.const_declarations.push(compiled);
                     }
+                    RawDecl::Alias(a) => {
+                        let compiled = compiler.compile_alias(a, &library_name);
+                        compiler.alias_declarations.push(compiled);
+                    }
                 }
             }
         }

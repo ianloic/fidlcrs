@@ -37,6 +37,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         };
 
         let mut const_decls = vec![];
+        let mut alias_decls = vec![];
         let mut type_decls = vec![];
         let mut struct_decls = vec![];
         let mut enum_decls = vec![];
@@ -61,6 +62,10 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else if self.last_token.subkind == TokenSubkind::Const {
                 if let Some(decl) = self.parse_const_declaration(attributes.take()) {
                     const_decls.push(decl);
+                } else { self.last_token = self.lexer.lex(); }
+            } else if self.last_token.subkind == TokenSubkind::Alias {
+                if let Some(decl) = self.parse_alias_declaration(attributes.take()) {
+                    alias_decls.push(decl);
                 } else { self.last_token = self.lexer.lex(); }
             } else if self.last_token.subkind == TokenSubkind::Type {
                 if let Some(decl) = self.parse_type_declaration(attributes.take()) {
@@ -104,6 +109,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             element: SourceElement::new(start_pos, end_pos),
             library_decl: library_decl.map(Box::new),
             const_decls,
+            alias_decls,
             type_decls,
             struct_decls,
             enum_decls,
@@ -908,6 +914,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let name = self.parse_identifier()?;
 
         let mut methods = vec![];
+        let mut composed_protocols = vec![];
         self.consume_token(TokenKind::LeftCurly)?;
 
         while self.last_token.kind != TokenKind::RightCurly
@@ -915,10 +922,19 @@ impl<'a, 'b> Parser<'a, 'b> {
         {
             let attrs = self.maybe_parse_attribute_list();
             if self.last_token.subkind == TokenSubkind::Compose {
-                // Compose is mostly ignored for now by our AST simplification
+                let start_tok = self.last_token.clone();
                 self.consume_token_with_subkind(TokenSubkind::Compose)?;
-                self.parse_compound_identifier()?;
+                let protocol_name = self.parse_compound_identifier()?;
                 self.consume_token(TokenKind::Semicolon)?;
+                let end_tok = self.previous_token.as_ref().unwrap().clone();
+                composed_protocols.push(ProtocolCompose {
+                    element: SourceElement::new(
+                        attrs.as_ref().map(|a| a.element.start_token.clone()).unwrap_or(start_tok),
+                        end_tok,
+                    ),
+                    attributes: attrs.map(Box::new),
+                    protocol_name,
+                });
             } else {
                 let mods = self.parse_modifiers();
                 if let Some(method) = self.parse_protocol_method(attrs, mods) {
@@ -937,6 +953,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             attributes: attributes.map(Box::new),
             modifiers,
             name,
+            composed_protocols,
             methods,
         })
     }
@@ -1311,8 +1328,8 @@ mod tests {
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
         let decl = parser
-            .parse_struct_declaration(None, false)
-            .expect("parse struct");
+            .parse_struct_declaration(None, vec![])
+            .expect("Expected struct declaration");
         assert_eq!(decl.name.as_ref().unwrap().data(), "Foo");
         assert_eq!(decl.members.len(), 1);
         assert_eq!(decl.members[0].name.data(), "bar");
@@ -1356,8 +1373,8 @@ struct MyStruct {
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
         let decl = parser
-            .parse_enum_declaration(None, None)
-            .expect("Failed to parse enum");
+            .parse_enum_declaration(None, vec![])
+            .expect("Expected enum declaration");
         assert_eq!(decl.name.as_ref().unwrap().data(), "Color");
         assert!(decl.subtype.is_some());
         assert_eq!(decl.members.len(), 2);
@@ -1375,8 +1392,8 @@ struct MyStruct {
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
         let decl = parser
-            .parse_bits_declaration(None, None)
-            .expect("parse bits");
+            .parse_bits_declaration(None, vec![])
+            .expect("Expected bits declaration");
         assert_eq!(decl.name.as_ref().unwrap().data(), "Flags");
         assert_eq!(decl.members.len(), 2);
     }
@@ -1392,8 +1409,8 @@ struct MyStruct {
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
         let decl = parser
-            .parse_union_declaration(None, Strictness::Flexible, false)
-            .expect("parse union");
+            .parse_union_declaration(None, vec![])
+            .expect("Expected union declaration");
         assert_eq!(decl.name.as_ref().unwrap().data(), "MyUnion");
         assert_eq!(decl.members.len(), 2);
         assert!(decl.members[0].ordinal.is_some());
@@ -1410,8 +1427,8 @@ struct MyStruct {
         parser.consume_token(TokenKind::StartOfFile).unwrap();
 
         let decl = parser
-            .parse_table_declaration(None, false)
-            .expect("parse table");
+            .parse_table_declaration(None, vec![])
+            .expect("Expected table declaration");
         assert_eq!(decl.name.as_ref().unwrap().data(), "MyTable");
         assert_eq!(decl.members.len(), 2);
         assert!(decl.members[1].name.is_none()); // Reserved
@@ -1446,5 +1463,29 @@ struct MyStruct {
         } else {
             panic!("expected struct layout");
         }
+    }
+}
+
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_alias_declaration(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<AliasDeclaration<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+        self.consume_token_with_subkind(TokenSubkind::Alias)?;
+        let name = self.parse_identifier()?;
+        self.consume_token(TokenKind::Equal)?;
+        let type_ctor = self.parse_type_constructor()?;
+        self.consume_token(TokenKind::Semicolon)?;
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(AliasDeclaration {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            name,
+            type_ctor,
+        })
     }
 }

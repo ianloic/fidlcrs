@@ -13,11 +13,20 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             .iter()
             .find_map(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
+        compiler.library_decl = self
+            .files
+            .iter()
+            .find_map(|f| f.library_decl.as_ref().map(|l| *l.clone()));
 
         for file in self.files {
             for decl in &file.type_decls {
                 let name = format!("{}/{}", compiler.library_name, decl.name.data());
                 compiler.raw_decls.insert(name, RawDecl::Type(decl));
+            }
+
+            for decl in &file.alias_decls {
+                let name = format!("{}/{}", compiler.library_name, decl.name.data());
+                compiler.raw_decls.insert(name, RawDecl::Alias(decl));
             }
 
             for decl in &file.struct_decls {

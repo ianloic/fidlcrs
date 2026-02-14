@@ -196,6 +196,7 @@ pub struct File<'a> {
     pub element: SourceElement<'a>,
     pub library_decl: Option<Box<LibraryDeclaration<'a>>>,
     pub const_decls: Vec<ConstDeclaration<'a>>,
+    pub alias_decls: Vec<AliasDeclaration<'a>>,
     pub type_decls: Vec<TypeDeclaration<'a>>, // New
     pub struct_decls: Vec<StructDeclaration<'a>>,
     pub enum_decls: Vec<EnumDeclaration<'a>>,
@@ -329,7 +330,15 @@ pub struct ProtocolDeclaration<'a> {
     pub attributes: Option<Box<AttributeList<'a>>>,
     pub modifiers: Vec<Modifier<'a>>,
     pub name: Identifier<'a>,
+    pub composed_protocols: Vec<ProtocolCompose<'a>>,
     pub methods: Vec<ProtocolMethod<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtocolCompose<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub protocol_name: CompoundIdentifier<'a>,
 }
 
 #[derive(Debug, Clone)]
@@ -360,4 +369,12 @@ pub struct ServiceMember<'a> {
     pub attributes: Option<Box<AttributeList<'a>>>,
     pub type_ctor: TypeConstructor<'a>,
     pub name: Identifier<'a>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AliasDeclaration<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub name: Identifier<'a>,
+    pub type_ctor: TypeConstructor<'a>,
 }

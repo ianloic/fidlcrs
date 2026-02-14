@@ -55,7 +55,7 @@ FILES=(
     # "types_in_protocols.test.fidl"
     # "union_sandwich.test.fidl"
     # "unknown_interactions.test.fidl"
-    # "versions.test.fidl"
+    "versions.test.fidl"
 )
 
 for file in "${FILES[@]}"; do
@@ -77,7 +77,7 @@ for file in "${FILES[@]}"; do
     fi
 
     if [ "$file" == "versions.test.fidl" ]; then
-        versioned="test:1"
+        versioned="test:HEAD"
     fi
 
     if [[ "$file" == "driver_handle.test.fidl" || "$file" == "driver_one_way.test.fidl" || "$file" == "driver_service.test.fidl" || "$file" == "driver_two_way.test.fidl" || "$file" == "handles.test.fidl" || "$file" == "unknown_interactions.test.fidl" ]]; then

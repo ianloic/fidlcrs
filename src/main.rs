@@ -11,6 +11,8 @@ use fidlcrs::parser::Parser;
 use fidlcrs::reporter::Reporter;
 use fidlcrs::source_file::SourceFile;
 use fidlcrs::token::TokenKind;
+use fidlcrs::versioning_types::{Platform, Version, VersionSelection};
+use std::collections::BTreeSet;
 
 fn usage() {
     println!(
@@ -116,8 +118,9 @@ fn main() {
     let mut _warnings_as_errors = false;
     let mut _format = "text".to_string();
     let mut _expected_library_name: Option<String> = None;
-    let _expected_platform: Option<String> = None;
-    let _expected_version_added: Option<String> = None;
+    let mut _expected_platform: Option<String> = None;
+    let mut _expected_version_added: Option<String> = None;
+    let mut version_selection = VersionSelection::new();
     let mut dep_file_path: Option<String> = None;
 
     // We collect files divided by `--files` chunks
@@ -149,11 +152,33 @@ fn main() {
         } else if flag == "--json" {
             json_path = Some(args.claim());
         } else if flag == "--available" {
-            let _arg = args.claim();
-            // Not fully implementing parsed available versions right now, just skipping
+            let arg = args.claim();
+            let parts: Vec<&str> = arg.splitn(2, ':').collect();
+            if parts.len() != 2 {
+                fail_with_usage(&format!("Invalid syntax for --available: {}", arg));
+            }
+            if let Some(platform) = Platform::parse(parts[0]) {
+                let mut versions = BTreeSet::new();
+                for v_str in parts[1].split(',') {
+                    if let Some(v) = Version::parse(v_str) {
+                        versions.insert(v);
+                    } else {
+                        fail_with_usage(&format!("Invalid version in --available: {}", v_str));
+                    }
+                }
+                if !version_selection.insert(platform, versions) {
+                    fail_with_usage(&format!("Duplicate platform in --available: {}", parts[0]));
+                }
+            } else {
+                fail_with_usage(&format!("Invalid platform in --available: {}", parts[0]));
+            }
         } else if flag == "--versioned" {
-            let _arg = args.claim();
-            // fake parsing platform and version
+            let arg = args.claim();
+            let parts: Vec<&str> = arg.splitn(2, ':').collect();
+            _expected_platform = Some(parts[0].to_string());
+            if parts.len() > 1 {
+                _expected_version_added = Some(parts[1].to_string());
+            }
         } else if flag == "--name" {
             _expected_library_name = Some(args.claim());
         } else if flag == "--experimental" {
@@ -227,6 +252,7 @@ fn main() {
     }
 
     let mut compiler = Compiler::new();
+    compiler.version_selection = version_selection;
     let source_refs: Vec<&SourceFile> = source_files.iter().collect();
     let json_root = compiler.compile(&files, &source_refs);
 

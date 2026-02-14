@@ -8,6 +8,12 @@ use std::fs;
 use std::path::PathBuf;
 
 fn get_workspace_root() -> PathBuf {
+    // First try local directory inside fidlcrs
+    let local_path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string()));
+    if local_path.join("fidlc/testdata").exists() {
+        return local_path;
+    }
+
     // Try to find the root by traversing up from the current directory or executable path
     let mut current = std::env::current_exe()
         .ok()
@@ -43,8 +49,12 @@ fn remove_location(v: &mut Value) {
 
 fn run_golden_test(fidl_filename: &str, golden_filename: &str) {
     let root = get_workspace_root();
-    let fidl_path = root.join("tools/fidl/fidlc/testdata").join(fidl_filename);
-    let golden_path = root.join("tools/fidl/fidlc/goldens").join(golden_filename);
+    
+    let (fidl_path, golden_path) = if root.join("fidlc/testdata").exists() {
+        (root.join("fidlc/testdata").join(fidl_filename), root.join("fidlc/goldens").join(golden_filename))
+    } else {
+        (root.join("tools/fidl/fidlc/testdata").join(fidl_filename), root.join("tools/fidl/fidlc/goldens").join(golden_filename))
+    };
 
     let fidl_content = fs::read_to_string(&fidl_path)
         .unwrap_or_else(|_| panic!("Failed to read FIDL file: {:?}", fidl_path));
@@ -238,4 +248,9 @@ fn test_union_golden() {
 #[test]
 fn test_table_golden() {
     run_golden_test("table.test.fidl", "table.json.golden");
+}
+
+#[test]
+fn test_anonymous_golden() {
+    run_golden_test("anonymous.test.fidl", "anonymous.json.golden");
 }

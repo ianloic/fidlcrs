@@ -29,6 +29,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                                 &library_name,
                                 Some(&t.name.element),
                                 t.attributes.as_deref(),
+                                None,
                             );
                             compiler.enum_declarations.push(compiled);
                         } else if let raw_ast::Layout::Bits(ref b) = t.layout {
@@ -38,6 +39,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                                 &library_name,
                                 Some(&t.name.element),
                                 t.attributes.as_deref(),
+                                None,
                             );
                             compiler.bits_declarations.push(compiled);
                         } else if let raw_ast::Layout::Table(ref ta) = t.layout {
@@ -47,6 +49,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                                 &library_name,
                                 Some(&t.name.element),
                                 t.attributes.as_deref(),
+                                None,
                             );
                             compiler.table_declarations.push(compiled);
                         } else if let raw_ast::Layout::Union(ref u) = t.layout {
@@ -56,6 +59,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                                 &library_name,
                                 Some(&t.name.element),
                                 t.attributes.as_deref(),
+                                None,
                             );
                             compiler.union_declarations.push(compiled);
                         }
@@ -85,6 +89,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                             &library_name,
                             None,
                             e.attributes.as_deref(),
+                            None,
                         );
                         if e.name.is_some() {
                             compiler.enum_declarations.push(compiled);
@@ -98,6 +103,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                             &library_name,
                             None,
                             b.attributes.as_deref(),
+                            None,
                         );
                         if b.name.is_some() {
                             compiler.bits_declarations.push(compiled);
@@ -111,6 +117,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                             &library_name,
                             None,
                             u.attributes.as_deref(),
+                            None,
                         );
                         if u.name.is_some() {
                             compiler.union_declarations.push(compiled);
@@ -124,6 +131,7 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
                             &library_name,
                             None,
                             t.attributes.as_deref(),
+                            None,
                         );
                         if t.name.is_some() {
                             compiler.table_declarations.push(compiled);

@@ -320,6 +320,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
+        naming_context: Option<Vec<String>>,
     ) -> EnumDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
@@ -408,7 +409,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         EnumDeclaration {
             name: full_name,
-            naming_context: vec![name.to_string()],
+            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             type_: subtype_name,
@@ -433,6 +434,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
+        naming_context: Option<Vec<String>>,
     ) -> BitsDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
@@ -507,7 +509,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         BitsDeclaration {
             name: full_name,
-            naming_context: vec![name.to_string()],
+            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             maybe_attributes: {
@@ -550,6 +552,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'src>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
+        naming_context: Option<Vec<String>>,
     ) -> TableDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(el) = name_element {
@@ -656,7 +659,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         TableDeclaration {
             name: full_name,
-            naming_context: vec![name.to_string()],
+            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             members,
@@ -681,6 +684,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'src>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
+        naming_context: Option<Vec<String>>,
     ) -> UnionDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(el) = name_element {
@@ -794,7 +798,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         UnionDeclaration {
             name: full_name,
-            naming_context: vec![name.to_string()],
+            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
             members,
@@ -1074,22 +1078,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     raw_ast::Layout::Enum(e) => {
                         let compiled =
-                            self.compile_enum(&final_short_name, e, library_name, None, None);
+                            self.compile_enum(&final_short_name, e, library_name, None, None, Some(decl_context.clone()));
                         self.enum_declarations.push(compiled);
                     }
                     raw_ast::Layout::Bits(b) => {
                         let compiled =
-                            self.compile_bits(&final_short_name, b, library_name, None, None);
+                            self.compile_bits(&final_short_name, b, library_name, None, None, Some(decl_context.clone()));
                         self.bits_declarations.push(compiled);
                     }
                     raw_ast::Layout::Union(u) => {
                         let compiled =
-                            self.compile_union(&final_short_name, u, library_name, None, None);
+                            self.compile_union(&final_short_name, u, library_name, None, None, Some(decl_context.clone()));
                         self.union_declarations.push(compiled);
                     }
                     raw_ast::Layout::Table(t) => {
                         let compiled =
-                            self.compile_table(&final_short_name, t, library_name, None, None);
+                            self.compile_table(&final_short_name, t, library_name, None, None, Some(decl_context.clone()));
                         self.table_declarations.push(compiled);
                     }
                     _ => {}

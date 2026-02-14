@@ -104,6 +104,13 @@ pub enum AttributeProvenance {
 }
 
 #[derive(Debug, Clone)]
+pub struct Modifier<'a> {
+    pub element: SourceElement<'a>,
+    pub subkind: crate::token::TokenSubkind,
+    pub attributes: Option<AttributeList<'a>>,
+}
+
+#[derive(Debug, Clone)]
 pub struct AttributeArg<'a> {
     pub element: SourceElement<'a>,
     pub name: Option<Identifier<'a>>, // inferred if null?
@@ -222,7 +229,7 @@ pub enum Layout<'a> {
 pub struct StructDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
-    pub is_resource: bool,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Option<Identifier<'a>>, // Changed to Option
     pub members: Vec<StructMember<'a>>,
 }
@@ -240,9 +247,9 @@ pub struct StructMember<'a> {
 pub struct EnumDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Option<Identifier<'a>>, // Changed to Option
     pub subtype: Option<TypeConstructor<'a>>,
-    pub strictness: Option<Strictness>,
     pub members: Vec<EnumMember<'a>>,
 }
 
@@ -258,9 +265,9 @@ pub struct EnumMember<'a> {
 pub struct BitsDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Option<Identifier<'a>>, // Changed to Option
     pub subtype: Option<TypeConstructor<'a>>,
-    pub strictness: Option<Strictness>,
     pub members: Vec<BitsMember<'a>>,
 }
 
@@ -276,9 +283,8 @@ pub struct BitsMember<'a> {
 pub struct UnionDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Option<Identifier<'a>>, // Changed to Option
-    pub strictness: Strictness,
-    pub is_resource: bool,
     pub members: Vec<UnionMember<'a>>,
 }
 
@@ -295,8 +301,8 @@ pub struct UnionMember<'a> {
 pub struct TableDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Option<Identifier<'a>>, // Changed to Option
-    pub is_resource: bool,
     pub members: Vec<TableMember<'a>>,
 }
 
@@ -321,6 +327,7 @@ pub enum Strictness {
 pub struct ProtocolDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Identifier<'a>,
     pub methods: Vec<ProtocolMethod<'a>>,
 }
@@ -329,6 +336,7 @@ pub struct ProtocolDeclaration<'a> {
 pub struct ProtocolMethod<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
+    pub modifiers: Vec<Modifier<'a>>,
     pub name: Identifier<'a>,
     pub has_request: bool,
     pub request_payload: Option<Layout<'a>>,

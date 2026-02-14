@@ -351,8 +351,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         // Strictness default: Flexible?
-        let strict =
-            decl.strictness.unwrap_or(raw_ast::Strictness::Flexible) == raw_ast::Strictness::Strict;
+        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict);
 
         if !strict && maybe_unknown_value.is_none() {
             maybe_unknown_value = match subtype_name.as_str() {
@@ -460,8 +459,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.shapes.insert(full_name.clone(), type_shape_v2.clone());
 
         // Strictness default: Flexible?
-        let strict =
-            decl.strictness.unwrap_or(raw_ast::Strictness::Flexible) == raw_ast::Strictness::Strict;
+        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict);
 
         BitsDeclaration {
             name: full_name,
@@ -619,7 +617,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             deprecated: false,
             members,
             strict: false,
-            resource: decl.is_resource,
+            resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -695,7 +693,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             attributes.extend(extra);
         }
 
-        let strict = decl.strictness == raw_ast::Strictness::Strict;
+        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict);
 
         let mut max_handles = 0;
         let mut max_out_of_line = 0u32;
@@ -757,7 +755,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             deprecated: false,
             members,
             strict,
-            resource: decl.is_resource,
+            resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             is_result: false, // TODO: detect result unions
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
@@ -901,7 +899,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 attrs
             },
             members,
-            resource: decl.is_resource,
+            resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             is_empty_success_struct: false,
             type_shape_v2: type_shape,
         }

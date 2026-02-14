@@ -4,6 +4,7 @@ use crate::source_file::SourceFile;
 use crate::source_span::SourceSpan;
 use crate::token::{Token, TokenKind, TokenSubkind};
 
+#[derive(Clone)]
 pub struct Lexer<'a> {
     source_file: &'a SourceFile,
     reporter: &'a Reporter<'a>,

@@ -25,6 +25,8 @@ pub mod array_tests;
 pub mod bits_tests;
 #[cfg(test)]
 pub mod protocol_tests;
+#[cfg(test)]
+pub mod union_tests;
 
 pub mod compile_step;
 pub mod consume_step;

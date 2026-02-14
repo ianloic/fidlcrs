@@ -358,8 +358,15 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.consume_token(TokenKind::Colon)?;
         }
 
-        if self.last_token.subkind == TokenSubkind::Reserved {
-            self.consume_token_with_subkind(TokenSubkind::Reserved)?;
+        let name_or_reserved = match self.parse_identifier() {
+            Some(i) => i,
+            None => {
+                println!("Failed to parse identifier for union member. Last token: {:?}", self.last_token);
+                return None;
+            }
+        };
+
+        if name_or_reserved.data() == "reserved" && self.last_token.kind == TokenKind::Semicolon {
             self.consume_token(TokenKind::Semicolon)?;
             let end = self.previous_token.as_ref().unwrap().clone();
             return Some(UnionMember {
@@ -371,16 +378,26 @@ impl<'a, 'b> Parser<'a, 'b> {
             });
         }
 
-        let name = self.parse_identifier()?;
-        let type_ctor = self.parse_type_constructor()?;
+        let type_ctor = match self.parse_type_constructor() {
+            Some(t) => t,
+            None => {
+                println!("Failed to parse type for {}", name_or_reserved.data());
+                return None;
+            }
+        };
+        
+        if self.last_token.kind != TokenKind::Semicolon {
+            println!("Expected semicolon after {}, found {:?}", name_or_reserved.data(), self.last_token);
+            return None;
+        }
         self.consume_token(TokenKind::Semicolon)?;
-
         let end = self.previous_token.as_ref().unwrap().clone();
+
         Some(UnionMember {
             element: SourceElement::new(start, end),
             attributes: attributes.map(Box::new),
             ordinal,
-            name: Some(name),
+            name: Some(name_or_reserved),
             type_ctor: Some(type_ctor),
         })
     }
@@ -495,23 +512,23 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let mods = self.parse_modifiers();
 
-        if self.last_token.subkind == TokenSubkind::Struct {
+        if self.last_token.subkind == TokenSubkind::Struct && self.peek_token().kind == TokenKind::LeftCurly {
             return Some(LayoutParameter::Inline(Box::new(Layout::Struct(
                 self.parse_struct_declaration(attrs, mods)?,
             ))));
-        } else if self.last_token.subkind == TokenSubkind::Union {
+        } else if self.last_token.subkind == TokenSubkind::Union && self.peek_token().kind == TokenKind::LeftCurly {
             return Some(LayoutParameter::Inline(Box::new(Layout::Union(
                 self.parse_union_declaration(attrs, mods)?,
             ))));
-        } else if self.last_token.subkind == TokenSubkind::Table {
+        } else if self.last_token.subkind == TokenSubkind::Table && self.peek_token().kind == TokenKind::LeftCurly {
             return Some(LayoutParameter::Inline(Box::new(Layout::Table(
                 self.parse_table_declaration(attrs, mods)?,
             ))));
-        } else if self.last_token.subkind == TokenSubkind::Enum {
+        } else if self.last_token.subkind == TokenSubkind::Enum && self.peek_token().kind == TokenKind::LeftCurly {
             return Some(LayoutParameter::Inline(Box::new(Layout::Enum(
                 self.parse_enum_declaration(attrs, mods)?,
             ))));
-        } else if self.last_token.subkind == TokenSubkind::Bits {
+        } else if self.last_token.subkind == TokenSubkind::Bits && self.peek_token().kind == TokenKind::LeftCurly {
             return Some(LayoutParameter::Inline(Box::new(Layout::Bits(
                 self.parse_bits_declaration(attrs, mods)?,
             ))));
@@ -1250,6 +1267,11 @@ impl<'a, 'b> Parser<'a, 'b> {
     #[allow(dead_code)]
     pub fn peek(&self) -> &Token<'a> {
         &self.last_token
+    }
+
+    pub fn peek_token(&mut self) -> Token<'a> {
+        let mut cloned_lexer = self.lexer.clone();
+        cloned_lexer.lex()
     }
 
     pub fn consume_token(&mut self, kind: TokenKind) -> Option<Token<'a>> {

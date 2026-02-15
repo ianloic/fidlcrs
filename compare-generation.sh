@@ -21,10 +21,10 @@ FILES=(
 
 
 
-    "anonymous.test.fidl"
+    # "anonymous.test.fidl"
 
     # "protocols.test.fidl"
-    # "versions.test.fidl"
+    # "versions.test.fidl versioned=test:HEAD"
 
 
     # "nullable.test.fidl"
@@ -34,34 +34,37 @@ FILES=(
     # "byte_and_bytes.test.fidl"
     # "constants.test.fidl"
     # "consts.test.fidl"
-    # "driver_handle.test.fidl"
-    # "driver_one_way.test.fidl"
-    # "driver_service.test.fidl"
-    # "driver_two_way.test.fidl"
+    # "driver_handle.test.fidl contains_drivers=true"
+    # "driver_one_way.test.fidl contains_drivers=true"
+    # "driver_service.test.fidl contains_drivers=true"
+    # "driver_two_way.test.fidl contains_drivers=true"
     # "empty_struct.test.fidl"
     # "encapsulated_structs.test.fidl"
     # "error.test.fidl"
     # "experimental_maybe_from_alias.test.fidl"
-    # "experimental_zx_c_types.test.fidl"
-    # "handles.test.fidl"
+    # "experimental_zx_c_types.test.fidl experimental=zx_c_types"
+    # "handles.test.fidl public_deps=//sdk/fidl/fdf contains_drivers=true"
     # "handles_in_types.test.fidl"
     # "inheritance.test.fidl"
     # "inheritance_with_recursive_decl.test.fidl"
     # "large_messages.test.fidl"
-    # "new_type.test.fidl"
-    # "overlay.test.fidl"
+    # "new_type.test.fidl experimental=allow_new_types"
+    # "overlay.test.fidl experimental=zx_c_types"
     # "padding.test.fidl"
     # "protocol_request.test.fidl"
     # "request_flexible_envelope.test.fidl"
     # "serializable.test.fidl"
-    # "string_arrays.test.fidl"
+    # "string_arrays.test.fidl experimental=zx_c_types"
     # "time.test.fidl"
     # "types_in_protocols.test.fidl"
     # "union_sandwich.test.fidl"
-    # "unknown_interactions.test.fidl"
+    # "unknown_interactions.test.fidl contains_drivers=true"
 )
 
-for file in "${FILES[@]}"; do
+for entry in "${FILES[@]}"; do
+    set -- $entry
+    file=$1
+    shift
     name="${file%.test.fidl}"
     
     public_deps=( "//zircon/vdso/zx" )
@@ -69,23 +72,26 @@ for file in "${FILES[@]}"; do
     versioned="fuchsia:42,NEXT,HEAD"
     contains_drivers=false
 
-    if [ "$file" == "handles.test.fidl" ]; then
-        public_deps+=( "//sdk/fidl/fdf" )
-    fi
-
-    if [ "$file" == "new_type.test.fidl" ]; then
-        experimental_flags+=( "allow_new_types" )
-    elif [ "$file" == "experimental_zx_c_types.test.fidl" ] || [ "$file" == "string_arrays.test.fidl" ] || [ "$file" == "overlay.test.fidl" ]; then
-        experimental_flags+=( "zx_c_types" )
-    fi
-
-    if [ "$file" == "versions.test.fidl" ]; then
-        versioned="test:HEAD"
-    fi
-
-    if [[ "$file" == "driver_handle.test.fidl" || "$file" == "driver_one_way.test.fidl" || "$file" == "driver_service.test.fidl" || "$file" == "driver_two_way.test.fidl" || "$file" == "handles.test.fidl" || "$file" == "unknown_interactions.test.fidl" ]]; then
-        contains_drivers=true
-    fi
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            experimental=*)
+                experimental_flags+=("${1#*=}")
+                ;;
+            versioned=*)
+                versioned="${1#*=}"
+                ;;
+            public_deps=*)
+                public_deps+=("${1#*=}")
+                ;;
+            contains_drivers=*)
+                contains_drivers="${1#*=}"
+                ;;
+            *)
+                echo "Unknown flag: $1"
+                ;;
+        esac
+        shift
+    done
 
     CMD=("./target/debug/fidlcrs" "--json" "goldens/$name.json")
 

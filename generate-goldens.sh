@@ -22,6 +22,11 @@ FILES=(
 
 
     "anonymous.test.fidl"
+
+    # "protocols.test.fidl"
+    # "versions.test.fidl"
+
+
     # "nullable.test.fidl"
 
 
@@ -47,7 +52,6 @@ FILES=(
     # "overlay.test.fidl"
     # "padding.test.fidl"
     # "protocol_request.test.fidl"
-    "protocols.test.fidl"
     # "request_flexible_envelope.test.fidl"
     # "serializable.test.fidl"
     # "string_arrays.test.fidl"
@@ -55,7 +59,6 @@ FILES=(
     # "types_in_protocols.test.fidl"
     # "union_sandwich.test.fidl"
     # "unknown_interactions.test.fidl"
-    "versions.test.fidl"
 )
 
 for file in "${FILES[@]}"; do

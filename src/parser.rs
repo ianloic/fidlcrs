@@ -361,8 +361,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let name_or_reserved = match self.parse_identifier() {
             Some(i) => i,
             None => {
-                println!("Failed to parse identifier for union member. Last token: {:?}", self.last_token);
-                return None;
+                panic!("Failed to parse identifier for union member. Last token: {:?}", self.last_token);
             }
         };
 
@@ -381,14 +380,12 @@ impl<'a, 'b> Parser<'a, 'b> {
         let type_ctor = match self.parse_type_constructor() {
             Some(t) => t,
             None => {
-                println!("Failed to parse type for {}", name_or_reserved.data());
-                return None;
+                panic!("Failed to parse type for {}", name_or_reserved.data());
             }
         };
         
         if self.last_token.kind != TokenKind::Semicolon {
-            println!("Expected semicolon after {}, found {:?}", name_or_reserved.data(), self.last_token);
-            return None;
+            panic!("Expected semicolon after {}, found {:?}", name_or_reserved.data(), self.last_token);
         }
         self.consume_token(TokenKind::Semicolon)?;
         let end = self.previous_token.as_ref().unwrap().clone();
@@ -524,11 +521,11 @@ impl<'a, 'b> Parser<'a, 'b> {
             return Some(LayoutParameter::Inline(Box::new(Layout::Table(
                 self.parse_table_declaration(attrs, mods)?,
             ))));
-        } else if self.last_token.subkind == TokenSubkind::Enum && self.peek_token().kind == TokenKind::LeftCurly {
+        } else if self.last_token.subkind == TokenSubkind::Enum && (self.peek_token().kind == TokenKind::LeftCurly || self.peek_token().kind == TokenKind::Colon) {
             return Some(LayoutParameter::Inline(Box::new(Layout::Enum(
                 self.parse_enum_declaration(attrs, mods)?,
             ))));
-        } else if self.last_token.subkind == TokenSubkind::Bits && self.peek_token().kind == TokenKind::LeftCurly {
+        } else if self.last_token.subkind == TokenSubkind::Bits && (self.peek_token().kind == TokenKind::LeftCurly || self.peek_token().kind == TokenKind::Colon) {
             return Some(LayoutParameter::Inline(Box::new(Layout::Bits(
                 self.parse_bits_declaration(attrs, mods)?,
             ))));

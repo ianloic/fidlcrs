@@ -268,8 +268,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 return;
             }
             if temp_mark.contains(name) {
-                eprintln!("Cycle detected involving {}", name);
-                return;
+                panic!("Cycle detected involving {}", name);
             }
             temp_mark.insert(name.to_string());
 
@@ -548,7 +547,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_table(
         &mut self,
         name: &str,
-        decl: &raw_ast::TableDeclaration<'src>,
+        decl: &'node raw_ast::TableDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'src>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
@@ -569,7 +568,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let mut ctx = vec![name.to_string()];
+                let mut ctx = naming_context
+                    .clone()
+                    .unwrap_or_else(|| vec![name.to_string()]);
                 if let Some(m_name) = &member.name {
                     ctx.push(m_name.data().to_string());
                 } else {
@@ -680,7 +681,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_union(
         &mut self,
         name: &str,
-        decl: &raw_ast::UnionDeclaration<'src>,
+        decl: &'node raw_ast::UnionDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'src>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
@@ -705,7 +706,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let mut ctx = vec![name.to_string()];
+                let mut ctx = naming_context
+                    .clone()
+                    .unwrap_or_else(|| vec![name.to_string()]);
                 if let Some(m_name) = &member.name {
                     ctx.push(m_name.data().to_string());
                 } else {
@@ -828,7 +831,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_struct(
         &mut self,
         name: &str,
-        decl: &raw_ast::StructDeclaration<'src>,
+        decl: &'node raw_ast::StructDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         naming_context: Option<Vec<String>>,
@@ -955,7 +958,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     pub fn resolve_type(
         &mut self,
-        type_ctor: &raw_ast::TypeConstructor<'src>,
+        type_ctor: &'node raw_ast::TypeConstructor<'src>,
         library_name: &str,
         naming_context: &[String],
     ) -> Type {
@@ -1042,9 +1045,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         && (last == "Request"
                             || last == "Response"
                             || last == "Error"
-                            || last == "Result")
+                            || last == "Result"
+                            || last == "err"
+                            || last == "response")
                     {
-                        if last == "Request" || last == "Response" {
+                        if last == "err" {
+                            format!("{}_{}_Error", naming_context[0], naming_context[1])
+                        } else if last == "response" {
+                            format!("{}_{}_Response", naming_context[0], naming_context[1])
+                        } else if last == "Request" || last == "Response" {
                             naming_context.join("")
                         } else {
                             naming_context.join("_")
@@ -1054,16 +1063,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 });
 
-                let mut decl_context = naming_context.to_vec();
-                if let Some(list) = attrs
-                    && list
-                        .attributes
-                        .iter()
-                        .any(|a| a.name.data() == "generated_name")
-                {
-                    decl_context = vec![final_short_name.clone()];
-                }
+                let decl_context = naming_context.to_vec();
 
+                let full_name = format!("{}/{}", library_name, final_short_name);
                 match &**layout {
                     raw_ast::Layout::Struct(s) => {
                         let compiled = self.compile_struct(
@@ -1075,30 +1077,35 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             None,
                         );
                         self.struct_declarations.push(compiled);
+                        self.raw_decls.insert(full_name.clone(), RawDecl::Struct(s));
                     }
                     raw_ast::Layout::Enum(e) => {
                         let compiled =
                             self.compile_enum(&final_short_name, e, library_name, None, None, Some(decl_context.clone()));
                         self.enum_declarations.push(compiled);
+                        self.raw_decls.insert(full_name.clone(), RawDecl::Enum(e));
                     }
                     raw_ast::Layout::Bits(b) => {
                         let compiled =
                             self.compile_bits(&final_short_name, b, library_name, None, None, Some(decl_context.clone()));
                         self.bits_declarations.push(compiled);
+                        self.raw_decls.insert(full_name.clone(), RawDecl::Bits(b));
                     }
                     raw_ast::Layout::Union(u) => {
                         let compiled =
                             self.compile_union(&final_short_name, u, library_name, None, None, Some(decl_context.clone()));
                         self.union_declarations.push(compiled);
+                        self.raw_decls.insert(full_name.clone(), RawDecl::Union(u));
                     }
                     raw_ast::Layout::Table(t) => {
                         let compiled =
                             self.compile_table(&final_short_name, t, library_name, None, None, Some(decl_context.clone()));
                         self.table_declarations.push(compiled);
+                        self.raw_decls.insert(full_name.clone(), RawDecl::Table(t));
                     }
                     _ => {}
                 }
-                format!("{}/{}", library_name, final_short_name)
+                full_name
             }
         };
 
@@ -1232,6 +1239,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
 
                 let new_depth = inner_type.type_shape_v2.depth.saturating_add(1);
+                // println!("Vector depth calculation: inner {}, new {}", inner_type.type_shape_v2.depth, new_depth);
 
                 let elem_size = inner_type.type_shape_v2.inline_size;
                 let elem_ool = inner_type.type_shape_v2.max_out_of_line;
@@ -1273,7 +1281,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: max_ool,
                         has_padding: inner_type.type_shape_v2.has_padding
                             || !inner_type.type_shape_v2.inline_size.is_multiple_of(8),
-                        has_flexible_envelope: false,
+                        has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
                     },
                 }
             }
@@ -1337,10 +1345,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         inline_size: total_size,
                         alignment: inner_type.type_shape_v2.alignment,
                         depth: inner_type.type_shape_v2.depth,
-                        max_handles: count * inner_type.type_shape_v2.max_handles,
+                        max_handles: inner_type.type_shape_v2.max_handles * count,
                         max_out_of_line: max_ool,
                         has_padding: inner_type.type_shape_v2.has_padding,
-                        has_flexible_envelope: false,
+                        has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
                     },
                 }
             }
@@ -1519,6 +1527,52 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         field_shape_v2: None,
                         type_shape_v2: shape.clone(),
                     }
+                } else if let Some(decl) = self.raw_decls.get(&full_name) {
+                    let (inline, align, flex, padding) = match decl {
+                        RawDecl::Struct(_) => if nullable { (8, 8, false, false) } else { (0, 1, false, false) }, // Note: size of an optional struct is 8? Wait, if it's boxed struct, it's 8 in fidl wire format maybe? Not envelopes. No, wait, fidlcrs says Box is 8 bytes.
+                        RawDecl::Union(_) | RawDecl::Table(_) => (16, 8, true, true), 
+                        RawDecl::Type(t) => {
+                            match &t.layout {
+                                raw_ast::Layout::Struct(_) => if nullable { (8, 8, false, false) } else { (0, 1, false, false) },
+                                raw_ast::Layout::Union(_) | raw_ast::Layout::Table(_) => (16, 8, true, true),
+                                _ => {
+                                    println!("DEBUG: Layout for {} is {:?}", full_name, t.layout);
+                                    (4, 4, false, false)
+                                }
+                            }
+                        }
+                        _ => {
+                            println!("DEBUG: Decl for {} is some other type", full_name);
+                            (4, 4, false, false) // Default
+                        }
+                    };
+                    Type {
+                        kind_v2: "identifier".to_string(),
+                        subtype: None,
+                        identifier: Some(full_name.clone()),
+                        nullable: Some(nullable),
+                        element_type: None,
+                        element_count: None,
+                        maybe_element_count: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
+                        maybe_attributes: vec![],
+                        field_shape_v2: None,
+                        type_shape_v2: TypeShapeV2 {
+                            inline_size: inline,
+                            alignment: align,
+                            depth: 4294967295,
+                            max_handles: 0,
+                            max_out_of_line: 4294967295,
+                            has_padding: padding,
+                            has_flexible_envelope: flex,
+                        },
+                    }
                 } else {
                     // eprintln!("Warning: Type not found: {} (tried {})", name, full_name);
                     // eprintln!("Available shapes: {:?}", self.shapes.keys());
@@ -1550,7 +1604,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     }
                 }
-            }
+            } 
         }
     }
 
@@ -1772,7 +1826,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             };
                             let d = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
                             let is_depr = d <= crate::versioning_types::Version::HEAD;
-                            println!("is_deprecated check: attr={}, arg={}, val_str={}, parsed={:?}, is_depr={}", attr.name.data(), arg_name, val_str, d, is_depr);
                             if is_depr {
                                 return true;
                             }
@@ -1921,6 +1974,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let n_str = if val.starts_with("0x") || val.starts_with("0X") {
                             let without_prefix = &val[2..];
                             if let Ok(n) = u64::from_str_radix(without_prefix, 16) {
+                                n.to_string()
+                            } else {
+                                val.clone()
+                            }
+                        } else if val.starts_with("0b") || val.starts_with("0B") {
+                            let without_prefix = &val[2..];
+                            if let Ok(n) = u64::from_str_radix(without_prefix, 2) {
                                 n.to_string()
                             } else {
                                 val.clone()
@@ -2201,6 +2261,11 @@ fn collect_deps_from_ctor(
         match name.as_str() {
             "bool" | "int8" | "uint8" | "int16" | "uint16" | "int32" | "uint32" | "int64"
             | "uint64" | "string" => {}
+            "box" | "vector" | "client_end" | "server_end" => {
+                if skip_optional {
+                    return;
+                }
+            }
             _ => {
                 deps.push(format!("{}/{}", library_name, name));
             }
@@ -2249,7 +2314,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_service(
         &mut self,
         name: &str,
-        decl: &raw_ast::ServiceDeclaration<'src>,
+        decl: &'node raw_ast::ServiceDeclaration<'src>,
         library_name: &str,
     ) -> ServiceDeclaration {
         let full_name = format!("{}/{}", library_name, name);
@@ -2282,7 +2347,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     pub fn compile_alias(
         &mut self,
-        decl: &raw_ast::AliasDeclaration<'src>,
+        decl: &'node raw_ast::AliasDeclaration<'src>,
         library_name: &str,
     ) -> AliasDeclaration {
         AliasDeclaration {
@@ -2305,7 +2370,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     pub fn compile_const(
         &mut self,
-        decl: &raw_ast::ConstDeclaration<'src>,
+        decl: &'node raw_ast::ConstDeclaration<'src>,
         library_name: &str,
     ) -> ConstDeclaration {
         let name = decl.name.data();
@@ -2329,7 +2394,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn compile_protocol(
         &mut self,
         short_name: &str,
-        decl: &raw_ast::ProtocolDeclaration<'src>,
+        decl: &'node raw_ast::ProtocolDeclaration<'src>,
         library_name: &str,
     ) -> ProtocolDeclaration {
         let name = format!("{}/{}", library_name, short_name);
@@ -2441,7 +2506,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             m.name.data().to_string(),
                             if !m.has_request { "Request".to_string() } else { "Response".to_string() },
                         ];
-                        if m.has_error && library_name == "test.protocols" {
+                        if m.has_error {
                             ctx.push("response".to_string());
                         }
                         ctx
@@ -2472,15 +2537,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
             } else if let Some(ref l) = m.response_payload {
                 match l {
-                    raw_ast::Layout::TypeConstructor(tc) => Some(self.resolve_type(
-                        tc,
-                        library_name,
-                        &[
+                    raw_ast::Layout::TypeConstructor(tc) => {
+                        let mut ctx = vec![
                             short_name.to_string(),
                             m.name.data().to_string(),
                             if !m.has_request { "Request".to_string() } else { "Response".to_string() },
-                        ],
-                    )),
+                        ];
+                        if m.has_error {
+                            ctx.push("response".to_string());
+                        }
+                        Some(self.resolve_type(tc, library_name, &ctx))
+                    },
                     _ => None,
                 }
             } else {
@@ -2497,7 +2564,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[
                             short_name.to_string(),
                             m.name.data().to_string(),
-                            "Error".to_string(),
+                            "Response".to_string(),
+                            "err".to_string(),
                         ],
                     )),
                     _ => None,
@@ -2553,11 +2621,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     typ
                 };
 
-                let should_synthesize_result = library_name == "test.protocols";
-                if should_synthesize_result {
-                    // Synthesize Union
-                    let synth_union_name = format!("{}_{}_Result", short_name, m.name.data());
-                    let full_synth_union = format!("{}/{}", library_name, synth_union_name);
+                // Synthesize Union
+                let synth_union_name = format!("{}_{}_Result", short_name, m.name.data());
+                let full_synth_union = format!("{}/{}", library_name, synth_union_name);
                 
                 // hack approximations for specific goldens
                 let is_struct_response = success_type.type_shape_v2.inline_size == 24;
@@ -2641,9 +2707,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     maybe_attributes: vec![],
                     field_shape_v2: None,
                 })
-            } else {
-                maybe_response_success_type.clone()
-            }
             } else {
                 maybe_response_payload.clone()
             };

@@ -34,17 +34,5 @@ pub mod compile_step;
 pub mod consume_step;
 pub mod resolve_step;
 pub mod step;
-
-pub fn run() {
-    println!("Hello from fidlcrs lib!");
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
 pub mod availability_step;
 pub mod replacement_step;

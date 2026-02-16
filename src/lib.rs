@@ -29,6 +29,8 @@ pub mod protocol_tests;
 pub mod union_tests;
 #[cfg(test)]
 pub mod consts_tests;
+#[cfg(test)]
+pub mod typeshape_tests;
 
 pub mod compile_step;
 pub mod consume_step;

@@ -1,6 +1,6 @@
 use crate::compiler::Compiler;
 use crate::step::Step;
-use crate::versioning_types::{Availability, AvailabilityState, InitArgs, Version, VersionRange};
+use crate::versioning_types::{Availability, InitArgs, Version, VersionRange};
 
 pub struct AvailabilityStep;
 

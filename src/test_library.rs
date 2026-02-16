@@ -79,6 +79,7 @@ pub trait LookupHelpers {
     fn lookup_union(&self, name: &str) -> Option<&UnionDeclaration>;
     fn lookup_bits(&self, name: &str) -> Option<&BitsDeclaration>;
     fn lookup_table(&self, name: &str) -> Option<&TableDeclaration>;
+    fn lookup_alias(&self, name: &str) -> Option<&AliasDeclaration>;
 }
 
 impl LookupHelpers for JsonRoot {
@@ -99,6 +100,9 @@ impl LookupHelpers for JsonRoot {
     }
     fn lookup_table(&self, name: &str) -> Option<&TableDeclaration> {
         self.table_declarations.iter().find(|d| d.name == name)
+    }
+    fn lookup_alias(&self, name: &str) -> Option<&AliasDeclaration> {
+        self.alias_declarations.iter().find(|d| d.name == name)
     }
 }
 

@@ -83,7 +83,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 if let Some(decl) = self.parse_struct_declaration(attributes.take(), mods) {
                     struct_decls.push(decl);
                 } else { self.last_token = self.lexer.lex(); }
-            } else if self.last_token.subkind == TokenSubkind::Union {
+            } else if self.last_token.subkind == TokenSubkind::Union || self.last_token.subkind == TokenSubkind::Overlay {
                 if let Some(decl) = self.parse_union_declaration(attributes.take(), mods) {
                     union_decls.push(decl);
                 } else { self.last_token = self.lexer.lex(); }
@@ -840,7 +840,13 @@ impl<'a, 'b> Parser<'a, 'b> {
             .map(|a| a.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
-        self.consume_token_with_subkind(TokenSubkind::Union)?;
+        if self.last_token.subkind == TokenSubkind::Union {
+            self.consume_token_with_subkind(TokenSubkind::Union)?;
+        } else if self.last_token.subkind == TokenSubkind::Overlay {
+            self.consume_token_with_subkind(TokenSubkind::Overlay)?;
+        } else {
+            return None;
+        }
 
         let name = if self.last_token.kind == TokenKind::Identifier {
             Some(self.parse_identifier()?)
@@ -1168,7 +1174,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let layout = if self.last_token.subkind == TokenSubkind::Struct {
             Layout::Struct(self.parse_struct_declaration(None, mods)?)
-        } else if self.last_token.subkind == TokenSubkind::Union {
+        } else if self.last_token.subkind == TokenSubkind::Union || self.last_token.subkind == TokenSubkind::Overlay {
             Layout::Union(self.parse_union_declaration(None, mods)?)
         } else if self.last_token.subkind == TokenSubkind::Table {
             Layout::Table(self.parse_table_declaration(None, mods)?)

@@ -101,6 +101,7 @@ pub struct Compiler<'node, 'src> {
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<String, crate::versioning_types::Availability>,
     pub version_selection: crate::versioning_types::VersionSelection,
+    pub compiling_shapes: HashSet<String>,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -131,6 +132,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
             version_selection: crate::versioning_types::VersionSelection::new(),
+            compiling_shapes: HashSet::new(),
         }
     }
 
@@ -156,6 +158,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
         // 3. Compile
         let mut compile = CompileStep;
         compile.run(self);
+
+        // Fixup max_handles for resources in cycles
+        for decl in &mut self.struct_declarations {
+            if decl.resource && decl.type_shape_v2.depth == u32::MAX {
+                decl.type_shape_v2.max_handles = u32::MAX;
+            }
+        }
+        for decl in &mut self.table_declarations {
+            if decl.resource && decl.type_shape_v2.depth == u32::MAX {
+                decl.type_shape_v2.max_handles = u32::MAX;
+            }
+        }
+        for decl in &mut self.union_declarations {
+            if decl.resource && decl.type_shape_v2.depth == u32::MAX {
+                decl.type_shape_v2.max_handles = u32::MAX;
+            }
+        }
 
         // Sort declarations by name to match fidlc output order (alphabetical)
         self.alias_declarations.sort_by(|a, b| a.name.cmp(&b.name));
@@ -268,7 +287,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 return;
             }
             if temp_mark.contains(name) {
-                panic!("Cycle detected involving {}", name);
+                return;
             }
             temp_mark.insert(name.to_string());
 
@@ -310,6 +329,184 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         sorted
+    }
+
+    pub fn compile_decl_by_name(&mut self, name: &str) {
+        if self.shapes.contains_key(name) || self.compiling_shapes.contains(name) {
+            return;
+        }
+
+        let decl = if let Some(d) = self.raw_decls.get(name) {
+            d.clone()
+        } else {
+            return;
+        };
+
+        self.compiling_shapes.insert(name.to_string());
+        let library_name = self.library_name.clone();
+
+        match decl {
+            RawDecl::Type(t) => {
+                if let raw_ast::Layout::Struct(ref s) = t.layout {
+                    let compiled = self.compile_struct(
+                        t.name.data(),
+                        s,
+                        &library_name,
+                        Some(&t.name.element),
+                        None,
+                        t.attributes.as_deref(),
+                    );
+                    self.struct_declarations.push(compiled);
+                } else if let raw_ast::Layout::Enum(ref e) = t.layout {
+                    let compiled = self.compile_enum(
+                        t.name.data(),
+                        e,
+                        &library_name,
+                        Some(&t.name.element),
+                        t.attributes.as_deref(),
+                        None,
+                    );
+                    self.enum_declarations.push(compiled);
+                } else if let raw_ast::Layout::Bits(ref b) = t.layout {
+                    let compiled = self.compile_bits(
+                        t.name.data(),
+                        b,
+                        &library_name,
+                        Some(&t.name.element),
+                        t.attributes.as_deref(),
+                        None,
+                    );
+                    self.bits_declarations.push(compiled);
+                } else if let raw_ast::Layout::Table(ref ta) = t.layout {
+                    let compiled = self.compile_table(
+                        t.name.data(),
+                        ta,
+                        &library_name,
+                        Some(&t.name.element),
+                        t.attributes.as_deref(),
+                        None,
+                    );
+                    self.table_declarations.push(compiled);
+                } else if let raw_ast::Layout::Union(ref u) = t.layout {
+                    let compiled = self.compile_union(
+                        t.name.data(),
+                        u,
+                        &library_name,
+                        Some(&t.name.element),
+                        t.attributes.as_deref(),
+                        None,
+                    );
+                    self.union_declarations.push(compiled);
+                } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
+                    let compiled = AliasDeclaration {
+                        name: format!("{}/{}", library_name, t.name.data()),
+                        location: self.get_location(&t.name.element),
+                        deprecated: self.is_deprecated(t.attributes.as_deref()),
+                        maybe_attributes: self.compile_attribute_list(&t.attributes),
+                        partial_type_ctor: crate::json_generator::PartialTypeCtor {
+                            name: if let raw_ast::LayoutParameter::Identifier(id) = &tc.layout {
+                                id.to_string()
+                            } else {
+                                "".to_string()
+                            },
+                            args: vec![],
+                            nullable: tc.nullable,
+                        },
+                        type_: self.resolve_type(tc, &library_name, &vec![]),
+                    };
+                    self.alias_declarations.push(compiled);
+                }
+            }
+            RawDecl::Struct(s) => {
+                if s.name.is_some() {
+                    let short_name = s.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                    let compiled = self.compile_struct(
+                        short_name,
+                        s,
+                        &library_name,
+                        None,
+                        None,
+                        s.attributes.as_deref(),
+                    );
+                    self.struct_declarations.push(compiled);
+                }
+            }
+            RawDecl::Enum(e) => {
+                let short_name = e.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let compiled = self.compile_enum(
+                    short_name,
+                    e,
+                    &library_name,
+                    None,
+                    e.attributes.as_deref(),
+                    None,
+                );
+                if e.name.is_some() {
+                    self.enum_declarations.push(compiled);
+                }
+            }
+            RawDecl::Bits(b) => {
+                let short_name = b.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let compiled = self.compile_bits(
+                    short_name,
+                    b,
+                    &library_name,
+                    None,
+                    b.attributes.as_deref(),
+                    None,
+                );
+                if b.name.is_some() {
+                    self.bits_declarations.push(compiled);
+                }
+            }
+            RawDecl::Union(u) => {
+                let short_name = u.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let compiled = self.compile_union(
+                    short_name,
+                    u,
+                    &library_name,
+                    None,
+                    u.attributes.as_deref(),
+                    None,
+                );
+                if u.name.is_some() {
+                    self.union_declarations.push(compiled);
+                }
+            }
+            RawDecl::Table(t) => {
+                let short_name = t.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let compiled = self.compile_table(
+                    short_name,
+                    t,
+                    &library_name,
+                    None,
+                    t.attributes.as_deref(),
+                    None,
+                );
+                if t.name.is_some() {
+                    self.table_declarations.push(compiled);
+                }
+            }
+            RawDecl::Protocol(p) => {
+                let short_name = p.name.data();
+                let compiled = self.compile_protocol(short_name, p, &library_name);
+                self.protocol_declarations.push(compiled);
+            }
+            RawDecl::Service(s) => {
+                let short_name = s.name.data();
+                let compiled = self.compile_service(short_name, s, &library_name);
+                self.service_declarations.push(compiled);
+            }
+            RawDecl::Const(c) => {
+                let compiled = self.compile_const(c, &library_name);
+                self.const_declarations.push(compiled);
+            }
+            RawDecl::Alias(a) => {
+                let compiled = self.compile_alias(a, &library_name);
+                self.alias_declarations.push(compiled);
+            }
+        }
+        self.compiling_shapes.remove(name);
     }
 
     pub fn compile_enum(
@@ -646,7 +843,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         depth = depth.saturating_add(1);
 
-        let type_shape_v2 = TypeShapeV2 {
+        let mut type_shape_v2 = TypeShapeV2 {
             inline_size: 16,
             alignment: 8,
             depth,
@@ -655,6 +852,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             has_padding, // Tables calculate padding based on envelopes
             has_flexible_envelope: true,
         };
+
+        if type_shape_v2.depth == u32::MAX && type_shape_v2.max_handles != 0 {
+            type_shape_v2.max_handles = u32::MAX;
+        }
 
         self.shapes.insert(full_name.clone(), type_shape_v2.clone());
 
@@ -787,17 +988,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
         // Union depth is 1 + max(member depth).
         // Zero fields or reserved fields = 0 depth.
 
-        let type_shape_v2 = TypeShapeV2 {
+        let mut type_shape_v2 = TypeShapeV2 {
             inline_size: 16,
             alignment: 8,
             depth,
             max_handles,
             max_out_of_line,
             has_padding,
-            has_flexible_envelope: !strict,
+            has_flexible_envelope: !strict || members.iter().any(|m| m.type_.as_ref().map_or(false, |t| t.type_shape_v2.has_flexible_envelope)),
         };
 
-        self.shapes.insert(full_name.clone(), type_shape_v2);
+        if type_shape_v2.depth == u32::MAX && type_shape_v2.max_handles != 0 {
+            type_shape_v2.max_handles = u32::MAX;
+        }
+
+        self.shapes.insert(full_name.clone(), type_shape_v2.clone());
 
         UnionDeclaration {
             name: full_name,
@@ -816,15 +1021,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 attrs
             },
-            type_shape_v2: TypeShapeV2 {
-                inline_size: 16,
-                alignment: 8,
-                depth,
-                max_handles,
-                max_out_of_line,
-                has_padding,
-                has_flexible_envelope: !strict,
-            },
+            type_shape_v2,
         }
     }
 
@@ -908,6 +1105,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let current_end =
                 members[i].field_shape_v2.offset + members[i].type_.type_shape_v2.inline_size;
             members[i].field_shape_v2.padding = next_offset - current_end;
+        }
+
+        if depth == u32::MAX && max_handles != 0 {
+            max_handles = u32::MAX;
+        }
+
+        if full_name.contains("StructA") || full_name.contains("StructC") {
+            println!("DEBUG: {} -> depth={}, max_handles={}", full_name, depth, max_handles);
         }
 
         let type_shape = TypeShapeV2 {
@@ -1192,8 +1397,47 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         alignment: 8,
                         depth: 1,
                         max_handles: 0,
-                        max_out_of_line: max_len,
+                        max_out_of_line: {
+                            let r = if max_len == u32::MAX { u32::MAX } else { (max_len + 7) & !7 };
+                            println!("DEBUG STRING max_len={} -> max_out_of_line={}", max_len, r);
+                            r
+                        },
                         has_padding: true,
+                        has_flexible_envelope: false,
+                    },
+                }
+            }
+            "string_array" => {
+                let max_len = if !type_ctor.parameters.is_empty() {
+                    let size_param = &type_ctor.parameters[0];
+                    self.eval_type_constant_usize(size_param).unwrap_or(u32::MAX as usize) as u32
+                } else {
+                    u32::MAX
+                };
+                Type {
+                    kind_v2: "string_array".to_string(),
+                    subtype: None,
+                    identifier: None,
+                    nullable: None,
+                    element_type: None,
+                    element_count: Some(max_len),
+                    maybe_element_count: Some(max_len),
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
+                    deprecated: None,
+                    maybe_attributes: vec![],
+                    field_shape_v2: None,
+                    type_shape_v2: TypeShapeV2 {
+                        inline_size: max_len,
+                        alignment: 1,
+                        depth: 0,
+                        max_handles: 0,
+                        max_out_of_line: 0,
+                        has_padding: false,
                         has_flexible_envelope: false,
                     },
                 }
@@ -1280,7 +1524,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_handles,
                         max_out_of_line: max_ool,
                         has_padding: inner_type.type_shape_v2.has_padding
-                            || !inner_type.type_shape_v2.inline_size.is_multiple_of(8),
+                            || (elem_size % 8 != 0),
                         has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
                     },
                 }
@@ -1321,8 +1565,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let inner_type = self.resolve_type(inner, library_name, naming_context);
 
-                let total_size = count * inner_type.type_shape_v2.inline_size;
-                let max_ool = count * inner_type.type_shape_v2.max_out_of_line;
+                let total_size = count.saturating_mul(inner_type.type_shape_v2.inline_size);
+                let max_ool = count.saturating_mul(inner_type.type_shape_v2.max_out_of_line);
 
                 Type {
                     kind_v2: "array".to_string(),
@@ -1345,7 +1589,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         inline_size: total_size,
                         alignment: inner_type.type_shape_v2.alignment,
                         depth: inner_type.type_shape_v2.depth,
-                        max_handles: inner_type.type_shape_v2.max_handles * count,
+                        max_handles: inner_type.type_shape_v2.max_handles.saturating_mul(count),
                         max_out_of_line: max_ool,
                         has_padding: inner_type.type_shape_v2.has_padding,
                         has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
@@ -1447,6 +1691,60 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     },
                 }
             }
+            "box" => {
+                if type_ctor.parameters.is_empty() {
+                    return Type {
+                        kind_v2: "unknown".to_string(),
+                        subtype: None,
+                        identifier: None,
+                        nullable: None,
+                        element_type: None,
+                        element_count: None,
+                        maybe_element_count: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
+                        maybe_attributes: vec![],
+                        field_shape_v2: None,
+                        type_shape_v2: TypeShapeV2 {
+                            inline_size: 0,
+                            alignment: 1,
+                            depth: 0,
+                            max_handles: 0,
+                            max_out_of_line: 0,
+                            has_padding: false,
+                            has_flexible_envelope: false,
+                        },
+                    };
+                }
+                let inner = &type_ctor.parameters[0];
+                let mut inner_type = self.resolve_type(inner, library_name, naming_context);
+
+                let boxed_inline = inner_type.type_shape_v2.inline_size;
+                let padding = (8 - (boxed_inline % 8)) % 8;
+                let max_ool = inner_type.type_shape_v2.max_out_of_line
+                    .saturating_add(boxed_inline.saturating_add(padding));
+
+                inner_type.nullable = Some(true); // box always makes it nullable for JSON output
+                
+                let new_depth = inner_type.type_shape_v2.depth.saturating_add(1);
+
+                inner_type.type_shape_v2 = TypeShapeV2 {
+                    inline_size: 8,
+                    alignment: 8,
+                    depth: new_depth,
+                    max_handles: inner_type.type_shape_v2.max_handles,
+                    max_out_of_line: max_ool,
+                    has_padding: inner_type.type_shape_v2.has_padding || padding > 0,
+                    has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
+                };
+
+                inner_type
+            }
             _ => {
                 if name == "zx.Handle" || name == "zx.handle" {
                     let mut handle_subtype = "handle".to_string();
@@ -1507,6 +1805,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     format!("{}/{}", library_name, name)
                 };
 
+                self.compile_decl_by_name(&full_name);
+
                 if let Some(shape) = self.shapes.get(&full_name) {
                     Type {
                         kind_v2: "identifier".to_string(),
@@ -1528,23 +1828,29 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_shape_v2: shape.clone(),
                     }
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
-                    let (inline, align, flex, padding) = match decl {
-                        RawDecl::Struct(_) => if nullable { (8, 8, false, false) } else { (0, 1, false, false) }, // Note: size of an optional struct is 8? Wait, if it's boxed struct, it's 8 in fidl wire format maybe? Not envelopes. No, wait, fidlcrs says Box is 8 bytes.
-                        RawDecl::Union(_) | RawDecl::Table(_) => (16, 8, true, true), 
-                        RawDecl::Type(t) => {
-                            match &t.layout {
-                                raw_ast::Layout::Struct(_) => if nullable { (8, 8, false, false) } else { (0, 1, false, false) },
-                                raw_ast::Layout::Union(_) | raw_ast::Layout::Table(_) => (16, 8, true, true),
-                                _ => {
-                                    println!("DEBUG: Layout for {} is {:?}", full_name, t.layout);
-                                    (4, 4, false, false)
-                                }
-                            }
-                        }
-                        _ => {
-                            println!("DEBUG: Decl for {} is some other type", full_name);
-                            (4, 4, false, false) // Default
-                        }
+                    let is_union_or_table = match decl {
+                        RawDecl::Union(_) | RawDecl::Table(_) => true,
+                        RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Union(_) | raw_ast::Layout::Table(_)),
+                        _ => false,
+                    };
+                    let is_protocol = match decl {
+                        RawDecl::Protocol(_) => true,
+                        _ => false,
+                    };
+                    let (inline, align, flex, padding) = if is_union_or_table {
+                        let is_strict = match decl {
+                            RawDecl::Union(u) => u.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict),
+                            RawDecl::Type(t) => match &t.layout {
+                                raw_ast::Layout::Union(u) => u.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict),
+                                _ => false,
+                            },
+                            _ => false,
+                        };
+                        (16, 8, !is_strict, false)
+                    } else if is_protocol {
+                        (4, 4, false, false)
+                    } else {
+                        (0, 1, false, false)
                     };
                     Type {
                         kind_v2: "identifier".to_string(),
@@ -1566,9 +1872,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_shape_v2: TypeShapeV2 {
                             inline_size: inline,
                             alignment: align,
-                            depth: 4294967295,
+                            depth: u32::MAX,
                             max_handles: 0,
-                            max_out_of_line: 4294967295,
+                            max_out_of_line: u32::MAX,
                             has_padding: padding,
                             has_flexible_envelope: flex,
                         },
@@ -2131,6 +2437,8 @@ fn get_dependencies<'node, 'src>(
                         collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional);
                     }
                 }
+            } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
+                collect_deps_from_ctor(tc, library_name, &mut deps, skip_optional);
             }
         }
         RawDecl::Protocol(p) => {
@@ -2414,7 +2722,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         ],
                     )),
                     raw_ast::Layout::Struct(s) => {
-                        let method_name_camel = format!(
+                        let _method_name_camel = format!(
                             "{}{}",
                             m.name.data().chars().next().unwrap().to_uppercase(),
                             &m.name.data()[1..]

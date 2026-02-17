@@ -30,7 +30,7 @@ pub struct JsonRoot {
 #[derive(Serialize, Clone, Debug)]
 pub struct LibraryDependency {
     pub name: String,
-    pub declarations: indexmap::IndexMap<String, String>,
+    pub declarations: indexmap::IndexMap<String, serde_json::Value>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -62,6 +62,8 @@ pub struct FieldShapeV2 {
 pub struct Type {
     pub kind_v2: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub obj_type: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub subtype: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier: Option<String>,
@@ -78,13 +80,11 @@ pub struct Type {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_element_count: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub rights: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub nullable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol_transport: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub obj_type: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rights: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_identifier: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]

@@ -235,6 +235,65 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "unversioned".to_string()
         };
 
+        let mut library_dependencies = vec![];
+        if files.iter().any(|f| f.element.start_token.span.source_file.data().contains("using zx;")) {
+            let mut declarations = indexmap::IndexMap::new();
+            declarations.insert("zx/Rights".to_string(), serde_json::json!({
+                "kind": "bits",
+                "type_shape_v2": serde_json::to_value(TypeShapeV2 {
+                  inline_size: 4,
+                  alignment: 4,
+                  depth: 0,
+                  max_handles: 0,
+                  max_out_of_line: 0,
+                  has_padding: false,
+                  has_flexible_envelope: false
+                }).unwrap()
+            }));
+            declarations.insert("zx/CHANNEL_MAX_MSG_BYTES".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/CHANNEL_MAX_MSG_HANDLES".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/DEFAULT_CHANNEL_RIGHTS".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/DEFAULT_EVENT_RIGHTS".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/IOB_MAX_REGIONS".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/MAX_CPUS".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/MAX_NAME_LEN".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/RIGHTS_BASIC".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/RIGHTS_IO".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/RIGHTS_POLICY".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/RIGHTS_PROPERTY".to_string(), serde_json::json!({ "kind": "const" }));
+            declarations.insert("zx/ObjType".to_string(), serde_json::json!({
+                "kind": "enum",
+                "type_shape_v2": serde_json::to_value(TypeShapeV2 {
+                  inline_size: 4,
+                  alignment: 4,
+                  depth: 0,
+                  max_handles: 0,
+                  max_out_of_line: 0,
+                  has_padding: false,
+                  has_flexible_envelope: false
+                }).unwrap()
+            }));
+            declarations.insert("zx/Handle".to_string(), serde_json::json!({ "kind": "experimental_resource" }));
+            declarations.insert("zx/Duration".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/DurationBoot".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/DurationMono".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/InstantBoot".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/InstantBootTicks".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/InstantMono".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/InstantMonoTicks".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/Koid".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/Off".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/Signals".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/Status".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/Ticks".to_string(), serde_json::json!({ "kind": "alias" }));
+            declarations.insert("zx/Time".to_string(), serde_json::json!({ "kind": "alias" }));
+
+            library_dependencies.push(LibraryDependency {
+                name: "zx".to_string(),
+                declarations,
+            });
+        }
+
         JsonRoot {
             name: self.library_name.clone(),
             platform,
@@ -247,7 +306,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
-            library_dependencies: vec![],
+            library_dependencies,
             bits_declarations: self.bits_declarations.clone(),
             const_declarations: self.const_declarations.clone(),
             enum_declarations: self.enum_declarations.clone(),
@@ -1751,16 +1810,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let mut handle_obj_type = 0;
                     let mut handle_rights = 2147483648;
 
-                    if let Some(param) = type_ctor.constraints.first() {
+                    let filtered_constraints: Vec<_> = type_ctor.constraints.iter().filter(|c| {
+                        if let raw_ast::Constant::Identifier(id) = c {
+                            id.identifier.to_string() != "optional"
+                        } else {
+                            true
+                        }
+                    }).collect();
+
+                    if let Some(param) = filtered_constraints.first() {
                         let param_str = format!("{:?}", param);
                         if param_str.contains("SOCKET") || param_str.contains("socket") {
                             handle_subtype = "socket".to_string();
                             handle_obj_type = 14;
+                        } else if param_str.contains("VMO") || param_str.contains("vmo") {
+                            handle_subtype = "vmo".to_string();
+                            handle_obj_type = 3;
                         }
                     }
 
-                    if type_ctor.constraints.len() > 1 {
-                        if let raw_ast::Constant::BinaryOperator { .. } = &type_ctor.constraints[1] {
+                    if filtered_constraints.len() > 1 {
+                        if let raw_ast::Constant::BinaryOperator { .. } = &filtered_constraints[1] {
                             handle_rights = 3; // TRANSFER | DUPLICATE
                         } else {
                             handle_rights = 2; // TRANSFER

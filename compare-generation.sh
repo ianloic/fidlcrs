@@ -27,7 +27,7 @@ FILES=(
     # "versions.test.fidl versioned=test:HEAD"
 
 
-    # "nullable.test.fidl"
+    "nullable.test.fidl"
 
 
     # "bits_constants.test.fidl"

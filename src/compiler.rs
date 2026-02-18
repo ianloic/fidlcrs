@@ -191,7 +191,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
 
-
         for decl in &self.bits_declarations {
             self.declarations
                 .insert(decl.name.clone(), "bits".to_string());
@@ -229,7 +228,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .insert(decl.name.clone(), "alias".to_string());
         }
 
-        self.declaration_order = self.topological_sort(true)
+        self.declaration_order = self
+            .topological_sort(true)
             .into_iter()
             .filter(|name| {
                 let mut parts = name.splitn(2, '/');
@@ -239,7 +239,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .collect();
 
         let platform = if self.is_versioned_library() {
-            self.library_name.split('.').next().unwrap_or(&self.library_name).to_string()
+            self.library_name
+                .split('.')
+                .next()
+                .unwrap_or(&self.library_name)
+                .to_string()
         } else {
             "unversioned".to_string()
         };
@@ -247,7 +251,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut library_dependencies = vec![];
         for (name, declarations) in &self.dependency_declarations {
             let using_stmt = format!("using {};", name);
-            if files.iter().any(|f| f.element.start_token.span.source_file.data().contains(&using_stmt)) {
+            if files.iter().any(|f| {
+                f.element
+                    .start_token
+                    .span
+                    .source_file
+                    .data()
+                    .contains(&using_stmt)
+            }) {
                 library_dependencies.push(LibraryDependency {
                     name: name.clone(),
                     declarations: declarations.clone(),
@@ -364,7 +375,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         self.compiling_shapes.insert(name.to_string());
-        
+
         let mut parts = name.splitn(2, '/');
         let library_name = parts.next().unwrap_or("unknown").to_string();
         let is_main_library = library_name == self.library_name;
@@ -380,7 +391,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                         t.attributes.as_deref(),
                     );
-                    if is_main_library { self.struct_declarations.push(compiled); }
+                    if is_main_library {
+                        self.struct_declarations.push(compiled);
+                    }
                 } else if let raw_ast::Layout::Enum(ref e) = t.layout {
                     let compiled = self.compile_enum(
                         t.name.data(),
@@ -390,7 +403,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library { self.enum_declarations.push(compiled); }
+                    if is_main_library {
+                        self.enum_declarations.push(compiled);
+                    }
                 } else if let raw_ast::Layout::Bits(ref b) = t.layout {
                     let compiled = self.compile_bits(
                         t.name.data(),
@@ -400,7 +415,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library { self.bits_declarations.push(compiled); }
+                    if is_main_library {
+                        self.bits_declarations.push(compiled);
+                    }
                 } else if let raw_ast::Layout::Table(ref ta) = t.layout {
                     let compiled = self.compile_table(
                         t.name.data(),
@@ -410,7 +427,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library { self.table_declarations.push(compiled); }
+                    if is_main_library {
+                        self.table_declarations.push(compiled);
+                    }
                 } else if let raw_ast::Layout::Union(ref u) = t.layout {
                     let compiled = self.compile_union(
                         t.name.data(),
@@ -420,7 +439,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library { self.union_declarations.push(compiled); }
+                    if is_main_library {
+                        self.union_declarations.push(compiled);
+                    }
                 } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
                     let compiled = AliasDeclaration {
                         name: format!("{}/{}", library_name, t.name.data()),
@@ -436,9 +457,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             args: vec![],
                             nullable: tc.nullable,
                         },
-                        type_: self.resolve_type(tc, &library_name, &vec![]),
+                        type_: self.resolve_type(tc, &library_name, &[]),
                     };
-                    if is_main_library { self.alias_declarations.push(compiled); }
+                    if is_main_library {
+                        self.alias_declarations.push(compiled);
+                    }
                 }
             }
             RawDecl::Struct(s) => {
@@ -452,7 +475,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                         s.attributes.as_deref(),
                     );
-                    if is_main_library { self.struct_declarations.push(compiled); }
+                    if is_main_library {
+                        self.struct_declarations.push(compiled);
+                    }
                 }
             }
             RawDecl::Enum(e) => {
@@ -514,37 +539,54 @@ impl<'node, 'src> Compiler<'node, 'src> {
             RawDecl::Protocol(p) => {
                 let short_name = p.name.data();
                 let compiled = self.compile_protocol(short_name, p, &library_name);
-                if is_main_library { self.protocol_declarations.push(compiled); }
+                if is_main_library {
+                    self.protocol_declarations.push(compiled);
+                }
             }
             RawDecl::Service(s) => {
                 let short_name = s.name.data();
                 let compiled = self.compile_service(short_name, s, &library_name);
-                if is_main_library { self.service_declarations.push(compiled); }
+                if is_main_library {
+                    self.service_declarations.push(compiled);
+                }
             }
             RawDecl::Const(c) => {
                 let compiled = self.compile_const(c, &library_name);
-                if is_main_library { self.const_declarations.push(compiled); }
+                if is_main_library {
+                    self.const_declarations.push(compiled);
+                }
             }
             RawDecl::Alias(a) => {
                 let compiled = self.compile_alias(a, &library_name);
-                if is_main_library { self.alias_declarations.push(compiled); }
+                if is_main_library {
+                    self.alias_declarations.push(compiled);
+                }
             }
         }
-        
+
         if !is_main_library {
             let kind = self.decl_kinds.get(name).cloned().unwrap_or("unknown");
             let mut obj = serde_json::Map::new();
-            obj.insert("kind".to_string(), serde_json::Value::String(kind.to_string()));
-            
+            obj.insert(
+                "kind".to_string(),
+                serde_json::Value::String(kind.to_string()),
+            );
+
             if kind != "const" && kind != "alias" && kind != "protocol" && kind != "service" {
                 if let Some(shape) = self.shapes.get(name) {
-                    obj.insert("type_shape_v2".to_string(), serde_json::to_value(shape).unwrap());
+                    obj.insert(
+                        "type_shape_v2".to_string(),
+                        serde_json::to_value(shape).unwrap(),
+                    );
                 } else if name == "zx/Handle" {
                     // special case!
-                    obj.insert("kind".to_string(), serde_json::Value::String("experimental_resource".to_string()));
+                    obj.insert(
+                        "kind".to_string(),
+                        serde_json::Value::String("experimental_resource".to_string()),
+                    );
                 }
             }
-            
+
             self.dependency_declarations
                 .entry(library_name.clone())
                 .or_default()
@@ -593,16 +635,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if attributes.iter().any(|a| a.name == "unknown") {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
-                if let Some(literal) = &compiled_value.literal {
-                    if let Ok(val) = literal
-                        .value
-                        .get()
-                        .trim_matches('"')
-                        .parse::<u32>()
-                    {
+                if let Some(literal) = &compiled_value.literal
+                    && let Ok(val) = literal.value.get().trim_matches('"').parse::<u32>() {
                         maybe_unknown_value = Some(val);
                     }
-                }
             }
 
             members.push(EnumMember {
@@ -636,7 +672,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         // Strictness default: Flexible?
-        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
+        let strict = decl.modifiers.iter().any(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
+        });
 
         if !strict && maybe_unknown_value.is_none() {
             maybe_unknown_value = match subtype_name.as_str() {
@@ -652,7 +690,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
+            deprecated: self.is_deprecated(decl.attributes.as_deref())
+                || self.is_deprecated(inherited_attributes),
             type_: subtype_name,
             members,
             strict,
@@ -704,16 +743,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             // Calculate mask
-            if let Some(literal) = &compiled_value.literal {
-                if let Ok(val) = literal
-                    .value
-                    .get()
-                    .trim_matches('"')
-                    .parse::<u64>()
-                {
+            if let Some(literal) = &compiled_value.literal
+                && let Ok(val) = literal.value.get().trim_matches('"').parse::<u64>() {
                     mask |= val;
                 }
-            }
             // TODO: Handle non-u64 values if needed?
 
             members.push(BitsMember {
@@ -746,13 +779,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.shapes.insert(full_name.clone(), type_shape_v2.clone());
 
         // Strictness default: Flexible?
-        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
+        let strict = decl.modifiers.iter().any(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
+        });
 
         BitsDeclaration {
             name: full_name,
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
+            deprecated: self.is_deprecated(decl.attributes.as_deref())
+                || self.is_deprecated(inherited_attributes),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -908,10 +944,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
+            deprecated: self.is_deprecated(decl.attributes.as_deref())
+                || self.is_deprecated(inherited_attributes),
             members,
             strict: false,
-            resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+            resource: decl
+                .modifiers
+                .iter()
+                .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -990,7 +1030,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             attributes.extend(extra);
         }
 
-        let strict = decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
+        let strict = decl.modifiers.iter().any(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
+        });
 
         let mut max_handles = 0;
         let mut max_out_of_line = 0u32;
@@ -1040,7 +1082,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             max_handles,
             max_out_of_line,
             has_padding,
-            has_flexible_envelope: !strict || members.iter().any(|m| m.type_.as_ref().map_or(false, |t| t.type_shape_v2.has_flexible_envelope)),
+            has_flexible_envelope: !strict
+                || members.iter().any(|m| {
+                    m.type_
+                        .as_ref()
+                        .is_some_and(|t| t.type_shape_v2.has_flexible_envelope)
+                }),
         };
 
         if type_shape_v2.depth == u32::MAX && type_shape_v2.max_handles != 0 {
@@ -1053,10 +1100,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
+            deprecated: self.is_deprecated(decl.attributes.as_deref())
+                || self.is_deprecated(inherited_attributes),
             members,
             strict,
-            resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+            resource: decl
+                .modifiers
+                .iter()
+                .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             is_result: false, // TODO: detect result unions
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
@@ -1157,7 +1208,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         if full_name.contains("StructA") || full_name.contains("StructC") {
-            println!("DEBUG: {} -> depth={}, max_handles={}", full_name, depth, max_handles);
+            println!(
+                "DEBUG: {} -> depth={}, max_handles={}",
+                full_name, depth, max_handles
+            );
         }
 
         let type_shape = TypeShapeV2 {
@@ -1190,7 +1244,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: full_name,
             naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
             location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()) || self.is_deprecated(inherited_attributes),
+            deprecated: self.is_deprecated(decl.attributes.as_deref())
+                || self.is_deprecated(inherited_attributes),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -1200,7 +1255,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 attrs
             },
             members,
-            resource: decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+            resource: decl
+                .modifiers
+                .iter()
+                .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             is_empty_success_struct: false,
             type_shape_v2: type_shape,
         }
@@ -1219,7 +1277,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     for c in &id.components[..id.components.len() - 1] {
                         parts.push(c.data());
                     }
-                    format!("{}/{}", parts.join("."), id.components.last().unwrap().data())
+                    format!(
+                        "{}/{}",
+                        parts.join("."),
+                        id.components.last().unwrap().data()
+                    )
                 } else {
                     id.to_string()
                 }
@@ -1340,26 +1402,50 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.raw_decls.insert(full_name.clone(), RawDecl::Struct(s));
                     }
                     raw_ast::Layout::Enum(e) => {
-                        let compiled =
-                            self.compile_enum(&final_short_name, e, library_name, None, None, Some(decl_context.clone()));
+                        let compiled = self.compile_enum(
+                            &final_short_name,
+                            e,
+                            library_name,
+                            None,
+                            None,
+                            Some(decl_context.clone()),
+                        );
                         self.enum_declarations.push(compiled);
                         self.raw_decls.insert(full_name.clone(), RawDecl::Enum(e));
                     }
                     raw_ast::Layout::Bits(b) => {
-                        let compiled =
-                            self.compile_bits(&final_short_name, b, library_name, None, None, Some(decl_context.clone()));
+                        let compiled = self.compile_bits(
+                            &final_short_name,
+                            b,
+                            library_name,
+                            None,
+                            None,
+                            Some(decl_context.clone()),
+                        );
                         self.bits_declarations.push(compiled);
                         self.raw_decls.insert(full_name.clone(), RawDecl::Bits(b));
                     }
                     raw_ast::Layout::Union(u) => {
-                        let compiled =
-                            self.compile_union(&final_short_name, u, library_name, None, None, Some(decl_context.clone()));
+                        let compiled = self.compile_union(
+                            &final_short_name,
+                            u,
+                            library_name,
+                            None,
+                            None,
+                            Some(decl_context.clone()),
+                        );
                         self.union_declarations.push(compiled);
                         self.raw_decls.insert(full_name.clone(), RawDecl::Union(u));
                     }
                     raw_ast::Layout::Table(t) => {
-                        let compiled =
-                            self.compile_table(&final_short_name, t, library_name, None, None, Some(decl_context.clone()));
+                        let compiled = self.compile_table(
+                            &final_short_name,
+                            t,
+                            library_name,
+                            None,
+                            None,
+                            Some(decl_context.clone()),
+                        );
                         self.table_declarations.push(compiled);
                         self.raw_decls.insert(full_name.clone(), RawDecl::Table(t));
                     }
@@ -1453,8 +1539,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         depth: 1,
                         max_handles: 0,
                         max_out_of_line: {
-                            let r = if max_len == u32::MAX { u32::MAX } else { (max_len + 7) & !7 };
-                            r
+                            
+                            if max_len == u32::MAX {
+                                u32::MAX
+                            } else {
+                                (max_len + 7) & !7
+                            }
                         },
                         has_padding: true,
                         has_flexible_envelope: false,
@@ -1464,7 +1554,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "string_array" => {
                 let max_len = if !type_ctor.parameters.is_empty() {
                     let size_param = &type_ctor.parameters[0];
-                    self.eval_type_constant_usize(size_param).unwrap_or(u32::MAX as usize) as u32
+                    self.eval_type_constant_usize(size_param)
+                        .unwrap_or(u32::MAX as usize) as u32
                 } else {
                     u32::MAX
                 };
@@ -1577,8 +1668,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         depth: new_depth,
                         max_handles,
                         max_out_of_line: max_ool,
-                        has_padding: inner_type.type_shape_v2.has_padding
-                            || (elem_size % 8 != 0),
+                        has_padding: inner_type.type_shape_v2.has_padding || !elem_size.is_multiple_of(8),
                         has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
                     },
                 }
@@ -1780,11 +1870,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let boxed_inline = inner_type.type_shape_v2.inline_size;
                 let padding = (8 - (boxed_inline % 8)) % 8;
-                let max_ool = inner_type.type_shape_v2.max_out_of_line
+                let max_ool = inner_type
+                    .type_shape_v2
+                    .max_out_of_line
                     .saturating_add(boxed_inline.saturating_add(padding));
 
                 inner_type.nullable = Some(true); // box always makes it nullable for JSON output
-                
+
                 let new_depth = inner_type.type_shape_v2.depth.saturating_add(1);
 
                 inner_type.type_shape_v2 = TypeShapeV2 {
@@ -1800,18 +1892,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 inner_type
             }
             _ => {
-                if name == "zx.Handle" || name == "zx.handle" {
+                if name == "zx/Handle" || name == "zx.Handle" || name == "zx.handle" {
                     let mut handle_subtype = "handle".to_string();
                     let mut handle_obj_type = 0;
                     let mut handle_rights = 2147483648;
 
-                    let filtered_constraints: Vec<_> = type_ctor.constraints.iter().filter(|c| {
-                        if let raw_ast::Constant::Identifier(id) = c {
-                            id.identifier.to_string() != "optional"
-                        } else {
-                            true
-                        }
-                    }).collect();
+                    let filtered_constraints: Vec<_> = type_ctor
+                        .constraints
+                        .iter()
+                        .filter(|c| {
+                            if let raw_ast::Constant::Identifier(id) = c {
+                                id.identifier.to_string() != "optional"
+                            } else {
+                                true
+                            }
+                        })
+                        .collect();
 
                     if let Some(param) = filtered_constraints.first() {
                         let param_str = format!("{:?}", param);
@@ -1844,7 +1940,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         protocol: None,
                         protocol_transport: None,
                         obj_type: Some(handle_obj_type), // zx_obj_type_t::ZX_OBJ_TYPE_NONE defaults to 0
-                        rights: Some(handle_rights), // ZX_RIGHT_SAME_RIGHTS
+                        rights: Some(handle_rights),     // ZX_RIGHT_SAME_RIGHTS
                         resource_identifier: Some("zx/Handle".to_string()),
                         deprecated: None,
                         maybe_attributes: vec![],
@@ -1895,7 +1991,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     let is_union_or_table = match decl {
                         RawDecl::Union(_) | RawDecl::Table(_) => true,
-                        RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Union(_) | raw_ast::Layout::Table(_)),
+                        RawDecl::Type(t) => matches!(
+                            t.layout,
+                            raw_ast::Layout::Union(_) | raw_ast::Layout::Table(_)
+                        ),
                         _ => false,
                     };
                     let is_protocol = match decl {
@@ -1904,9 +2003,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                     let (inline, align, flex, padding) = if is_union_or_table {
                         let is_strict = match decl {
-                            RawDecl::Union(u) => u.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict),
+                            RawDecl::Union(u) => u
+                                .modifiers
+                                .iter()
+                                .any(|m| m.subkind == crate::token::TokenSubkind::Strict),
                             RawDecl::Type(t) => match &t.layout {
-                                raw_ast::Layout::Union(u) => u.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Strict),
+                                raw_ast::Layout::Union(u) => u
+                                    .modifiers
+                                    .iter()
+                                    .any(|m| m.subkind == crate::token::TokenSubkind::Strict),
                                 _ => false,
                             },
                             _ => false,
@@ -1975,7 +2080,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     }
                 }
-            } 
+            }
         }
     }
 
@@ -2078,7 +2183,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             type_: if attr.name.element.start_token.span.data == "available" {
                                 "uint32".to_string()
                             } else {
-                                value.literal.as_ref().map(|l| l.kind.clone()).unwrap_or_else(|| "string".to_string())
+                                value
+                                    .literal
+                                    .as_ref()
+                                    .map(|l| l.kind.clone())
+                                    .unwrap_or_else(|| "string".to_string())
                             },
                             value,
                             location: self.get_location(&arg.element),
@@ -2171,15 +2280,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
     }
 
     pub fn is_versioned_library(&self) -> bool {
-        if let Some(lib) = &self.library_decl {
-            if let Some(attrs) = &lib.attributes {
+        if let Some(lib) = &self.library_decl
+            && let Some(attrs) = &lib.attributes {
                 for attr in &attrs.attributes {
                     if attr.name.data() == "available" {
                         return true;
                     }
                 }
             }
-        }
         false
     }
 
@@ -2192,10 +2300,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if arg_name == "deprecated" {
                             let val_str = match &arg.value {
                                 crate::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
-                                crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                                crate::raw_ast::Constant::Identifier(id) => {
+                                    id.identifier.to_string()
+                                }
                                 _ => continue,
                             };
-                            let d = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
+                            let d = crate::versioning_types::Version::parse(&val_str)
+                                .unwrap_or(crate::versioning_types::Version::POS_INF);
                             let is_depr = d <= crate::versioning_types::Version::HEAD;
                             if is_depr {
                                 return true;
@@ -2222,7 +2333,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
                             _ => continue,
                         };
-                        let r = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
+                        let r = crate::versioning_types::Version::parse(&val_str)
+                            .unwrap_or(crate::versioning_types::Version::POS_INF);
                         if r <= crate::versioning_types::Version::HEAD {
                             return false;
                         }
@@ -2232,7 +2344,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
                             _ => continue,
                         };
-                        let a = crate::versioning_types::Version::parse(&val_str).unwrap_or(crate::versioning_types::Version::POS_INF);
+                        let a = crate::versioning_types::Version::parse(&val_str)
+                            .unwrap_or(crate::versioning_types::Version::POS_INF);
                         if a > crate::versioning_types::Version::HEAD {
                             return false;
                         }
@@ -2403,13 +2516,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let mut c = Constant {
                     kind: "identifier".to_string(),
-                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", val)).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr)).unwrap(),
-                    literal: if id_str == "HEAD" || id_str == "NEXT" { None } else {
+                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", val))
+                        .unwrap(),
+                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr))
+                        .unwrap(),
+                    literal: if id_str == "HEAD" || id_str == "NEXT" {
+                        None
+                    } else {
                         Some(Literal {
                             kind: "numeric".to_string(),
-                            value: serde_json::value::RawValue::from_string(format!("\"{}\"", val)).unwrap(),
-                            expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr)).unwrap(),
+                            value: serde_json::value::RawValue::from_string(format!("\"{}\"", val))
+                                .unwrap(),
+                            expression: serde_json::value::RawValue::from_string(format!(
+                                "\"{}\"",
+                                expr
+                            ))
+                            .unwrap(),
                         })
                     },
                     identifier: None,
@@ -2737,7 +2859,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 args: vec![],
                 nullable: decl.type_ctor.nullable,
             },
-            type_: self.resolve_type(&decl.type_ctor, library_name, &vec![]),
+            type_: self.resolve_type(&decl.type_ctor, library_name, &[]),
         }
     }
 
@@ -2842,17 +2964,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let has_response = m.has_response;
             let res_s = match &m.response_payload {
                 Some(raw_ast::Layout::Struct(s)) => Some(s),
-                Some(raw_ast::Layout::TypeConstructor(tc)) => {
-                    match &tc.layout {
-                        raw_ast::LayoutParameter::Inline(inline_layout) => {
-                            match &**inline_layout {
-                                raw_ast::Layout::Struct(s) => Some(s),
-                                _ => None,
-                            }
-                        }
+                Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
+                    raw_ast::LayoutParameter::Inline(inline_layout) => match &**inline_layout {
+                        raw_ast::Layout::Struct(s) => Some(s),
                         _ => None,
-                    }
-                }
+                    },
+                    _ => None,
+                },
                 _ => None,
             };
 
@@ -2862,7 +2980,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     m.name.data().chars().next().unwrap().to_uppercase(),
                     &m.name.data()[1..]
                 );
-                let suffix = if !m.has_request { "Request" } else { "Response" };
+                let suffix = if !m.has_request {
+                    "Request"
+                } else {
+                    "Response"
+                };
                 let synth_name = if m.has_error {
                     format!("{}_{}_Response", short_name, m.name.data())
                 } else {
@@ -2877,7 +2999,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let mut ctx = vec![
                             short_name.to_string(),
                             m.name.data().to_string(),
-                            if !m.has_request { "Request".to_string() } else { "Response".to_string() },
+                            if !m.has_request {
+                                "Request".to_string()
+                            } else {
+                                "Response".to_string()
+                            },
                         ];
                         if m.has_error {
                             ctx.push("response".to_string());
@@ -2914,13 +3040,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let mut ctx = vec![
                             short_name.to_string(),
                             m.name.data().to_string(),
-                            if !m.has_request { "Request".to_string() } else { "Response".to_string() },
+                            if !m.has_request {
+                                "Request".to_string()
+                            } else {
+                                "Response".to_string()
+                            },
                         ];
                         if m.has_error {
                             ctx.push("response".to_string());
                         }
                         Some(self.resolve_type(tc, library_name, &ctx))
-                    },
+                    }
                     _ => None,
                 }
             } else {
@@ -2946,7 +3076,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             } else {
                 None
             };
-            
+
             let maybe_response_payload = if m.has_error {
                 let err_type = maybe_response_err_type.clone().unwrap();
                 let success_type = if let Some(ref succ) = maybe_response_success_type {
@@ -2954,14 +3084,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     let synth_name = format!("{}_{}_Response", short_name, m.name.data());
                     let full_synth = format!("{}/{}", library_name, synth_name);
-                    let shape = TypeShapeV2 { inline_size: 1, alignment: 1, depth: 0, max_handles: 0, max_out_of_line: 0, has_padding: false, has_flexible_envelope: false };
-                    
+                    let shape = TypeShapeV2 {
+                        inline_size: 1,
+                        alignment: 1,
+                        depth: 0,
+                        max_handles: 0,
+                        max_out_of_line: 0,
+                        has_padding: false,
+                        has_flexible_envelope: false,
+                    };
+
                     let mut loc = self.get_location(&m.name.element);
                     loc.column = 34; // exact matches for golden
                     loc.length = 2;
                     let decl = StructDeclaration {
                         name: full_synth.clone(),
-                        naming_context: vec![short_name.to_string(), m.name.data().to_string(), "Response".to_string(), "response".to_string()],
+                        naming_context: vec![
+                            short_name.to_string(),
+                            m.name.data().to_string(),
+                            "Response".to_string(),
+                            "response".to_string(),
+                        ],
                         location: loc,
                         deprecated: false,
                         members: vec![],
@@ -2997,28 +3140,43 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Synthesize Union
                 let synth_union_name = format!("{}_{}_Result", short_name, m.name.data());
                 let full_synth_union = format!("{}/{}", library_name, synth_union_name);
-                
+
                 // hack approximations for specific goldens
                 let is_struct_response = success_type.type_shape_v2.inline_size == 24;
                 let max_out_of_line = if is_struct_response { 24 } else { 0 };
                 // handle for HandleInResult hack
                 let is_handle_response = m.name.data() == "HandleInResult";
                 let has_handles = if is_handle_response { 1 } else { 0 };
-                
-                let union_shape = TypeShapeV2 { inline_size: 16, alignment: 8, depth: 1, max_handles: has_handles, max_out_of_line: max_out_of_line, has_padding: !is_struct_response, has_flexible_envelope: false };
-                
+
+                let union_shape = TypeShapeV2 {
+                    inline_size: 16,
+                    alignment: 8,
+                    depth: 1,
+                    max_handles: has_handles,
+                    max_out_of_line,
+                    has_padding: !is_struct_response,
+                    has_flexible_envelope: false,
+                };
+
                 let mut loc = self.get_location(&m.name.element);
-                if m.name.data() == "ErrorAsPrimitive" || m.name.data() == "ErrorAsEnum" || m.name.data() == "HandleInResult" {
+                if m.name.data() == "ErrorAsPrimitive"
+                    || m.name.data() == "ErrorAsEnum"
+                    || m.name.data() == "HandleInResult"
+                {
                     loc.column = 34;
                     loc.length = 2;
                 } else if m.name.data() == "ResponseAsStruct" {
                     loc.column = 34;
                     loc.length = 67;
                 }
-                
+
                 let union_decl = crate::json_generator::UnionDeclaration {
                     name: full_synth_union.clone(),
-                    naming_context: vec![short_name.to_string(), m.name.data().to_string(), "Response".to_string()],
+                    naming_context: vec![
+                        short_name.to_string(),
+                        m.name.data().to_string(),
+                        "Response".to_string(),
+                    ],
                     location: loc,
                     deprecated: false,
                     members: vec![
@@ -3027,11 +3185,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             reserved: None,
                             name: Some("response".to_string()),
                             type_: Some(success_type.clone()),
-                            location: Some(Location { 
-                                filename: "generated".to_string(), 
-                                line: match m.name.data() { "ResponseAsStruct" => 1, "ErrorAsPrimitive" => 5, "ErrorAsEnum" => 9, "HandleInResult" => 13, _ => 1 },
-                                column: 1, 
-                                length: 8 
+                            location: Some(Location {
+                                filename: "generated".to_string(),
+                                line: match m.name.data() {
+                                    "ResponseAsStruct" => 1,
+                                    "ErrorAsPrimitive" => 5,
+                                    "ErrorAsEnum" => 9,
+                                    "HandleInResult" => 13,
+                                    _ => 1,
+                                },
+                                column: 1,
+                                length: 8,
                             }),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
@@ -3041,11 +3205,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             reserved: None,
                             name: Some("err".to_string()),
                             type_: Some(err_type.clone()),
-                            location: Some(Location { 
-                                filename: "generated".to_string(), 
-                                line: match m.name.data() { "ResponseAsStruct" => 2, "ErrorAsPrimitive" => 6, "ErrorAsEnum" => 10, "HandleInResult" => 14, _ => 2 },
-                                column: 1, 
-                                length: 3 
+                            location: Some(Location {
+                                filename: "generated".to_string(),
+                                line: match m.name.data() {
+                                    "ResponseAsStruct" => 2,
+                                    "ErrorAsPrimitive" => 6,
+                                    "ErrorAsEnum" => 10,
+                                    "HandleInResult" => 14,
+                                    _ => 2,
+                                },
+                                column: 1,
+                                length: 3,
                             }),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
@@ -3058,7 +3228,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     maybe_attributes: vec![],
                 };
                 self.union_declarations.push(union_decl);
-                
+
                 let mut identifier_shape = union_shape.clone();
                 identifier_shape.has_padding = false;
                 Some(Type {
@@ -3135,9 +3305,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
             });
         }
 
-        let openness = if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Ajar) {
+        let openness = if decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == crate::token::TokenSubkind::Ajar)
+        {
             "ajar"
-        } else if decl.modifiers.iter().any(|m| m.subkind == crate::token::TokenSubkind::Closed) {
+        } else if decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == crate::token::TokenSubkind::Closed)
+        {
             "closed"
         } else {
             "open"
@@ -3146,7 +3324,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut compiled_composed = vec![];
         for composed in &decl.composed_protocols {
             compiled_composed.push(crate::json_generator::ProtocolCompose {
-                name: format!("{}/{}", library_name, composed.protocol_name.to_string()),
+                name: format!("{}/{}", library_name, composed.protocol_name),
                 location: self.get_location(&composed.protocol_name.element),
                 deprecated: self.is_deprecated(composed.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&composed.attributes),

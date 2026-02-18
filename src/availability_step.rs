@@ -21,23 +21,36 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
                             let val_str = match &arg.value {
                                 crate::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
-                                crate::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                                crate::raw_ast::Constant::Identifier(id) => {
+                                    id.identifier.to_string()
+                                }
                                 _ => "".to_string(),
                             };
-                            if arg_name == "added" { added = Version::parse(&val_str); }
-                            if arg_name == "deprecated" { deprecated = Version::parse(&val_str); }
-                            if arg_name == "removed" { removed = Version::parse(&val_str); }
+                            if arg_name == "added" {
+                                added = Version::parse(&val_str);
+                            }
+                            if arg_name == "deprecated" {
+                                deprecated = Version::parse(&val_str);
+                            }
+                            if arg_name == "removed" {
+                                removed = Version::parse(&val_str);
+                            }
                         }
-                        
+
                         let mut initial = Availability::new();
-                        let _ = initial.init(InitArgs { added, deprecated, removed, replaced: false });
+                        let _ = initial.init(InitArgs {
+                            added,
+                            deprecated,
+                            removed,
+                            replaced: false,
+                        });
                         let _ = initial.inherit(&Availability::unbounded());
                         initial.narrow(VersionRange::new(selected_version, Version::POS_INF));
                         avail = initial;
                     }
                 }
             }
-            
+
             decl_availability.insert(name.clone(), avail);
         }
 

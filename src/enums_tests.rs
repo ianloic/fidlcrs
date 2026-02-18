@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::test_library::{TestLibrary, LookupHelpers};
     use crate::source_file::SourceFile;
+    use crate::test_library::{LookupHelpers, TestLibrary};
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -27,7 +27,9 @@ type Fruit = enum : uint64 {
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         let root = lib.compile().expect("compilation failed");
-        let type_decl = root.lookup_enum("example/Fruit").expect("Fruit enum not found");
+        let type_decl = root
+            .lookup_enum("example/Fruit")
+            .expect("Fruit enum not found");
         assert_eq!(type_decl.members.len(), 3);
         assert_eq!(type_decl.type_, "uint64");
     }
@@ -47,7 +49,9 @@ type Fruit = enum {
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         let root = lib.compile().expect("compilation failed");
-        let type_decl = root.lookup_enum("example/Fruit").expect("Fruit enum not found");
+        let type_decl = root
+            .lookup_enum("example/Fruit")
+            .expect("Fruit enum not found");
         assert_eq!(type_decl.type_, "uint32");
     }
 

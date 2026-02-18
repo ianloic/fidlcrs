@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::test_library::TestLibrary;
     use crate::source_file::SourceFile;
+    use crate::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {

@@ -138,7 +138,7 @@ impl VersionSet {
     }
 
     pub fn contains(&self, version: Version) -> bool {
-        self.ranges.0.contains(version) || self.ranges.1.map_or(false, |r| r.contains(version))
+        self.ranges.0.contains(version) || self.ranges.1.is_some_and(|r| r.contains(version))
     }
 }
 
@@ -305,11 +305,10 @@ impl Availability {
         }
 
         if self.deprecated.is_none() {
-            if let Some(pd) = parent.deprecated {
-                if pd < self.removed.unwrap() {
+            if let Some(pd) = parent.deprecated
+                && pd < self.removed.unwrap() {
                     self.deprecated = Some(std::cmp::max(pd, self.added.unwrap()));
                 }
-            }
         } else if self.deprecated.unwrap() < parent.added.unwrap() {
             result.deprecated = InheritStatus::BeforeParentAdded;
         } else if self.deprecated.unwrap() >= parent.removed.unwrap() {
@@ -435,6 +434,12 @@ pub struct VersionSelection {
     map: BTreeMap<Platform, BTreeSet<Version>>,
 }
 
+impl Default for VersionSelection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VersionSelection {
     pub fn new() -> Self {
         Self {
@@ -449,11 +454,11 @@ impl VersionSelection {
         if versions.len() > 1 {
             assert!(versions.contains(&Version::HEAD));
         }
-        if self.map.contains_key(&platform) {
-            false
-        } else {
-            self.map.insert(platform, versions);
+        if let std::collections::btree_map::Entry::Vacant(e) = self.map.entry(platform) {
+            e.insert(versions);
             true
+        } else {
+            false
         }
     }
 

@@ -12,29 +12,29 @@ pub mod token;
 pub mod versioning_types;
 
 #[cfg(test)]
-pub mod test_library;
+pub mod array_tests;
+#[cfg(test)]
+pub mod bits_tests;
+#[cfg(test)]
+pub mod consts_tests;
 #[cfg(test)]
 pub mod enums_tests;
 #[cfg(test)]
 pub mod parsing_tests;
 #[cfg(test)]
-pub mod structs_tests;
-#[cfg(test)]
-pub mod array_tests;
-#[cfg(test)]
-pub mod bits_tests;
-#[cfg(test)]
 pub mod protocol_tests;
 #[cfg(test)]
-pub mod union_tests;
+pub mod structs_tests;
 #[cfg(test)]
-pub mod consts_tests;
+pub mod test_library;
 #[cfg(test)]
 pub mod typeshape_tests;
+#[cfg(test)]
+pub mod union_tests;
 
+pub mod availability_step;
 pub mod compile_step;
 pub mod consume_step;
+pub mod replacement_step;
 pub mod resolve_step;
 pub mod step;
-pub mod availability_step;
-pub mod replacement_step;

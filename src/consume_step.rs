@@ -8,15 +8,24 @@ pub struct ConsumeStep<'node, 'src> {
 
 impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
     fn run(&mut self, compiler: &mut Compiler<'node, 'src>) {
-        let main_library_name = self.files.first()
+        let main_library_name = self
+            .files
+            .first()
             .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
-            
+
         compiler.library_name = main_library_name.clone();
-        compiler.library_decl = self.files.first().and_then(|f| f.library_decl.as_ref().map(|l| *l.clone()));
+        compiler.library_decl = self
+            .files
+            .first()
+            .and_then(|f| f.library_decl.as_ref().map(|l| *l.clone()));
 
         for file in self.files {
-            let file_library_name = file.library_decl.as_ref().map(|l| l.path.to_string()).unwrap_or_else(|| main_library_name.clone());
+            let file_library_name = file
+                .library_decl
+                .as_ref()
+                .map(|l| l.path.to_string())
+                .unwrap_or_else(|| main_library_name.clone());
 
             for decl in &file.type_decls {
                 let name = format!("{}/{}", file_library_name, decl.name.data());
@@ -73,17 +82,15 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     );
                     let req_s = match &method.request_payload {
                         Some(raw_ast::Layout::Struct(s)) => Some(s),
-                        Some(raw_ast::Layout::TypeConstructor(tc)) => {
-                            match &tc.layout {
-                                raw_ast::LayoutParameter::Inline(inline_layout) => {
-                                    match &**inline_layout {
-                                        raw_ast::Layout::Struct(s) => Some(s),
-                                        _ => None,
-                                    }
+                        Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
+                            raw_ast::LayoutParameter::Inline(inline_layout) => {
+                                match &**inline_layout {
+                                    raw_ast::Layout::Struct(s) => Some(s),
+                                    _ => None,
                                 }
-                                _ => None,
                             }
-                        }
+                            _ => None,
+                        },
                         _ => None,
                     };
                     if let Some(s) = req_s {
@@ -95,20 +102,18 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         );
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
-                    
+
                     let res_s = match &method.response_payload {
                         Some(raw_ast::Layout::Struct(s)) => Some(s),
-                        Some(raw_ast::Layout::TypeConstructor(tc)) => {
-                            match &tc.layout {
-                                raw_ast::LayoutParameter::Inline(inline_layout) => {
-                                    match &**inline_layout {
-                                        raw_ast::Layout::Struct(s) => Some(s),
-                                        _ => None,
-                                    }
+                        Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
+                            raw_ast::LayoutParameter::Inline(inline_layout) => {
+                                match &**inline_layout {
+                                    raw_ast::Layout::Struct(s) => Some(s),
+                                    _ => None,
                                 }
-                                _ => None,
                             }
-                        }
+                            _ => None,
+                        },
                         _ => None,
                     };
                     if let Some(s) = res_s {
@@ -119,7 +124,11 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                 format!("{}/{}", file_library_name, format!("{}{}", name, sn)),
                             )
                         } else {
-                            let suffix = if !method.has_request { "Request" } else { "Response" };
+                            let suffix = if !method.has_request {
+                                "Request"
+                            } else {
+                                "Response"
+                            };
                             let sn = format!("{}{}", method_name_camel, suffix);
                             (
                                 sn.clone(),

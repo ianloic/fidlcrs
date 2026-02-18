@@ -102,6 +102,7 @@ pub struct Compiler<'node, 'src> {
     pub decl_availability: HashMap<String, crate::versioning_types::Availability>,
     pub version_selection: crate::versioning_types::VersionSelection,
     pub compiling_shapes: HashSet<String>,
+    pub dependency_declarations: IndexMap<String, IndexMap<String, serde_json::Value>>,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -133,6 +134,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             decl_availability: HashMap::new(),
             version_selection: crate::versioning_types::VersionSelection::new(),
             compiling_shapes: HashSet::new(),
+            dependency_declarations: IndexMap::new(),
         }
     }
 
@@ -227,7 +229,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .insert(decl.name.clone(), "alias".to_string());
         }
 
-        self.declaration_order = self.topological_sort(true);
+        self.declaration_order = self.topological_sort(true)
+            .into_iter()
+            .filter(|name| {
+                let mut parts = name.splitn(2, '/');
+                let lib_name = parts.next().unwrap_or("unknown");
+                lib_name == self.library_name
+            })
+            .collect();
 
         let platform = if self.is_versioned_library() {
             self.library_name.split('.').next().unwrap_or(&self.library_name).to_string()
@@ -236,63 +245,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         let mut library_dependencies = vec![];
-        if files.iter().any(|f| f.element.start_token.span.source_file.data().contains("using zx;")) {
-            let mut declarations = indexmap::IndexMap::new();
-            declarations.insert("zx/Rights".to_string(), serde_json::json!({
-                "kind": "bits",
-                "type_shape_v2": serde_json::to_value(TypeShapeV2 {
-                  inline_size: 4,
-                  alignment: 4,
-                  depth: 0,
-                  max_handles: 0,
-                  max_out_of_line: 0,
-                  has_padding: false,
-                  has_flexible_envelope: false
-                }).unwrap()
-            }));
-            declarations.insert("zx/CHANNEL_MAX_MSG_BYTES".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/CHANNEL_MAX_MSG_HANDLES".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/DEFAULT_CHANNEL_RIGHTS".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/DEFAULT_EVENT_RIGHTS".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/IOB_MAX_REGIONS".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/MAX_CPUS".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/MAX_NAME_LEN".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/RIGHTS_BASIC".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/RIGHTS_IO".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/RIGHTS_POLICY".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/RIGHTS_PROPERTY".to_string(), serde_json::json!({ "kind": "const" }));
-            declarations.insert("zx/ObjType".to_string(), serde_json::json!({
-                "kind": "enum",
-                "type_shape_v2": serde_json::to_value(TypeShapeV2 {
-                  inline_size: 4,
-                  alignment: 4,
-                  depth: 0,
-                  max_handles: 0,
-                  max_out_of_line: 0,
-                  has_padding: false,
-                  has_flexible_envelope: false
-                }).unwrap()
-            }));
-            declarations.insert("zx/Handle".to_string(), serde_json::json!({ "kind": "experimental_resource" }));
-            declarations.insert("zx/Duration".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/DurationBoot".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/DurationMono".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/InstantBoot".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/InstantBootTicks".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/InstantMono".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/InstantMonoTicks".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/Koid".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/Off".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/Signals".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/Status".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/Ticks".to_string(), serde_json::json!({ "kind": "alias" }));
-            declarations.insert("zx/Time".to_string(), serde_json::json!({ "kind": "alias" }));
-
-            library_dependencies.push(LibraryDependency {
-                name: "zx".to_string(),
-                declarations,
-            });
+        for (name, declarations) in &self.dependency_declarations {
+            let using_stmt = format!("using {};", name);
+            if files.iter().any(|f| f.element.start_token.span.source_file.data().contains(&using_stmt)) {
+                library_dependencies.push(LibraryDependency {
+                    name: name.clone(),
+                    declarations: declarations.clone(),
+                });
+            }
         }
+        library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
 
         JsonRoot {
             name: self.library_name.clone(),
@@ -402,7 +364,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         self.compiling_shapes.insert(name.to_string());
-        let library_name = self.library_name.clone();
+        
+        let mut parts = name.splitn(2, '/');
+        let library_name = parts.next().unwrap_or("unknown").to_string();
+        let is_main_library = library_name == self.library_name;
 
         match decl {
             RawDecl::Type(t) => {
@@ -415,7 +380,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                         t.attributes.as_deref(),
                     );
-                    self.struct_declarations.push(compiled);
+                    if is_main_library { self.struct_declarations.push(compiled); }
                 } else if let raw_ast::Layout::Enum(ref e) = t.layout {
                     let compiled = self.compile_enum(
                         t.name.data(),
@@ -425,7 +390,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    self.enum_declarations.push(compiled);
+                    if is_main_library { self.enum_declarations.push(compiled); }
                 } else if let raw_ast::Layout::Bits(ref b) = t.layout {
                     let compiled = self.compile_bits(
                         t.name.data(),
@@ -435,7 +400,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    self.bits_declarations.push(compiled);
+                    if is_main_library { self.bits_declarations.push(compiled); }
                 } else if let raw_ast::Layout::Table(ref ta) = t.layout {
                     let compiled = self.compile_table(
                         t.name.data(),
@@ -445,7 +410,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    self.table_declarations.push(compiled);
+                    if is_main_library { self.table_declarations.push(compiled); }
                 } else if let raw_ast::Layout::Union(ref u) = t.layout {
                     let compiled = self.compile_union(
                         t.name.data(),
@@ -455,7 +420,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    self.union_declarations.push(compiled);
+                    if is_main_library { self.union_declarations.push(compiled); }
                 } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
                     let compiled = AliasDeclaration {
                         name: format!("{}/{}", library_name, t.name.data()),
@@ -473,7 +438,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                         type_: self.resolve_type(tc, &library_name, &vec![]),
                     };
-                    self.alias_declarations.push(compiled);
+                    if is_main_library { self.alias_declarations.push(compiled); }
                 }
             }
             RawDecl::Struct(s) => {
@@ -487,7 +452,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                         s.attributes.as_deref(),
                     );
-                    self.struct_declarations.push(compiled);
+                    if is_main_library { self.struct_declarations.push(compiled); }
                 }
             }
             RawDecl::Enum(e) => {
@@ -500,7 +465,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     e.attributes.as_deref(),
                     None,
                 );
-                if e.name.is_some() {
+                if e.name.is_some() && is_main_library {
                     self.enum_declarations.push(compiled);
                 }
             }
@@ -514,7 +479,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     b.attributes.as_deref(),
                     None,
                 );
-                if b.name.is_some() {
+                if b.name.is_some() && is_main_library {
                     self.bits_declarations.push(compiled);
                 }
             }
@@ -528,7 +493,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     u.attributes.as_deref(),
                     None,
                 );
-                if u.name.is_some() {
+                if u.name.is_some() && is_main_library {
                     self.union_declarations.push(compiled);
                 }
             }
@@ -542,29 +507,50 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     t.attributes.as_deref(),
                     None,
                 );
-                if t.name.is_some() {
+                if t.name.is_some() && is_main_library {
                     self.table_declarations.push(compiled);
                 }
             }
             RawDecl::Protocol(p) => {
                 let short_name = p.name.data();
                 let compiled = self.compile_protocol(short_name, p, &library_name);
-                self.protocol_declarations.push(compiled);
+                if is_main_library { self.protocol_declarations.push(compiled); }
             }
             RawDecl::Service(s) => {
                 let short_name = s.name.data();
                 let compiled = self.compile_service(short_name, s, &library_name);
-                self.service_declarations.push(compiled);
+                if is_main_library { self.service_declarations.push(compiled); }
             }
             RawDecl::Const(c) => {
                 let compiled = self.compile_const(c, &library_name);
-                self.const_declarations.push(compiled);
+                if is_main_library { self.const_declarations.push(compiled); }
             }
             RawDecl::Alias(a) => {
                 let compiled = self.compile_alias(a, &library_name);
-                self.alias_declarations.push(compiled);
+                if is_main_library { self.alias_declarations.push(compiled); }
             }
         }
+        
+        if !is_main_library {
+            let kind = self.decl_kinds.get(name).cloned().unwrap_or("unknown");
+            let mut obj = serde_json::Map::new();
+            obj.insert("kind".to_string(), serde_json::Value::String(kind.to_string()));
+            
+            if kind != "const" && kind != "alias" && kind != "protocol" && kind != "service" {
+                if let Some(shape) = self.shapes.get(name) {
+                    obj.insert("type_shape_v2".to_string(), serde_json::to_value(shape).unwrap());
+                } else if name == "zx/Handle" {
+                    // special case!
+                    obj.insert("kind".to_string(), serde_json::Value::String("experimental_resource".to_string()));
+                }
+            }
+            
+            self.dependency_declarations
+                .entry(library_name.clone())
+                .or_default()
+                .insert(name.to_string(), serde_json::Value::Object(obj));
+        }
+
         self.compiling_shapes.remove(name);
     }
 
@@ -1227,7 +1213,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
         naming_context: &[String],
     ) -> Type {
         let name = match &type_ctor.layout {
-            raw_ast::LayoutParameter::Identifier(id) => id.to_string(),
+            raw_ast::LayoutParameter::Identifier(id) => {
+                if id.components.len() > 1 {
+                    let mut parts = vec![];
+                    for c in &id.components[..id.components.len() - 1] {
+                        parts.push(c.data());
+                    }
+                    format!("{}/{}", parts.join("."), id.components.last().unwrap().data())
+                } else {
+                    id.to_string()
+                }
+            }
             raw_ast::LayoutParameter::Literal(_) => {
                 panic!("Literal layout not supported in resolve_type")
             }
@@ -1458,7 +1454,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_handles: 0,
                         max_out_of_line: {
                             let r = if max_len == u32::MAX { u32::MAX } else { (max_len + 7) & !7 };
-                            println!("DEBUG STRING max_len={} -> max_out_of_line={}", max_len, r);
                             r
                         },
                         has_padding: true,
@@ -1869,7 +1864,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Try to resolve identifier
                 // 1. Check if name exists directly
                 // 2. Check if name exists with library prefix
-                let full_name = if self.shapes.contains_key(&name) {
+                let full_name = if name.contains('/') || self.shapes.contains_key(&name) {
                     name.clone()
                 } else {
                     format!("{}/{}", library_name, name)

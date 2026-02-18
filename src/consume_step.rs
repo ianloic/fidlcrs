@@ -8,60 +8,59 @@ pub struct ConsumeStep<'node, 'src> {
 
 impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
     fn run(&mut self, compiler: &mut Compiler<'node, 'src>) {
-        compiler.library_name = self
-            .files
-            .iter()
-            .find_map(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
+        let main_library_name = self.files.first()
+            .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
-        compiler.library_decl = self
-            .files
-            .iter()
-            .find_map(|f| f.library_decl.as_ref().map(|l| *l.clone()));
+            
+        compiler.library_name = main_library_name.clone();
+        compiler.library_decl = self.files.first().and_then(|f| f.library_decl.as_ref().map(|l| *l.clone()));
 
         for file in self.files {
+            let file_library_name = file.library_decl.as_ref().map(|l| l.path.to_string()).unwrap_or_else(|| main_library_name.clone());
+
             for decl in &file.type_decls {
-                let name = format!("{}/{}", compiler.library_name, decl.name.data());
+                let name = format!("{}/{}", file_library_name, decl.name.data());
                 compiler.raw_decls.insert(name, RawDecl::Type(decl));
             }
 
             for decl in &file.alias_decls {
-                let name = format!("{}/{}", compiler.library_name, decl.name.data());
+                let name = format!("{}/{}", file_library_name, decl.name.data());
                 compiler.raw_decls.insert(name, RawDecl::Alias(decl));
             }
 
             for decl in &file.struct_decls {
                 let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Struct(decl));
             }
 
             for decl in &file.enum_decls {
                 let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Enum(decl));
             }
 
             for decl in &file.bits_decls {
                 let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Bits(decl));
             }
 
             for decl in &file.union_decls {
                 let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Union(decl));
             }
 
             for decl in &file.table_decls {
                 let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Table(decl));
             }
 
             for decl in &file.protocol_decls {
                 let name = decl.name.data();
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler
                     .raw_decls
                     .insert(full_name, RawDecl::Protocol(decl));
@@ -91,7 +90,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         let synth_name = format!("{}Request", method_name_camel);
                         let full_synth = format!(
                             "{}/{}",
-                            compiler.library_name,
+                            file_library_name,
                             format!("{}{}", name, synth_name)
                         );
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
@@ -117,14 +116,14 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             let sn = format!("_{}_Response", method.name.data());
                             (
                                 sn.clone(),
-                                format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)),
+                                format!("{}/{}", file_library_name, format!("{}{}", name, sn)),
                             )
                         } else {
                             let suffix = if !method.has_request { "Request" } else { "Response" };
                             let sn = format!("{}{}", method_name_camel, suffix);
                             (
                                 sn.clone(),
-                                format!("{}/{}", compiler.library_name, format!("{}{}", name, sn)),
+                                format!("{}/{}", file_library_name, format!("{}{}", name, sn)),
                             )
                         };
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
@@ -134,13 +133,13 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
             for decl in &file.service_decls {
                 let name = decl.name.data();
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Service(decl));
             }
 
             for decl in &file.const_decls {
                 let name = decl.name.data();
-                let full_name = format!("{}/{}", compiler.library_name, name);
+                let full_name = format!("{}/{}", file_library_name, name);
                 compiler.raw_decls.insert(full_name, RawDecl::Const(decl));
             }
         }

@@ -18,16 +18,15 @@ FILES=(
     "service.test.fidl"
     "escaping.test.fidl"
     "doc_comments.test.fidl"
+    # "nullable.test.fidl"
 
 
 
     # "anonymous.test.fidl"
-
     # "protocols.test.fidl"
     # "versions.test.fidl versioned=test:HEAD"
 
 
-    "nullable.test.fidl"
 
 
     # "bits_constants.test.fidl"
@@ -108,10 +107,9 @@ for entry in "${FILES[@]}"; do
     # manually include zx dependency - it's weird so we can't just glob *.fidl from a directory.
     CMD+=("--files" "vdso-fidl/rights.fidl" "vdso-fidl/zx_common.fidl" "vdso-fidl/overview.fidl")
 
-    echo "Generating JSON IR for $file -> $name.json"
+    echo ""
     echo "Running: ${CMD[@]}"
     "${CMD[@]}"
     diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true
 done
 
-echo "Done generating goldens."

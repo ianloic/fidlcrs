@@ -306,9 +306,10 @@ impl Availability {
 
         if self.deprecated.is_none() {
             if let Some(pd) = parent.deprecated
-                && pd < self.removed.unwrap() {
-                    self.deprecated = Some(std::cmp::max(pd, self.added.unwrap()));
-                }
+                && pd < self.removed.unwrap()
+            {
+                self.deprecated = Some(std::cmp::max(pd, self.added.unwrap()));
+            }
         } else if self.deprecated.unwrap() < parent.added.unwrap() {
             result.deprecated = InheritStatus::BeforeParentAdded;
         } else if self.deprecated.unwrap() >= parent.removed.unwrap() {

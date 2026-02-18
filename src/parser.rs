@@ -1184,23 +1184,24 @@ impl<'a, 'b> Parser<'a, 'b> {
                     // Actually, a modifier has () args.
                     let mut modifier_attrs = None;
                     if self.last_token.kind == TokenKind::LeftParen
-                        && let Some(args) = self.parse_attribute_args() {
-                            let end_tok = self.previous_token.as_ref().unwrap().clone();
-                            modifier_attrs = Some(AttributeList {
+                        && let Some(args) = self.parse_attribute_args()
+                    {
+                        let end_tok = self.previous_token.as_ref().unwrap().clone();
+                        modifier_attrs = Some(AttributeList {
+                            element: SourceElement::new(start_tok.clone(), end_tok.clone()),
+                            attributes: vec![Attribute {
                                 element: SourceElement::new(start_tok.clone(), end_tok.clone()),
-                                attributes: vec![Attribute {
-                                    element: SourceElement::new(start_tok.clone(), end_tok.clone()),
-                                    name: Identifier {
-                                        element: SourceElement::new(
-                                            start_tok.clone(),
-                                            start_tok.clone(),
-                                        ),
-                                    },
-                                    args,
-                                    provenance: AttributeProvenance::ModifierAvailability,
-                                }],
-                            });
-                        }
+                                name: Identifier {
+                                    element: SourceElement::new(
+                                        start_tok.clone(),
+                                        start_tok.clone(),
+                                    ),
+                                },
+                                args,
+                                provenance: AttributeProvenance::ModifierAvailability,
+                            }],
+                        });
+                    }
 
                     modifiers.push(Modifier {
                         element: SourceElement::new(

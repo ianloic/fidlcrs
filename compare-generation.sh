@@ -19,7 +19,7 @@ FILES=(
     "escaping.test.fidl"
     "doc_comments.test.fidl"
 
-    # "nullable.test.fidl"
+    "nullable.test.fidl"
 
 
 

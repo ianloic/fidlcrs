@@ -102,7 +102,7 @@ pub struct Compiler<'node, 'src> {
     pub decl_availability: HashMap<String, crate::versioning_types::Availability>,
     pub version_selection: crate::versioning_types::VersionSelection,
     pub compiling_shapes: HashSet<String>,
-    pub dependency_declarations: IndexMap<String, IndexMap<String, serde_json::Value>>,
+    pub dependency_declarations: BTreeMap<String, IndexMap<String, serde_json::Value>>,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -134,7 +134,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             decl_availability: HashMap::new(),
             version_selection: crate::versioning_types::VersionSelection::new(),
             compiling_shapes: HashSet::new(),
-            dependency_declarations: IndexMap::new(),
+            dependency_declarations: BTreeMap::new(),
         }
     }
 
@@ -191,41 +191,58 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
 
+        let mut all_decls = Vec::new();
         for decl in &self.bits_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "bits".to_string());
+            all_decls.push((decl.name.clone(), "bits".to_string()));
         }
         for decl in &self.const_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "const".to_string());
+            all_decls.push((decl.name.clone(), "const".to_string()));
         }
         for decl in &self.enum_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "enum".to_string());
+            all_decls.push((decl.name.clone(), "enum".to_string()));
         }
         for decl in &self.protocol_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "protocol".to_string());
+            all_decls.push((decl.name.clone(), "protocol".to_string()));
         }
         for decl in &self.service_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "service".to_string());
+            all_decls.push((decl.name.clone(), "service".to_string()));
         }
         for decl in &self.struct_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "struct".to_string());
+            all_decls.push((decl.name.clone(), "struct".to_string()));
         }
         for decl in &self.table_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "table".to_string());
+            all_decls.push((decl.name.clone(), "table".to_string()));
         }
         for decl in &self.union_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "union".to_string());
+            all_decls.push((decl.name.clone(), "union".to_string()));
         }
         for decl in &self.alias_declarations {
-            self.declarations
-                .insert(decl.name.clone(), "alias".to_string());
+            all_decls.push((decl.name.clone(), "alias".to_string()));
+        }
+
+        all_decls.sort_by(|a, b| a.0.cmp(&b.0));
+
+        let order = [
+            "bits",
+            "const",
+            "enum",
+            "experimental_resource",
+            "protocol",
+            "service",
+            "struct",
+            "table",
+            "union",
+            "overlay",
+            "alias",
+            "new_type",
+        ];
+
+        for kind_group in order {
+            for (name, kind) in &all_decls {
+                if kind == kind_group {
+                    self.declarations.insert(name.clone(), kind.clone());
+                }
+            }
         }
 
         self.declaration_order = self
@@ -259,9 +276,37 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     .data()
                     .contains(&using_stmt)
             }) {
+                let mut sorted_declarations = IndexMap::new();
+                let mut all_dep_decls: Vec<_> = declarations.iter().collect();
+                all_dep_decls.sort_by(|a, b| a.0.cmp(b.0));
+
+                let order = [
+                    "bits",
+                    "const",
+                    "enum",
+                    "experimental_resource",
+                    "protocol",
+                    "service",
+                    "struct",
+                    "table",
+                    "union",
+                    "overlay",
+                    "alias",
+                    "new_type",
+                ];
+
+                for kind_group in order {
+                    for (decl_name, decl_obj) in &all_dep_decls {
+                        let kind = decl_obj.get("kind").unwrap().as_str().unwrap();
+                        if kind == kind_group {
+                            sorted_declarations.insert((*decl_name).clone(), (*decl_obj).clone());
+                        }
+                    }
+                }
+
                 library_dependencies.push(LibraryDependency {
                     name: name.clone(),
-                    declarations: declarations.clone(),
+                    declarations: sorted_declarations,
                 });
             }
         }
@@ -365,6 +410,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     pub fn compile_decl_by_name(&mut self, name: &str) {
         if self.shapes.contains_key(name) || self.compiling_shapes.contains(name) {
+            return;
+        }
+
+        if name == "zx/Handle" {
+            let mut obj = serde_json::Map::new();
+            obj.insert(
+                "kind".to_string(),
+                serde_json::Value::String("experimental_resource".to_string()),
+            );
+            self.dependency_declarations
+                .entry("zx".to_string())
+                .or_default()
+                .insert("zx/Handle".to_string(), serde_json::Value::Object(obj));
             return;
         }
 
@@ -573,16 +631,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
             );
 
             if kind != "const" && kind != "alias" && kind != "protocol" && kind != "service" {
-                if let Some(shape) = self.shapes.get(name) {
-                    obj.insert(
-                        "type_shape_v2".to_string(),
-                        serde_json::to_value(shape).unwrap(),
-                    );
-                } else if name == "zx/Handle" {
+                if name == "zx/Handle" {
                     // special case!
                     obj.insert(
                         "kind".to_string(),
                         serde_json::Value::String("experimental_resource".to_string()),
+                    );
+                } else if let Some(shape) = self.shapes.get(name) {
+                    obj.insert(
+                        "type_shape_v2".to_string(),
+                        serde_json::to_value(shape).unwrap(),
                     );
                 }
             }
@@ -636,9 +694,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
                 if let Some(literal) = &compiled_value.literal
-                    && let Ok(val) = literal.value.get().trim_matches('"').parse::<u32>() {
-                        maybe_unknown_value = Some(val);
-                    }
+                    && let Ok(val) = literal.value.get().trim_matches('"').parse::<u32>()
+                {
+                    maybe_unknown_value = Some(val);
+                }
             }
 
             members.push(EnumMember {
@@ -744,9 +803,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             // Calculate mask
             if let Some(literal) = &compiled_value.literal
-                && let Ok(val) = literal.value.get().trim_matches('"').parse::<u64>() {
-                    mask |= val;
-                }
+                && let Ok(val) = literal.value.get().trim_matches('"').parse::<u64>()
+            {
+                mask |= val;
+            }
             // TODO: Handle non-u64 values if needed?
 
             members.push(BitsMember {
@@ -1539,7 +1599,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         depth: 1,
                         max_handles: 0,
                         max_out_of_line: {
-                            
                             if max_len == u32::MAX {
                                 u32::MAX
                             } else {
@@ -1668,7 +1727,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         depth: new_depth,
                         max_handles,
                         max_out_of_line: max_ool,
-                        has_padding: inner_type.type_shape_v2.has_padding || !elem_size.is_multiple_of(8),
+                        has_padding: inner_type.type_shape_v2.has_padding
+                            || !elem_size.is_multiple_of(8),
                         has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
                     },
                 }
@@ -1893,6 +1953,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             _ => {
                 if name == "zx/Handle" || name == "zx.Handle" || name == "zx.handle" {
+                    self.compile_decl_by_name("zx/Handle");
                     let mut handle_subtype = "handle".to_string();
                     let mut handle_obj_type = 0;
                     let mut handle_rights = 2147483648;
@@ -2281,13 +2342,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     pub fn is_versioned_library(&self) -> bool {
         if let Some(lib) = &self.library_decl
-            && let Some(attrs) = &lib.attributes {
-                for attr in &attrs.attributes {
-                    if attr.name.data() == "available" {
-                        return true;
-                    }
+            && let Some(attrs) = &lib.attributes
+        {
+            for attr in &attrs.attributes {
+                if attr.name.data() == "available" {
+                    return true;
                 }
             }
+        }
         false
     }
 

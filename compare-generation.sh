@@ -67,7 +67,7 @@ for entry in "${FILES[@]}"; do
     shift
     name="${file%.test.fidl}"
     
-    public_deps=( "//zircon/vdso/zx" )
+    public_deps=()
     experimental_flags=()
     versioned="fuchsia:42,NEXT,HEAD"
     contains_drivers=false
@@ -105,7 +105,11 @@ for entry in "${FILES[@]}"; do
 
     CMD+=("--files" "fidlc/testdata/$file")
 
+    # manually include zx dependency - it's weird so we can't just glob *.fidl from a directory.
+    CMD+=("--files" "vdso-fidl/rights.fidl" "vdso-fidl/zx_common.fidl" "vdso-fidl/overview.fidl")
+
     echo "Generating JSON IR for $file -> $name.json"
+    echo "Running: ${CMD[@]}"
     "${CMD[@]}"
     diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true
 done

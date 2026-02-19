@@ -104,6 +104,7 @@ pub struct Compiler<'node, 'src> {
     pub compiling_shapes: HashSet<String>,
     pub dependency_declarations: BTreeMap<String, IndexMap<String, serde_json::Value>>,
     pub inline_names: HashMap<usize, String>,
+    pub compiled_decls: HashSet<String>,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -137,6 +138,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             compiling_shapes: HashSet::new(),
             dependency_declarations: BTreeMap::new(),
             inline_names: HashMap::new(),
+            compiled_decls: HashSet::new(),
         }
     }
 
@@ -413,7 +415,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     }
 
     pub fn compile_decl_by_name(&mut self, name: &str) {
-        if self.shapes.contains_key(name) || self.compiling_shapes.contains(name) {
+        if self.compiled_decls.contains(name) || self.compiling_shapes.contains(name) {
             return;
         }
 
@@ -660,6 +662,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         self.compiling_shapes.remove(name);
+        self.compiled_decls.insert(name.to_string());
 
         if is_main_library {
             self.declaration_order.push(name.to_string());
@@ -1530,6 +1533,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 
                 if library_name == self.library_name {
                     self.declaration_order.push(full_name.clone());
+                    self.compiled_decls.insert(full_name.clone());
                 }
                 
                 full_name
@@ -3011,6 +3015,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
                         if library_name == self.library_name {
                             self.declaration_order.push(full_synth.clone());
+                            self.compiled_decls.insert(full_synth.clone());
                         }
                         let shape = self.shapes.get(&full_synth).cloned().unwrap();
                         Some(Type {
@@ -3094,6 +3099,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let full_synth = format!("{}/{}", library_name, synth_name);
                 if library_name == self.library_name {
                     self.declaration_order.push(full_synth.clone());
+                    self.compiled_decls.insert(full_synth.clone());
                 }
                 let shape = self.shapes.get(&full_synth).cloned().unwrap();
                 Some(Type {
@@ -3197,6 +3203,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.struct_declarations.push(decl);
                     if library_name == self.library_name {
                         self.declaration_order.push(full_synth.clone());
+                        self.compiled_decls.insert(full_synth.clone());
                     }
                     let typ = Type {
                         kind_v2: "identifier".to_string(),
@@ -3337,6 +3344,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.union_declarations.push(union_decl);
                 if library_name == self.library_name {
                     self.declaration_order.push(full_synth_union.clone());
+                    self.compiled_decls.insert(full_synth_union.clone());
                 }
 
                 let mut identifier_shape = union_shape.clone();

@@ -18,12 +18,9 @@ FILES=(
     "service.test.fidl"
     "escaping.test.fidl"
     "doc_comments.test.fidl"
-
     "nullable.test.fidl"
-
-
-
-    # "anonymous.test.fidl"
+    "anonymous.test.fidl"
+    
     # "protocols.test.fidl"
     # "versions.test.fidl versioned=test:HEAD"
 

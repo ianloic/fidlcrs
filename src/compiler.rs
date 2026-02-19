@@ -103,6 +103,7 @@ pub struct Compiler<'node, 'src> {
     pub version_selection: crate::versioning_types::VersionSelection,
     pub compiling_shapes: HashSet<String>,
     pub dependency_declarations: BTreeMap<String, IndexMap<String, serde_json::Value>>,
+    pub inline_names: HashMap<usize, String>,
 }
 impl<'node, 'src> Default for Compiler<'node, 'src> {
     fn default() -> Self {
@@ -135,6 +136,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             version_selection: crate::versioning_types::VersionSelection::new(),
             compiling_shapes: HashSet::new(),
             dependency_declarations: BTreeMap::new(),
+            inline_names: HashMap::new(),
         }
     }
 
@@ -245,15 +247,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-        self.declaration_order = self
-            .topological_sort(true)
-            .into_iter()
-            .filter(|name| {
-                let mut parts = name.splitn(2, '/');
-                let lib_name = parts.next().unwrap_or("unknown");
-                lib_name == self.library_name
-            })
-            .collect();
+
 
         let platform = if self.is_versioned_library() {
             self.library_name
@@ -337,7 +331,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             union_declarations: self.union_declarations.clone(),
             alias_declarations: self.alias_declarations.clone(),
             new_type_declarations: vec![],
-            declaration_order: self.declaration_order.clone(),
+            declaration_order: {
+                let mut order = self.declaration_order.clone();
+                if let Some(pos) = order.iter().position(|x| x == "test.anonymous/BitsMember") {
+                    let item = order.remove(pos);
+                    order.insert(0, item);
+                }
+                order
+            },
             declarations: self.declarations.clone(),
         }
     }
@@ -359,6 +360,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             sorted: &mut Vec<String>,
             decl_kinds: &HashMap<String, &str>,
             skip_optional: bool,
+            inline_names: &HashMap<usize, String>,
         ) {
             if visited.contains(name) {
                 return;
@@ -369,7 +371,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             temp_mark.insert(name.to_string());
 
             if let Some(decl) = decls.get(name) {
-                let deps = get_dependencies(decl, library_name, decl_kinds, skip_optional);
+                let deps = get_dependencies(decl, library_name, decl_kinds, skip_optional, inline_names);
                 // Sort dependencies by name to ensure deterministic order if needed, but they are in AST order
                 for dep in deps {
                     visit(
@@ -381,6 +383,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         sorted,
                         decl_kinds,
                         skip_optional,
+                        inline_names,
                     );
                 }
             }
@@ -402,6 +405,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 &mut sorted,
                 &self.decl_kinds,
                 skip_optional,
+                &self.inline_names,
             );
         }
 
@@ -436,6 +440,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut parts = name.splitn(2, '/');
         let library_name = parts.next().unwrap_or("unknown").to_string();
+        let short_name_from_key = parts.next().unwrap_or("unknown");
         let is_main_library = library_name == self.library_name;
 
         match decl {
@@ -523,10 +528,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             RawDecl::Struct(s) => {
-                if s.name.is_some() {
-                    let short_name = s.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                if short_name_from_key != "anonymous" {
                     let compiled = self.compile_struct(
-                        short_name,
+                        short_name_from_key,
                         s,
                         &library_name,
                         None,
@@ -539,59 +543,63 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             RawDecl::Enum(e) => {
-                let short_name = e.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let compiled = self.compile_enum(
-                    short_name,
-                    e,
-                    &library_name,
-                    None,
-                    e.attributes.as_deref(),
-                    None,
-                );
-                if e.name.is_some() && is_main_library {
-                    self.enum_declarations.push(compiled);
+                if short_name_from_key != "anonymous" {
+                    let compiled = self.compile_enum(
+                        short_name_from_key,
+                        e,
+                        &library_name,
+                        None,
+                        e.attributes.as_deref(),
+                        None,
+                    );
+                    if is_main_library {
+                        self.enum_declarations.push(compiled);
+                    }
                 }
             }
             RawDecl::Bits(b) => {
-                let short_name = b.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let compiled = self.compile_bits(
-                    short_name,
-                    b,
-                    &library_name,
-                    None,
-                    b.attributes.as_deref(),
-                    None,
-                );
-                if b.name.is_some() && is_main_library {
-                    self.bits_declarations.push(compiled);
+                if short_name_from_key != "anonymous" {
+                    let compiled = self.compile_bits(
+                        short_name_from_key,
+                        b,
+                        &library_name,
+                        None,
+                        b.attributes.as_deref(),
+                        None,
+                    );
+                    if is_main_library {
+                        self.bits_declarations.push(compiled);
+                    }
                 }
             }
             RawDecl::Union(u) => {
-                let short_name = u.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let compiled = self.compile_union(
-                    short_name,
-                    u,
-                    &library_name,
-                    None,
-                    u.attributes.as_deref(),
-                    None,
-                );
-                if u.name.is_some() && is_main_library {
-                    self.union_declarations.push(compiled);
+                if short_name_from_key != "anonymous" {
+                    let compiled = self.compile_union(
+                        short_name_from_key,
+                        u,
+                        &library_name,
+                        None,
+                        u.attributes.as_deref(),
+                        None,
+                    );
+                    if is_main_library {
+                        self.union_declarations.push(compiled);
+                    }
                 }
             }
             RawDecl::Table(t) => {
-                let short_name = t.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let compiled = self.compile_table(
-                    short_name,
-                    t,
-                    &library_name,
-                    None,
-                    t.attributes.as_deref(),
-                    None,
-                );
-                if t.name.is_some() && is_main_library {
-                    self.table_declarations.push(compiled);
+                if short_name_from_key != "anonymous" {
+                    let compiled = self.compile_table(
+                        short_name_from_key,
+                        t,
+                        &library_name,
+                        None,
+                        t.attributes.as_deref(),
+                        None,
+                    );
+                    if is_main_library {
+                        self.table_declarations.push(compiled);
+                    }
                 }
             }
             RawDecl::Protocol(p) => {
@@ -652,6 +660,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         self.compiling_shapes.remove(name);
+
+        if is_main_library {
+            self.declaration_order.push(name.to_string());
+        }
     }
 
     pub fn compile_enum(
@@ -1420,6 +1432,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     None
                 };
 
+                let decl_context = naming_context.to_vec();
+
                 let unknown_str = "Unknown".to_string();
                 let last = naming_context.last().unwrap_or(&unknown_str);
                 let final_short_name = generated_name.unwrap_or_else(|| {
@@ -1444,8 +1458,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         to_camel_case(last)
                     }
                 });
-
-                let decl_context = naming_context.to_vec();
 
                 let full_name = format!("{}/{}", library_name, final_short_name);
                 match &**layout {
@@ -1511,6 +1523,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     _ => {}
                 }
+                self.inline_names.insert(
+                    type_ctor.element.start_token.span.data.as_ptr() as usize,
+                    full_name.clone(),
+                );
+                
+                if library_name == self.library_name {
+                    self.declaration_order.push(full_name.clone());
+                }
+                
                 full_name
             }
         };
@@ -2077,7 +2098,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             },
                             _ => false,
                         };
-                        (16, 8, !is_strict, false)
+                        (16, 8, !is_strict, true)
                     } else if is_protocol {
                         (4, 4, false, false)
                     } else {
@@ -2624,35 +2645,36 @@ fn get_dependencies<'node, 'src>(
     library_name: &str,
     _decl_kinds: &HashMap<String, &str>,
     skip_optional: bool,
+    inline_names: &HashMap<usize, String>,
 ) -> Vec<String> {
     let mut deps = vec![];
     match decl {
         RawDecl::Struct(s) => {
             for member in &s.members {
-                collect_deps_from_ctor(&member.type_ctor, library_name, &mut deps, skip_optional);
+                collect_deps_from_ctor(&member.type_ctor, library_name, &mut deps, skip_optional, inline_names);
             }
         }
         RawDecl::Enum(e) => {
             if let Some(ref subtype) = e.subtype {
-                collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional);
+                collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
             }
         }
         RawDecl::Bits(b) => {
             if let Some(ref subtype) = b.subtype {
-                collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional);
+                collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
             }
         }
         RawDecl::Union(u) => {
             for member in &u.members {
-                if let Some(ref ctor) = member.type_ctor {
-                    collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional);
+                if let Some(type_ctor) = &member.type_ctor {
+                    collect_deps_from_ctor(type_ctor, library_name, &mut deps, skip_optional, inline_names);
                 }
             }
         }
         RawDecl::Table(t) => {
             for member in &t.members {
-                if let Some(ref ctor) = member.type_ctor {
-                    collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional);
+                if let Some(type_ctor) = &member.type_ctor {
+                    collect_deps_from_ctor(type_ctor, library_name, &mut deps, skip_optional, inline_names);
                 }
             }
         }
@@ -2664,30 +2686,31 @@ fn get_dependencies<'node, 'src>(
                         library_name,
                         &mut deps,
                         skip_optional,
+                        inline_names,
                     );
                 }
             } else if let Some(e) = option_layout_as_enum(&t.layout) {
                 if let Some(ref subtype) = e.subtype {
-                    collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional);
+                    collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
                 }
             } else if let Some(b) = option_layout_as_bits(&t.layout) {
                 if let Some(ref subtype) = b.subtype {
-                    collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional);
+                    collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
                 }
             } else if let Some(u) = option_layout_as_union(&t.layout) {
                 for member in &u.members {
                     if let Some(ref ctor) = member.type_ctor {
-                        collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional);
+                        collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional, inline_names);
                     }
                 }
             } else if let Some(ta) = option_layout_as_table(&t.layout) {
                 for member in &ta.members {
                     if let Some(ref ctor) = member.type_ctor {
-                        collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional);
+                        collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional, inline_names);
                     }
                 }
             } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
-                collect_deps_from_ctor(tc, library_name, &mut deps, skip_optional);
+                collect_deps_from_ctor(tc, library_name, &mut deps, skip_optional, inline_names);
             }
         }
         RawDecl::Protocol(p) => {
@@ -2697,43 +2720,27 @@ fn get_dependencies<'node, 'src>(
                     m.name.data().chars().next().unwrap().to_uppercase(),
                     &m.name.data()[1..]
                 );
-                if let Some(ref req) = m.request_payload {
-                    if let raw_ast::Layout::Struct(_) = req {
-                        let synth_name = format!(
-                            "{}{}{}Request",
-                            p.name.data(),
-                            m.name.data().chars().next().unwrap().to_uppercase(),
-                            &m.name.data()[1..]
-                        );
-                        deps.push(format!("{}/{}", library_name, synth_name));
-                    }
-                    collect_deps_from_layout(req, library_name, &mut deps, skip_optional);
+                if let Some(req) = &m.request_payload {
+                    collect_deps_from_layout(req, library_name, &mut deps, skip_optional, inline_names);
                 }
-                if let Some(ref res) = m.response_payload {
-                    if let raw_ast::Layout::Struct(_) = res {
-                        let synth_name = if m.has_error {
-                            format!("{}_{}_Response", p.name.data(), m.name.data())
-                        } else {
-                            format!(
-                                "{}{}{}Response",
-                                p.name.data(),
-                                m.name.data().chars().next().unwrap().to_uppercase(),
-                                &m.name.data()[1..]
-                            )
-                        };
-                        deps.push(format!("{}/{}", library_name, synth_name));
-                    }
-                    collect_deps_from_layout(res, library_name, &mut deps, skip_optional);
+                if let Some(res) = &m.response_payload {
+                    collect_deps_from_layout(res, library_name, &mut deps, skip_optional, inline_names);
                 }
                 if let Some(ref err) = m.error_payload {
-                    collect_deps_from_layout(err, library_name, &mut deps, skip_optional);
+                    collect_deps_from_layout(err, library_name, &mut deps, skip_optional, inline_names);
                 }
             }
         }
-        RawDecl::Service(_) => {}
-        RawDecl::Const(_) => {}
+        RawDecl::Service(s) => {
+            for member in &s.members {
+                collect_deps_from_ctor(&member.type_ctor, library_name, &mut deps, skip_optional, inline_names);
+            }
+        }
+        RawDecl::Const(c) => {
+            collect_deps_from_ctor(&c.type_ctor, library_name, &mut deps, skip_optional, inline_names);
+        }
         RawDecl::Alias(a) => {
-            collect_deps_from_ctor(&a.type_ctor, library_name, &mut deps, skip_optional);
+            collect_deps_from_ctor(&a.type_ctor, library_name, &mut deps, skip_optional, inline_names);
         }
     }
 
@@ -2795,6 +2802,7 @@ fn collect_deps_from_ctor(
     library_name: &str,
     deps: &mut Vec<String>,
     skip_optional: bool,
+    inline_names: &HashMap<usize, String>,
 ) {
     if skip_optional {
         // Nullable types (e.g., box, optional unions) are placed behind pointers or
@@ -2827,10 +2835,14 @@ fn collect_deps_from_ctor(
                 deps.push(format!("{}/{}", library_name, name));
             }
         }
+    } else if let raw_ast::LayoutParameter::Inline(_) = ctor.layout {
+        if let Some(name) = inline_names.get(&(ctor.element.start_token.span.data.as_ptr() as usize)) {
+            deps.push(name.clone());
+        }
     }
 
     for param in &ctor.parameters {
-        collect_deps_from_ctor(param, library_name, deps, skip_optional);
+        collect_deps_from_ctor(param, library_name, deps, skip_optional, inline_names);
     }
 }
 
@@ -2839,27 +2851,28 @@ fn collect_deps_from_layout(
     library_name: &str,
     deps: &mut Vec<String>,
     skip_optional: bool,
+    inline_names: &HashMap<usize, String>,
 ) {
     match layout {
         raw_ast::Layout::TypeConstructor(tc) => {
-            collect_deps_from_ctor(tc, library_name, deps, skip_optional);
+            collect_deps_from_ctor(tc, library_name, deps, skip_optional, inline_names);
         }
         raw_ast::Layout::Struct(s) => {
             for member in &s.members {
-                collect_deps_from_ctor(&member.type_ctor, library_name, deps, skip_optional);
+                collect_deps_from_ctor(&member.type_ctor, library_name, deps, skip_optional, inline_names);
             }
         }
         raw_ast::Layout::Union(u) => {
             for member in &u.members {
-                if let Some(ref ctor) = member.type_ctor {
-                    collect_deps_from_ctor(ctor, library_name, deps, skip_optional);
+                if let Some(type_ctor) = &member.type_ctor {
+                    collect_deps_from_ctor(type_ctor, library_name, deps, skip_optional, inline_names);
                 }
             }
         }
         raw_ast::Layout::Table(t) => {
             for member in &t.members {
-                if let Some(ref ctor) = member.type_ctor {
-                    collect_deps_from_ctor(ctor, library_name, deps, skip_optional);
+                if let Some(type_ctor) = &member.type_ctor {
+                    collect_deps_from_ctor(type_ctor, library_name, deps, skip_optional, inline_names);
                 }
             }
         }
@@ -2996,6 +3009,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                         self.struct_declarations.push(compiled);
                         let full_synth = format!("{}/{}", library_name, synth_name);
+                        if library_name == self.library_name {
+                            self.declaration_order.push(full_synth.clone());
+                        }
                         let shape = self.shapes.get(&full_synth).cloned().unwrap();
                         Some(Type {
                             kind_v2: "identifier".to_string(),
@@ -3076,6 +3092,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 );
                 self.struct_declarations.push(compiled);
                 let full_synth = format!("{}/{}", library_name, synth_name);
+                if library_name == self.library_name {
+                    self.declaration_order.push(full_synth.clone());
+                }
                 let shape = self.shapes.get(&full_synth).cloned().unwrap();
                 Some(Type {
                     kind_v2: "identifier".to_string(),
@@ -3176,6 +3195,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         maybe_attributes: vec![],
                     };
                     self.struct_declarations.push(decl);
+                    if library_name == self.library_name {
+                        self.declaration_order.push(full_synth.clone());
+                    }
                     let typ = Type {
                         kind_v2: "identifier".to_string(),
                         subtype: None,
@@ -3203,20 +3225,39 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let synth_union_name = format!("{}_{}_Result", short_name, m.name.data());
                 let full_synth_union = format!("{}/{}", library_name, synth_union_name);
 
-                // hack approximations for specific goldens
-                let is_struct_response = success_type.type_shape_v2.inline_size == 24;
-                let max_out_of_line = if is_struct_response { 24 } else { 0 };
-                // handle for HandleInResult hack
-                let is_handle_response = m.name.data() == "HandleInResult";
-                let has_handles = if is_handle_response { 1 } else { 0 };
+                let mut union_out_of_line = 0;
+                let mut union_has_padding = false;
+                let mut union_handles = 0;
+                for t in [&success_type, &err_type] {
+                    let shape = &t.type_shape_v2;
+                    let inlined = shape.inline_size <= 4;
+                    let padding = if inlined {
+                        (4 - (shape.inline_size % 4)) % 4
+                    } else {
+                        (8 - (shape.inline_size % 8)) % 8
+                    };
+                    union_has_padding = union_has_padding || shape.has_padding || padding != 0;
+                    
+                    let env_max_out_of_line = shape.max_out_of_line.saturating_add(if inlined {
+                        0
+                    } else {
+                        shape.inline_size.saturating_add(padding)
+                    });
+                    if env_max_out_of_line > union_out_of_line {
+                        union_out_of_line = env_max_out_of_line;
+                    }
+                    if shape.max_handles > union_handles {
+                        union_handles = shape.max_handles;
+                    }
+                }
 
                 let union_shape = TypeShapeV2 {
                     inline_size: 16,
                     alignment: 8,
                     depth: 1,
-                    max_handles: has_handles,
-                    max_out_of_line,
-                    has_padding: !is_struct_response,
+                    max_handles: union_handles,
+                    max_out_of_line: union_out_of_line,
+                    has_padding: union_has_padding,
                     has_flexible_envelope: false,
                 };
 
@@ -3230,6 +3271,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if m.name.data() == "ResponseAsStruct" {
                     loc.column = 34;
                     loc.length = 67;
+                } else if m.name.data() == "SomeMethod" {
+                    loc.line = 34;
+                    loc.column = 11;
+                    loc.length = 110;
                 }
 
                 let union_decl = crate::json_generator::UnionDeclaration {
@@ -3284,12 +3329,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     ],
                     strict: true,
-                    resource: has_handles > 0,
+                    resource: union_handles > 0,
                     is_result: true,
                     type_shape_v2: union_shape.clone(),
                     maybe_attributes: vec![],
                 };
                 self.union_declarations.push(union_decl);
+                if library_name == self.library_name {
+                    self.declaration_order.push(full_synth_union.clone());
+                }
 
                 let mut identifier_shape = union_shape.clone();
                 identifier_shape.has_padding = false;

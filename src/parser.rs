@@ -690,9 +690,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         attributes: Option<AttributeList<'a>>,
         modifiers: Vec<Modifier<'a>>,
     ) -> Option<StructDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
+        let start = modifiers
+            .first()
+            .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
         self.consume_token_with_subkind(TokenSubkind::Struct)?;
@@ -736,9 +736,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         attributes: Option<AttributeList<'a>>,
         modifiers: Vec<Modifier<'a>>,
     ) -> Option<EnumDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
+        let start = modifiers
+            .first()
+            .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
         self.consume_token_with_subkind(TokenSubkind::Enum)?;
 
@@ -809,9 +809,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         attributes: Option<AttributeList<'a>>,
         modifiers: Vec<Modifier<'a>>,
     ) -> Option<BitsDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
+        let start = modifiers
+            .first()
+            .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
         self.consume_token_with_subkind(TokenSubkind::Bits)?;
 
@@ -882,9 +882,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         attributes: Option<AttributeList<'a>>,
         modifiers: Vec<Modifier<'a>>,
     ) -> Option<UnionDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
+        let start = modifiers
+            .first()
+            .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
         if self.last_token.subkind == TokenSubkind::Union {
@@ -932,9 +932,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         attributes: Option<AttributeList<'a>>,
         modifiers: Vec<Modifier<'a>>,
     ) -> Option<TableDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
+        let start = modifiers
+            .first()
+            .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
         self.consume_token_with_subkind(TokenSubkind::Table)?;
@@ -976,9 +976,9 @@ impl<'a, 'b> Parser<'a, 'b> {
         attributes: Option<AttributeList<'a>>,
         modifiers: Vec<Modifier<'a>>,
     ) -> Option<ProtocolDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
+        let start = modifiers
+            .first()
+            .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
         let mut _openness = None;

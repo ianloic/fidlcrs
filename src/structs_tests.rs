@@ -37,7 +37,7 @@ type MyStruct = struct {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let root = lib.compile().expect("compilation failed");
+        let _root = lib.compile().expect("compilation failed");
         // TODO: assert type_decl members length = 1
     }
 

@@ -367,7 +367,7 @@ protocol #Decl1# {
                 SourceFile::new("dependency.fidl".to_string(), source_dep.to_string());
             let source_file_ex = SourceFile::new("example.fidl".to_string(), source_ex.to_string());
 
-            let mut dependency = TestLibrary::with_source(&source_file_dep);
+            let dependency = TestLibrary::with_source(&source_file_dep);
             let root_dep = dependency.compile().unwrap();
 
             let mut library = TestLibrary::new();

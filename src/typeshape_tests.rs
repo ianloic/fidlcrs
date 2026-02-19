@@ -1984,10 +1984,10 @@ type BoolOverlayAndUint8Struct = struct {
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         let root = lib.compile().expect("compilation failed");
-        let bool_or_string_or_u64 = root
+        let _bool_or_string_or_u64 = root
             .lookup_union("example/BoolOrStringOrU64")
             .expect("BoolOrStringOrU64 not found");
-        let bool_overlay = root
+        let _bool_overlay = root
             .lookup_union("example/BoolOverlay")
             .expect("BoolOverlay not found");
         let u64_bool_struct = root
@@ -3892,7 +3892,7 @@ protocol Test {
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         let root = lib.compile().expect("compilation failed");
-        let protocol = root
+        let _protocol = root
             .lookup_protocol("example/Test")
             .expect("Test not found");
     }
@@ -3913,7 +3913,7 @@ protocol Test {
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         let root = lib.compile().expect("compilation failed");
-        let protocol = root
+        let _protocol = root
             .lookup_protocol("example/Test")
             .expect("Test not found");
     }
@@ -3945,7 +3945,7 @@ protocol MessagePort {
         let web_message = root
             .lookup_struct("example/WebMessage")
             .expect("WebMessage not found");
-        let message_port = root
+        let _message_port = root
             .lookup_protocol("example/MessagePort")
             .expect("MessagePort not found");
         assert_eq!(
@@ -4014,7 +4014,7 @@ protocol MessagePort {
         let web_message = root
             .lookup_struct("example/WebMessage")
             .expect("WebMessage not found");
-        let message_port = root
+        let _message_port = root
             .lookup_protocol("example/MessagePort")
             .expect("MessagePort not found");
         assert_eq!(
@@ -4074,7 +4074,7 @@ protocol MessagePort {
         let web_message = root
             .lookup_struct("example/WebMessage")
             .expect("WebMessage not found");
-        let message_port = root
+        let _message_port = root
             .lookup_protocol("example/MessagePort")
             .expect("MessagePort not found");
         assert_eq!(
@@ -4134,7 +4134,7 @@ protocol MessagePort {
         let web_message = root
             .lookup_struct("example/WebMessage")
             .expect("WebMessage not found");
-        let message_port = root
+        let _message_port = root
             .lookup_protocol("example/MessagePort")
             .expect("MessagePort not found");
         assert_eq!(

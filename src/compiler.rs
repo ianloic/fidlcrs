@@ -2109,7 +2109,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             },
                             _ => false,
                         };
-                        (16, 8, !is_strict, true)
+                        (16, 8, !is_strict, false)
                     } else if is_protocol {
                         (4, 4, false, false)
                     } else {

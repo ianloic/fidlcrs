@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::source_file::SourceFile;
-    use crate::test_library::{LookupHelpers, TestLibrary};
+    use crate::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -657,7 +657,7 @@ type Empty = struct {};
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let asts = lib.parse().expect("parsing failed");
+        let _asts = lib.parse().expect("parsing failed");
     }
 
     #[test]
@@ -676,7 +676,7 @@ type Empty = struct {};
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let asts = lib.parse().expect("parsing failed");
+        let _asts = lib.parse().expect("parsing failed");
     }
 
     #[test]

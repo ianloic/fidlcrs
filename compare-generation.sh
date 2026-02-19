@@ -100,10 +100,10 @@ for entry in "${FILES[@]}"; do
         CMD+=("--versioned" "$versioned")
     fi
 
-    CMD+=("--files" "fidlc/testdata/$file")
-
     # manually include zx dependency - it's weird so we can't just glob *.fidl from a directory.
     CMD+=("--files" "vdso-fidl/rights.fidl" "vdso-fidl/zx_common.fidl" "vdso-fidl/overview.fidl")
+
+    CMD+=("--files" "fidlc/testdata/$file")
 
     echo ""
     echo "Running: ${CMD[@]}"

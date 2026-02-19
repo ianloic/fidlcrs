@@ -96,6 +96,7 @@ pub struct Compiler<'node, 'src> {
     pub struct_declarations: Vec<StructDeclaration>,
     pub table_declarations: Vec<TableDeclaration>,
     pub union_declarations: Vec<UnionDeclaration>,
+    pub external_struct_declarations: Vec<StructDeclaration>,
 
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
@@ -131,6 +132,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             struct_declarations: Vec::new(),
             table_declarations: Vec::new(),
             union_declarations: Vec::new(),
+            external_struct_declarations: Vec::new(),
             declarations: IndexMap::new(),
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
@@ -317,6 +319,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             ])),
             maybe_attributes: files
                 .iter()
+                .filter(|f| f.library_decl.as_ref().map(|l| l.path.to_string()) == Some(self.library_name.clone()))
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
@@ -328,7 +331,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             protocol_declarations: self.protocol_declarations.clone(),
             service_declarations: self.service_declarations.clone(),
             struct_declarations: self.struct_declarations.clone(),
-            external_struct_declarations: vec![],
+            external_struct_declarations: self.external_struct_declarations.clone(),
             table_declarations: self.table_declarations.clone(),
             union_declarations: self.union_declarations.clone(),
             alias_declarations: self.alias_declarations.clone(),
@@ -458,6 +461,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                     if is_main_library {
                         self.struct_declarations.push(compiled);
+                    } else {
+                        self.external_struct_declarations.push(compiled);
                     }
                 } else if let raw_ast::Layout::Enum(ref e) = t.layout {
                     let compiled = self.compile_enum(
@@ -541,6 +546,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                     if is_main_library {
                         self.struct_declarations.push(compiled);
+                    } else {
+                        self.external_struct_declarations.push(compiled);
                     }
                 }
             }

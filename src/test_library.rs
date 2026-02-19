@@ -70,7 +70,7 @@ resource_definition Handle : uint32 {
         let ptr: *const SourceFile = &*dummy_zx;
         self.shared_sources.push(dummy_zx);
         // Safety: the Box lives until the TestLibrary is dropped so this reference is valid.
-        self.source_files.push(unsafe { &*ptr });
+        self.source_files.insert(0, unsafe { &*ptr });
     }
 
     pub fn use_library_fdf(&mut self) {
@@ -93,7 +93,7 @@ resource_definition handle : uint32 {
         ));
         let ptr: *const SourceFile = &*dummy_fdf;
         self.shared_sources.push(dummy_fdf);
-        self.source_files.push(unsafe { &*ptr });
+        self.source_files.insert(0, unsafe { &*ptr });
     }
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {

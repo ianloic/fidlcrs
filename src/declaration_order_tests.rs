@@ -374,8 +374,8 @@ protocol #Decl1# {
             // TODO: How does TestLibrary handle multiple libraries?
             // Currently, TestLibrary compiles everything into one JSON root.
             // Let's add both sources to `library`.
-            library.add_source(&source_file_ex);
             library.add_source(&source_file_dep);
+            library.add_source(&source_file_ex);
 
             let root = library.compile().unwrap();
 

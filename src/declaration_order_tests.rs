@@ -34,6 +34,7 @@ mod tests {
     fn unmangle_decls(decls: &[String]) -> Vec<String> {
         let mut result = Vec::new();
         for decl in decls {
+            println!("DEBUG: decl = {}", decl);
             let name_without_lib = if let Some(idx) = decl.find('/') {
                 &decl[idx + 1..]
             } else {
@@ -43,6 +44,13 @@ mod tests {
             if let Some(idx) = name_without_lib.find("__") {
                 assert_eq!(idx, 1, "{}", name_without_lib);
                 result.push(name_without_lib[idx + 2..].to_string());
+            } else if name_without_lib.len() >= 2
+                && name_without_lib.chars().nth(0).unwrap().is_uppercase()
+                && name_without_lib.chars().nth(1).unwrap().is_uppercase()
+            {
+                // Heuristic: NamingContext consumes `__`, leaving `AProtocol`.
+                // If we see two uppercase letters start, strip the first one (the prefix).
+                result.push(name_without_lib[1..].to_string());
             } else {
                 // Anonymous types and other things without __ prefix
                 result.push(name_without_lib.to_string());

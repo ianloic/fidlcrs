@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-fn to_camel_case(s: &str) -> String {
+pub fn to_camel_case(s: &str) -> String {
     let mut camel = String::new();
     let mut capitalize_next = true;
     for c in s.chars() {
@@ -251,8 +251,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-
-
         let platform = if self.is_versioned_library() {
             self.library_name
                 .split('.')
@@ -319,7 +317,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             ])),
             maybe_attributes: files
                 .iter()
-                .filter(|f| f.library_decl.as_ref().map(|l| l.path.to_string()) == Some(self.library_name.clone()))
+                .filter(|f| {
+                    f.library_decl.as_ref().map(|l| l.path.to_string())
+                        == Some(self.library_name.clone())
+                })
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: vec!["output_index_json".to_string()],
@@ -376,7 +377,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             temp_mark.insert(name.to_string());
 
             if let Some(decl) = decls.get(name) {
-                let deps = get_dependencies(decl, library_name, decl_kinds, skip_optional, inline_names);
+                let deps =
+                    get_dependencies(decl, library_name, decl_kinds, skip_optional, inline_names);
                 // Sort dependencies by name to ensure deterministic order if needed, but they are in AST order
                 for dep in deps {
                     visit(
@@ -527,7 +529,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             args: vec![],
                             nullable: tc.nullable,
                         },
-                        type_: self.resolve_type(tc, &library_name, &[]),
+                        type_: self.resolve_type(tc, &library_name, None),
                     };
                     if is_main_library {
                         self.alias_declarations.push(compiled);
@@ -683,7 +685,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
-        naming_context: Option<Vec<String>>,
+        naming_context: Option<std::rc::Rc<crate::name::NamingContext>>,
     ) -> EnumDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
@@ -769,7 +771,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         EnumDeclaration {
             name: full_name,
-            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
+            naming_context: naming_context
+                .map(|ctx| ctx.context())
+                .unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -795,7 +799,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
-        naming_context: Option<Vec<String>>,
+        naming_context: Option<std::rc::Rc<crate::name::NamingContext>>,
     ) -> BitsDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
@@ -867,7 +871,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         BitsDeclaration {
             name: full_name,
-            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
+            naming_context: naming_context
+                .map(|ctx| ctx.context())
+                .unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -911,7 +917,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'src>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
-        naming_context: Option<Vec<String>>,
+        naming_context: Option<std::rc::Rc<crate::name::NamingContext>>,
     ) -> TableDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(el) = name_element {
@@ -928,15 +934,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let mut ctx = naming_context
+                let ctx = naming_context
                     .clone()
-                    .unwrap_or_else(|| vec![name.to_string()]);
-                if let Some(m_name) = &member.name {
-                    ctx.push(m_name.data().to_string());
+                    .unwrap_or_else(|| crate::name::NamingContext::create(name));
+                let member_ctx = if let Some(m_name) = &member.name {
+                    ctx.enter_member(m_name.data())
                 } else {
-                    ctx.push(format!("{}", ordinal));
+                    ctx.enter_member(&format!("{}", ordinal))
                 };
-                let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
+                let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -1024,7 +1030,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         TableDeclaration {
             name: full_name,
-            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
+            naming_context: naming_context
+                .map(|ctx| ctx.context())
+                .unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -1053,7 +1061,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'src>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
-        naming_context: Option<Vec<String>>,
+        naming_context: Option<std::rc::Rc<crate::name::NamingContext>>,
     ) -> UnionDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(el) = name_element {
@@ -1074,15 +1082,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let mut ctx = naming_context
+                let ctx = naming_context
                     .clone()
-                    .unwrap_or_else(|| vec![name.to_string()]);
-                if let Some(m_name) = &member.name {
-                    ctx.push(m_name.data().to_string());
+                    .unwrap_or_else(|| crate::name::NamingContext::create(name));
+                let member_ctx = if let Some(m_name) = &member.name {
+                    ctx.enter_member(m_name.data())
                 } else {
-                    ctx.push(format!("{}", ordinal));
+                    ctx.enter_member(&format!("{}", ordinal))
                 };
-                let type_obj = self.resolve_type(type_ctor, library_name, &ctx);
+                let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -1180,7 +1188,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         UnionDeclaration {
             name: full_name,
-            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
+            naming_context: naming_context
+                .map(|ctx| ctx.context())
+                .unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -1209,7 +1219,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         decl: &'node raw_ast::StructDeclaration<'src>,
         library_name: &str,
         name_element: Option<&raw_ast::SourceElement<'_>>,
-        naming_context: Option<Vec<String>>,
+        naming_context: Option<std::rc::Rc<crate::name::NamingContext>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> StructDeclaration {
         let full_name = format!("{}/{}", library_name, name);
@@ -1222,11 +1232,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut depth: u32 = 0;
 
         for member in &decl.members {
-            let mut ctx = naming_context
+            let ctx = naming_context
                 .clone()
-                .unwrap_or_else(|| vec![name.to_string()]);
-            ctx.push(member.name.data().to_string());
-            let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
+                .unwrap_or_else(|| crate::name::NamingContext::create(name));
+            let member_ctx = ctx.enter_member(member.name.data());
+            let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
             let type_shape = &type_obj.type_shape_v2;
 
             let align = type_shape.alignment;
@@ -1324,7 +1334,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         StructDeclaration {
             name: full_name,
-            naming_context: naming_context.unwrap_or_else(|| vec![name.to_string()]),
+            naming_context: naming_context
+                .map(|ctx| ctx.context())
+                .unwrap_or_else(|| vec![name.to_string()]),
             location,
             deprecated: self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -1350,7 +1362,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         &mut self,
         type_ctor: &'node raw_ast::TypeConstructor<'src>,
         library_name: &str,
-        naming_context: &[String],
+        naming_context: Option<std::rc::Rc<crate::name::NamingContext>>,
     ) -> Type {
         let name = match &type_ctor.layout {
             raw_ast::LayoutParameter::Identifier(id) => {
@@ -1442,107 +1454,94 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     None
                 };
 
-                let decl_context = naming_context.to_vec();
+                let decl_context = naming_context
+                    .as_ref()
+                    .map(|ctx| ctx.context())
+                    .unwrap_or_else(Vec::new);
 
-                let unknown_str = "Unknown".to_string();
-                let last = naming_context.last().unwrap_or(&unknown_str);
                 let final_short_name = generated_name.unwrap_or_else(|| {
-                    if naming_context.len() >= 2
-                        && (last == "Request"
-                            || last == "Response"
-                            || last == "Error"
-                            || last == "Result"
-                            || last == "err"
-                            || last == "response")
-                    {
-                        if last == "err" {
-                            format!("{}_{}_Error", naming_context[0], naming_context[1])
-                        } else if last == "response" {
-                            format!("{}_{}_Response", naming_context[0], naming_context[1])
-                        } else if last == "Request" || last == "Response" {
-                            naming_context.join("")
-                        } else {
-                            naming_context.join("_")
-                        }
-                    } else {
-                        to_camel_case(last)
-                    }
+                    naming_context
+                        .as_ref()
+                        .map(|ctx| ctx.flattened_name())
+                        .unwrap_or_else(|| "Unknown".to_string())
                 });
 
                 let full_name = format!("{}/{}", library_name, final_short_name);
-                match &**layout {
-                    raw_ast::Layout::Struct(s) => {
-                        let compiled = self.compile_struct(
-                            &final_short_name,
-                            s,
-                            library_name,
-                            None,
-                            Some(decl_context),
-                            None,
-                        );
-                        self.struct_declarations.push(compiled);
-                        self.raw_decls.insert(full_name.clone(), RawDecl::Struct(s));
+                if !self.compiled_decls.contains(&full_name) {
+                    match &**layout {
+                        raw_ast::Layout::Struct(s) => {
+                            let compiled = self.compile_struct(
+                                &final_short_name,
+                                s,
+                                library_name,
+                                None,
+                                naming_context.clone(),
+                                None,
+                            );
+                            self.struct_declarations.push(compiled);
+                            self.raw_decls.insert(full_name.clone(), RawDecl::Struct(s));
+                        }
+                        raw_ast::Layout::Enum(e) => {
+                            let compiled = self.compile_enum(
+                                &final_short_name,
+                                e,
+                                library_name,
+                                None,
+                                None,
+                                naming_context.clone(),
+                            );
+                            self.enum_declarations.push(compiled);
+                            self.raw_decls.insert(full_name.clone(), RawDecl::Enum(e));
+                        }
+                        raw_ast::Layout::Bits(b) => {
+                            let compiled = self.compile_bits(
+                                &final_short_name,
+                                b,
+                                library_name,
+                                None,
+                                None,
+                                naming_context.clone(),
+                            );
+                            self.bits_declarations.push(compiled);
+                            self.raw_decls.insert(full_name.clone(), RawDecl::Bits(b));
+                        }
+                        raw_ast::Layout::Union(u) => {
+                            let compiled = self.compile_union(
+                                &final_short_name,
+                                u,
+                                library_name,
+                                None,
+                                None,
+                                naming_context.clone(),
+                            );
+                            self.union_declarations.push(compiled);
+                            self.raw_decls.insert(full_name.clone(), RawDecl::Union(u));
+                        }
+                        raw_ast::Layout::Table(t) => {
+                            let compiled = self.compile_table(
+                                &final_short_name,
+                                t,
+                                library_name,
+                                None,
+                                None,
+                                naming_context.clone(),
+                            );
+                            self.table_declarations.push(compiled);
+                            self.raw_decls.insert(full_name.clone(), RawDecl::Table(t));
+                        }
+                        _ => {}
                     }
-                    raw_ast::Layout::Enum(e) => {
-                        let compiled = self.compile_enum(
-                            &final_short_name,
-                            e,
-                            library_name,
-                            None,
-                            None,
-                            Some(decl_context.clone()),
-                        );
-                        self.enum_declarations.push(compiled);
-                        self.raw_decls.insert(full_name.clone(), RawDecl::Enum(e));
+                    self.inline_names.insert(
+                        type_ctor.element.start_token.span.data.as_ptr() as usize,
+                        full_name.clone(),
+                    );
+
+                    if library_name == self.library_name {
+                        self.declaration_order.push(full_name.clone());
+                        self.compiled_decls.insert(full_name.clone());
                     }
-                    raw_ast::Layout::Bits(b) => {
-                        let compiled = self.compile_bits(
-                            &final_short_name,
-                            b,
-                            library_name,
-                            None,
-                            None,
-                            Some(decl_context.clone()),
-                        );
-                        self.bits_declarations.push(compiled);
-                        self.raw_decls.insert(full_name.clone(), RawDecl::Bits(b));
-                    }
-                    raw_ast::Layout::Union(u) => {
-                        let compiled = self.compile_union(
-                            &final_short_name,
-                            u,
-                            library_name,
-                            None,
-                            None,
-                            Some(decl_context.clone()),
-                        );
-                        self.union_declarations.push(compiled);
-                        self.raw_decls.insert(full_name.clone(), RawDecl::Union(u));
-                    }
-                    raw_ast::Layout::Table(t) => {
-                        let compiled = self.compile_table(
-                            &final_short_name,
-                            t,
-                            library_name,
-                            None,
-                            None,
-                            Some(decl_context.clone()),
-                        );
-                        self.table_declarations.push(compiled);
-                        self.raw_decls.insert(full_name.clone(), RawDecl::Table(t));
-                    }
-                    _ => {}
                 }
-                self.inline_names.insert(
-                    type_ctor.element.start_token.span.data.as_ptr() as usize,
-                    full_name.clone(),
-                );
-                
-                if library_name == self.library_name {
-                    self.declaration_order.push(full_name.clone());
-                    self.compiled_decls.insert(full_name.clone());
-                }
-                
+
                 full_name
             }
         };
@@ -2662,30 +2661,60 @@ fn get_dependencies<'node, 'src>(
     match decl {
         RawDecl::Struct(s) => {
             for member in &s.members {
-                collect_deps_from_ctor(&member.type_ctor, library_name, &mut deps, skip_optional, inline_names);
+                collect_deps_from_ctor(
+                    &member.type_ctor,
+                    library_name,
+                    &mut deps,
+                    skip_optional,
+                    inline_names,
+                );
             }
         }
         RawDecl::Enum(e) => {
             if let Some(ref subtype) = e.subtype {
-                collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
+                collect_deps_from_ctor(
+                    subtype,
+                    library_name,
+                    &mut deps,
+                    skip_optional,
+                    inline_names,
+                );
             }
         }
         RawDecl::Bits(b) => {
             if let Some(ref subtype) = b.subtype {
-                collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
+                collect_deps_from_ctor(
+                    subtype,
+                    library_name,
+                    &mut deps,
+                    skip_optional,
+                    inline_names,
+                );
             }
         }
         RawDecl::Union(u) => {
             for member in &u.members {
                 if let Some(type_ctor) = &member.type_ctor {
-                    collect_deps_from_ctor(type_ctor, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_ctor(
+                        type_ctor,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             }
         }
         RawDecl::Table(t) => {
             for member in &t.members {
                 if let Some(type_ctor) = &member.type_ctor {
-                    collect_deps_from_ctor(type_ctor, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_ctor(
+                        type_ctor,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             }
         }
@@ -2702,22 +2731,46 @@ fn get_dependencies<'node, 'src>(
                 }
             } else if let Some(e) = option_layout_as_enum(&t.layout) {
                 if let Some(ref subtype) = e.subtype {
-                    collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_ctor(
+                        subtype,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             } else if let Some(b) = option_layout_as_bits(&t.layout) {
                 if let Some(ref subtype) = b.subtype {
-                    collect_deps_from_ctor(subtype, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_ctor(
+                        subtype,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             } else if let Some(u) = option_layout_as_union(&t.layout) {
                 for member in &u.members {
                     if let Some(ref ctor) = member.type_ctor {
-                        collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional, inline_names);
+                        collect_deps_from_ctor(
+                            ctor,
+                            library_name,
+                            &mut deps,
+                            skip_optional,
+                            inline_names,
+                        );
                     }
                 }
             } else if let Some(ta) = option_layout_as_table(&t.layout) {
                 for member in &ta.members {
                     if let Some(ref ctor) = member.type_ctor {
-                        collect_deps_from_ctor(ctor, library_name, &mut deps, skip_optional, inline_names);
+                        collect_deps_from_ctor(
+                            ctor,
+                            library_name,
+                            &mut deps,
+                            skip_optional,
+                            inline_names,
+                        );
                     }
                 }
             } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
@@ -2732,26 +2785,62 @@ fn get_dependencies<'node, 'src>(
                     &m.name.data()[1..]
                 );
                 if let Some(req) = &m.request_payload {
-                    collect_deps_from_layout(req, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_layout(
+                        req,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
                 if let Some(res) = &m.response_payload {
-                    collect_deps_from_layout(res, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_layout(
+                        res,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
                 if let Some(ref err) = m.error_payload {
-                    collect_deps_from_layout(err, library_name, &mut deps, skip_optional, inline_names);
+                    collect_deps_from_layout(
+                        err,
+                        library_name,
+                        &mut deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             }
         }
         RawDecl::Service(s) => {
             for member in &s.members {
-                collect_deps_from_ctor(&member.type_ctor, library_name, &mut deps, skip_optional, inline_names);
+                collect_deps_from_ctor(
+                    &member.type_ctor,
+                    library_name,
+                    &mut deps,
+                    skip_optional,
+                    inline_names,
+                );
             }
         }
         RawDecl::Const(c) => {
-            collect_deps_from_ctor(&c.type_ctor, library_name, &mut deps, skip_optional, inline_names);
+            collect_deps_from_ctor(
+                &c.type_ctor,
+                library_name,
+                &mut deps,
+                skip_optional,
+                inline_names,
+            );
         }
         RawDecl::Alias(a) => {
-            collect_deps_from_ctor(&a.type_ctor, library_name, &mut deps, skip_optional, inline_names);
+            collect_deps_from_ctor(
+                &a.type_ctor,
+                library_name,
+                &mut deps,
+                skip_optional,
+                inline_names,
+            );
         }
     }
 
@@ -2847,7 +2936,9 @@ fn collect_deps_from_ctor(
             }
         }
     } else if let raw_ast::LayoutParameter::Inline(_) = ctor.layout {
-        if let Some(name) = inline_names.get(&(ctor.element.start_token.span.data.as_ptr() as usize)) {
+        if let Some(name) =
+            inline_names.get(&(ctor.element.start_token.span.data.as_ptr() as usize))
+        {
             deps.push(name.clone());
         }
     }
@@ -2870,20 +2961,38 @@ fn collect_deps_from_layout(
         }
         raw_ast::Layout::Struct(s) => {
             for member in &s.members {
-                collect_deps_from_ctor(&member.type_ctor, library_name, deps, skip_optional, inline_names);
+                collect_deps_from_ctor(
+                    &member.type_ctor,
+                    library_name,
+                    deps,
+                    skip_optional,
+                    inline_names,
+                );
             }
         }
         raw_ast::Layout::Union(u) => {
             for member in &u.members {
                 if let Some(type_ctor) = &member.type_ctor {
-                    collect_deps_from_ctor(type_ctor, library_name, deps, skip_optional, inline_names);
+                    collect_deps_from_ctor(
+                        type_ctor,
+                        library_name,
+                        deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             }
         }
         raw_ast::Layout::Table(t) => {
             for member in &t.members {
                 if let Some(type_ctor) = &member.type_ctor {
-                    collect_deps_from_ctor(type_ctor, library_name, deps, skip_optional, inline_names);
+                    collect_deps_from_ctor(
+                        type_ctor,
+                        library_name,
+                        deps,
+                        skip_optional,
+                        inline_names,
+                    );
                 }
             }
         }
@@ -2903,8 +3012,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         for member in &decl.members {
-            let ctx = vec![name.to_string(), member.name.data().to_string()];
-            let type_obj = self.resolve_type(&member.type_ctor, library_name, &ctx);
+            let ctx = crate::name::NamingContext::create(name)
+                .enter_member(member.name.data());
+            let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(ctx));
             let member_name = member.name.data().to_string();
             let attributes = self.compile_attribute_list(&member.attributes);
 
@@ -2945,7 +3055,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 args: vec![],
                 nullable: decl.type_ctor.nullable,
             },
-            type_: self.resolve_type(&decl.type_ctor, library_name, &[]),
+            type_: self.resolve_type(&decl.type_ctor, library_name, None),
         }
     }
 
@@ -2958,8 +3068,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let full_name = format!("{}/{}", library_name, name);
         let location = self.get_location(&decl.name.element);
 
-        let ctx = vec![name.to_string()];
-        let type_obj = self.resolve_type(&decl.type_ctor, library_name, &ctx);
+        let ctx = crate::name::NamingContext::create(name);
+        let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
         let constant = self.compile_constant(&decl.value);
 
         ConstDeclaration {
@@ -2985,46 +3095,35 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let has_request = m.has_request;
             let maybe_request_payload = if let Some(ref l) = m.request_payload {
                 match l {
-                    raw_ast::Layout::TypeConstructor(tc) => Some(self.resolve_type(
-                        tc,
-                        library_name,
-                        &[
-                            short_name.to_string(),
-                            m.name.data().to_string(),
-                            "Request".to_string(),
-                        ],
-                    )),
+                    raw_ast::Layout::TypeConstructor(tc) => {
+                        let ctx = crate::name::NamingContext::create(short_name)
+                            .enter_request(m.name.data());
+                        Some(self.resolve_type(tc, library_name, Some(ctx)))
+                    }
                     raw_ast::Layout::Struct(s) => {
-                        let _method_name_camel = format!(
-                            "{}{}",
-                            m.name.data().chars().next().unwrap().to_uppercase(),
-                            &m.name.data()[1..]
-                        );
-                        let synth_name = format!(
-                            "{}{}{}Request",
-                            short_name,
-                            m.name.data().chars().next().unwrap().to_uppercase(),
-                            &m.name.data()[1..]
-                        );
-                        let compiled = self.compile_struct(
-                            &synth_name,
-                            s,
-                            library_name,
-                            None,
-                            Some(vec![
-                                short_name.to_string(),
-                                m.name.data().to_string(),
-                                "Request".to_string(),
-                            ]),
-                            None,
-                        );
-                        self.struct_declarations.push(compiled);
+                        let ctx = crate::name::NamingContext::create(short_name);
+                        let ctx = ctx.enter_request(m.name.data());
+                        let synth_name = ctx.flattened_name().to_string();
                         let full_synth = format!("{}/{}", library_name, synth_name);
-                        if library_name == self.library_name {
-                            self.declaration_order.push(full_synth.clone());
-                            self.compiled_decls.insert(full_synth.clone());
-                        }
-                        let shape = self.shapes.get(&full_synth).cloned().unwrap();
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        } else {
+                            let compiled = self.compile_struct(
+                                &synth_name,
+                                s,
+                                library_name,
+                                None,
+                                Some(ctx.clone()),
+                                None,
+                            );
+                            self.struct_declarations.push(compiled);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        };
                         Some(Type {
                             kind_v2: "identifier".to_string(),
                             subtype: None,
@@ -3065,50 +3164,40 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let maybe_response_payload = if let Some(s) = res_s {
-                let method_name_camel = format!(
-                    "{}{}",
-                    m.name.data().chars().next().unwrap().to_uppercase(),
-                    &m.name.data()[1..]
-                );
-                let suffix = if !m.has_request {
-                    "Request"
+                let mut p_ctx = crate::name::NamingContext::create(short_name);
+                let mut ctx = if !m.has_request {
+                    p_ctx.enter_event(m.name.data())
                 } else {
-                    "Response"
+                    p_ctx.enter_response(m.name.data())
                 };
-                let synth_name = if m.has_error {
-                    format!("{}_{}_Response", short_name, m.name.data())
-                } else {
-                    format!("{}{}{}", short_name, method_name_camel, suffix)
-                };
-                let compiled = self.compile_struct(
-                    &synth_name,
-                    s,
-                    library_name,
-                    None,
-                    Some({
-                        let mut ctx = vec![
-                            short_name.to_string(),
-                            m.name.data().to_string(),
-                            if !m.has_request {
-                                "Request".to_string()
-                            } else {
-                                "Response".to_string()
-                            },
-                        ];
-                        if m.has_error {
-                            ctx.push("response".to_string());
-                        }
-                        ctx
-                    }),
-                    None,
-                );
-                self.struct_declarations.push(compiled);
-                let full_synth = format!("{}/{}", library_name, synth_name);
-                if library_name == self.library_name {
-                    self.declaration_order.push(full_synth.clone());
-                    self.compiled_decls.insert(full_synth.clone());
+
+                if m.has_error {
+                    ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
+                    ctx = ctx.enter_member("response");
+                    ctx.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
                 }
-                let shape = self.shapes.get(&full_synth).cloned().unwrap();
+
+                let synth_name = ctx.flattened_name().to_string();
+                let full_synth = format!("{}/{}", library_name, synth_name);
+
+                let shape = if self.compiled_decls.contains(&full_synth) {
+                    self.shapes.get(&full_synth).cloned().unwrap()
+                } else {
+                    let compiled = self.compile_struct(
+                        &synth_name,
+                        s,
+                        library_name,
+                        None,
+                        Some(ctx.clone()),
+                        None,
+                    );
+                    self.struct_declarations.push(compiled);
+                    if library_name == self.library_name {
+                        self.declaration_order.push(full_synth.clone());
+                        self.compiled_decls.insert(full_synth.clone());
+                    }
+                    self.shapes.get(&full_synth).cloned().unwrap()
+                };
                 Some(Type {
                     kind_v2: "identifier".to_string(),
                     subtype: None,
@@ -3131,19 +3220,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
             } else if let Some(ref l) = m.response_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
-                        let mut ctx = vec![
-                            short_name.to_string(),
-                            m.name.data().to_string(),
-                            if !m.has_request {
-                                "Request".to_string()
-                            } else {
-                                "Response".to_string()
-                            },
-                        ];
+                        let p_ctx = crate::name::NamingContext::create(short_name);
+                        let mut ctx = if !m.has_request {
+                             p_ctx.enter_event(m.name.data())
+                        } else {
+                             p_ctx.enter_response(m.name.data())
+                        };
                         if m.has_error {
-                            ctx.push("response".to_string());
+                             ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
+                             ctx = ctx.enter_member("response");
+                             ctx.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
                         }
-                        Some(self.resolve_type(tc, library_name, &ctx))
+                        Some(self.resolve_type(tc, library_name, Some(ctx)))
                     }
                     _ => None,
                 }
@@ -3155,16 +3243,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let maybe_response_err_type = if let Some(ref l) = m.error_payload {
                 match l {
-                    raw_ast::Layout::TypeConstructor(tc) => Some(self.resolve_type(
-                        tc,
-                        library_name,
-                        &[
-                            short_name.to_string(),
-                            m.name.data().to_string(),
-                            "Response".to_string(),
-                            "err".to_string(),
-                        ],
-                    )),
+                    raw_ast::Layout::TypeConstructor(tc) => {
+                        let p_ctx = crate::name::NamingContext::create(short_name);
+                        let ctx = if !m.has_request {
+                             p_ctx.enter_event(m.name.data())
+                        } else {
+                             p_ctx.enter_response(m.name.data())
+                        };
+                        ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
+                        let ctx = ctx.enter_member("err");
+                        ctx.set_name_override(format!("{}_{}_Error", short_name, m.name.data()));
+                        Some(self.resolve_type(tc, library_name, Some(ctx)))
+                    }
                     _ => None,
                 }
             } else {
@@ -3176,42 +3266,56 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let success_type = if let Some(ref succ) = maybe_response_success_type {
                     succ.clone()
                 } else {
-                    let synth_name = format!("{}_{}_Response", short_name, m.name.data());
-                    let full_synth = format!("{}/{}", library_name, synth_name);
-                    let shape = TypeShapeV2 {
-                        inline_size: 1,
-                        alignment: 1,
-                        depth: 0,
-                        max_handles: 0,
-                        max_out_of_line: 0,
-                        has_padding: false,
-                        has_flexible_envelope: false,
-                    };
+                    let mut p_ctx = crate::name::NamingContext::create(short_name);
+                    let mut ctx = p_ctx.enter_response(m.name.data());
+                    ctx = ctx.enter_member("response");
+                    let mut ctx_val = (*ctx).clone();
+                    ctx_val.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
+                    ctx = std::rc::Rc::new(ctx_val);
 
-                    let mut loc = self.get_location(&m.name.element);
-                    loc.column = 34; // exact matches for golden
-                    loc.length = 2;
-                    let decl = StructDeclaration {
-                        name: full_synth.clone(),
-                        naming_context: vec![
-                            short_name.to_string(),
-                            m.name.data().to_string(),
-                            "Response".to_string(),
-                            "response".to_string(),
-                        ],
-                        location: loc,
-                        deprecated: false,
-                        members: vec![],
-                        resource: false,
-                        is_empty_success_struct: true,
-                        type_shape_v2: shape.clone(),
-                        maybe_attributes: vec![],
+                    let synth_name = ctx.flattened_name().to_string();
+                    let full_synth = format!("{}/{}", library_name, synth_name);
+
+                    let shape = if self.compiled_decls.contains(&full_synth) {
+                        self.shapes.get(&full_synth).cloned().unwrap()
+                    } else {
+                        let shape = TypeShapeV2 {
+                            inline_size: 1,
+                            alignment: 1,
+                            depth: 0,
+                            max_handles: 0,
+                            max_out_of_line: 0,
+                            has_padding: false,
+                            has_flexible_envelope: false,
+                        };
+
+                        let mut loc = self.get_location(&m.name.element);
+                        loc.column = 34; // exact matches for golden
+                        loc.length = 2;
+                        let decl = StructDeclaration {
+                            name: full_synth.clone(),
+                            naming_context: vec![
+                                short_name.to_string(),
+                                m.name.data().to_string(),
+                                "Response".to_string(),
+                                "response".to_string(),
+                            ],
+                            location: loc,
+                            deprecated: false,
+                            members: vec![],
+                            resource: false,
+                            is_empty_success_struct: true,
+                            type_shape_v2: shape.clone(),
+                            maybe_attributes: vec![],
+                        };
+                        self.struct_declarations.push(decl);
+                        if library_name == self.library_name {
+                            self.declaration_order.push(full_synth.clone());
+                            self.compiled_decls.insert(full_synth.clone());
+                        }
+                        self.shapes.insert(full_synth.clone(), shape.clone());
+                        shape
                     };
-                    self.struct_declarations.push(decl);
-                    if library_name == self.library_name {
-                        self.declaration_order.push(full_synth.clone());
-                        self.compiled_decls.insert(full_synth.clone());
-                    }
                     let typ = Type {
                         kind_v2: "identifier".to_string(),
                         subtype: None,
@@ -3251,7 +3355,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         (8 - (shape.inline_size % 8)) % 8
                     };
                     union_has_padding = union_has_padding || shape.has_padding || padding != 0;
-                    
+
                     let env_max_out_of_line = shape.max_out_of_line.saturating_add(if inlined {
                         0
                     } else {

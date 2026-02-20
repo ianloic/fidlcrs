@@ -74,12 +74,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     .raw_decls
                     .insert(full_name, RawDecl::Protocol(decl));
 
+                let protocol_context = crate::name::NamingContext::create(name);
+
                 for method in &decl.methods {
-                    let method_name_camel = format!(
-                        "{}{}",
-                        method.name.data().chars().next().unwrap().to_uppercase(),
-                        &method.name.data()[1..]
-                    );
                     let req_s = match &method.request_payload {
                         Some(raw_ast::Layout::Struct(s)) => Some(s),
                         Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
@@ -94,12 +91,8 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         _ => None,
                     };
                     if let Some(s) = req_s {
-                        let synth_name = format!("{}Request", method_name_camel);
-                        let full_synth = format!(
-                            "{}/{}",
-                            file_library_name,
-                            format!("{}{}", name, synth_name)
-                        );
+                        let ctx = protocol_context.enter_request(method.name.data());
+                        let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
 
@@ -117,24 +110,28 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         _ => None,
                     };
                     if let Some(s) = res_s {
-                        let (_, full_synth) = if method.has_error {
-                            let sn = format!("_{}_Response", method.name.data());
-                            (
-                                sn.clone(),
-                                format!("{}/{}", file_library_name, format!("{}{}", name, sn)),
-                            )
-                        } else {
-                            let suffix = if !method.has_request {
-                                "Request"
-                            } else {
-                                "Response"
-                            };
-                            let sn = format!("{}{}", method_name_camel, suffix);
-                            (
-                                sn.clone(),
-                                format!("{}/{}", file_library_name, format!("{}{}", name, sn)),
-                            )
-                        };
+                        let mut ctx = protocol_context.enter_response(method.name.data());
+                        if method.has_error {
+                            let mut ctx_val = (*ctx).clone();
+                            ctx_val.set_name_override(format!(
+                                "{}_{}_Result",
+                                name,
+                                method.name.data()
+                            ));
+                            ctx = std::rc::Rc::new(ctx_val);
+                            ctx = ctx.enter_member("response");
+                            let mut ctx_val = (*ctx).clone();
+                            ctx_val.set_name_override(format!(
+                                "{}_{}_Response",
+                                name,
+                                method.name.data()
+                            ));
+                            ctx = std::rc::Rc::new(ctx_val);
+                        } else if !method.has_request {
+                            ctx = protocol_context.enter_event(method.name.data());
+                        }
+
+                        let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
                 }

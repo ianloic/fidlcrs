@@ -4793,7 +4793,9 @@ type Foo = resource union {
         let root = lib.compile().expect("compilation failed");
         let union_foo = root.lookup_union("example/Foo").expect("Foo not found");
         let table_bar = root.lookup_table("example/Bar").expect("Bar not found");
-        let struct_baz = root.lookup_struct("example/Baz").expect("Baz not found");
+        let struct_baz = root
+            .lookup_struct("example/Baz")
+            .expect("Baz not found");
         assert_eq!(
             union_foo.type_shape_v2.inline_size, 16,
             "inline_size mismatch for union_foo"

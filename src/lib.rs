@@ -3,6 +3,7 @@ pub mod compiler;
 pub mod diagnostics;
 pub mod json_generator;
 pub mod lexer;
+pub mod name;
 pub mod parser;
 pub mod raw_ast;
 pub mod reporter;
@@ -18,6 +19,8 @@ pub mod bits_tests;
 #[cfg(test)]
 pub mod consts_tests;
 #[cfg(test)]
+pub mod declaration_order_tests;
+#[cfg(test)]
 pub mod enums_tests;
 #[cfg(test)]
 pub mod parsing_tests;
@@ -31,8 +34,6 @@ pub mod test_library;
 pub mod typeshape_tests;
 #[cfg(test)]
 pub mod union_tests;
-#[cfg(test)]
-pub mod declaration_order_tests;
 
 pub mod availability_step;
 pub mod compile_step;

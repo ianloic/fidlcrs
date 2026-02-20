@@ -251,10 +251,16 @@ fn main() {
         }
     }
 
-    let mut compiler = Compiler::new();
+    let mut compiler = Compiler::new(&reporter);
     compiler.version_selection = version_selection;
     let source_refs: Vec<&SourceFile> = source_files.iter().collect();
-    let json_root = compiler.compile(&files, &source_refs);
+    let json_root = match compiler.compile(&files, &source_refs) {
+        Ok(root) => root,
+        Err(e) => {
+             reporter.print_reports();
+             fail(&format!("Compilation failed: {}\n", e));
+        }
+    };
 
     let json_string = serde_json::to_string_pretty(&json_root).unwrap();
 

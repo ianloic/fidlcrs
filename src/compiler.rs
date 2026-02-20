@@ -3,6 +3,7 @@ use crate::consume_step::ConsumeStep;
 use crate::json_generator::*;
 use crate::raw_ast;
 use crate::resolve_step::ResolveStep;
+use crate::reporter::Reporter;
 use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
@@ -78,6 +79,7 @@ pub struct Compiler<'node, 'src> {
     // Compiled shapes for types
     pub shapes: HashMap<String, TypeShapeV2>,
     pub source_files: Vec<&'src SourceFile>,
+    pub reporter: &'src Reporter<'src>,
 
     // State
     pub library_name: String,
@@ -107,17 +109,14 @@ pub struct Compiler<'node, 'src> {
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<String>,
 }
-impl<'node, 'src> Default for Compiler<'node, 'src> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+
 
 impl<'node, 'src> Compiler<'node, 'src> {
-    pub fn new() -> Self {
+    pub fn new(reporter: &'src Reporter<'src>) -> Self {
         Self {
             shapes: HashMap::new(),
             source_files: Vec::new(),
+            reporter,
             library_name: "unknown".to_string(),
             library_decl: None,
             raw_decls: HashMap::new(),
@@ -148,7 +147,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         &mut self,
         files: &'node [raw_ast::File<'src>],
         source_files: &[&'src SourceFile],
-    ) -> JsonRoot {
+    ) -> Result<JsonRoot, String> {
         self.source_files = source_files.to_vec();
 
         // 1. Consume
@@ -310,7 +309,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
 
-        JsonRoot {
+        let json_root = JsonRoot {
             name: self.library_name.clone(),
             platform,
             available: Some(BTreeMap::from([
@@ -348,6 +347,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 order
             },
             declarations: self.declarations.clone(),
+        };
+
+        if !self.reporter.diagnostics().is_empty() {
+             Err("Compilation failed".to_string())
+        } else {
+            Ok(json_root)
         }
     }
 
@@ -1924,6 +1929,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             "array" => {
                 if type_ctor.parameters.len() < 2 {
+                    self.reporter.fail(
+                        crate::diagnostics::ERR_WRONG_NUMBER_OF_LAYOUT_PARAMETERS,
+                        type_ctor.element.start_token.span.clone(),
+                        &[],
+                    );
                     return Type {
                         kind_v2: "unknown".to_string(),
                         subtype: None,
@@ -1952,11 +1962,57 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     };
                 }
-                let inner = &type_ctor.parameters[0];
-                let size_param = &type_ctor.parameters[1];
-                let count = self.eval_type_constant_usize(size_param).unwrap_or(0) as u32;
+                // Array validation
+                let elt_type = &type_ctor.parameters[0];
+                let count_param = &type_ctor.parameters[1];
 
-                let inner_type = self.resolve_type(inner, library_name, naming_context);
+                // Check for optional array: array<T, N>:optional is invalid
+                 if nullable {
+                    self.reporter.fail(
+                        crate::diagnostics::ERR_NULLABLE_ARRAY,
+                        type_ctor.element.start_token.span.clone(),
+                        &[],
+                    );
+                }
+
+                // Check count
+                let mut count: u32 = 0;
+                match &count_param.layout {
+                    raw_ast::LayoutParameter::Literal(lit) => {
+                         if let raw_ast::LiteralKind::Numeric = lit.literal.kind {
+                             if let Ok(val) = lit.literal.value.parse::<u32>() {
+                                 if val == 0 {
+                                     self.reporter.fail(
+                                         crate::diagnostics::ERR_ARRAY_SIZE_ZERO,
+                                         count_param.element.start_token.span.clone(),
+                                         &[],
+                                     );
+                                 }
+                                 count = val;
+                             }
+                         }
+                    }
+                    raw_ast::LayoutParameter::Identifier(id) => {
+                         if id.to_string() == "MAX" {
+                             count = u32::MAX;
+                         }
+                         // TODO: actually resolve constant value to check for 0
+                    }
+                    _ => {}
+                }
+
+                // Check constraints
+                 if !type_ctor.constraints.is_empty() {
+                    self.reporter.fail(
+                        crate::diagnostics::ERR_ARRAY_CONSTRAINT,
+                        type_ctor.element.start_token.span.clone(),
+                        &[],
+                    );
+
+                 }
+
+
+                let inner_type = self.resolve_type(elt_type, library_name, naming_context);
 
                 let total_size = count.saturating_mul(inner_type.type_shape_v2.inline_size);
                 let max_ool = count.saturating_mul(inner_type.type_shape_v2.max_out_of_line);

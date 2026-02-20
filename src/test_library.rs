@@ -97,7 +97,7 @@ resource_definition handle : uint32 {
     }
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {
-        let mut compiler = Compiler::new();
+        let mut compiler = Compiler::new(&self.reporter);
         let mut asts = Vec::new();
 
         for file in &self.source_files {
@@ -110,8 +110,7 @@ resource_definition handle : uint32 {
             }
         }
 
-        let root = compiler.compile(&asts, &self.source_files);
-        Ok(root)
+        compiler.compile(&asts, &self.source_files)
     }
 
     pub fn parse(&'a self) -> Result<Vec<raw_ast::File<'a>>, String> {

@@ -42,3 +42,10 @@ pub const ERR_UNICODE_ESCAPE_TOO_LONG: ErrorDef =
     ErrorDef::new(188, "Unicode escape must have at most 6 hex digits");
 pub const ERR_UNICODE_ESCAPE_TOO_LARGE: ErrorDef =
     ErrorDef::new(189, "invalid Unicode code point '{}'; maximum is 10FFFF");
+
+pub const ERR_NULLABLE_ARRAY: ErrorDef = ErrorDef::new(62, "arrays cannot be nullable");
+pub const ERR_ARRAY_SIZE_ZERO: ErrorDef = ErrorDef::new(161, "arrays cannot have size 0");
+pub const ERR_ARRAY_CONSTRAINT: ErrorDef = ErrorDef::new(1001, "arrays cannot have constraints");
+pub const ERR_EXPECTED_TYPE: ErrorDef = ErrorDef::new(1002, "expected type");
+pub const ERR_EXPECTED_VALUE: ErrorDef = ErrorDef::new(1003, "expected value");
+pub const ERR_WRONG_NUMBER_OF_LAYOUT_PARAMETERS: ErrorDef = ErrorDef::new(1004, "wrong number of layout parameters");

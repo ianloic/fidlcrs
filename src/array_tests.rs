@@ -28,7 +28,6 @@ type S = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_zero_size_array() {
         let file_content = get_file_content("bad/fi-0161.test.fidl");
         let source = SourceFile::new("bad/fi-0161.test.fidl".to_string(), file_content);
@@ -38,7 +37,6 @@ type S = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_no_size_array() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -56,7 +54,6 @@ type S = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_non_parameterized_array() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -74,7 +71,6 @@ type S = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_optional_array() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -92,7 +88,6 @@ type S = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_multiple_constraints_on_array() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

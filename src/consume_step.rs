@@ -74,7 +74,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     .raw_decls
                     .insert(full_name, RawDecl::Protocol(decl));
 
-                let protocol_context = crate::name::NamingContext::create(name);
+                let protocol_context = crate::name::NamingContext::create(decl.name.element.span());
 
                 for method in &decl.methods {
                     let req_s = match &method.request_payload {
@@ -91,7 +91,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         _ => None,
                     };
                     if let Some(s) = req_s {
-                        let ctx = protocol_context.enter_request(method.name.data());
+                        let ctx = protocol_context.enter_request(method.name.element.span());
                         let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
@@ -110,25 +110,16 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         _ => None,
                     };
                     if let Some(s) = res_s {
-                        let mut ctx = protocol_context.enter_response(method.name.data());
+                        let mut ctx = if !method.has_request && !method.has_error {
+                             protocol_context.enter_event(method.name.element.span())
+                        } else {
+                             protocol_context.enter_response(method.name.element.span())
+                        };
+
                         if method.has_error {
-                            let mut ctx_val = (*ctx).clone();
-                            ctx_val.set_name_override(format!(
-                                "{}_{}_Result",
-                                name,
-                                method.name.data()
-                            ));
-                            ctx = std::rc::Rc::new(ctx_val);
+                            ctx.set_name_override(format!("{}_{}_Result", name, method.name.data()));
                             ctx = ctx.enter_member("response");
-                            let mut ctx_val = (*ctx).clone();
-                            ctx_val.set_name_override(format!(
-                                "{}_{}_Response",
-                                name,
-                                method.name.data()
-                            ));
-                            ctx = std::rc::Rc::new(ctx_val);
-                        } else if !method.has_request {
-                            ctx = protocol_context.enter_event(method.name.data());
+                            ctx.set_name_override(format!("{}_{}_Response", name, method.name.data()));
                         }
 
                         let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());

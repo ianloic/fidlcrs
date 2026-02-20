@@ -1105,6 +1105,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let mut has_response = false;
         let mut response_payload = None;
+        let mut response_param_element = None;
         let mut has_error = false;
         let mut error_payload = None;
         let mut error_token = None;
@@ -1115,7 +1116,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             }
             has_response = true;
 
-            self.consume_token(TokenKind::LeftParen)?;
+            let start_paren = self.consume_token(TokenKind::LeftParen)?;
             if self.last_token.kind != TokenKind::RightParen {
                 if self.last_token.subkind == TokenSubkind::Struct {
                     if let Some(s) = self.parse_struct_declaration(None, vec![]) {
@@ -1139,7 +1140,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                     self.consume_token(self.last_token.kind)?; // Skip others
                 }
             }
-            self.consume_token(TokenKind::RightParen)?;
+            let end_paren = self.consume_token(TokenKind::RightParen)?;
+            response_param_element = Some(SourceElement::new(start_paren, end_paren));
 
             if self.last_token.subkind == TokenSubkind::Error {
                 let token = self.consume_token_with_subkind(TokenSubkind::Error)?;
@@ -1166,6 +1168,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             has_error,
             error_payload,
             error_token,
+            response_param_element,
         })
     }
 

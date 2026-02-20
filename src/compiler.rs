@@ -1612,7 +1612,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     None
                 };
 
-                let decl_context = naming_context
+                let _decl_context = naming_context
                     .as_ref()
                     .map(|ctx| ctx.context())
                     .unwrap_or_else(Vec::new);
@@ -3445,7 +3445,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: false,
                         };
 
-                        let loc = if let Some(tok) = &m.error_token {
+                        let loc = if let Some(elem) = &m.response_param_element {
+                            self.get_location(elem)
+                        } else if let Some(tok) = &m.error_token {
                             self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
                         } else {
                             self.get_location(&m.name.element)
@@ -3537,35 +3539,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     has_flexible_envelope: false,
                 };
 
-                let union_loc = if let Some(layout) = &m.response_payload {
-                     match layout {
-                         raw_ast::Layout::Struct(s) => self.get_location(&s.element),
-                         raw_ast::Layout::Table(t) => self.get_location(&t.element),
-                         raw_ast::Layout::Union(u) => self.get_location(&u.element),
-                         raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
-                         _ => self.get_location(&m.name.element),
-                     }
+                let union_loc = if let Some(elem) = &m.response_param_element {
+                    self.get_location(elem)
                 } else if let Some(tok) = &m.error_token {
                     self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
                 } else {
                     self.get_location(&m.name.element)
                 };
 
-                let response_loc = if let Some(layout) = &m.response_payload {
-                     match layout {
-                         raw_ast::Layout::Struct(s) => self.get_location(&s.element),
-                         raw_ast::Layout::Table(t) => self.get_location(&t.element),
-                         raw_ast::Layout::Union(u) => self.get_location(&u.element),
-                         raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
-                         _ => self.get_location(&m.name.element),
-                     }
+                let response_loc = if let Some(elem) = &m.response_param_element {
+                    self.get_location(elem)
+                } else if let Some(tok) = &m.error_token {
+                     self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
                 } else {
-                     // Implicit empty result points to error token
-                     if let Some(tok) = &m.error_token {
-                         self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
-                     } else {
-                         self.get_location(&m.name.element)
-                     }
+                     self.get_location(&m.name.element)
                 };
                 
                 let err_loc = if let Some(layout) = &m.error_payload {

@@ -1107,6 +1107,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         let mut response_payload = None;
         let mut has_error = false;
         let mut error_payload = None;
+        let mut error_token = None;
 
         if is_event || self.last_token.kind == TokenKind::Arrow {
             if !is_event {
@@ -1141,7 +1142,8 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.consume_token(TokenKind::RightParen)?;
 
             if self.last_token.subkind == TokenSubkind::Error {
-                self.consume_token_with_subkind(TokenSubkind::Error)?;
+                let token = self.consume_token_with_subkind(TokenSubkind::Error)?;
+                error_token = Some(token);
                 has_error = true;
                 if let Some(tc) = self.parse_type_constructor() {
                     error_payload = Some(Layout::TypeConstructor(tc));
@@ -1163,6 +1165,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             response_payload,
             has_error,
             error_payload,
+            error_token,
         })
     }
 

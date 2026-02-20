@@ -353,6 +353,7 @@ pub struct ProtocolMethod<'a> {
     pub response_payload: Option<Layout<'a>>,
     pub has_error: bool,
     pub error_payload: Option<Layout<'a>>,
+    pub error_token: Option<Token<'a>>,
 }
 
 #[derive(Debug, Clone)]

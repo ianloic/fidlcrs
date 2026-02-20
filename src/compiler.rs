@@ -3445,9 +3445,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: false,
                         };
 
-                        let mut loc = self.get_location(&m.name.element);
-                        loc.column = 34; // exact matches for golden
-                        loc.length = 2;
+                        let loc = if let Some(tok) = &m.error_token {
+                            self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
+                        } else {
+                            self.get_location(&m.name.element)
+                        };
                         let decl = StructDeclaration {
                             name: full_synth.clone(),
                             naming_context: vec![
@@ -3535,21 +3537,46 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     has_flexible_envelope: false,
                 };
 
-                let mut loc = self.get_location(&m.name.element);
-                if m.name.data() == "ErrorAsPrimitive"
-                    || m.name.data() == "ErrorAsEnum"
-                    || m.name.data() == "HandleInResult"
-                {
-                    loc.column = 34;
-                    loc.length = 2;
-                } else if m.name.data() == "ResponseAsStruct" {
-                    loc.column = 34;
-                    loc.length = 67;
-                } else if m.name.data() == "SomeMethod" {
-                    loc.line = 34;
-                    loc.column = 11;
-                    loc.length = 110;
-                }
+                let union_loc = if let Some(layout) = &m.response_payload {
+                     match layout {
+                         raw_ast::Layout::Struct(s) => self.get_location(&s.element),
+                         raw_ast::Layout::Table(t) => self.get_location(&t.element),
+                         raw_ast::Layout::Union(u) => self.get_location(&u.element),
+                         raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
+                         _ => self.get_location(&m.name.element),
+                     }
+                } else if let Some(tok) = &m.error_token {
+                    self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
+                } else {
+                    self.get_location(&m.name.element)
+                };
+
+                let response_loc = if let Some(layout) = &m.response_payload {
+                     match layout {
+                         raw_ast::Layout::Struct(s) => self.get_location(&s.element),
+                         raw_ast::Layout::Table(t) => self.get_location(&t.element),
+                         raw_ast::Layout::Union(u) => self.get_location(&u.element),
+                         raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
+                         _ => self.get_location(&m.name.element),
+                     }
+                } else {
+                     // Implicit empty result points to error token
+                     if let Some(tok) = &m.error_token {
+                         self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
+                     } else {
+                         self.get_location(&m.name.element)
+                     }
+                };
+                
+                let err_loc = if let Some(layout) = &m.error_payload {
+                     match layout {
+                         raw_ast::Layout::Struct(s) => self.get_location(&s.element),
+                         raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
+                         _ => self.get_location(&m.name.element), // fallback
+                     }
+                } else {
+                     self.get_location(&m.name.element) // Should use error token if payload missing?
+                };
 
                 let union_decl = crate::json_generator::UnionDeclaration {
                     name: full_synth_union.clone(),
@@ -3558,7 +3585,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         m.name.data().to_string(),
                         "Response".to_string(),
                     ],
-                    location: loc,
+                    location: union_loc,
                     deprecated: false,
                     members: vec![
                         crate::json_generator::UnionMember {
@@ -3566,18 +3593,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             reserved: None,
                             name: Some("response".to_string()),
                             type_: Some(success_type.clone()),
-                            location: Some(Location {
-                                filename: "generated".to_string(),
-                                line: match m.name.data() {
-                                    "ResponseAsStruct" => 1,
-                                    "ErrorAsPrimitive" => 5,
-                                    "ErrorAsEnum" => 9,
-                                    "HandleInResult" => 13,
-                                    _ => 1,
-                                },
-                                column: 1,
-                                length: 8,
-                            }),
+                            location: Some(response_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
                         },
@@ -3586,18 +3602,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             reserved: None,
                             name: Some("err".to_string()),
                             type_: Some(err_type.clone()),
-                            location: Some(Location {
-                                filename: "generated".to_string(),
-                                line: match m.name.data() {
-                                    "ResponseAsStruct" => 2,
-                                    "ErrorAsPrimitive" => 6,
-                                    "ErrorAsEnum" => 10,
-                                    "HandleInResult" => 14,
-                                    _ => 2,
-                                },
-                                column: 1,
-                                length: 3,
-                            }),
+                            location: Some(err_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
                         },
@@ -3716,6 +3721,39 @@ impl<'node, 'src> Compiler<'node, 'src> {
             });
         }
 
+        let mut implementation_locations = None;
+        if let Some(attributes) = decl.attributes.as_deref() {
+            for attr in &attributes.attributes {
+                if attr.name.data() == "discoverable" {
+                    let mut has_args = false;
+                    let mut client_locs = vec!["platform".to_string(), "external".to_string()];
+                    let mut server_locs = vec!["platform".to_string(), "external".to_string()];
+
+                    for arg in &attr.args {
+                        let arg_name = arg.name.as_ref().map(|n| n.data());
+                        if arg_name == Some("client") {
+                            has_args = true;
+                            if let raw_ast::Constant::Literal(lit) = &arg.value {
+                                client_locs = vec![lit.literal.value.trim_matches('"').to_string()];
+                            }
+                        } else if arg_name == Some("server") {
+                            has_args = true;
+                            if let raw_ast::Constant::Literal(lit) = &arg.value {
+                                server_locs = vec![lit.literal.value.trim_matches('"').to_string()];
+                            }
+                        }
+                    }
+
+                    if has_args {
+                        let mut map = std::collections::BTreeMap::new();
+                        map.insert("client".to_string(), client_locs);
+                        map.insert("server".to_string(), server_locs);
+                        implementation_locations = Some(map);
+                    }
+                }
+            }
+        }
+
         ProtocolDeclaration {
             name,
             location: self.get_location(&decl.name.element),
@@ -3724,6 +3762,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             openness: openness.to_string(),
             composed_protocols: compiled_composed,
             methods,
+            implementation_locations,
         }
     }
 }

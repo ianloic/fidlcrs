@@ -257,6 +257,8 @@ pub struct ProtocolDeclaration {
     pub openness: String,
     pub composed_protocols: Vec<ProtocolCompose>,
     pub methods: Vec<ProtocolMethod>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub implementation_locations: Option<std::collections::BTreeMap<String, Vec<String>>>,
 }
 
 #[derive(Serialize, Clone, Debug)]

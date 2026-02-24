@@ -24,7 +24,6 @@ impl<'node, 'src> Step<'node, 'src> for ResolveStep {
                     raw_ast::Layout::Enum(_) => "enum",
                     raw_ast::Layout::Bits(_) => "bits",
                     raw_ast::Layout::TypeConstructor(_) => "alias",
-                    _ => "unknown",
                 },
             };
             compiler.decl_kinds.insert(name.clone(), kind);

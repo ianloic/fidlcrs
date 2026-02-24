@@ -50,7 +50,6 @@ type Fruit = bits {
     }
 
     #[test]
-    #[ignore]
     fn bad_signed() {
         let file_content = get_file_content("bad/fi-0069.test.fidl");
         let source = SourceFile::new("bad/fi-0069.test.fidl".to_string(), file_content);
@@ -60,7 +59,6 @@ type Fruit = bits {
     }
 
     #[test]
-    #[ignore]
     fn bad_non_unique_values() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -79,7 +77,6 @@ type Fruit = bits : uint64 {
     }
 
     #[test]
-    #[ignore]
     fn bad_non_unique_values_out_of_line() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -101,7 +98,6 @@ const TWO_SQUARED uint32 = 4;
     }
 
     #[test]
-    #[ignore]
     fn bad_unsigned_with_negative_member() {
         let file_content = get_file_content("bad/fi-0102.test.fidl");
         let source = SourceFile::new("bad/fi-0102.test.fidl".to_string(), file_content);
@@ -111,7 +107,6 @@ const TWO_SQUARED uint32 = 4;
     }
 
     #[test]
-    #[ignore]
     fn bad_member_overflow() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -130,7 +125,6 @@ type Fruit = bits : uint8 {
     }
 
     #[test]
-    #[ignore]
     fn bad_duplicate_member() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -150,7 +144,6 @@ type Fruit = bits : uint64 {
     }
 
     #[test]
-    #[ignore]
     fn bad_no_members_when_strict() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -215,7 +208,6 @@ type Fruit = bits : uint64 {
     }
 
     #[test]
-    #[ignore]
     fn bad_non_power_of_two() {
         let file_content = get_file_content("bad/fi-0067.test.fidl");
         let source = SourceFile::new("bad/fi-0067.test.fidl".to_string(), file_content);
@@ -225,7 +217,6 @@ type Fruit = bits : uint64 {
     }
 
     #[test]
-    #[ignore]
     fn good_with_mask() {
         let file_content = get_file_content("good/fi-0067-b.test.fidl");
         let source = SourceFile::new("good/fi-0067-b.test.fidl".to_string(), file_content);
@@ -240,7 +231,6 @@ type Fruit = bits : uint64 {
     }
 
     #[test]
-    #[ignore]
     fn bad_shant_be_nullable() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -262,7 +252,6 @@ type Struct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_multiple_constraints() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

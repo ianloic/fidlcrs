@@ -56,7 +56,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             let mods = self.parse_modifiers();
 
             if self.last_token.subkind == TokenSubkind::Library {
-                library_decl.is_some();
+                let _ = library_decl.is_some();
                 library_decl = self.parse_library_declaration(attributes.take());
                 if library_decl.is_none() {
                     self.last_token = self.lexer.lex();

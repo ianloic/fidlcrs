@@ -49,3 +49,13 @@ pub const ERR_ARRAY_CONSTRAINT: ErrorDef = ErrorDef::new(1001, "arrays cannot ha
 pub const ERR_EXPECTED_TYPE: ErrorDef = ErrorDef::new(1002, "expected type");
 pub const ERR_EXPECTED_VALUE: ErrorDef = ErrorDef::new(1003, "expected value");
 pub const ERR_WRONG_NUMBER_OF_LAYOUT_PARAMETERS: ErrorDef = ErrorDef::new(1004, "wrong number of layout parameters");
+
+pub const ERR_BITS_MEMBER_MUST_BE_POWER_OF_TWO: ErrorDef = ErrorDef::new(1005, "bits member must be power of two");
+pub const ERR_BITS_MEMBER_DUPLICATE_NAME: ErrorDef = ErrorDef::new(1006, "bits member name duplicated");
+pub const ERR_BITS_MEMBER_DUPLICATE_VALUE: ErrorDef = ErrorDef::new(1007, "bits member value duplicated");
+pub const ERR_BITS_TYPE_MUST_BE_UNSIGNED: ErrorDef = ErrorDef::new(1008, "bits type must be an unsigned integer");
+pub const ERR_CANNOT_BE_NULLABLE: ErrorDef = ErrorDef::new(1009, "value cannot be nullable");
+pub const ERR_CANNOT_HAVE_CONSTRAINTS: ErrorDef = ErrorDef::new(1010, "value cannot have constraints");
+pub const ERR_STRICT_BITS_MUST_HAVE_MEMBERS: ErrorDef = ErrorDef::new(1011, "strict bits must have at least one member");
+pub const ERR_MEMBER_OVERFLOW: ErrorDef = ErrorDef::new(1012, "member value overflows its underlying type");
+pub const ERR_INVALID_MEMBER_VALUE: ErrorDef = ErrorDef::new(1013, "invalid or unparseable member value");

@@ -124,6 +124,16 @@ pub enum Constant<'a> {
     BinaryOperator(BinaryOperatorConstant<'a>),
 }
 
+impl<'a> Constant<'a> {
+    pub fn element(&self) -> &SourceElement<'a> {
+        match self {
+            Constant::Identifier(id) => &id.element,
+            Constant::Literal(lit) => &lit.element,
+            Constant::BinaryOperator(bin) => &bin.element,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct IdentifierConstant<'a> {
     pub element: SourceElement<'a>,

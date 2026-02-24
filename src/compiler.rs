@@ -971,33 +971,183 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.get_location(&decl.element)
         };
 
-        let subtype_name = if let Some(ref sc) = decl.subtype {
+        let mut subtype_name = "uint32".to_string();
+        if let Some(ref sc) = decl.subtype {
             if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
-                id.to_string()
-            } else {
-                "uint32".to_string()
+                let mut current = id.to_string();
+                loop {
+                    if matches!(current.as_str(), "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16" | "int32" | "int64") {
+                        subtype_name = current;
+                        break;
+                    }
+                    let full_name = if current.contains('/') || self.shapes.contains_key(&current) {
+                        current.clone()
+                    } else {
+                        format!("{}/{}", library_name, current)
+                    };
+                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
+                         if let raw_ast::LayoutParameter::Identifier(ref inner_id) = alias.type_ctor.layout {
+                             current = inner_id.to_string();
+                             continue;
+                         }
+                    }
+                    subtype_name = current;
+                    break;
+                }
             }
-        } else {
-            "uint32".to_string()
-        };
+        }
+
+        let is_valid_type = matches!(
+            subtype_name.as_str(),
+            "uint8" | "uint16" | "uint32" | "uint64"
+        );
+        if !is_valid_type {
+            self.reporter.fail(
+                crate::diagnostics::ERR_BITS_TYPE_MUST_BE_UNSIGNED,
+                decl.name.as_ref().map_or_else(|| decl.element.start_token.span.clone(), |id| id.element.span()),
+                &[],
+            );
+        }
+
+        // Strictness default: Flexible?
+        let strict = decl.modifiers.iter().any(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
+        });
+
+        if strict && decl.members.is_empty() {
+            self.reporter.fail(
+                crate::diagnostics::ERR_STRICT_BITS_MUST_HAVE_MEMBERS,
+                decl.name.as_ref().map_or_else(|| decl.element.start_token.span.clone(), |id| id.element.span()),
+                &[],
+            );
+        }
 
         let mut members = vec![];
         let mut mask: u64 = 0;
+        let mut member_names = std::collections::HashSet::new();
 
         for member in &decl.members {
             let attributes = self.compile_attribute_list(&member.attributes);
             let compiled_value = self.compile_constant(&member.value);
-
-            // Calculate mask
-            if let Some(literal) = &compiled_value.literal
-                && let Ok(val) = literal.value.get().trim_matches('"').parse::<u64>()
-            {
-                mask |= val;
+            
+            let name_str = member.name.data().to_string();
+            if !member_names.insert(name_str.clone()) {
+                self.reporter.fail(
+                    crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_NAME,
+                    member.name.element.span(),
+                    &[],
+                );
             }
-            // TODO: Handle non-u64 values if needed?
+
+            // Calculate mask and validate value
+            let mut valid_value = true;
+            match &member.value {
+                raw_ast::Constant::Literal(_) => {
+                    if let Some(literal) = &compiled_value.literal {
+                        let val_str = literal.value.get().trim_matches('"');
+                        if let Ok(val) = val_str.parse::<u64>() {
+                            if val != 0 && (val & (val - 1)) != 0 {
+                                self.reporter.fail(
+                                    crate::diagnostics::ERR_BITS_MEMBER_MUST_BE_POWER_OF_TWO,
+                                    member.value.element().span(),
+                                    &[],
+                                );
+                                valid_value = false;
+                            }
+                            
+                            let bits: u32 = match subtype_name.as_str() {
+                                "uint8" => 8,
+                                "uint16" => 16,
+                                "uint32" => 32,
+                                "uint64" => 64,
+                                _ => 32,
+                            };
+                            
+                            if valid_value && subtype_name.starts_with("uint") && val >= (1u64.checked_shl(bits).unwrap_or(0)) && bits < 64 {
+                                self.reporter.fail(
+                                    crate::diagnostics::ERR_MEMBER_OVERFLOW,
+                                    member.value.element().span(),
+                                    &[],
+                                );
+                                valid_value = false;
+                            }
+
+                            if valid_value {
+                                if (mask & val) != 0 {
+                                    self.reporter.fail(
+                                        crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_VALUE,
+                                        member.value.element().span(),
+                                        &[],
+                                    );
+                                } else {
+                                    mask |= val;
+                                }
+                            }
+                        } else {
+                            let is_negative = val_str.starts_with('-');
+                            if is_negative && subtype_name.starts_with("uint") {
+                                self.reporter.fail(
+                                    crate::diagnostics::ERR_INVALID_MEMBER_VALUE, // or overflow
+                                    member.value.element().span(),
+                                    &[],
+                                );
+                            } else if !val_str.chars().all(|c| c.is_ascii_digit()) {
+                               self.reporter.fail(
+                                    crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                                    member.value.element().span(),
+                                    &[],
+                                );
+                            } else {
+                               self.reporter.fail(
+                                    crate::diagnostics::ERR_MEMBER_OVERFLOW,
+                                    member.value.element().span(),
+                                    &[],
+                                );
+                            }
+                        }
+                    }
+                }
+                raw_ast::Constant::Identifier(_id) => {
+                     // out of line var
+                     let val_opt = self.eval_constant_usize(&member.value);
+                     if let Some(val) = val_opt {
+                         let val = val as u64;
+                         if val != 0 && (val & (val - 1)) != 0 {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_BITS_MEMBER_MUST_BE_POWER_OF_TWO,
+                                member.value.element().span(),
+                                &[],
+                            );
+                         } else if (mask & val) != 0 {
+                             self.reporter.fail(
+                                 crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_VALUE,
+                                 member.value.element().span(),
+                                 &[],
+                             );
+                         } else {
+                             mask |= val;
+                         }
+                     } else {
+                         // Temporary: right now all identifiers except MAX evaluate to None
+                         // which throws ERR_INVALID_MEMBER_VALUE
+                         self.reporter.fail(
+                             crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                             member.value.element().span(),
+                             &[],
+                         );
+                     }
+                }
+                _ => {
+                    self.reporter.fail(
+                        crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                        member.value.element().span(),
+                        &[],
+                    );
+                }
+            }
 
             members.push(BitsMember {
-                name: member.name.data().to_string(),
+                name: name_str,
                 location: self.get_location(&member.name.element),
                 deprecated: self.is_deprecated(member.attributes.as_deref()),
                 value: compiled_value,
@@ -1024,11 +1174,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         self.shapes.insert(full_name.clone(), type_shape_v2.clone());
-
-        // Strictness default: Flexible?
-        let strict = decl.modifiers.iter().any(|m| {
-            m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
-        });
 
         BitsDeclaration {
             name: full_name,
@@ -2273,6 +2418,48 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
 
                 self.compile_decl_by_name(&full_name);
+
+                if let Some(decl) = self.raw_decls.get(&full_name) {
+                    let is_bits = match decl {
+                        RawDecl::Bits(_) => true,
+                        RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Bits(_)),
+                        _ => false,
+                    };
+                    if is_bits {
+                        if nullable {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_CANNOT_BE_NULLABLE,
+                                type_ctor.element.start_token.span.clone(),
+                                &[],
+                            );
+                        }
+                        if type_ctor.nullable || type_ctor.constraints.iter().any(|c| {
+                            if let raw_ast::Constant::Identifier(id) = c {
+                                id.identifier.to_string() != "optional"
+                            } else {
+                                true
+                            }
+                        }) || (!type_ctor.constraints.is_empty() && !nullable) {
+                             // This is a bit ad-hoc, but effectively checks constraints > 0
+                             if !type_ctor.constraints.is_empty() {
+                                 let has_non_optional = type_ctor.constraints.iter().any(|c| {
+                                     if let raw_ast::Constant::Identifier(id) = c {
+                                         id.identifier.to_string() != "optional"
+                                     } else {
+                                         true
+                                     }
+                                 });
+                                 if has_non_optional {
+                                     self.reporter.fail(
+                                         crate::diagnostics::ERR_CANNOT_HAVE_CONSTRAINTS,
+                                         type_ctor.element.start_token.span.clone(),
+                                         &[],
+                                     );
+                                 }
+                             }
+                        }
+                    }
+                }
 
                 if let Some(shape) = self.shapes.get(&full_name) {
                     Type {

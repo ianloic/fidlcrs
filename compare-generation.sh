@@ -21,7 +21,7 @@ FILES=(
     "nullable.test.fidl"
     "anonymous.test.fidl"
     
-    # "protocols.test.fidl"
+    "protocols.test.fidl"
     # "versions.test.fidl versioned=test:HEAD"
 
 

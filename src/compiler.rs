@@ -2,8 +2,8 @@ use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
 use crate::json_generator::*;
 use crate::raw_ast;
-use crate::resolve_step::ResolveStep;
 use crate::reporter::Reporter;
+use crate::resolve_step::ResolveStep;
 use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
@@ -109,7 +109,6 @@ pub struct Compiler<'node, 'src> {
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<String>,
 }
-
 
 impl<'node, 'src> Compiler<'node, 'src> {
     pub fn new(reporter: &'src Reporter<'src>) -> Self {
@@ -350,7 +349,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         if !self.reporter.diagnostics().is_empty() {
-             Err("Compilation failed".to_string())
+            Err("Compilation failed".to_string())
         } else {
             Ok(json_root)
         }
@@ -464,7 +463,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let new_depth = inner_shape.depth.saturating_add(1);
                 let elem_size = inner_shape.inline_size;
                 let elem_ool = inner_shape.max_out_of_line;
-                
+
                 let content_size = count.saturating_mul(elem_size.saturating_add(elem_ool));
                 // OOL padding logic: vector body is contiguous. If content size not 8-aligned?
                 // Actually FIDL vector padding is 8-byte alignment of the body? Yes.
@@ -473,10 +472,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     content_size.saturating_add(8 - (content_size % 8))
                 };
-                
+
                 let max_handles = count.saturating_mul(inner_shape.max_handles);
                 let has_padding = inner_shape.has_padding || !elem_size.is_multiple_of(8);
-                
+
                 ty.type_shape_v2 = TypeShapeV2 {
                     inline_size: 16,
                     alignment: 8,
@@ -489,14 +488,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             } else if ty.kind_v2 == "array" {
                 let inner_shape = &inner.type_shape_v2;
                 let count = ty.element_count.unwrap_or(0);
-                
+
                 let elem_size = inner_shape.inline_size;
                 let elem_ool = inner_shape.max_out_of_line;
                 let depth = inner_shape.depth;
-                
+
                 let max_handles = count.saturating_mul(inner_shape.max_handles);
                 let max_out_of_line = count.saturating_mul(elem_ool);
-                
+
                 ty.type_shape_v2 = TypeShapeV2 {
                     inline_size: count.saturating_mul(elem_size),
                     alignment: inner_shape.alignment,
@@ -976,7 +975,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
                 let mut current = id.to_string();
                 loop {
-                    if matches!(current.as_str(), "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16" | "int32" | "int64") {
+                    if matches!(
+                        current.as_str(),
+                        "uint8"
+                            | "uint16"
+                            | "uint32"
+                            | "uint64"
+                            | "int8"
+                            | "int16"
+                            | "int32"
+                            | "int64"
+                    ) {
                         subtype_name = current;
                         break;
                     }
@@ -986,10 +995,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         format!("{}/{}", library_name, current)
                     };
                     if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
-                         if let raw_ast::LayoutParameter::Identifier(ref inner_id) = alias.type_ctor.layout {
-                             current = inner_id.to_string();
-                             continue;
-                         }
+                        if let raw_ast::LayoutParameter::Identifier(ref inner_id) =
+                            alias.type_ctor.layout
+                        {
+                            current = inner_id.to_string();
+                            continue;
+                        }
                     }
                     subtype_name = current;
                     break;
@@ -1004,7 +1015,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if !is_valid_type {
             self.reporter.fail(
                 crate::diagnostics::ERR_BITS_TYPE_MUST_BE_UNSIGNED,
-                decl.name.as_ref().map_or_else(|| decl.element.start_token.span.clone(), |id| id.element.span()),
+                decl.name.as_ref().map_or_else(
+                    || decl.element.start_token.span.clone(),
+                    |id| id.element.span(),
+                ),
                 &[],
             );
         }
@@ -1017,7 +1031,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if strict && decl.members.is_empty() {
             self.reporter.fail(
                 crate::diagnostics::ERR_STRICT_BITS_MUST_HAVE_MEMBERS,
-                decl.name.as_ref().map_or_else(|| decl.element.start_token.span.clone(), |id| id.element.span()),
+                decl.name.as_ref().map_or_else(
+                    || decl.element.start_token.span.clone(),
+                    |id| id.element.span(),
+                ),
                 &[],
             );
         }
@@ -1029,7 +1046,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for member in &decl.members {
             let attributes = self.compile_attribute_list(&member.attributes);
             let compiled_value = self.compile_constant(&member.value);
-            
+
             let name_str = member.name.data().to_string();
             if !member_names.insert(name_str.clone()) {
                 self.reporter.fail(
@@ -1054,7 +1071,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 );
                                 valid_value = false;
                             }
-                            
+
                             let bits: u32 = match subtype_name.as_str() {
                                 "uint8" => 8,
                                 "uint16" => 16,
@@ -1062,8 +1079,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 "uint64" => 64,
                                 _ => 32,
                             };
-                            
-                            if valid_value && subtype_name.starts_with("uint") && val >= (1u64.checked_shl(bits).unwrap_or(0)) && bits < 64 {
+
+                            if valid_value
+                                && subtype_name.starts_with("uint")
+                                && val >= (1u64.checked_shl(bits).unwrap_or(0))
+                                && bits < 64
+                            {
                                 self.reporter.fail(
                                     crate::diagnostics::ERR_MEMBER_OVERFLOW,
                                     member.value.element().span(),
@@ -1092,13 +1113,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     &[],
                                 );
                             } else if !val_str.chars().all(|c| c.is_ascii_digit()) {
-                               self.reporter.fail(
+                                self.reporter.fail(
                                     crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
                                     member.value.element().span(),
                                     &[],
                                 );
                             } else {
-                               self.reporter.fail(
+                                self.reporter.fail(
                                     crate::diagnostics::ERR_MEMBER_OVERFLOW,
                                     member.value.element().span(),
                                     &[],
@@ -1108,34 +1129,34 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
                 raw_ast::Constant::Identifier(_id) => {
-                     // out of line var
-                     let val_opt = self.eval_constant_usize(&member.value);
-                     if let Some(val) = val_opt {
-                         let val = val as u64;
-                         if val != 0 && (val & (val - 1)) != 0 {
+                    // out of line var
+                    let val_opt = self.eval_constant_usize(&member.value);
+                    if let Some(val) = val_opt {
+                        let val = val as u64;
+                        if val != 0 && (val & (val - 1)) != 0 {
                             self.reporter.fail(
                                 crate::diagnostics::ERR_BITS_MEMBER_MUST_BE_POWER_OF_TWO,
                                 member.value.element().span(),
                                 &[],
                             );
-                         } else if (mask & val) != 0 {
-                             self.reporter.fail(
-                                 crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_VALUE,
-                                 member.value.element().span(),
-                                 &[],
-                             );
-                         } else {
-                             mask |= val;
-                         }
-                     } else {
-                         // Temporary: right now all identifiers except MAX evaluate to None
-                         // which throws ERR_INVALID_MEMBER_VALUE
-                         self.reporter.fail(
-                             crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
-                             member.value.element().span(),
-                             &[],
-                         );
-                     }
+                        } else if (mask & val) != 0 {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_VALUE,
+                                member.value.element().span(),
+                                &[],
+                            );
+                        } else {
+                            mask |= val;
+                        }
+                    } else {
+                        // Temporary: right now all identifiers except MAX evaluate to None
+                        // which throws ERR_INVALID_MEMBER_VALUE
+                        self.reporter.fail(
+                            crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                            member.value.element().span(),
+                            &[],
+                        );
+                    }
                 }
                 _ => {
                     self.reporter.fail(
@@ -1240,14 +1261,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let ctx = naming_context
-                    .clone()
-                    .unwrap_or_else(|| crate::name::NamingContext::create(name_element.map(|n| n.span()).unwrap_or_else(|| decl.element.span()))); // Fallback if name missing?
+                let ctx = naming_context.clone().unwrap_or_else(|| {
+                    crate::name::NamingContext::create(
+                        name_element
+                            .map(|n| n.span())
+                            .unwrap_or_else(|| decl.element.span()),
+                    )
+                }); // Fallback if name missing?
                 let member_ctx = if let Some(m_name) = &member.name {
                     ctx.enter_member(m_name.element.span())
                 } else {
                     // This case should be unreachable for valid table members with types
-                    ctx.enter_member(member.ordinal.element.span()) 
+                    ctx.enter_member(member.ordinal.element.span())
                 };
                 let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
                 let name = member.name.as_ref().unwrap().data().to_string();
@@ -1389,14 +1414,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
-                let ctx = naming_context
-                    .clone()
-                    .unwrap_or_else(|| crate::name::NamingContext::create(name_element.map(|e| e.span()).unwrap_or_else(|| decl.element.span()))); 
+                let ctx = naming_context.clone().unwrap_or_else(|| {
+                    crate::name::NamingContext::create(
+                        name_element
+                            .map(|e| e.span())
+                            .unwrap_or_else(|| decl.element.span()),
+                    )
+                });
                 let member_ctx = if let Some(m_name) = &member.name {
                     ctx.enter_member(m_name.element.span())
                 } else {
-                     // Should be unreachable for valid union members with types
-                    ctx.enter_member(match &member.ordinal { Some(o) => o.element.span(), None => member.element.span() })
+                    // Should be unreachable for valid union members with types
+                    ctx.enter_member(match &member.ordinal {
+                        Some(o) => o.element.span(),
+                        None => member.element.span(),
+                    })
                 };
                 let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
                 let name = member.name.as_ref().unwrap().data().to_string();
@@ -1540,9 +1572,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut depth: u32 = 0;
 
         for member in &decl.members {
-            let ctx = naming_context
-                .clone()
-                .unwrap_or_else(|| crate::name::NamingContext::create(if let Some(id) = &decl.name { id.element.span() } else { decl.element.span() }));
+            let ctx = naming_context.clone().unwrap_or_else(|| {
+                crate::name::NamingContext::create(if let Some(id) = &decl.name {
+                    id.element.span()
+                } else {
+                    decl.element.span()
+                })
+            });
             let member_ctx = ctx.enter_member(member.name.element.span());
             let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
             let type_shape = &type_obj.type_shape_v2;
@@ -2112,7 +2148,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let count_param = &type_ctor.parameters[1];
 
                 // Check for optional array: array<T, N>:optional is invalid
-                 if nullable {
+                if nullable {
                     self.reporter.fail(
                         crate::diagnostics::ERR_NULLABLE_ARRAY,
                         type_ctor.element.start_token.span.clone(),
@@ -2124,38 +2160,36 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut count: u32 = 0;
                 match &count_param.layout {
                     raw_ast::LayoutParameter::Literal(lit) => {
-                         if let raw_ast::LiteralKind::Numeric = lit.literal.kind {
-                             if let Ok(val) = lit.literal.value.parse::<u32>() {
-                                 if val == 0 {
-                                     self.reporter.fail(
-                                         crate::diagnostics::ERR_ARRAY_SIZE_ZERO,
-                                         count_param.element.start_token.span.clone(),
-                                         &[],
-                                     );
-                                 }
-                                 count = val;
-                             }
-                         }
+                        if let raw_ast::LiteralKind::Numeric = lit.literal.kind {
+                            if let Ok(val) = lit.literal.value.parse::<u32>() {
+                                if val == 0 {
+                                    self.reporter.fail(
+                                        crate::diagnostics::ERR_ARRAY_SIZE_ZERO,
+                                        count_param.element.start_token.span.clone(),
+                                        &[],
+                                    );
+                                }
+                                count = val;
+                            }
+                        }
                     }
                     raw_ast::LayoutParameter::Identifier(id) => {
-                         if id.to_string() == "MAX" {
-                             count = u32::MAX;
-                         }
-                         // TODO: actually resolve constant value to check for 0
+                        if id.to_string() == "MAX" {
+                            count = u32::MAX;
+                        }
+                        // TODO: actually resolve constant value to check for 0
                     }
                     _ => {}
                 }
 
                 // Check constraints
-                 if !type_ctor.constraints.is_empty() {
+                if !type_ctor.constraints.is_empty() {
                     self.reporter.fail(
                         crate::diagnostics::ERR_ARRAY_CONSTRAINT,
                         type_ctor.element.start_token.span.clone(),
                         &[],
                     );
-
-                 }
-
+                }
 
                 let inner_type = self.resolve_type(elt_type, library_name, naming_context);
 
@@ -2237,6 +2271,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
 
                 let mut protocol = "".to_string();
+
                 if let Some(constraint) = type_ctor.constraints.first() {
                     if let raw_ast::Constant::Identifier(id) = constraint {
                         let proto_name = id.identifier.to_string();
@@ -2246,14 +2281,52 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             protocol = format!("{}/{}", library_name, proto_name);
                         }
                     }
-                } else if let Some(param) = type_ctor.parameters.first()
-                    && let raw_ast::LayoutParameter::Identifier(id) = &param.layout
-                {
-                    let proto_name = id.to_string();
-                    if proto_name.contains('/') {
-                        protocol = proto_name;
+                } else if let Some(param) = type_ctor.parameters.first() {
+                    if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
+                        let proto_name = id.to_string();
+                        if proto_name.contains('/') {
+                            protocol = proto_name;
+                        } else {
+                            protocol = format!("{}/{}", library_name, proto_name);
+                        }
+                    }
+                } else {
+                    self.reporter.fail(
+                        crate::diagnostics::ERR_REQUEST_MUST_BE_PARAMETERIZED,
+                        type_ctor.element.span(),
+                        &[],
+                    );
+                }
+
+                if !protocol.is_empty() {
+                    if let Some(decl) = self.raw_decls.get(&protocol) {
+                        if let RawDecl::Protocol(_) = decl {
+                            // Ok
+                        } else {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_REQUEST_MUST_BE_PROTOCOL,
+                                type_ctor.element.span(),
+                                &[],
+                            );
+                        }
+                    } else if self.compiled_decls.contains(&protocol) {
+                        if !self
+                            .protocol_declarations
+                            .iter()
+                            .any(|p| p.name == protocol)
+                        {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_REQUEST_MUST_BE_PROTOCOL,
+                                type_ctor.element.span(),
+                                &[],
+                            );
+                        }
                     } else {
-                        protocol = format!("{}/{}", library_name, proto_name);
+                        self.reporter.fail(
+                            crate::diagnostics::ERR_REQUEST_MUST_BE_PROTOCOL,
+                            type_ctor.element.span(),
+                            &[],
+                        );
                     }
                 }
 
@@ -2433,30 +2506,33 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 &[],
                             );
                         }
-                        if type_ctor.nullable || type_ctor.constraints.iter().any(|c| {
-                            if let raw_ast::Constant::Identifier(id) = c {
-                                id.identifier.to_string() != "optional"
-                            } else {
-                                true
+                        if type_ctor.nullable
+                            || type_ctor.constraints.iter().any(|c| {
+                                if let raw_ast::Constant::Identifier(id) = c {
+                                    id.identifier.to_string() != "optional"
+                                } else {
+                                    true
+                                }
+                            })
+                            || (!type_ctor.constraints.is_empty() && !nullable)
+                        {
+                            // This is a bit ad-hoc, but effectively checks constraints > 0
+                            if !type_ctor.constraints.is_empty() {
+                                let has_non_optional = type_ctor.constraints.iter().any(|c| {
+                                    if let raw_ast::Constant::Identifier(id) = c {
+                                        id.identifier.to_string() != "optional"
+                                    } else {
+                                        true
+                                    }
+                                });
+                                if has_non_optional {
+                                    self.reporter.fail(
+                                        crate::diagnostics::ERR_CANNOT_HAVE_CONSTRAINTS,
+                                        type_ctor.element.start_token.span.clone(),
+                                        &[],
+                                    );
+                                }
                             }
-                        }) || (!type_ctor.constraints.is_empty() && !nullable) {
-                             // This is a bit ad-hoc, but effectively checks constraints > 0
-                             if !type_ctor.constraints.is_empty() {
-                                 let has_non_optional = type_ctor.constraints.iter().any(|c| {
-                                     if let raw_ast::Constant::Identifier(id) = c {
-                                         id.identifier.to_string() != "optional"
-                                     } else {
-                                         true
-                                     }
-                                 });
-                                 if has_non_optional {
-                                     self.reporter.fail(
-                                         crate::diagnostics::ERR_CANNOT_HAVE_CONSTRAINTS,
-                                         type_ctor.element.start_token.span.clone(),
-                                         &[],
-                                     );
-                                 }
-                             }
                         }
                     }
                 }
@@ -3413,8 +3489,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         for member in &decl.members {
-            let ctx = crate::name::NamingContext::create(name)
-                .enter_member(member.name.data());
+            let ctx = crate::name::NamingContext::create(name).enter_member(member.name.data());
             let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(ctx));
             let member_name = member.name.data().to_string();
             let attributes = self.compile_attribute_list(&member.attributes);
@@ -3491,17 +3566,89 @@ impl<'node, 'src> Compiler<'node, 'src> {
     ) -> ProtocolDeclaration {
         let name = format!("{}/{}", library_name, short_name);
 
+        let is_strict = decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == crate::token::TokenSubkind::Strict);
+        let is_flexible = decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == crate::token::TokenSubkind::Flexible);
+        if is_strict && decl.methods.is_empty() {
+            self.reporter.fail(
+                crate::diagnostics::ERR_STRICT_PROTOCOL_CANNOT_BE_EMPTY,
+                decl.name.element.span(),
+                &[],
+            );
+        }
+        if is_flexible && decl.methods.is_empty() {
+            self.reporter.fail(
+                crate::diagnostics::ERR_FLEXIBLE_PROTOCOL_CANNOT_BE_EMPTY,
+                decl.name.element.span(),
+                &[],
+            );
+        }
+
         let mut methods = vec![];
+        let mut method_names = std::collections::HashSet::new();
         for m in &decl.methods {
+            if !method_names.insert(m.name.data()) {
+                self.reporter.fail(
+                    crate::diagnostics::ERR_DUPLICATE_METHOD_NAME,
+                    m.name.element.span(),
+                    &[],
+                );
+            }
+            if m.has_error && !m.has_response && m.has_request {
+                self.reporter.fail(
+                    crate::diagnostics::ERR_ONE_WAY_ERROR,
+                    m.name.element.span(),
+                    &[],
+                );
+            }
             let has_request = m.has_request;
             let maybe_request_payload = if let Some(ref l) = m.request_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
                         let ctx = crate::name::NamingContext::create(decl.name.element.span())
                             .enter_request(m.name.element.span());
-                        Some(self.resolve_type(tc, library_name, Some(ctx)))
+                        let resolved_type = self.resolve_type(tc, library_name, Some(ctx));
+
+                        let is_allowed = if resolved_type.kind_v2 != "identifier" {
+                            false
+                        } else if let Some(id) = &resolved_type.identifier {
+                            if let Some(kind) = self.decl_kinds.get(id) {
+                                *kind == "struct"
+                                    || *kind == "table"
+                                    || *kind == "union"
+                                    || *kind == "overlay"
+                            } else {
+                                self.struct_declarations.iter().any(|d| &d.name == id)
+                                    || self.table_declarations.iter().any(|d| &d.name == id)
+                                    || self.union_declarations.iter().any(|d| &d.name == id)
+                            }
+                        } else {
+                            false
+                        };
+
+                        if !is_allowed {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_DISALLOWED_REQUEST_TYPE,
+                                tc.element.span(),
+                                &[],
+                            );
+                        }
+
+                        Some(resolved_type)
                     }
                     raw_ast::Layout::Struct(s) => {
+                        if s.members.is_empty() {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_METHOD_EMPTY_PAYLOAD,
+                                s.element.span(),
+                                &[],
+                            );
+                        }
                         let ctx = crate::name::NamingContext::create(decl.name.element.span())
                             .enter_request(m.name.element.span());
                         let synth_name = ctx.flattened_name().to_string();
@@ -3545,96 +3692,365 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             type_shape_v2: shape,
                         })
                     }
-                    _ => None,
+                    raw_ast::Layout::Table(t) => {
+                        let ctx = crate::name::NamingContext::create(decl.name.element.span())
+                            .enter_request(m.name.element.span());
+                        let synth_name = ctx.flattened_name().to_string();
+                        let full_synth = format!("{}/{}", library_name, synth_name);
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        } else {
+                            let compiled = self.compile_table(
+                                &synth_name,
+                                t,
+                                library_name,
+                                None,
+                                None,
+                                Some(ctx.clone()),
+                            );
+                            self.table_declarations.push(compiled);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        };
+                        Some(Type {
+                            kind_v2: "identifier".to_string(),
+                            subtype: None,
+                            identifier: Some(full_synth),
+                            nullable: Some(false),
+                            element_type: None,
+                            element_count: None,
+                            maybe_element_count: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
+                            maybe_attributes: vec![],
+                            field_shape_v2: None,
+                            type_shape_v2: shape,
+                        })
+                    }
+                    raw_ast::Layout::Union(u) => {
+                        let ctx = crate::name::NamingContext::create(decl.name.element.span())
+                            .enter_request(m.name.element.span());
+                        let synth_name = ctx.flattened_name().to_string();
+                        let full_synth = format!("{}/{}", library_name, synth_name);
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        } else {
+                            let compiled = self.compile_union(
+                                &synth_name,
+                                u,
+                                library_name,
+                                None,
+                                None,
+                                Some(ctx.clone()),
+                            );
+                            self.union_declarations.push(compiled);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        };
+                        Some(Type {
+                            kind_v2: "identifier".to_string(),
+                            subtype: None,
+                            identifier: Some(full_synth),
+                            nullable: Some(false),
+                            element_type: None,
+                            element_count: None,
+                            maybe_element_count: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
+                            maybe_attributes: vec![],
+                            field_shape_v2: None,
+                            type_shape_v2: shape,
+                        })
+                    }
+                    _ => {
+                        // primitive or other inline layout
+                        self.reporter.fail(
+                            crate::diagnostics::ERR_DISALLOWED_REQUEST_TYPE,
+                            m.name.element.span(),
+                            &[],
+                        );
+                        None
+                    }
                 }
             } else {
                 None
             };
 
             let has_response = m.has_response;
-            let res_s = match &m.response_payload {
-                Some(raw_ast::Layout::Struct(s)) => Some(s),
-                Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
-                    raw_ast::LayoutParameter::Inline(inline_layout) => match &**inline_layout {
-                        raw_ast::Layout::Struct(s) => Some(s),
-                        _ => None,
-                    },
-                    _ => None,
-                },
-                _ => None,
-            };
-
-            let maybe_response_payload = if let Some(s) = res_s {
-                let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
-                let mut ctx = if !m.has_request && !m.has_error {
-                    p_ctx.enter_event(m.name.element.span())
-                } else {
-                    p_ctx.enter_response(m.name.element.span())
-                };
-
-                if m.has_error {
-                    ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
-                    ctx = ctx.enter_member("response");
-                    ctx.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
-                }
-
-                let synth_name = ctx.flattened_name().to_string();
-                let full_synth = format!("{}/{}", library_name, synth_name);
-
-                let shape = if self.compiled_decls.contains(&full_synth) {
-                    self.shapes.get(&full_synth).cloned().unwrap()
-                } else {
-                    let compiled = self.compile_struct(
-                        &synth_name,
-                        s,
-                        library_name,
-                        None,
-                        Some(ctx.clone()),
-                        None,
-                    );
-                    self.struct_declarations.push(compiled);
-                    if library_name == self.library_name {
-                        self.declaration_order.push(full_synth.clone());
-                        self.compiled_decls.insert(full_synth.clone());
-                    }
-                    self.shapes.get(&full_synth).cloned().unwrap()
-                };
-                Some(Type {
-                    kind_v2: "identifier".to_string(),
-                    subtype: None,
-                    identifier: Some(full_synth),
-                    nullable: Some(false),
-                    type_shape_v2: shape,
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: None,
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape_v2: None,
-                })
-            } else if let Some(ref l) = m.response_payload {
+            let maybe_response_payload = if let Some(ref l) = m.response_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
                         let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
                         let mut ctx = if !m.has_request && !m.has_error {
-                             p_ctx.enter_event(m.name.element.span())
+                            p_ctx.enter_event(m.name.element.span())
                         } else {
-                             p_ctx.enter_response(m.name.element.span())
+                            p_ctx.enter_response(m.name.element.span())
                         };
                         if m.has_error {
-                             ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
-                             ctx = ctx.enter_member("response");
-                             ctx.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
+                            ctx.set_name_override(format!(
+                                "{}_{}_Result",
+                                short_name,
+                                m.name.data()
+                            ));
+                            ctx = ctx.enter_member("response");
+                            ctx.set_name_override(format!(
+                                "{}_{}_Response",
+                                short_name,
+                                m.name.data()
+                            ));
                         }
-                        Some(self.resolve_type(tc, library_name, Some(ctx)))
+
+                        let resolved_type = self.resolve_type(tc, library_name, Some(ctx));
+
+                        let is_allowed = if resolved_type.kind_v2 != "identifier" {
+                            false
+                        } else if let Some(id) = &resolved_type.identifier {
+                            if let Some(kind) = self.decl_kinds.get(id) {
+                                *kind == "struct"
+                                    || *kind == "table"
+                                    || *kind == "union"
+                                    || *kind == "overlay"
+                            } else {
+                                self.struct_declarations.iter().any(|d| &d.name == id)
+                                    || self.table_declarations.iter().any(|d| &d.name == id)
+                                    || self.union_declarations.iter().any(|d| &d.name == id)
+                            }
+                        } else {
+                            false
+                        };
+
+                        if !is_allowed {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_DISALLOWED_RESPONSE_TYPE,
+                                tc.element.span(),
+                                &[],
+                            );
+                        }
+
+                        Some(resolved_type)
                     }
-                    _ => None,
+                    raw_ast::Layout::Struct(s) => {
+                        if s.members.is_empty() {
+                            self.reporter.fail(
+                                crate::diagnostics::ERR_METHOD_EMPTY_PAYLOAD,
+                                s.element.span(),
+                                &[],
+                            );
+                        }
+                        let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
+                        let mut ctx = if !m.has_request && !m.has_error {
+                            p_ctx.enter_event(m.name.element.span())
+                        } else {
+                            p_ctx.enter_response(m.name.element.span())
+                        };
+
+                        if m.has_error {
+                            ctx.set_name_override(format!(
+                                "{}_{}_Result",
+                                short_name,
+                                m.name.data()
+                            ));
+                            ctx = ctx.enter_member("response");
+                            ctx.set_name_override(format!(
+                                "{}_{}_Response",
+                                short_name,
+                                m.name.data()
+                            ));
+                        }
+
+                        let synth_name = ctx.flattened_name().to_string();
+                        let full_synth = format!("{}/{}", library_name, synth_name);
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        } else {
+                            let compiled = self.compile_struct(
+                                &synth_name,
+                                s,
+                                library_name,
+                                None,
+                                Some(ctx.clone()),
+                                None,
+                            );
+                            self.struct_declarations.push(compiled);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        };
+                        Some(Type {
+                            kind_v2: "identifier".to_string(),
+                            subtype: None,
+                            identifier: Some(full_synth),
+                            nullable: Some(false),
+                            type_shape_v2: shape,
+                            element_type: None,
+                            element_count: None,
+                            maybe_element_count: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
+                            maybe_attributes: vec![],
+                            field_shape_v2: None,
+                        })
+                    }
+                    raw_ast::Layout::Table(t) => {
+                        let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
+                        let mut ctx = if !m.has_request && !m.has_error {
+                            p_ctx.enter_event(m.name.element.span())
+                        } else {
+                            p_ctx.enter_response(m.name.element.span())
+                        };
+
+                        if m.has_error {
+                            ctx.set_name_override(format!(
+                                "{}_{}_Result",
+                                short_name,
+                                m.name.data()
+                            ));
+                            ctx = ctx.enter_member("response");
+                            ctx.set_name_override(format!(
+                                "{}_{}_Response",
+                                short_name,
+                                m.name.data()
+                            ));
+                        }
+
+                        let synth_name = ctx.flattened_name().to_string();
+                        let full_synth = format!("{}/{}", library_name, synth_name);
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        } else {
+                            let compiled = self.compile_table(
+                                &synth_name,
+                                t,
+                                library_name,
+                                None,
+                                None,
+                                Some(ctx.clone()),
+                            );
+                            self.table_declarations.push(compiled);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        };
+                        Some(Type {
+                            kind_v2: "identifier".to_string(),
+                            subtype: None,
+                            identifier: Some(full_synth),
+                            nullable: Some(false),
+                            type_shape_v2: shape,
+                            element_type: None,
+                            element_count: None,
+                            maybe_element_count: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
+                            maybe_attributes: vec![],
+                            field_shape_v2: None,
+                        })
+                    }
+                    raw_ast::Layout::Union(u) => {
+                        let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
+                        let mut ctx = if !m.has_request && !m.has_error {
+                            p_ctx.enter_event(m.name.element.span())
+                        } else {
+                            p_ctx.enter_response(m.name.element.span())
+                        };
+
+                        if m.has_error {
+                            ctx.set_name_override(format!(
+                                "{}_{}_Result",
+                                short_name,
+                                m.name.data()
+                            ));
+                            ctx = ctx.enter_member("response");
+                            ctx.set_name_override(format!(
+                                "{}_{}_Response",
+                                short_name,
+                                m.name.data()
+                            ));
+                        }
+
+                        let synth_name = ctx.flattened_name().to_string();
+                        let full_synth = format!("{}/{}", library_name, synth_name);
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        } else {
+                            let compiled = self.compile_union(
+                                &synth_name,
+                                u,
+                                library_name,
+                                None,
+                                None,
+                                Some(ctx.clone()),
+                            );
+                            self.union_declarations.push(compiled);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.get(&full_synth).cloned().unwrap()
+                        };
+                        Some(Type {
+                            kind_v2: "identifier".to_string(),
+                            subtype: None,
+                            identifier: Some(full_synth),
+                            nullable: Some(false),
+                            type_shape_v2: shape,
+                            element_type: None,
+                            element_count: None,
+                            maybe_element_count: None,
+                            role: None,
+                            protocol: None,
+                            protocol_transport: None,
+                            obj_type: None,
+                            rights: None,
+                            resource_identifier: None,
+                            deprecated: None,
+                            maybe_attributes: vec![],
+                            field_shape_v2: None,
+                        })
+                    }
+                    _ => {
+                        self.reporter.fail(
+                            crate::diagnostics::ERR_DISALLOWED_RESPONSE_TYPE,
+                            m.name.element.span(),
+                            &[],
+                        );
+                        None
+                    }
                 }
             } else {
                 None
@@ -3647,9 +4063,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::TypeConstructor(tc) => {
                         let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
                         let ctx = if !m.has_request && !m.has_error {
-                             p_ctx.enter_event(m.name.element.span())
+                            p_ctx.enter_event(m.name.element.span())
                         } else {
-                             p_ctx.enter_response(m.name.element.span())
+                            p_ctx.enter_response(m.name.element.span())
                         };
                         ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
                         let ctx = ctx.enter_member("err");
@@ -3691,7 +4107,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let loc = if let Some(elem) = &m.response_param_element {
                             self.get_location(elem)
                         } else if let Some(tok) = &m.error_token {
-                            self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
+                            self.get_location(&raw_ast::SourceElement::new(
+                                tok.clone(),
+                                tok.clone(),
+                            ))
                         } else {
                             self.get_location(&m.name.element)
                         };
@@ -3793,19 +4212,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let response_loc = if let Some(elem) = &m.response_param_element {
                     self.get_location(elem)
                 } else if let Some(tok) = &m.error_token {
-                     self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
+                    self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
                 } else {
-                     self.get_location(&m.name.element)
+                    self.get_location(&m.name.element)
                 };
-                
+
                 let err_loc = if let Some(layout) = &m.error_payload {
-                     match layout {
-                         raw_ast::Layout::Struct(s) => self.get_location(&s.element),
-                         raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
-                         _ => self.get_location(&m.name.element), // fallback
-                     }
+                    match layout {
+                        raw_ast::Layout::Struct(s) => self.get_location(&s.element),
+                        raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
+                        _ => self.get_location(&m.name.element), // fallback
+                    }
                 } else {
-                     self.get_location(&m.name.element) // Should use error token if payload missing?
+                    self.get_location(&m.name.element) // Should use error token if payload missing?
                 };
 
                 let union_decl = crate::json_generator::UnionDeclaration {
@@ -3943,8 +4362,52 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut compiled_composed = vec![];
         for composed in &decl.composed_protocols {
+            let composed_name = composed.protocol_name.to_string();
+            let full_composed_name = if composed_name.contains('/') {
+                composed_name.clone()
+            } else {
+                format!("{}/{}", library_name, composed_name)
+            };
+
+            let mut composed_openness = "open";
+            if let Some(p) = self
+                .protocol_declarations
+                .iter()
+                .find(|p| p.name == full_composed_name)
+            {
+                composed_openness = p.openness.as_str();
+            } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
+                if p.modifiers
+                    .iter()
+                    .any(|m| m.subkind == crate::token::TokenSubkind::Ajar)
+                {
+                    composed_openness = "ajar";
+                } else if p
+                    .modifiers
+                    .iter()
+                    .any(|m| m.subkind == crate::token::TokenSubkind::Closed)
+                {
+                    composed_openness = "closed";
+                }
+            }
+
+            let valid = match openness {
+                "open" => true,
+                "ajar" => composed_openness == "ajar" || composed_openness == "closed",
+                "closed" => composed_openness == "closed",
+                _ => true,
+            };
+
+            if !valid {
+                self.reporter.fail(
+                    crate::diagnostics::ERR_INVALID_COMPOSE,
+                    composed.element.span(),
+                    &[],
+                );
+            }
+
             compiled_composed.push(crate::json_generator::ProtocolCompose {
-                name: format!("{}/{}", library_name, composed.protocol_name),
+                name: full_composed_name,
                 location: self.get_location(&composed.protocol_name.element),
                 deprecated: self.is_deprecated(composed.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&composed.attributes),

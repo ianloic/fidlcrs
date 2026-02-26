@@ -61,7 +61,7 @@ impl<'a> NamingContext<'a> {
     pub fn from_name(decl_name: &Name<'a>) -> Rc<Self> {
         match decl_name {
             Name::Sourced { span } => Self::create(*span),
-             // Assuming created from sourced name primarily
+            // Assuming created from sourced name primarily
             _ => panic!("cannot create naming context from non-sourced name"),
         }
     }

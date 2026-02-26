@@ -139,13 +139,7 @@ open Empty {};
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let res = lib.compile();
-        if let Ok(root) = &res {
-            println!("OK OUTPUT: {:#?}", root.protocol_declarations);
-        } else {
-            println!("ERR OUTPUT: {:#?}", lib.reporter().diagnostics());
-        }
-        assert!(res.is_err(), "expected compilation to fail");
+        assert!(lib.compile().is_err(), "expected compilation to fail");
     }
 
     #[test]
@@ -531,7 +525,7 @@ protocol MyProtocol {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        assert!(lib.compile().is_ok(), "compilation failed");
+        lib.compile().expect("compilation failed");
     }
 
     #[test]

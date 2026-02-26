@@ -151,11 +151,7 @@ type InStruct = struct {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let res = lib.compile();
-        if res.is_err() {
-            println!("ERR OUTPUT: {:#?}", lib.reporter().diagnostics());
-        }
-        res.expect("compilation failed");
+        lib.compile().expect("compilation failed");
     }
 
     #[test]
@@ -359,11 +355,7 @@ type Handles = resource struct {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let res = lib.compile();
-        if res.is_err() {
-            println!("ERR OUTPUT: {:#?}", lib.reporter().diagnostics());
-        }
-        res.expect("compilation failed");
+        lib.compile().expect("compilation failed");
     }
 
     #[test]

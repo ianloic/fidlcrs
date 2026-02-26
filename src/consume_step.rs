@@ -111,15 +111,23 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     };
                     if let Some(s) = res_s {
                         let mut ctx = if !method.has_request && !method.has_error {
-                             protocol_context.enter_event(method.name.element.span())
+                            protocol_context.enter_event(method.name.element.span())
                         } else {
-                             protocol_context.enter_response(method.name.element.span())
+                            protocol_context.enter_response(method.name.element.span())
                         };
 
                         if method.has_error {
-                            ctx.set_name_override(format!("{}_{}_Result", name, method.name.data()));
+                            ctx.set_name_override(format!(
+                                "{}_{}_Result",
+                                name,
+                                method.name.data()
+                            ));
                             ctx = ctx.enter_member("response");
-                            ctx.set_name_override(format!("{}_{}_Response", name, method.name.data()));
+                            ctx.set_name_override(format!(
+                                "{}_{}_Response",
+                                name,
+                                method.name.data()
+                            ));
                         }
 
                         let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());

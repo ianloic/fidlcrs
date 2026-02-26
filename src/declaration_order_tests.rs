@@ -34,7 +34,6 @@ mod tests {
     fn unmangle_decls(decls: &[String]) -> Vec<String> {
         let mut result = Vec::new();
         for decl in decls {
-            println!("DEBUG: decl = {}", decl);
             let name_without_lib = if let Some(idx) = decl.find('/') {
                 &decl[idx + 1..]
             } else {

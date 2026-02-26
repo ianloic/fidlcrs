@@ -1643,13 +1643,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             max_handles = u32::MAX;
         }
 
-        if full_name.contains("StructA") || full_name.contains("StructC") {
-            println!(
-                "DEBUG: {} -> depth={}, max_handles={}",
-                full_name, depth, max_handles
-            );
-        }
-
         let type_shape = TypeShapeV2 {
             inline_size: total_size,
             alignment,

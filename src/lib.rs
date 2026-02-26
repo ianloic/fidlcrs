@@ -34,6 +34,8 @@ pub mod test_library;
 pub mod typeshape_tests;
 #[cfg(test)]
 pub mod union_tests;
+#[cfg(test)]
+pub mod virtual_source_tests;
 
 pub mod availability_step;
 pub mod compile_step;

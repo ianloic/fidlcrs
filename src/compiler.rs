@@ -42,7 +42,7 @@ pub fn compute_method_ordinal(selector: &str) -> u64 {
     ordinal & 0x7fffffffffffffff
 }
 
-use crate::source_file::SourceFile;
+use crate::source_file::{SourceFile, VirtualSourceFile};
 
 #[derive(Clone)]
 pub enum RawDecl<'node, 'src> {
@@ -108,6 +108,7 @@ pub struct Compiler<'node, 'src> {
     pub dependency_declarations: BTreeMap<String, IndexMap<String, serde_json::Value>>,
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<String>,
+    pub generated_source_file: VirtualSourceFile,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -139,6 +140,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
             dependency_declarations: BTreeMap::new(),
             inline_names: HashMap::new(),
             compiled_decls: HashSet::new(),
+            generated_source_file: VirtualSourceFile::new("generated".to_string()),
+        }
+    }
+
+    pub fn generated_location(&self, text: &str) -> Location {
+        let span = self.generated_source_file.add_line(text);
+        let pos = span.position();
+        Location {
+            filename: span.source_file.filename().to_string(),
+            line: pos.line,
+            column: pos.column,
+            length: span.data.len(),
         }
     }
 
@@ -4202,23 +4215,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.get_location(&m.name.element)
                 };
 
-                let response_loc = if let Some(elem) = &m.response_param_element {
-                    self.get_location(elem)
-                } else if let Some(tok) = &m.error_token {
-                    self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
-                } else {
-                    self.get_location(&m.name.element)
-                };
-
-                let err_loc = if let Some(layout) = &m.error_payload {
-                    match layout {
-                        raw_ast::Layout::Struct(s) => self.get_location(&s.element),
-                        raw_ast::Layout::TypeConstructor(tc) => self.get_location(&tc.element),
-                        _ => self.get_location(&m.name.element), // fallback
-                    }
-                } else {
-                    self.get_location(&m.name.element) // Should use error token if payload missing?
-                };
+                let response_loc = self.generated_location("response");
+                let err_loc = self.generated_location("err");
+                let _framework_err_loc = self.generated_location("framework_err");
+                let _strict_loc = self.generated_location("strict");
 
                 let union_decl = crate::json_generator::UnionDeclaration {
                     name: full_synth_union.clone(),

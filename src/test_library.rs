@@ -110,7 +110,11 @@ resource_definition handle : uint32 {
             }
         }
 
-        compiler.compile(&asts, &self.source_files)
+        let res = compiler.compile(&asts, &self.source_files);
+        if res.is_err() {
+            println!("ERR OUTPUT: {:#?}", self.reporter.diagnostics());
+        }
+        res
     }
 
     pub fn parse(&'a self) -> Result<Vec<raw_ast::File<'a>>, String> {
@@ -178,7 +182,11 @@ mod tests {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let root = lib.compile().expect("compilation failed");
+        let res = lib.compile();
+        if res.is_err() {
+            println!("ERR OUTPUT: {:#?}", lib.reporter().diagnostics());
+        }
+        let root = res.expect("compilation failed");
         assert_eq!(root.name, "example");
         assert!(root.lookup_struct("example/Foo").is_some());
     }

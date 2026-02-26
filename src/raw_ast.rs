@@ -207,7 +207,8 @@ pub struct File<'a> {
     pub library_decl: Option<Box<LibraryDeclaration<'a>>>,
     pub const_decls: Vec<ConstDeclaration<'a>>,
     pub alias_decls: Vec<AliasDeclaration<'a>>,
-    pub type_decls: Vec<TypeDeclaration<'a>>, // New
+    pub using_decls: Vec<UsingDeclaration<'a>>, // New
+    pub type_decls: Vec<TypeDeclaration<'a>>,   // New
     pub struct_decls: Vec<StructDeclaration<'a>>,
     pub enum_decls: Vec<EnumDeclaration<'a>>,
     pub bits_decls: Vec<BitsDeclaration<'a>>,
@@ -215,7 +216,33 @@ pub struct File<'a> {
     pub table_decls: Vec<TableDeclaration<'a>>,
     pub protocol_decls: Vec<ProtocolDeclaration<'a>>,
     pub service_decls: Vec<ServiceDeclaration<'a>>,
+    pub resource_decls: Vec<ResourceDeclaration<'a>>,
     pub tokens: Vec<Token<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct UsingDeclaration<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub using_path: CompoundIdentifier<'a>,
+    pub maybe_alias: Option<Identifier<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ResourceProperty<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub type_ctor: TypeConstructor<'a>,
+    pub name: Identifier<'a>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ResourceDeclaration<'a> {
+    pub element: SourceElement<'a>,
+    pub attributes: Option<Box<AttributeList<'a>>>,
+    pub name: Identifier<'a>,
+    pub type_ctor: TypeConstructor<'a>,
+    pub properties: Vec<ResourceProperty<'a>>,
 }
 
 #[derive(Debug, Clone)]

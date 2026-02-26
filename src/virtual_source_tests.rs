@@ -1,16 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use crate::source_file::SourceFile;
-    use crate::source_span::SourceSpan;
+    use crate::source_file::VirtualSourceFile;
 
     #[test]
     fn add_line() {
-        let file = SourceFile::new("imaginary-test-file".to_string(), "one\ntwo\nthree".to_string());
+        let file = VirtualSourceFile::new("imaginary-test-file".to_string());
 
-        let data = file.data();
-        let one = SourceSpan::new(&data[0..3], &file);
-        let two = SourceSpan::new(&data[4..7], &file);
-        let three = SourceSpan::new(&data[8..13], &file);
+        let one = file.add_line("one");
+        let two = file.add_line("two");
+        let three = file.add_line("three");
 
         assert_eq!(one.data, "one");
         assert_eq!(two.data, "two");
@@ -19,10 +17,11 @@ mod tests {
 
     #[test]
     fn line_containing() {
-        let file = SourceFile::new("imaginary-test-file".to_string(), "one\ntwo\nthree".to_string());
+        let file = VirtualSourceFile::new("imaginary-test-file".to_string());
 
-        let data = file.data();
-        let two = SourceSpan::new(&data[4..7], &file);
+        file.add_line("one");
+        let two = file.add_line("two");
+        file.add_line("three");
 
         let (line_str, pos) = file.line_containing(two.data).expect("Must find line");
         

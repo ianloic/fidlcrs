@@ -1,10 +1,14 @@
+use std::cell::RefCell;
 use std::ops::Range;
+use crate::source_span::SourceSpan;
 
 #[derive(Debug)]
 pub struct SourceFile {
     filename: String,
     data: String,
     lines: Vec<Range<usize>>,
+    is_virtual: bool,
+    virtual_lines: RefCell<Vec<Box<str>>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +59,18 @@ impl SourceFile {
             filename,
             data,
             lines,
+            is_virtual: false,
+            virtual_lines: RefCell::new(Vec::new()),
+        }
+    }
+
+    pub fn new_virtual(filename: String) -> Self {
+        Self {
+            filename,
+            data: String::new(),
+            lines: Vec::new(),
+            is_virtual: true,
+            virtual_lines: RefCell::new(Vec::new()),
         }
     }
 
@@ -66,7 +82,27 @@ impl SourceFile {
         &self.data
     }
 
+    pub fn is_virtual(&self) -> bool {
+        self.is_virtual
+    }
+
+    pub fn add_line(&self, line: &str) -> SourceSpan<'_> {
+        assert!(self.is_virtual, "add_line called on non-virtual SourceFile");
+        assert!(!line.contains('\n'), "a single line should not contain a newline character");
+        let b: Box<str> = line.into();
+        let ptr: *const str = &*b;
+        self.virtual_lines.borrow_mut().push(b);
+        // SAFETY: The Box<str> is stored in the RefCell. The Vec itself may reallocate,
+        // but the Box ptr remains stable. The box is not dropped until SourceFile is dropped.
+        let data = unsafe { &*ptr };
+        SourceSpan::new(data, self)
+    }
+
     pub fn line_containing(&self, view: &str) -> Option<(&str, Position)> {
+        if self.is_virtual {
+            return self.line_containing_virtual(view);
+        }
+
         // Verify view is part of data
         let self_start = self.data.as_ptr() as usize;
         let view_start = view.as_ptr() as usize;
@@ -150,6 +186,41 @@ impl SourceFile {
             },
         ))
     }
+
+    fn line_containing_virtual(&self, view: &str) -> Option<(&str, Position)> {
+        let view_ptr = view.as_ptr() as usize;
+        let virtual_lines = self.virtual_lines.borrow();
+        for (i, line) in virtual_lines.iter().enumerate() {
+            let line_ptr = line.as_ptr() as usize;
+            let line_end = line_ptr + line.len();
+            if view_ptr < line_ptr || view_ptr + view.len() > line_end {
+                continue;
+            }
+            let column = view_ptr - line_ptr + 1;
+            return Some((
+                // SAFETY: stable pointer in Box<str>.
+                unsafe { &*(line.as_ref() as *const str) },
+                Position {
+                    line: i + 1,
+                    column,
+                },
+            ));
+        }
+        None
+    }
+}
+
+#[derive(Debug)]
+pub struct VirtualSourceFile(pub SourceFile);
+
+impl std::ops::Deref for VirtualSourceFile {
+    type Target = SourceFile;
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl VirtualSourceFile {
+    pub fn new(filename: String) -> Self { Self(SourceFile::new_virtual(filename)) }
+    pub fn add_line(&self, line: &str) -> SourceSpan<'_> { self.0.add_line(line) }
 }
 
 #[cfg(test)]

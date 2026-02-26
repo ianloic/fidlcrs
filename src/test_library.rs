@@ -4,12 +4,14 @@ use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::raw_ast;
 use crate::reporter::Reporter;
-use crate::source_file::SourceFile;
+use crate::source_file::{SourceFile, VirtualSourceFile};
 
 pub struct TestLibrary<'a> {
     reporter: Reporter<'a>,
     source_files: Vec<&'a SourceFile>,
     shared_sources: Vec<Box<SourceFile>>,
+    #[allow(dead_code)]
+    generated_source_file: VirtualSourceFile,
 }
 
 impl<'a> Default for TestLibrary<'a> {
@@ -24,6 +26,7 @@ impl<'a> TestLibrary<'a> {
             reporter: Reporter::new(),
             source_files: Vec::new(),
             shared_sources: Vec::new(),
+            generated_source_file: VirtualSourceFile::new("generated".to_string()),
         }
     }
 

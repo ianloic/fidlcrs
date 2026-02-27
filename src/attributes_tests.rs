@@ -1,0 +1,1316 @@
+#[cfg(test)]
+mod tests {
+    use crate::source_file::SourceFile;
+    use crate::test_library::TestLibrary;
+    use std::fs;
+
+    fn get_file_content(path: &str) -> String {
+        let full_path = format!("fidlc/tests/fidl/{}", path);
+        fs::read_to_string(&full_path)
+            .unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
+    }
+
+    #[test]
+    fn good_placement_of_attributes() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library exampleusing;
+
+@on_dep_struct
+type Empty = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_official_attributes() {
+        let mut lib = TestLibrary::new(); // TODO
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_no_attribute_on_using_not_event_doc() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0045-a.test.fidl".to_string(),
+            get_file_content("bad/fi-0045-a.test.fidl"),
+        );
+        lib.add_source(&source);
+        let source = SourceFile::new(
+            "bad/fi-0045-b.test.fidl".to_string(),
+            get_file_content("bad/fi-0045-b.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_no_two_same_attribute() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_no_two_same_attribute_canonical() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0123.test.fidl".to_string(),
+            get_file_content("bad/fi-0123.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_doc_attribute() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "good/fi-0028-b.test.fidl".to_string(),
+            get_file_content("good/fi-0028-b.test.fidl"),
+        );
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_no_two_same_doc_attribute() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_no_two_same_attribute_on_library() {
+        let mut lib = TestLibrary::new();
+        let source_0 = SourceFile::new(
+            "first.fidl".to_string(),
+            r#"
+@dup("first")
+library fidl.test.dupattributes;
+"#.to_string(),
+        );
+        lib.add_source(&source_0);
+        let source_1 = SourceFile::new(
+            "second.fidl".to_string(),
+            r#"
+@dup("second")
+library fidl.test.dupattributes;
+"#.to_string(),
+        );
+        lib.add_source(&source_1);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn warn_on_close_to_official_attribute() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0145.test.fidl".to_string(),
+            get_file_content("bad/fi-0145.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn good_not_too_close_unofficial_attribute() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "good/fi-0145.test.fidl".to_string(),
+            get_file_content("good/fi-0145.test.fidl"),
+        );
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn warn_on_close_attribute_with_other_errors() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+@available(platform="foo", added=1)
+library fidl.test;
+
+@available(added=1, removed=2)
+type Foo = struct {};
+
+// This actually gets added at 1 because we misspelled "available".
+@availabe(added=2)
+type Foo = resource struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_warnings_as_errors() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_unknown_argument() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0129.test.fidl".to_string(),
+            get_file_content("bad/fi-0129.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_empty_transport() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0128.test.fidl".to_string(),
+            get_file_content("bad/fi-0128.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_unrecognized_transport() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0142.test.fidl".to_string(),
+            get_file_content("bad/fi-0142.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_channel_transport() {
+        let mut lib = TestLibrary::new(); // TODO
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_syscall_transport() {
+        let mut lib = TestLibrary::new(); // TODO
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_transports() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_unknown_invalid_placement_on_union() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_unknown_invalid_placement_on_union_member() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_unknown_invalid_placement_on_bits_member() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_unknown_invalid_on_strict_enum_member() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0071.test.fidl".to_string(),
+            get_file_content("bad/fi-0071.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_incorrect_placement_layout() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_single_deprecated_attribute() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0121.test.fidl".to_string(),
+            get_file_content("bad/fi-0121.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_deprecated_attributes() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_constraint_only_three_members_on_struct() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_constraint_only_three_members_on_method() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_constraint_only_three_members_on_protocol() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_attribute_value() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0132.test.fidl".to_string(),
+            get_file_content("bad/fi-0132.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_selector_incorrect_placement() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0120-a.test.fidl".to_string(),
+            get_file_content("bad/fi-0120-a.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_parameter_attribute_incorrect_placement() {
+        let mut lib = TestLibrary::new(); // TODO
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_attribute_on_top_level_layout() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0023.noformat.test.fidl".to_string(),
+            get_file_content("bad/fi-0023.noformat.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_layout_attribute_placements() {
+        let mut lib = TestLibrary::new(); // TODO
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_no_arguments_empty_parens() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0014.noformat.test.fidl".to_string(),
+            get_file_content("bad/fi-0014.noformat.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn good_multiple_arguments() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(bar="abc", baz="def")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_with_no_names() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0015.noformat.test.fidl".to_string(),
+            get_file_content("bad/fi-0015.noformat.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_some_names_unnamed_string_arg_first() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo("abc", bar="def")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_some_names_unnamed_string_arg_second() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(bar="abc", "def")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_some_names_unnamed_identifier_arg_first() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo("abc", bar=def)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_some_names_unnamed_identifier_arg_second() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(bar="abc", def)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_duplicate_names() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0130.test.fidl".to_string(),
+            get_file_content("bad/fi-0130.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_arguments_duplicate_canonical_names() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0131.test.fidl".to_string(),
+            get_file_content("bad/fi-0131.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_single_argument_is_not_named() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo("bar")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_single_argument_is_named_without_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(a="bar")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_single_schema_argument() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo("bar")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn good_single_schema_argument_with_inferred_name() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo("bar")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_single_schema_argument_respect_optionality() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo("bar")
+type MyStruct = struct {};
+
+@foo
+type MyOtherStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_single_schema_argument_is_named() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0125.test.fidl".to_string(),
+            get_file_content("bad/fi-0125.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_single_schema_argument_is_not_named() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0126.test.fidl".to_string(),
+            get_file_content("bad/fi-0126.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_multiple_schema_arguments_required_only() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@multiple_args(first="foo", second="bar")
+type MyStruct = struct {};
+
+// Order independent.
+@multiple_args(second="bar", first="foo")
+type MyOtherStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_multiple_schema_arguments_optional_only() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@multiple_args(first="foo", second="bar")
+type MyStruct = struct {};
+
+// Order independent.
+@multiple_args(second="bar", first="foo")
+type MyStruct2 = struct {};
+
+// Only 1 argument present.
+@multiple_args(first="foo")
+type MyStruct3 = struct {};
+@multiple_args(second="bar")
+type MyStruct4 = struct {};
+
+// No arguments at all.
+@multiple_args
+type MyStruct5 = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_multiple_schema_arguments_required_and_optional() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@multiple_args(first="foo", second="bar")
+type MyStruct = struct {};
+
+// Order independent.
+@multiple_args(second="bar", first="foo")
+type MyStruct2 = struct {};
+
+// Only 1 argument present.
+@multiple_args(first="foo")
+type MyStruct3 = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_multiple_schema_arguments_required_missing() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0127.test.fidl".to_string(),
+            get_file_content("bad/fi-0127.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn good_literal_types_without_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr(foo="abc", bar=true, baz=false)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_literal_numeric_types_without_schema() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0124.test.fidl".to_string(),
+            get_file_content("bad/fi-0124.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn good_referenced_types_without_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+const foo string:3 = "abc";
+const bar bool = true;
+const baz bool = false;
+
+@attr(foo=foo, bar=bar, baz=baz)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_referenced_numeric_types_without_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+const foo int8 = -1;
+const bar float32 = -2.3;
+
+@attr(foo=foo, bar=bar)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn good_literal_types_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@attr(
+        string="foo",
+        bool=true,
+        int8=-1,
+        int16=-2,
+        int32=-3,
+        int64=-4,
+        uint8=1,
+        uint16=2,
+        uint32=3,
+        uint64=4,
+        usize64=5,
+        uintptr64=6,
+        uchar=7,
+        float32=1.2,
+        float64=-3.4)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_literal_string_type_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr(true)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_literal_bool_type_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr("foo")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_literal_numeric_type_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr(-1)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_literal_with_real_schema() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0065-c.test.fidl".to_string(),
+            get_file_content("bad/fi-0065-c.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_referenced_types_with_schema() {
+        let mut lib = TestLibrary::new(); // TODO
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_referenced_string_type_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+const foo bool = true;
+
+@attr(foo)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_referenced_bool_type_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+const foo string:3 = "foo";
+
+@attr(foo)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_invalid_referenced_numeric_type_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+const foo uint16 = 259;
+
+@attr(foo)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_compile_early_attribute_literal_argument() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr(1)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_compile_early_attribute_referenced_argument() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr(BAD)
+type MyStruct = struct {};
+
+const BAD uint8 = 1;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn good_anonymous_argument_gets_named_value() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr("abc")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn good_single_named_argument_keeps_name() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@attr(foo="abc")
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_references_nonexistent_const_without_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(nonexistent)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_references_nonexistent_const_with_single_arg_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(nonexistent)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_references_nonexistent_const_with_multiple_arg_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(nonexistent)
+type MyStruct = struct {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_references_invalid_const_without_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(BAD)
+type MyStruct = struct {};
+
+const BAD bool = "not a bool";
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_references_invalid_const_with_single_arg_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(BAD)
+type MyStruct = struct {};
+
+const BAD bool = "not a bool";
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_references_invalid_const_with_multiple_arg_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(BAD)
+type MyStruct = struct {};
+
+const BAD bool = "not a bool";
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_self_reference_without_schema_bool() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(BAR)
+const BAR bool = true;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_self_reference_without_schema_string() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(BAR)
+const BAR string = "bar";
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_self_reference_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(BAR)
+const BAR bool = true;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_mutual_reference_without_schema_bool() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(SECOND)
+const FIRST bool = true;
+@foo(FIRST)
+const SECOND bool = false;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_mutual_reference_without_schema_string() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(SECOND)
+const FIRST string = "first";
+@foo(FIRST)
+const SECOND string = "second";
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_mutual_reference_with_schema() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@foo(SECOND)
+const FIRST bool = true;
+@foo(FIRST)
+const SECOND bool = false;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_library_references_nonexistent_const() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+@foo(nonexistent)
+library example;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_library_references_const() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+@foo(BAR)
+library example;
+
+const BAR bool = true;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_library_references_external_const() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library dependency;
+
+const BAR bool = true;
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_discoverable_implicit_name() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@discoverable
+protocol Foo {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    fn good_discoverable_explicit_name() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@discoverable(name="%1")
+protocol Foo {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.compile().expect("compilation failed");
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_discoverable_invalid_name() {
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@discoverable(name="%1")
+protocol Foo {};
+"#.to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_discoverable_invalid_name_errcat() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0135.test.fidl".to_string(),
+            get_file_content("bad/fi-0135.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_discoverable_location_errcat() {
+        let mut lib = TestLibrary::new();
+        let source = SourceFile::new(
+            "bad/fi-0210.test.fidl".to_string(),
+            get_file_content("bad/fi-0210.test.fidl"),
+        );
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
+    }
+
+    #[test]
+    fn good_result_attribute() {
+        let mut lib = TestLibrary::new(); // TODO
+        lib.compile().expect("compilation failed");
+    }
+
+}

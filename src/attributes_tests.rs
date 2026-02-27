@@ -19,7 +19,8 @@ library exampleusing;
 
 @on_dep_struct
 type Empty = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -95,7 +96,8 @@ type Empty = struct {};
             r#"
 @dup("first")
 library fidl.test.dupattributes;
-"#.to_string(),
+"#
+            .to_string(),
         );
         lib.add_source(&source_0);
         let source_1 = SourceFile::new(
@@ -103,7 +105,8 @@ library fidl.test.dupattributes;
             r#"
 @dup("second")
 library fidl.test.dupattributes;
-"#.to_string(),
+"#
+            .to_string(),
         );
         lib.add_source(&source_1);
         assert!(lib.compile().is_err());
@@ -148,7 +151,8 @@ type Foo = struct {};
 // This actually gets added at 1 because we misspelled "available".
 @availabe(added=2)
 type Foo = resource struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -368,7 +372,8 @@ library example;
 
 @foo(bar="abc", baz="def")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -397,7 +402,8 @@ library example;
 
 @foo("abc", bar="def")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -414,7 +420,8 @@ library example;
 
 @foo(bar="abc", "def")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -431,7 +438,8 @@ library example;
 
 @foo("abc", bar=def)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -448,7 +456,8 @@ library example;
 
 @foo(bar="abc", def)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -488,7 +497,8 @@ library example;
 
 @foo("bar")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -504,7 +514,8 @@ library example;
 
 @foo(a="bar")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -520,7 +531,8 @@ library example;
 
 @foo("bar")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -537,7 +549,8 @@ library example;
 
 @foo("bar")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -556,7 +569,8 @@ type MyStruct = struct {};
 
 @foo
 type MyOtherStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -600,7 +614,8 @@ type MyStruct = struct {};
 // Order independent.
 @multiple_args(second="bar", first="foo")
 type MyOtherStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -630,7 +645,8 @@ type MyStruct4 = struct {};
 // No arguments at all.
 @multiple_args
 type MyStruct5 = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -654,7 +670,8 @@ type MyStruct2 = struct {};
 // Only 1 argument present.
 @multiple_args(first="foo")
 type MyStruct3 = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -683,7 +700,8 @@ library example;
 
 @attr(foo="abc", bar=true, baz=false)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -716,7 +734,8 @@ const baz bool = false;
 
 @attr(foo=foo, bar=bar, baz=baz)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -736,7 +755,8 @@ const bar float32 = -2.3;
 
 @attr(foo=foo, bar=bar)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -768,7 +788,8 @@ library fidl.test;
         float32=1.2,
         float64=-3.4)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -785,7 +806,8 @@ library example;
 
 @attr(true)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -802,7 +824,8 @@ library example;
 
 @attr("foo")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -819,7 +842,8 @@ library example;
 
 @attr(-1)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -856,7 +880,8 @@ const foo bool = true;
 
 @attr(foo)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -875,7 +900,8 @@ const foo string:3 = "foo";
 
 @attr(foo)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -894,7 +920,8 @@ const foo uint16 = 259;
 
 @attr(foo)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -910,7 +937,8 @@ library example;
 
 @attr(1)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -929,7 +957,8 @@ library example;
 type MyStruct = struct {};
 
 const BAD uint8 = 1;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -946,7 +975,8 @@ library example;
 
 @attr("abc")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -963,7 +993,8 @@ library example;
 
 @attr(foo="abc")
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -980,7 +1011,8 @@ library example;
 
 @foo(nonexistent)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -997,7 +1029,8 @@ library example;
 
 @foo(nonexistent)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1014,7 +1047,8 @@ library example;
 
 @foo(nonexistent)
 type MyStruct = struct {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1033,7 +1067,8 @@ library example;
 type MyStruct = struct {};
 
 const BAD bool = "not a bool";
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1052,7 +1087,8 @@ library example;
 type MyStruct = struct {};
 
 const BAD bool = "not a bool";
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1071,7 +1107,8 @@ library example;
 type MyStruct = struct {};
 
 const BAD bool = "not a bool";
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1088,7 +1125,8 @@ library example;
 
 @foo(BAR)
 const BAR bool = true;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1105,7 +1143,8 @@ library example;
 
 @foo(BAR)
 const BAR string = "bar";
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1122,7 +1161,8 @@ library example;
 
 @foo(BAR)
 const BAR bool = true;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1141,7 +1181,8 @@ library example;
 const FIRST bool = true;
 @foo(FIRST)
 const SECOND bool = false;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1160,7 +1201,8 @@ library example;
 const FIRST string = "first";
 @foo(FIRST)
 const SECOND string = "second";
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1179,7 +1221,8 @@ library example;
 const FIRST bool = true;
 @foo(FIRST)
 const SECOND bool = false;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1194,7 +1237,8 @@ const SECOND bool = false;
             r#"
 @foo(nonexistent)
 library example;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1211,7 +1255,8 @@ library example;
 library example;
 
 const BAR bool = true;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1227,7 +1272,8 @@ const BAR bool = true;
 library dependency;
 
 const BAR bool = true;
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1243,7 +1289,8 @@ library example;
 
 @discoverable
 protocol Foo {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1259,7 +1306,8 @@ library example;
 
 @discoverable(name="%1")
 protocol Foo {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1276,7 +1324,8 @@ library example;
 
 @discoverable(name="%1")
 protocol Foo {};
-"#.to_string(),
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -1312,5 +1361,4 @@ protocol Foo {};
         let mut lib = TestLibrary::new(); // TODO
         lib.compile().expect("compilation failed");
     }
-
 }

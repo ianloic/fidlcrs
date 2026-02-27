@@ -37,6 +37,8 @@ pub mod structs_tests;
 #[cfg(test)]
 pub mod test_library;
 #[cfg(test)]
+pub mod types_tests;
+#[cfg(test)]
 pub mod typeshape_tests;
 #[cfg(test)]
 pub mod union_tests;

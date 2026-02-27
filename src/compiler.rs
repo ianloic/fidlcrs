@@ -197,7 +197,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-
         self.patch_member_shapes();
 
         // Sort declarations by name to match fidlc output order (alphabetical)
@@ -399,7 +398,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let inlined = shape.inline_size <= 4;
             let align = if inlined { 4 } else { 8 };
             let padding = (align - (shape.inline_size % align)) % align;
-            let added_ool = if inlined { 0 } else { shape.inline_size.saturating_add(padding) };
+            let added_ool = if inlined {
+                0
+            } else {
+                shape.inline_size.saturating_add(padding)
+            };
             TypeShapeV2 {
                 inline_size: 8,
                 alignment: 8,
@@ -423,7 +426,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             for member in &mut decl.members {
                 Self::update_type_shape(&mut member.type_, &shapes, &struct_names);
                 let type_shape = &member.type_.type_shape_v2;
-                
+
                 let align = type_shape.alignment;
                 let size = type_shape.inline_size;
 
@@ -444,7 +447,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 offset += padding_before;
                 member.field_shape_v2.offset = offset;
                 offset += size;
-                
+
                 has_flex |= type_shape.has_flexible_envelope;
             }
 
@@ -461,9 +464,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     total_size
                 };
-                let current_end = decl.members[i].field_shape_v2.offset + decl.members[i].type_.type_shape_v2.inline_size;
+                let current_end = decl.members[i].field_shape_v2.offset
+                    + decl.members[i].type_.type_shape_v2.inline_size;
                 decl.members[i].field_shape_v2.padding = next_offset - current_end;
-                has_padding |= decl.members[i].field_shape_v2.padding > 0 || decl.members[i].type_.type_shape_v2.has_padding;
+                has_padding |= decl.members[i].field_shape_v2.padding > 0
+                    || decl.members[i].type_.type_shape_v2.has_padding;
             }
 
             decl.type_shape_v2.inline_size = total_size;
@@ -493,7 +498,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape_v2.max_out_of_line = max_ool;
                 decl.type_shape_v2.max_handles = max_handles;
                 decl.type_shape_v2.has_padding = has_padding;
-                let is_flexible = decl.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
+                let is_flexible =
+                    decl.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
                 // Also check if any member has the flexible trait
                 decl.type_shape_v2.has_flexible_envelope = has_flex || is_flexible;
             }
@@ -516,7 +522,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             if decl.type_shape_v2.depth != u32::MAX {
-                decl.type_shape_v2.max_out_of_line = max_ool.saturating_add(max_ordinal.saturating_mul(8));
+                decl.type_shape_v2.max_out_of_line =
+                    max_ool.saturating_add(max_ordinal.saturating_mul(8));
                 decl.type_shape_v2.max_handles = max_handles;
                 decl.type_shape_v2.has_padding = has_padding;
                 decl.type_shape_v2.has_flexible_envelope = has_flex || true;
@@ -1708,7 +1715,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let align = type_shape.alignment;
             let size = type_shape.inline_size;
-
 
             if align > alignment {
                 alignment = align;

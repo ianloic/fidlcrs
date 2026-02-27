@@ -1,6 +1,6 @@
+use crate::source_span::SourceSpan;
 use std::cell::RefCell;
 use std::ops::Range;
-use crate::source_span::SourceSpan;
 
 #[derive(Debug)]
 pub struct SourceFile {
@@ -88,7 +88,10 @@ impl SourceFile {
 
     pub fn add_line(&self, line: &str) -> SourceSpan<'_> {
         assert!(self.is_virtual, "add_line called on non-virtual SourceFile");
-        assert!(!line.contains('\n'), "a single line should not contain a newline character");
+        assert!(
+            !line.contains('\n'),
+            "a single line should not contain a newline character"
+        );
         let b: Box<str> = line.into();
         let ptr: *const str = &*b;
         self.virtual_lines.borrow_mut().push(b);
@@ -215,12 +218,18 @@ pub struct VirtualSourceFile(pub SourceFile);
 
 impl std::ops::Deref for VirtualSourceFile {
     type Target = SourceFile;
-    fn deref(&self) -> &Self::Target { &self.0 }
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl VirtualSourceFile {
-    pub fn new(filename: String) -> Self { Self(SourceFile::new_virtual(filename)) }
-    pub fn add_line(&self, line: &str) -> SourceSpan<'_> { self.0.add_line(line) }
+    pub fn new(filename: String) -> Self {
+        Self(SourceFile::new_virtual(filename))
+    }
+    pub fn add_line(&self, line: &str) -> SourceSpan<'_> {
+        self.0.add_line(line)
+    }
 }
 
 #[cfg(test)]

@@ -24,7 +24,7 @@ mod tests {
         file.add_line("three");
 
         let (line_str, pos) = file.line_containing(two.data).expect("Must find line");
-        
+
         assert_eq!(line_str, "two");
         assert_eq!(pos.line, 2);
         assert_eq!(pos.column, 1);

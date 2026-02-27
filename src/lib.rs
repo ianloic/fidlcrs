@@ -27,6 +27,8 @@ pub mod declaration_order_tests;
 #[cfg(test)]
 pub mod enums_tests;
 #[cfg(test)]
+pub mod method_tests;
+#[cfg(test)]
 pub mod parsing_tests;
 #[cfg(test)]
 pub mod protocol_tests;

@@ -13,6 +13,8 @@ pub mod token;
 pub mod versioning_types;
 
 #[cfg(test)]
+pub mod alias_tests;
+#[cfg(test)]
 pub mod array_tests;
 #[cfg(test)]
 pub mod bits_tests;

@@ -78,7 +78,6 @@ define_diagnostics! {
     ErrorDef ErrUnexpectedToken = 7, r#"found unexpected token"# ;
     ErrorDef ErrUnexpectedTokenOfKind = 8, r#"unexpected token {}, was expecting {}"# ;
     ErrorDef ErrUnexpectedIdentifier = 9, r#"unexpected identifier {}, was expecting {}"# ;
-    ErrorDef ErrInvalidIdentifier = 10, r#"invalid identifier '{}'"# ;
     ErrorDef ErrInvalidLibraryNameComponent = 11, r#"Invalid library name component {}"# ;
     ErrorDef ErrInvalidLayoutClass = 12, r#"layouts must be of the class: bits, enum, struct, table, or union."# ;
     ErrorDef ErrInvalidWrappedType = 13, r#"wrapped type for bits/enum must be an identifier"# ;
@@ -168,10 +167,6 @@ define_diagnostics! {
     RetiredDef ErrDuplicateUnionMemberName = 98 ;
     RetiredDef ErrDuplicateUnionMemberNameCanonical = 99 ;
     RetiredDef ErrNonDenseOrdinal = 100 ;
-    ErrorDef ErrCouldNotResolveSizeBound = 101, r#"unable to resolve size bound"# ;
-    ErrorDef ErrCouldNotResolveMember = 102, r#"unable to resolve {} member"# ;
-    ErrorDef ErrCouldNotResolveMemberDefault = 103, r#"unable to resolve {} default value"# ;
-    ErrorDef ErrCouldNotResolveAttributeArg = 104, r#"unable to resolve attribute argument"# ;
     RetiredDef ErrDuplicateMemberName = 105 ;
     RetiredDef ErrDuplicateMemberNameCanonical = 106 ;
     ErrorDef ErrDuplicateMemberValue = 107, r#"value of {} member '{}' conflicts with previously declared member '{}' at {}"# ;
@@ -289,28 +284,4 @@ define_diagnostics! {
     ErrorDef ErrResourceForbiddenHere = 221, r#"'resource' appears in declaration annotated '@no_resource'"# ;
     ErrorDef ErrExperimentalNoResource = 222, r#"'@no_resource' is an experimental attribute that must be enabled with --experimental no_resource_attribute"# ;
     ErrorDef ErrNoResourceForbidsCompose = 223, r#"'{}' has the '@no_resource` attribute, and thus cannot compose '{}' unless it is also has the '@no_resource' attribute"# ;
-    ErrorDef ErrNullableArray = 10062, "arrays cannot be nullable" ;
-    ErrorDef ErrArraySizeZero = 10161, "arrays cannot have size 0" ;
-    ErrorDef ErrArrayConstraint = 1001, "arrays cannot have constraints" ;
-    ErrorDef ErrExpectedValue = 1003, "expected value" ;
-    ErrorDef ErrBitsMemberDuplicateName = 1006, "bits member name duplicated" ;
-    ErrorDef ErrBitsMemberDuplicateValue = 1007, "bits member value duplicated" ;
-    ErrorDef ErrBitsTypeMustBeUnsigned = 1008, "bits type must be an unsigned integer" ;
-    ErrorDef ErrCannotBeNullable = 1009, "value cannot be nullable" ;
-    ErrorDef ErrCannotHaveConstraints = 1010, "value cannot have constraints" ;
-    ErrorDef ErrStrictBitsMustHaveMembers = 1011, "strict bits must have at least one member" ;
-    ErrorDef ErrMemberOverflow = 1012, "member value overflows its underlying type" ;
-    ErrorDef ErrInvalidMemberValue = 1013, "invalid or unparseable member value" ;
-    ErrorDef ErrDuplicateMethodName = 1015, "duplicate method name" ;
-    ErrorDef ErrFlexibleProtocolCannotBeEmpty = 1016, "flexible protocol cannot be empty" ;
-    ErrorDef ErrStrictProtocolCannotBeEmpty = 1017, "strict protocol cannot be empty" ;
-    ErrorDef ErrEmptyProtocolMember = 1018, "protocol member cannot be empty" ;
-    ErrorDef ErrInvalidCompose = 1019, "invalid compose" ;
-    ErrorDef ErrMethodEmptyPayload = 1020, "method payload cannot be empty struct" ;
-    ErrorDef ErrNoStrictOnCompose = 1021, "compose cannot be strict" ;
-    ErrorDef ErrOneWayError = 1022, "one-way method cannot have error" ;
-    ErrorDef ErrRequestMustBeProtocol = 1023, "request type must be a protocol" ;
-    ErrorDef ErrRequestMustBeParameterized = 1024, "request type must be parameterized" ;
-    ErrorDef ErrDisallowedRequestType = 1025, "request type must be struct, table, or union" ;
-    ErrorDef ErrDisallowedResponseType = 1026, "response type must be struct, table, or union" ;
 }

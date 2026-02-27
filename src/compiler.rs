@@ -1144,12 +1144,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
         if !is_valid_type {
             self.reporter.fail(
-                crate::diagnostics::Error::ErrBitsTypeMustBeUnsigned,
+                crate::diagnostics::Error::ErrBitsTypeMustBeUnsignedIntegralPrimitive,
                 decl.name.as_ref().map_or_else(
                     || decl.element.start_token.span.clone(),
                     |id| id.element.span(),
                 ),
-                &[],
+                &[&subtype_name],
             );
         }
 
@@ -1160,7 +1160,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if strict && decl.members.is_empty() {
             self.reporter.fail(
-                crate::diagnostics::Error::ErrStrictBitsMustHaveMembers,
+                crate::diagnostics::Error::ErrMustHaveOneMember,
                 decl.name.as_ref().map_or_else(
                     || decl.element.start_token.span.clone(),
                     |id| id.element.span(),
@@ -1180,9 +1180,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let name_str = member.name.data().to_string();
             if !member_names.insert(name_str.clone()) {
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrBitsMemberDuplicateName,
+                    crate::diagnostics::Error::ErrNameCollision,
                     member.name.element.span(),
-                    &[],
+                    &[&"member", &name_str, &"member", &name_str],
                 );
             }
 
@@ -1216,9 +1216,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 && bits < 64
                             {
                                 self.reporter.fail(
-                                    crate::diagnostics::Error::ErrMemberOverflow,
+                                    crate::diagnostics::Error::ErrConstantOverflowsType,
                                     member.value.element().span(),
-                                    &[],
+                                    &[&val_str, &subtype_name],
                                 );
                                 valid_value = false;
                             }
@@ -1226,9 +1226,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if valid_value {
                                 if (mask & val) != 0 {
                                     self.reporter.fail(
-                                        crate::diagnostics::Error::ErrBitsMemberDuplicateValue,
+                                        crate::diagnostics::Error::ErrDuplicateMemberValue,
                                         member.value.element().span(),
-                                        &[],
+                                        &[&"bits", &name_str, &"unknown", &name_str],
                                     );
                                 } else {
                                     mask |= val;
@@ -1238,21 +1238,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             let is_negative = val_str.starts_with('-');
                             if is_negative && subtype_name.starts_with("uint") {
                                 self.reporter.fail(
-                                    crate::diagnostics::Error::ErrInvalidMemberValue, // or overflow
+                                    crate::diagnostics::Error::ErrCannotResolveConstantValue,
                                     member.value.element().span(),
                                     &[],
                                 );
                             } else if !val_str.chars().all(|c| c.is_ascii_digit()) {
                                 self.reporter.fail(
-                                    crate::diagnostics::Error::ErrInvalidMemberValue,
+                                    crate::diagnostics::Error::ErrCannotResolveConstantValue,
                                     member.value.element().span(),
                                     &[],
                                 );
                             } else {
                                 self.reporter.fail(
-                                    crate::diagnostics::Error::ErrMemberOverflow,
+                                    crate::diagnostics::Error::ErrConstantOverflowsType,
                                     member.value.element().span(),
-                                    &[],
+                                    &[&val_str, &subtype_name],
                                 );
                             }
                         }
@@ -1271,9 +1271,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             );
                         } else if (mask & val) != 0 {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrBitsMemberDuplicateValue,
+                                crate::diagnostics::Error::ErrDuplicateMemberValue,
                                 member.value.element().span(),
-                                &[],
+                                &[&"bits", &name_str, &"unknown", &name_str],
                             );
                         } else {
                             mask |= val;
@@ -1282,7 +1282,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         // Temporary: right now all identifiers except MAX evaluate to None
                         // which throws Error::ErrInvalidMemberValue
                         self.reporter.fail(
-                            crate::diagnostics::Error::ErrInvalidMemberValue,
+                            crate::diagnostics::Error::ErrCannotResolveConstantValue,
                             member.value.element().span(),
                             &[],
                         );
@@ -1290,7 +1290,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 _ => {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidMemberValue,
+                        crate::diagnostics::Error::ErrCannotResolveConstantValue,
                         member.value.element().span(),
                         &[],
                     );
@@ -2273,9 +2273,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check for optional array: array<T, N>:optional is invalid
                 if nullable {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrNullableArray,
+                        crate::diagnostics::Error::ErrCannotBeOptional,
                         type_ctor.element.start_token.span.clone(),
-                        &[],
+                        &[&"array"],
                     );
                 }
 
@@ -2287,9 +2287,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if let Ok(val) = lit.literal.value.parse::<u32>() {
                                 if val == 0 {
                                     self.reporter.fail(
-                                        crate::diagnostics::Error::ErrArraySizeZero,
+                                        crate::diagnostics::Error::ErrMustHaveNonZeroSize,
                                         count_param.element.start_token.span.clone(),
-                                        &[],
+                                        &[&"array"],
                                     );
                                 }
                                 count = val;
@@ -2308,9 +2308,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check constraints
                 if !type_ctor.constraints.is_empty() {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrArrayConstraint,
+                        crate::diagnostics::Error::ErrTooManyConstraints,
                         type_ctor.element.start_token.span.clone(),
-                        &[],
+                        &[&"array", &0_usize, &type_ctor.constraints.len()],
                     );
                 }
 
@@ -2415,9 +2415,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 } else {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrRequestMustBeParameterized,
+                        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters,
                         type_ctor.element.span(),
-                        &[],
+                        &[&"client_end/server_end", &1_usize, &0_usize],
                     );
                 }
 
@@ -2427,9 +2427,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             // Ok
                         } else {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrRequestMustBeProtocol,
+                                crate::diagnostics::Error::ErrMustBeAProtocol,
                                 type_ctor.element.span(),
-                                &[],
+                                &[&protocol],
                             );
                         }
                     } else if self.compiled_decls.contains(&protocol) {
@@ -2439,16 +2439,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .any(|p| p.name == protocol)
                         {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrRequestMustBeProtocol,
+                                crate::diagnostics::Error::ErrMustBeAProtocol,
                                 type_ctor.element.span(),
-                                &[],
+                                &[&protocol],
                             );
                         }
                     } else {
                         self.reporter.fail(
-                            crate::diagnostics::Error::ErrRequestMustBeProtocol,
+                            crate::diagnostics::Error::ErrMustBeAProtocol,
                             type_ctor.element.span(),
-                            &[],
+                            &[&protocol],
                         );
                     }
                 }
@@ -2629,9 +2629,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if is_bits {
                         if nullable {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrCannotBeNullable,
+                                crate::diagnostics::Error::ErrCannotBeOptional,
                                 type_ctor.element.start_token.span.clone(),
-                                &[],
+                                &[&name],
                             );
                         }
                         if type_ctor.nullable
@@ -2655,9 +2655,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 });
                                 if has_non_optional {
                                     self.reporter.fail(
-                                        crate::diagnostics::Error::ErrCannotHaveConstraints,
+                                        crate::diagnostics::Error::ErrTooManyConstraints,
                                         type_ctor.element.start_token.span.clone(),
-                                        &[],
+                                        &[&name, &0_usize, &type_ctor.constraints.len()],
                                     );
                                 }
                             }
@@ -3706,14 +3706,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .any(|m| m.subkind == crate::token::TokenSubkind::Flexible);
         if is_strict && decl.methods.is_empty() {
             self.reporter.fail(
-                crate::diagnostics::Error::ErrStrictProtocolCannotBeEmpty,
+                crate::diagnostics::Error::ErrMustHaveOneMember,
                 decl.name.element.span(),
                 &[],
             );
         }
         if is_flexible && decl.methods.is_empty() {
             self.reporter.fail(
-                crate::diagnostics::Error::ErrFlexibleProtocolCannotBeEmpty,
+                crate::diagnostics::Error::ErrMustHaveOneMember,
                 decl.name.element.span(),
                 &[],
             );
@@ -3724,14 +3724,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for m in &decl.methods {
             if !method_names.insert(m.name.data()) {
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrDuplicateMethodName,
+                    crate::diagnostics::Error::ErrNameCollision,
                     m.name.element.span(),
-                    &[],
+                    &[&"method", &m.name.data(), &"method", &m.name.data()],
                 );
             }
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrOneWayError,
+                    crate::diagnostics::Error::ErrUnexpectedToken,
                     m.name.element.span(),
                     &[],
                 );
@@ -3763,9 +3763,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrDisallowedRequestType,
+                                crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
                                 tc.element.span(),
-                                &[],
+                                &[&"provided type"],
                             );
                         }
 
@@ -3774,7 +3774,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrMethodEmptyPayload,
+                                crate::diagnostics::Error::ErrEmptyPayloadStructs,
                                 s.element.span(),
                                 &[],
                             );
@@ -3913,9 +3913,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => {
                         // primitive or other inline layout
                         self.reporter.fail(
-                            crate::diagnostics::Error::ErrDisallowedRequestType,
+                            crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
                             m.name.element.span(),
-                            &[],
+                            &[&"provided type"],
                         );
                         None
                     }
@@ -3969,9 +3969,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrDisallowedResponseType,
+                                crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
                                 tc.element.span(),
-                                &[],
+                                &[&"provided type"],
                             );
                         }
 
@@ -3980,7 +3980,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrMethodEmptyPayload,
+                                crate::diagnostics::Error::ErrEmptyPayloadStructs,
                                 s.element.span(),
                                 &[],
                             );
@@ -4175,9 +4175,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     _ => {
                         self.reporter.fail(
-                            crate::diagnostics::Error::ErrDisallowedResponseType,
+                            crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
                             m.name.element.span(),
-                            &[],
+                            &[&"provided type"],
                         );
                         None
                     }
@@ -4515,9 +4515,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if !valid {
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrInvalidCompose,
+                    crate::diagnostics::Error::ErrComposedProtocolTooOpen,
                     composed.element.span(),
-                    &[],
+                    &[
+                        &openness,
+                        &decl.name.data(),
+                        &composed_openness,
+                        &full_composed_name,
+                    ],
                 );
             }
 

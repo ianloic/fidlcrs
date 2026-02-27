@@ -1041,9 +1041,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                     .unwrap_or_else(|| self.last_token.clone());
                 if !mods.is_empty() {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrNoStrictOnCompose,
+                        crate::diagnostics::Error::ErrCannotSpecifyModifier,
                         mods[0].element.span(),
-                        &[],
+                        &[&"strict", &"compose"],
                     );
                 }
 
@@ -1065,7 +1065,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 if self.last_token.kind == TokenKind::Semicolon {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrEmptyProtocolMember,
+                        crate::diagnostics::Error::ErrInvalidProtocolMember,
                         self.last_token.span.clone(),
                         &[],
                     );

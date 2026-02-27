@@ -109,6 +109,7 @@ pub struct Compiler<'node, 'src> {
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<String>,
     pub generated_source_file: VirtualSourceFile,
+    pub skip_eager_compile: bool,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -141,6 +142,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             inline_names: HashMap::new(),
             compiled_decls: HashSet::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
+            skip_eager_compile: false,
         }
     }
 
@@ -194,6 +196,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape_v2.max_handles = u32::MAX;
             }
         }
+
 
         self.patch_member_shapes();
 
@@ -392,24 +395,131 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
+        let envelope = |shape: &TypeShapeV2| -> TypeShapeV2 {
+            let inlined = shape.inline_size <= 4;
+            let align = if inlined { 4 } else { 8 };
+            let padding = (align - (shape.inline_size % align)) % align;
+            let added_ool = if inlined { 0 } else { shape.inline_size.saturating_add(padding) };
+            TypeShapeV2 {
+                inline_size: 8,
+                alignment: 8,
+                depth: shape.depth.saturating_add(1),
+                max_handles: shape.max_handles,
+                max_out_of_line: shape.max_out_of_line.saturating_add(added_ool),
+                has_padding: shape.has_padding || padding > 0,
+                has_flexible_envelope: shape.has_flexible_envelope,
+            }
+        };
 
         for decl in &mut self.struct_declarations {
+            let mut offset = 0u32;
+            let mut alignment = 1u32;
+            let mut sum_ool = 0u32;
+            let mut sum_handles = 0u32;
+            let mut max_depth = 0u32;
+            let mut has_padding = false;
+            let mut has_flex = false;
+
             for member in &mut decl.members {
                 Self::update_type_shape(&mut member.type_, &shapes, &struct_names);
+                let type_shape = &member.type_.type_shape_v2;
+                
+                let align = type_shape.alignment;
+                let size = type_shape.inline_size;
+
+                if align > alignment {
+                    alignment = align;
+                }
+
+                sum_handles = sum_handles.saturating_add(type_shape.max_handles);
+                sum_ool = sum_ool.saturating_add(type_shape.max_out_of_line);
+
+                if type_shape.depth == u32::MAX {
+                    max_depth = u32::MAX;
+                } else if max_depth != u32::MAX && type_shape.depth > max_depth {
+                    max_depth = type_shape.depth;
+                }
+
+                let padding_before = (align - (offset % align)) % align;
+                offset += padding_before;
+                member.field_shape_v2.offset = offset;
+                offset += size;
+                
+                has_flex |= type_shape.has_flexible_envelope;
             }
+
+            let final_padding = (alignment - (offset % alignment)) % alignment;
+            let total_size = if offset == 0 && final_padding == 0 {
+                1
+            } else {
+                offset + final_padding
+            };
+
+            for i in 0..decl.members.len() {
+                let next_offset = if i + 1 < decl.members.len() {
+                    decl.members[i + 1].field_shape_v2.offset
+                } else {
+                    total_size
+                };
+                let current_end = decl.members[i].field_shape_v2.offset + decl.members[i].type_.type_shape_v2.inline_size;
+                decl.members[i].field_shape_v2.padding = next_offset - current_end;
+                has_padding |= decl.members[i].field_shape_v2.padding > 0 || decl.members[i].type_.type_shape_v2.has_padding;
+            }
+
+            decl.type_shape_v2.inline_size = total_size;
+            decl.type_shape_v2.alignment = alignment;
+            decl.type_shape_v2.depth = max_depth;
+            decl.type_shape_v2.max_out_of_line = sum_ool;
+            decl.type_shape_v2.max_handles = sum_handles;
+            decl.type_shape_v2.has_padding = has_padding || final_padding > 0;
+            decl.type_shape_v2.has_flexible_envelope = has_flex;
         }
         for decl in &mut self.union_declarations {
+            let mut max_ool = 0u32;
+            let mut max_handles = 0u32;
+            let mut has_padding = false;
+            let mut has_flex = false;
             for member in &mut decl.members {
                 if let Some(ty) = &mut member.type_ {
                     Self::update_type_shape(ty, &shapes, &struct_names);
+                    let env = envelope(&ty.type_shape_v2);
+                    max_ool = std::cmp::max(max_ool, env.max_out_of_line);
+                    max_handles = std::cmp::max(max_handles, env.max_handles);
+                    has_padding |= env.has_padding;
+                    has_flex |= env.has_flexible_envelope;
                 }
+            }
+            if decl.type_shape_v2.depth != u32::MAX {
+                decl.type_shape_v2.max_out_of_line = max_ool;
+                decl.type_shape_v2.max_handles = max_handles;
+                decl.type_shape_v2.has_padding = has_padding;
+                let is_flexible = decl.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
+                // Also check if any member has the flexible trait
+                decl.type_shape_v2.has_flexible_envelope = has_flex || is_flexible;
             }
         }
         for decl in &mut self.table_declarations {
+            let mut max_ool = 0u32;
+            let mut max_handles = 0u32;
+            let mut has_padding = false;
+            let mut has_flex = false;
+            let mut max_ordinal = 0u32;
             for member in &mut decl.members {
+                max_ordinal = std::cmp::max(max_ordinal, member.ordinal);
                 if let Some(ty) = &mut member.type_ {
                     Self::update_type_shape(ty, &shapes, &struct_names);
+                    let env = envelope(&ty.type_shape_v2);
+                    max_ool = max_ool.saturating_add(env.max_out_of_line);
+                    max_handles = max_handles.saturating_add(env.max_handles);
+                    has_padding |= env.has_padding;
+                    has_flex |= env.has_flexible_envelope;
                 }
+            }
+            if decl.type_shape_v2.depth != u32::MAX {
+                decl.type_shape_v2.max_out_of_line = max_ool.saturating_add(max_ordinal.saturating_mul(8));
+                decl.type_shape_v2.max_handles = max_handles;
+                decl.type_shape_v2.has_padding = has_padding;
+                decl.type_shape_v2.has_flexible_envelope = has_flex || true;
             }
         }
         for decl in &mut self.alias_declarations {
@@ -1599,6 +1709,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let align = type_shape.alignment;
             let size = type_shape.inline_size;
 
+
             if align > alignment {
                 alignment = align;
             }
@@ -2395,7 +2506,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                 }
                 let inner = &type_ctor.parameters[0];
+                let prev = self.skip_eager_compile;
+                self.skip_eager_compile = true;
                 let mut inner_type = self.resolve_type(inner, library_name, naming_context);
+                self.skip_eager_compile = prev;
 
                 let boxed_inline = inner_type.type_shape_v2.inline_size;
                 let padding = (8 - (boxed_inline % 8)) % 8;
@@ -2496,7 +2610,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     format!("{}/{}", library_name, name)
                 };
 
-                self.compile_decl_by_name(&full_name);
+                if !nullable && !self.skip_eager_compile {
+                    self.compile_decl_by_name(&full_name);
+                }
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
                     let is_bits = match decl {
@@ -2594,6 +2710,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         (16, 8, !is_strict, false)
                     } else if is_protocol {
                         (4, 4, false, false)
+                    } else if nullable {
+                        (8, 8, false, false)
                     } else {
                         (0, 1, false, false)
                     };
@@ -4261,14 +4379,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.compiled_decls.insert(full_synth_union.clone());
                 }
 
-                let mut identifier_shape = union_shape.clone();
-                identifier_shape.has_padding = false;
                 Some(Type {
                     kind_v2: "identifier".to_string(),
                     subtype: None,
                     identifier: Some(full_synth_union.clone()),
                     nullable: Some(false),
-                    type_shape_v2: identifier_shape,
+                    type_shape_v2: union_shape,
                     element_type: None,
                     element_count: None,
                     maybe_element_count: None,

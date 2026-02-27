@@ -1144,7 +1144,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
         if !is_valid_type {
             self.reporter.fail(
-                crate::diagnostics::ERR_BITS_TYPE_MUST_BE_UNSIGNED,
+                crate::diagnostics::Error::ErrBitsTypeMustBeUnsigned,
                 decl.name.as_ref().map_or_else(
                     || decl.element.start_token.span.clone(),
                     |id| id.element.span(),
@@ -1160,7 +1160,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if strict && decl.members.is_empty() {
             self.reporter.fail(
-                crate::diagnostics::ERR_STRICT_BITS_MUST_HAVE_MEMBERS,
+                crate::diagnostics::Error::ErrStrictBitsMustHaveMembers,
                 decl.name.as_ref().map_or_else(
                     || decl.element.start_token.span.clone(),
                     |id| id.element.span(),
@@ -1180,7 +1180,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let name_str = member.name.data().to_string();
             if !member_names.insert(name_str.clone()) {
                 self.reporter.fail(
-                    crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_NAME,
+                    crate::diagnostics::Error::ErrBitsMemberDuplicateName,
                     member.name.element.span(),
                     &[],
                 );
@@ -1195,7 +1195,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Ok(val) = val_str.parse::<u64>() {
                             if val != 0 && (val & (val - 1)) != 0 {
                                 self.reporter.fail(
-                                    crate::diagnostics::ERR_BITS_MEMBER_MUST_BE_POWER_OF_TWO,
+                                    crate::diagnostics::Error::ErrBitsMemberMustBePowerOfTwo,
                                     member.value.element().span(),
                                     &[],
                                 );
@@ -1216,7 +1216,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 && bits < 64
                             {
                                 self.reporter.fail(
-                                    crate::diagnostics::ERR_MEMBER_OVERFLOW,
+                                    crate::diagnostics::Error::ErrMemberOverflow,
                                     member.value.element().span(),
                                     &[],
                                 );
@@ -1226,7 +1226,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if valid_value {
                                 if (mask & val) != 0 {
                                     self.reporter.fail(
-                                        crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_VALUE,
+                                        crate::diagnostics::Error::ErrBitsMemberDuplicateValue,
                                         member.value.element().span(),
                                         &[],
                                     );
@@ -1238,19 +1238,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             let is_negative = val_str.starts_with('-');
                             if is_negative && subtype_name.starts_with("uint") {
                                 self.reporter.fail(
-                                    crate::diagnostics::ERR_INVALID_MEMBER_VALUE, // or overflow
+                                    crate::diagnostics::Error::ErrInvalidMemberValue, // or overflow
                                     member.value.element().span(),
                                     &[],
                                 );
                             } else if !val_str.chars().all(|c| c.is_ascii_digit()) {
                                 self.reporter.fail(
-                                    crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                                    crate::diagnostics::Error::ErrInvalidMemberValue,
                                     member.value.element().span(),
                                     &[],
                                 );
                             } else {
                                 self.reporter.fail(
-                                    crate::diagnostics::ERR_MEMBER_OVERFLOW,
+                                    crate::diagnostics::Error::ErrMemberOverflow,
                                     member.value.element().span(),
                                     &[],
                                 );
@@ -1265,13 +1265,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let val = val as u64;
                         if val != 0 && (val & (val - 1)) != 0 {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_BITS_MEMBER_MUST_BE_POWER_OF_TWO,
+                                crate::diagnostics::Error::ErrBitsMemberMustBePowerOfTwo,
                                 member.value.element().span(),
                                 &[],
                             );
                         } else if (mask & val) != 0 {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_BITS_MEMBER_DUPLICATE_VALUE,
+                                crate::diagnostics::Error::ErrBitsMemberDuplicateValue,
                                 member.value.element().span(),
                                 &[],
                             );
@@ -1280,9 +1280,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     } else {
                         // Temporary: right now all identifiers except MAX evaluate to None
-                        // which throws ERR_INVALID_MEMBER_VALUE
+                        // which throws Error::ErrInvalidMemberValue
                         self.reporter.fail(
-                            crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                            crate::diagnostics::Error::ErrInvalidMemberValue,
                             member.value.element().span(),
                             &[],
                         );
@@ -1290,7 +1290,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 _ => {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_INVALID_MEMBER_VALUE,
+                        crate::diagnostics::Error::ErrInvalidMemberValue,
                         member.value.element().span(),
                         &[],
                     );
@@ -2234,7 +2234,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "array" => {
                 if type_ctor.parameters.len() < 2 {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_WRONG_NUMBER_OF_LAYOUT_PARAMETERS,
+                        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters,
                         type_ctor.element.start_token.span.clone(),
                         &[],
                     );
@@ -2273,7 +2273,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check for optional array: array<T, N>:optional is invalid
                 if nullable {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_NULLABLE_ARRAY,
+                        crate::diagnostics::Error::ErrNullableArray,
                         type_ctor.element.start_token.span.clone(),
                         &[],
                     );
@@ -2287,7 +2287,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if let Ok(val) = lit.literal.value.parse::<u32>() {
                                 if val == 0 {
                                     self.reporter.fail(
-                                        crate::diagnostics::ERR_ARRAY_SIZE_ZERO,
+                                        crate::diagnostics::Error::ErrArraySizeZero,
                                         count_param.element.start_token.span.clone(),
                                         &[],
                                     );
@@ -2308,7 +2308,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check constraints
                 if !type_ctor.constraints.is_empty() {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_ARRAY_CONSTRAINT,
+                        crate::diagnostics::Error::ErrArrayConstraint,
                         type_ctor.element.start_token.span.clone(),
                         &[],
                     );
@@ -2415,7 +2415,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 } else {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_REQUEST_MUST_BE_PARAMETERIZED,
+                        crate::diagnostics::Error::ErrRequestMustBeParameterized,
                         type_ctor.element.span(),
                         &[],
                     );
@@ -2427,7 +2427,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             // Ok
                         } else {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_REQUEST_MUST_BE_PROTOCOL,
+                                crate::diagnostics::Error::ErrRequestMustBeProtocol,
                                 type_ctor.element.span(),
                                 &[],
                             );
@@ -2439,14 +2439,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .any(|p| p.name == protocol)
                         {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_REQUEST_MUST_BE_PROTOCOL,
+                                crate::diagnostics::Error::ErrRequestMustBeProtocol,
                                 type_ctor.element.span(),
                                 &[],
                             );
                         }
                     } else {
                         self.reporter.fail(
-                            crate::diagnostics::ERR_REQUEST_MUST_BE_PROTOCOL,
+                            crate::diagnostics::Error::ErrRequestMustBeProtocol,
                             type_ctor.element.span(),
                             &[],
                         );
@@ -2629,7 +2629,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if is_bits {
                         if nullable {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_CANNOT_BE_NULLABLE,
+                                crate::diagnostics::Error::ErrCannotBeNullable,
                                 type_ctor.element.start_token.span.clone(),
                                 &[],
                             );
@@ -2655,7 +2655,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 });
                                 if has_non_optional {
                                     self.reporter.fail(
-                                        crate::diagnostics::ERR_CANNOT_HAVE_CONSTRAINTS,
+                                        crate::diagnostics::Error::ErrCannotHaveConstraints,
                                         type_ctor.element.start_token.span.clone(),
                                         &[],
                                     );
@@ -3706,14 +3706,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .any(|m| m.subkind == crate::token::TokenSubkind::Flexible);
         if is_strict && decl.methods.is_empty() {
             self.reporter.fail(
-                crate::diagnostics::ERR_STRICT_PROTOCOL_CANNOT_BE_EMPTY,
+                crate::diagnostics::Error::ErrStrictProtocolCannotBeEmpty,
                 decl.name.element.span(),
                 &[],
             );
         }
         if is_flexible && decl.methods.is_empty() {
             self.reporter.fail(
-                crate::diagnostics::ERR_FLEXIBLE_PROTOCOL_CANNOT_BE_EMPTY,
+                crate::diagnostics::Error::ErrFlexibleProtocolCannotBeEmpty,
                 decl.name.element.span(),
                 &[],
             );
@@ -3724,14 +3724,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for m in &decl.methods {
             if !method_names.insert(m.name.data()) {
                 self.reporter.fail(
-                    crate::diagnostics::ERR_DUPLICATE_METHOD_NAME,
+                    crate::diagnostics::Error::ErrDuplicateMethodName,
                     m.name.element.span(),
                     &[],
                 );
             }
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter.fail(
-                    crate::diagnostics::ERR_ONE_WAY_ERROR,
+                    crate::diagnostics::Error::ErrOneWayError,
                     m.name.element.span(),
                     &[],
                 );
@@ -3763,7 +3763,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_DISALLOWED_REQUEST_TYPE,
+                                crate::diagnostics::Error::ErrDisallowedRequestType,
                                 tc.element.span(),
                                 &[],
                             );
@@ -3774,7 +3774,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_METHOD_EMPTY_PAYLOAD,
+                                crate::diagnostics::Error::ErrMethodEmptyPayload,
                                 s.element.span(),
                                 &[],
                             );
@@ -3913,7 +3913,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => {
                         // primitive or other inline layout
                         self.reporter.fail(
-                            crate::diagnostics::ERR_DISALLOWED_REQUEST_TYPE,
+                            crate::diagnostics::Error::ErrDisallowedRequestType,
                             m.name.element.span(),
                             &[],
                         );
@@ -3969,7 +3969,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_DISALLOWED_RESPONSE_TYPE,
+                                crate::diagnostics::Error::ErrDisallowedResponseType,
                                 tc.element.span(),
                                 &[],
                             );
@@ -3980,7 +3980,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                crate::diagnostics::ERR_METHOD_EMPTY_PAYLOAD,
+                                crate::diagnostics::Error::ErrMethodEmptyPayload,
                                 s.element.span(),
                                 &[],
                             );
@@ -4175,7 +4175,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     _ => {
                         self.reporter.fail(
-                            crate::diagnostics::ERR_DISALLOWED_RESPONSE_TYPE,
+                            crate::diagnostics::Error::ErrDisallowedResponseType,
                             m.name.element.span(),
                             &[],
                         );
@@ -4515,7 +4515,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if !valid {
                 self.reporter.fail(
-                    crate::diagnostics::ERR_INVALID_COMPOSE,
+                    crate::diagnostics::Error::ErrInvalidCompose,
                     composed.element.span(),
                     &[],
                 );

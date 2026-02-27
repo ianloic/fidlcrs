@@ -138,7 +138,7 @@ impl<'a> Lexer<'a> {
                     // Report error
                     // consume/continue logic
                     self.reporter.fail(
-                        ERR_INVALID_CHARACTER,
+                        Error::ErrInvalidCharacter,
                         SourceSpan::new(
                             &self.source_file.data()[self.token_start..self.current],
                             self.source_file,
@@ -150,7 +150,7 @@ impl<'a> Lexer<'a> {
 
                 _ => {
                     self.reporter.fail(
-                        ERR_INVALID_CHARACTER,
+                        Error::ErrInvalidCharacter,
                         SourceSpan::new(
                             &self.source_file.data()[self.token_start..self.current],
                             self.source_file,

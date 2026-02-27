@@ -1,4 +1,4 @@
-use crate::diagnostics::{Diagnostic, ErrorDef};
+use crate::diagnostics::{Diagnostic, Error};
 use crate::source_span::SourceSpan;
 use std::cell::RefCell;
 
@@ -22,10 +22,10 @@ impl<'a> Reporter<'a> {
         }
     }
 
-    pub fn fail(&self, def: ErrorDef, span: SourceSpan<'a>, args: &[&dyn std::fmt::Debug]) {
+    pub fn fail(&self, def: Error, span: SourceSpan<'a>, args: &[&dyn std::fmt::Debug]) {
         // Simple formatting for now.
         // We handle {} placeholders.
-        let mut msg = def.msg.to_string();
+        let mut msg = def.msg().to_string();
         for arg in args {
             // Debug fmt
             msg = msg.replacen("{}", &format!("{:?}", arg), 1);
@@ -37,7 +37,7 @@ impl<'a> Reporter<'a> {
         // Here we can use a simpler approach for the initial port.
 
         self.diagnostics.borrow_mut().push(Diagnostic {
-            id: def.id,
+            def,
             message: msg,
             span: Some(span),
         });

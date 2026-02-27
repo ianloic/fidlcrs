@@ -144,7 +144,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
             } else {
                 self.reporter.fail(
-                    crate::diagnostics::ERR_EXPECTED_DECLARATION,
+                    crate::diagnostics::Error::ErrExpectedDeclaration,
                     self.last_token.span.clone(),
                     &[],
                 );
@@ -1041,7 +1041,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     .unwrap_or_else(|| self.last_token.clone());
                 if !mods.is_empty() {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_NO_STRICT_ON_COMPOSE,
+                        crate::diagnostics::Error::ErrNoStrictOnCompose,
                         mods[0].element.span(),
                         &[],
                     );
@@ -1065,7 +1065,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 if self.last_token.kind == TokenKind::Semicolon {
                     self.reporter.fail(
-                        crate::diagnostics::ERR_EMPTY_PROTOCOL_MEMBER,
+                        crate::diagnostics::Error::ErrEmptyProtocolMember,
                         self.last_token.span.clone(),
                         &[],
                     );

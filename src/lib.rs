@@ -43,6 +43,8 @@ pub mod typeshape_tests;
 #[cfg(test)]
 pub mod union_tests;
 #[cfg(test)]
+pub mod using_tests;
+#[cfg(test)]
 pub mod virtual_source_tests;
 
 pub mod availability_step;

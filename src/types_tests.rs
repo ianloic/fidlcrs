@@ -74,15 +74,13 @@ const float64 fidl.float64 = 0;
     #[ignore]
     fn good_handle_subtype() {
         // static_assert tests not ported directly
-        let mut lib = TestLibrary::new(); // TODO
-        lib.compile().expect("compilation failed");
+        ()
     }
 
     #[test]
     #[ignore]
     fn good_rights() {
-        let mut lib = TestLibrary::new(); // TODO
-        lib.compile().expect("compilation failed");
+        ()
     }
 
     #[test]
@@ -99,31 +97,146 @@ const float64 fidl.float64 = 0;
 
     #[test]
     fn good_type_parameters() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+type Inner = struct{};
+alias Alias = Inner;
+
+type TypeDecl = struct {
+  // vector of primitive
+  v0 vector<uint8>;
+  // vector of sourced
+  v1 vector<Inner>;
+  // vector of alias
+  v2 vector<Alias>;
+  // vector of anonymous layout
+  v3 vector<struct{
+       i0 struct{};
+       i1 vector<struct{}>;
+     }>;
+  // array of primitive
+  a0 array<uint8,5>;
+  // array of sourced
+  a1 array<Inner,5>;
+  // array of alias
+  a2 array<Alias,5>;
+  // array of anonymous layout
+  a3 array<struct{
+       i2 struct{};
+       i3 array<struct{},5>;
+     },5>;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
     #[test]
     fn good_layout_member_constraints() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+alias Alias = vector<uint8>;
+type t1 = resource struct {
+  u0 union { 1: b bool; };
+  u1 union { 1: b bool; }:optional;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
     #[test]
     fn good_constraints_on_vectors() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+alias Alias = vector<uint8>;
+type TypeDecl= struct {
+  v0 vector<bool>;
+  v1 vector<bool>:16;
+  v2 vector<bool>:optional;
+  v3 vector<bool>:<16,optional>;
+  b4 vector<uint8>;
+  b5 vector<uint8>:16;
+  b6 vector<uint8>:optional;
+  b7 vector<uint8>:<16,optional>;
+  s8 string;
+  s9 string:16;
+  s10 string:optional;
+  s11 string:<16,optional>;
+  a12 Alias;
+  a13 Alias:16;
+  a14 Alias:optional;
+  a15 Alias:<16,optional>;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
     #[test]
     fn good_constraints_on_unions() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type UnionDecl = union{1: foo bool;};
+alias UnionAlias = UnionDecl;
+type TypeDecl= struct {
+  u0 union{1: bar bool;};
+  u1 union{1: baz bool;}:optional;
+  u2 UnionDecl;
+  u3 UnionDecl:optional;
+  u4 UnionAlias;
+  u5 UnionAlias:optional;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
     #[test]
     fn good_constraints_on_handles() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+using zx;
+
+type TypeDecl = resource struct {
+  h0 zx.Handle;
+  h1 zx.Handle:VMO;
+  h2 zx.Handle:optional;
+  h3 zx.Handle:<VMO,optional>;
+  h4 zx.Handle:<VMO,zx.Rights.TRANSFER>;
+  h5 zx.Handle:<VMO,zx.Rights.TRANSFER,optional>;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.use_library_zx();
         lib.compile().expect("compilation failed");
     }
 
@@ -142,7 +255,19 @@ const float64 fidl.float64 = 0;
     #[test]
     #[ignore]
     fn bad_zero_parameters() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type Foo = struct {
+  foo array;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -173,20 +298,66 @@ const float64 fidl.float64 = 0;
     #[test]
     #[ignore]
     fn bad_parameterized_anonymous_layout() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type Foo = struct {
+  bar struct {}<1>;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_constrain_twice() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+using zx;
+
+alias MyVmo = zx.Handle:VMO;
+
+type Foo = struct {
+    foo MyVmo:zx.ObjType.CHANNEL;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.use_library_zx();
         assert!(lib.compile().is_err());
     }
 
     #[test]
     fn good_no_overlapping_constraints() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+using zx;
+
+alias MyVmo = zx.Handle:<VMO, zx.Rights.TRANSFER>;
+
+type Foo = resource struct {
+    foo MyVmo:optional;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        lib.use_library_zx();
         lib.compile().expect("compilation failed");
     }
 
@@ -205,7 +376,19 @@ const float64 fidl.float64 = 0;
     #[test]
     #[ignore]
     fn bad_want_value_layout_parameter() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type Foo = struct {
+    foo array<uint8, uint8>;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -224,27 +407,79 @@ const float64 fidl.float64 = 0;
     #[test]
     #[ignore]
     fn bad_shadowed_optional() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+const optional uint8 = 3;
+
+type Foo = resource struct {
+    foo vector<uint8>:<10, optional>;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_wrong_constraint_type() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type Foo = resource struct {
+    foo vector<uint8>:"hello";
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
+    #[ignore]
     fn cannot_refer_to_unqualified_internal_type() {
-        let mut lib = TestLibrary::new(); // TODO
-        lib.compile().expect("compilation failed");
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type Foo = struct {
+    foo FrameworkErr;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
     }
 
     #[test]
+    #[ignore]
     fn cannot_refer_to_qualified_internal_type() {
-        let mut lib = TestLibrary::new(); // TODO
-        lib.compile().expect("compilation failed");
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+type Foo = struct {
+    foo fidl.FrameworkErr;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
+        assert!(lib.compile().is_err());
     }
 
     #[test]

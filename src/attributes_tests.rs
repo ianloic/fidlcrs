@@ -29,7 +29,59 @@ type Empty = struct {};
 
     #[test]
     fn good_official_attributes() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+@no_doc
+library example;
+
+/// For EXAMPLE_CONSTANT
+@no_doc
+@deprecated("Note")
+const EXAMPLE_CONSTANT string = "foo";
+
+/// For ExampleEnum
+@deprecated("Reason")
+type ExampleEnum = flexible enum {
+    A = 1;
+    /// For EnumMember
+    @unknown
+    B = 2;
+};
+
+/// For ExampleStruct
+@max_bytes("1234")
+@max_handles("5678")
+type ExampleStruct = resource struct {
+  data @generated_name("CustomName") table {
+    1: a uint8;
+  };
+};
+
+/// For ExampleProtocol
+@discoverable
+@transport("Syscall")
+protocol ExampleProtocol {
+    /// For ExampleMethod
+    @internal
+    @selector("Bar")
+    ExampleMethod();
+};
+
+/// For ExampleService
+@foo("ExampleService")
+@no_doc
+service ExampleService {
+    /// For ExampleProtocol
+    @foo("ExampleProtocol")
+    @no_doc
+    p client_end:ExampleProtocol;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
@@ -53,7 +105,21 @@ type Empty = struct {};
     #[test]
     #[ignore]
     fn bad_no_two_same_attribute() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test.dupattributes;
+
+@dup("first")
+@dup("second")
+protocol A {
+    MethodA();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -83,7 +149,21 @@ type Empty = struct {};
     #[test]
     #[ignore]
     fn bad_no_two_same_doc_attribute() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test.dupattributes;
+
+/// first
+@doc("second")
+protocol A {
+    MethodA();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -162,8 +242,20 @@ type Foo = resource struct {};
     #[test]
     #[ignore]
     fn bad_warnings_as_errors() {
-        let mut lib = TestLibrary::new(); // TODO
-        assert!(lib.compile().is_err());
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@duc("should be doc")
+protocol A {
+    MethodA();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
     }
 
     #[test]
@@ -204,41 +296,117 @@ type Foo = resource struct {};
 
     #[test]
     fn good_channel_transport() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test.transportattributes;
+
+@transport("Channel")
+protocol A {
+    MethodA();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
     #[test]
     fn good_syscall_transport() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test.transportattributes;
+
+@transport("Syscall")
+protocol A {
+    MethodA();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
     #[test]
     #[ignore]
     fn bad_multiple_transports() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test.transportattributes;
+
+@transport("Channel, Syscall")
+protocol A {
+    MethodA();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_unknown_invalid_placement_on_union() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@unknown
+type U = flexible union {
+  1: a int32;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_unknown_invalid_placement_on_union_member() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+type U = flexible union {
+  @unknown 1: a int32;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_unknown_invalid_placement_on_bits_member() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+type B = flexible bits : uint32 {
+  @unknown A = 0x1;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -257,7 +425,49 @@ type Foo = resource struct {};
     #[test]
     #[ignore]
     fn bad_incorrect_placement_layout() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+@selector("test") // 1
+library fidl.test;
+
+@selector("test") // 2
+const MyConst uint32 = 0;
+
+@selector("test") // 3
+type MyEnum = enum {
+    @selector("test") // 4
+    MyMember = 5;
+};
+
+@selector("test") // 5
+type MyStruct = struct {
+    @selector("test") // 6
+    MyMember int32;
+};
+
+@selector("test") // 7
+type MyUnion = union {
+    @selector("test") // 8
+    1: MyMember int32;
+};
+
+@selector("test") // 9
+type MyTable = table {
+    @selector("test") // 10
+    1: MyMember int32;
+};
+
+@selector("test") // 11
+protocol MyProtocol {
+    @selector("test") // no error, this placement is allowed
+    MyMethod();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -276,28 +486,91 @@ type Foo = resource struct {};
     #[test]
     #[ignore]
     fn bad_deprecated_attributes() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@example_deprecated_attribute
+type MyStruct = struct {};
+
+@example_deprecated_attribute
+protocol MyOtherProtocol {
+  MyMethod();
+};
+
+@example_deprecated_attribute
+protocol MyProtocol {
+  MyMethod();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_constraint_only_three_members_on_struct() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@must_have_three_members
+type MyStruct = struct {
+    one int64;
+    two int64;
+    three int64;
+    oh_no_four int64;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_constraint_only_three_members_on_method() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+protocol MyProtocol {
+    @must_have_three_members MyMethod();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
     #[test]
     #[ignore]
     fn bad_constraint_only_three_members_on_protocol() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@must_have_three_members
+protocol MyProtocol {
+    MyMethod();
+    MySecondMethod();
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -328,7 +601,19 @@ type Foo = resource struct {};
     #[test]
     #[ignore]
     fn bad_parameter_attribute_incorrect_placement() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+protocol ExampleProtocol {
+    Method(struct { arg exampleusing.Empty; } @on_parameter);
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
 
@@ -346,7 +631,24 @@ type Foo = resource struct {};
 
     #[test]
     fn good_layout_attribute_placements() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+@foo
+type Foo = struct {};
+
+protocol MyProtocol {
+  MyMethod(@baz struct {
+    inner_layout @qux struct {};
+  });
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
@@ -863,8 +1165,55 @@ type MyStruct = struct {};
     }
 
     #[test]
+    #[ignore]
     fn good_referenced_types_with_schema() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library fidl.test;
+
+const string fidl.string = "foo";
+const bool fidl.bool = true;
+const int8 fidl.int8 = -1;
+const int16 fidl.int16 = -2;
+const int32 fidl.int32 = -3;
+type int64 = enum : fidl.int64 {
+    MEMBER = -4;
+};
+const uint8 fidl.uint8 = 1;
+const uint16 fidl.uint16 = 2;
+const uint32 fidl.uint32 = 3;
+type uint64 = bits : fidl.uint64 {
+    MEMBER = 4;
+};
+const usize64 fidl.usize64 = 5;
+const uintptr64 fidl.uintptr64 = 6;
+const uchar fidl.uchar = 7;
+const float32 fidl.float32 = 1.2;
+const float64 fidl.float64 = -3.4;
+
+@attr(
+        string=string,
+        bool=bool,
+        int8=int8,
+        int16=int16,
+        int32=int32,
+        int64=int64.MEMBER,
+        uint8=uint8,
+        uint16=uint16,
+        uint32=uint32,
+        uint64=uint64.MEMBER,
+        usize64=usize64,
+        uintptr64=uintptr64,
+        uchar=uchar,
+        float32=float32,
+        float64=float64)
+type MyStruct = struct {};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 
@@ -1358,7 +1707,20 @@ protocol Foo {};
 
     #[test]
     fn good_result_attribute() {
-        let mut lib = TestLibrary::new(); // TODO
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
+library example;
+
+@result
+type Foo = union {
+    1: s string;
+};
+"#
+            .to_string(),
+        );
+        let mut lib = TestLibrary::new();
+        lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
 }

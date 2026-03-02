@@ -94,6 +94,7 @@ pub struct Compiler<'node, 'src> {
     pub const_declarations: Vec<ConstDeclaration>,
     pub enum_declarations: Vec<EnumDeclaration>,
     pub protocol_declarations: Vec<ProtocolDeclaration>,
+    pub external_protocol_declarations: Vec<ProtocolDeclaration>,
     pub service_declarations: Vec<ServiceDeclaration>,
     pub struct_declarations: Vec<StructDeclaration>,
     pub table_declarations: Vec<TableDeclaration>,
@@ -110,6 +111,7 @@ pub struct Compiler<'node, 'src> {
     pub compiled_decls: HashSet<String>,
     pub generated_source_file: VirtualSourceFile,
     pub skip_eager_compile: bool,
+    pub anonymous_structs: HashSet<String>,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -128,6 +130,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             const_declarations: Vec::new(),
             enum_declarations: Vec::new(),
             protocol_declarations: Vec::new(),
+            external_protocol_declarations: Vec::new(),
             service_declarations: Vec::new(),
             struct_declarations: Vec::new(),
             table_declarations: Vec::new(),
@@ -143,6 +146,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             compiled_decls: HashSet::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             skip_eager_compile: false,
+            anonymous_structs: HashSet::new(),
         }
     }
 
@@ -179,7 +183,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         // 3. Compile
         let mut compile = CompileStep;
         compile.run(self);
-
         // Fixup max_handles for resources in cycles
         for decl in &mut self.struct_declarations {
             if decl.resource && decl.type_shape_v2.depth == u32::MAX {
@@ -276,16 +279,178 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "unversioned".to_string()
         };
 
+        let mut used_deps = HashSet::new();
+
+        fn extract_deps_from_type(ty: &Type, deps: &mut HashSet<String>, compiler: &Compiler) {
+            if let Some(id) = &ty.identifier {
+                if let Some(pos) = id.find('/') {
+                    let d = id[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d.clone()); }
+
+                    if compiler.anonymous_structs.contains(id) {
+                        if let Some(s) = compiler.external_struct_declarations.iter().find(|s| &s.name == id) {
+                            for m in &s.members {
+                                extract_deps_from_type(&m.type_, deps, compiler);
+                            }
+                        }
+                    }
+                }
+            }
+            if let Some(inner) = &ty.element_type {
+                extract_deps_from_type(inner, deps, compiler);
+            }
+            if let Some(proto) = &ty.protocol {
+                if let Some(pos) = proto.find('/') {
+                    let d = proto[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                }
+            }
+            if let Some(res) = &ty.resource_identifier {
+                if let Some(pos) = res.find('/') {
+                    let d = res[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                }
+            }
+            if let Some(c_name) = &ty.maybe_size_constant_name {
+                if let Some(pos) = c_name.find('/') {
+                    let d = c_name[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                } else if c_name.contains('.') {
+                    let d = c_name.split('.').next().unwrap().to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                }
+            }
+        }
+
+        for u in &self.union_declarations {
+            for m in &u.members {
+                if let Some(t) = &m.type_ { extract_deps_from_type(t, &mut used_deps, self); }
+            }
+        }
+        for a in &self.alias_declarations {
+            let id = &a.partial_type_ctor.name;
+            if let Some(pos) = id.find('/') {
+                let d = id[..pos].to_string();
+                if d != self.library_name { used_deps.insert(d); }
+            }
+        }
+        for s in &self.struct_declarations {
+            for m in &s.members {
+                extract_deps_from_type(&m.type_, &mut used_deps, self);
+            }
+        }
+        fn extract_deps_from_type_value(val: &serde_json::Value, deps: &mut HashSet<String>, compiler: &Compiler) {
+            if let Some(id) = val.get("identifier").and_then(|i| i.as_str()) {
+                if let Some(pos) = id.find('/') {
+                    let d = id[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d.clone()); }
+
+                    if compiler.anonymous_structs.contains(id) {
+                        if let Some(s) = compiler.external_struct_declarations.iter().find(|s| &s.name == id) {
+                            for m in &s.members {
+                                extract_deps_from_type(&m.type_, deps, compiler);
+                            }
+                        }
+                    }
+                }
+            }
+            if let Some(inner) = val.get("element_type") {
+                extract_deps_from_type_value(inner, deps, compiler);
+            }
+            if let Some(proto) = val.get("protocol").and_then(|p| p.as_str()) {
+                if let Some(pos) = proto.find('/') {
+                    let d = proto[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                }
+            }
+            if let Some(res) = val.get("resource_identifier").and_then(|r| r.as_str()) {
+                if let Some(pos) = res.find('/') {
+                    let d = res[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                }
+            }
+            if let Some(c_name) = val.get("maybe_size_constant_name").and_then(|m| m.as_str()) {
+                if let Some(pos) = c_name.find('/') {
+                    let d = c_name[..pos].to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                } else if c_name.contains('.') {
+                    let d = c_name.split('.').next().unwrap().to_string();
+                    if d != compiler.library_name { deps.insert(d); }
+                }
+            }
+        }
+        
+        let mut visited_protocols = HashSet::new();
+        fn extract_deps_from_protocol(
+            p_name: &str,
+            deps: &mut HashSet<String>,
+            compiler: &Compiler,
+            visited: &mut HashSet<String>,
+        ) {
+            if !visited.insert(p_name.to_string()) { return; }
+
+            // Find protocol in main lib or external
+            let mut methods = vec![];
+            let mut composed = vec![];
+
+            if let Some(p) = compiler.protocol_declarations.iter().chain(compiler.external_protocol_declarations.iter()).find(|p| p.name == p_name) {
+                methods.extend(p.methods.iter().cloned());
+                composed.extend(p.composed_protocols.iter().cloned());
+            } else if let Some(p_val) = compiler.dependency_declarations.values().find_map(|d| d.get(p_name)) {
+                // Parse from JSON value
+                if let Some(methods_arr) = p_val.get("methods").and_then(|a| a.as_array()) {
+                    for m in methods_arr {
+                        for key in &["maybe_request_payload", "maybe_response_payload", "maybe_response_success_type", "maybe_response_err_type"] {
+                            if let Some(ty) = m.get(key) {
+                                extract_deps_from_type_value(ty, deps, compiler);
+                            }
+                        }
+                    }
+                }
+                if let Some(comp_arr) = p_val.get("composed_protocols").and_then(|a| a.as_array()) {
+                    for c in comp_arr {
+                        if let Some(name) = c.get("name").and_then(|n| n.as_str()) {
+                            extract_deps_from_protocol(name, deps, compiler, visited);
+                        }
+                    }
+                }
+            }
+
+            for m in methods {
+                if let Some(req) = &m.maybe_request_payload {
+                    extract_deps_from_type(req, deps, compiler);
+                }
+                if let Some(res) = &m.maybe_response_payload {
+                    extract_deps_from_type(res, deps, compiler);
+                }
+                if let Some(suc) = &m.maybe_response_success_type {
+                    extract_deps_from_type(suc, deps, compiler);
+                }
+                if let Some(err) = &m.maybe_response_err_type {
+                    extract_deps_from_type(err, deps, compiler);
+                }
+            }
+
+            for c in composed {
+                extract_deps_from_protocol(&c.name, deps, compiler, visited);
+            }
+        }
+
+        for p in &self.protocol_declarations {
+            extract_deps_from_protocol(&p.name, &mut used_deps, self, &mut visited_protocols);
+        }
+
         let mut library_dependencies = vec![];
         for (name, declarations) in &self.dependency_declarations {
             let using_stmt = format!("using {};", name);
-            if files.iter().any(|f| {
-                f.element
-                    .start_token
-                    .span
-                    .source_file
-                    .data()
-                    .contains(&using_stmt)
+            if used_deps.contains(name) || files.iter().any(|f| {
+                f.library_decl.as_ref().map(|l| l.path.to_string()) == Some(self.library_name.clone())
+                    && f.element
+                        .start_token
+                        .span
+                        .source_file
+                        .data()
+                        .contains(&using_stmt)
             }) {
                 let mut sorted_declarations = IndexMap::new();
                 let mut all_dep_decls: Vec<_> = declarations.iter().collect();
@@ -906,8 +1071,39 @@ impl<'node, 'src> Compiler<'node, 'src> {
             RawDecl::Protocol(p) => {
                 let short_name = p.name.data();
                 let compiled = self.compile_protocol(short_name, p, &library_name);
+                
+                let mut extra_to_compile = vec![];
+                for m in &compiled.methods {
+                    if let Some(req) = &m.maybe_request_payload {
+                        if let Some(id) = &req.identifier {
+                            extra_to_compile.push(id.clone());
+                        }
+                    }
+                    if let Some(res) = &m.maybe_response_payload {
+                        if let Some(id) = &res.identifier {
+                            extra_to_compile.push(id.clone());
+                        }
+                    }
+                    if let Some(suc) = &m.maybe_response_success_type {
+                        if let Some(id) = &suc.identifier {
+                            extra_to_compile.push(id.clone());
+                        }
+                    }
+                    if let Some(err) = &m.maybe_response_err_type {
+                        if let Some(id) = &err.identifier {
+                            extra_to_compile.push(id.clone());
+                        }
+                    }
+                }
+
                 if is_main_library {
                     self.protocol_declarations.push(compiled);
+                } else {
+                    self.external_protocol_declarations.push(compiled);
+                }
+                
+                for id in extra_to_compile {
+                    self.compile_decl_by_name(&id);
                 }
             }
             RawDecl::Service(s) => {
@@ -1358,7 +1554,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 resource_identifier: None,
                 deprecated: None,
                 maybe_attributes: vec![],
-                field_shape_v2: None,
+                field_shape_v2: None, maybe_size_constant_name: None,
                 type_shape_v2,
             },
             mask: mask.to_string(),
@@ -2052,7 +2248,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape_v2: None, maybe_size_constant_name: None,
                     type_shape_v2: TypeShapeV2 {
                         inline_size,
                         alignment,
@@ -2091,6 +2287,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
+                    maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
+                        if let raw_ast::Constant::Identifier(id) = c {
+                            Some(id.identifier.to_string())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    },
                     type_shape_v2: TypeShapeV2 {
                         inline_size: 16,
                         alignment: 8,
@@ -2132,7 +2337,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape_v2: None, maybe_size_constant_name: None,
                     type_shape_v2: TypeShapeV2 {
                         inline_size: max_len,
                         alignment: 1,
@@ -2163,7 +2368,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: TypeShapeV2 {
                             inline_size: 0,
                             alignment: 1,
@@ -2219,6 +2424,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
+                    maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
+                        if let raw_ast::Constant::Identifier(id) = c {
+                            Some(id.identifier.to_string())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    },
                     type_shape_v2: TypeShapeV2 {
                         inline_size: 16,
                         alignment: 8,
@@ -2254,7 +2468,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: TypeShapeV2 {
                             inline_size: 0,
                             alignment: 1,
@@ -2336,6 +2550,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     deprecated: None,
                     maybe_attributes: vec![],
                     field_shape_v2: None,
+                    maybe_size_constant_name: if let Some(param) = type_ctor.parameters.get(1) {
+                        if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
+                            Some(id.to_string())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    },
                     type_shape_v2: TypeShapeV2 {
                         inline_size: total_size,
                         alignment: inner_type.type_shape_v2.alignment,
@@ -2374,7 +2597,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape_v2: None, maybe_size_constant_name: None,
                     type_shape_v2: TypeShapeV2 {
                         inline_size: 4,
                         alignment: 4,
@@ -2398,7 +2621,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if let Some(constraint) = type_ctor.constraints.first() {
                     if let raw_ast::Constant::Identifier(id) = constraint {
                         let proto_name = id.identifier.to_string();
-                        if proto_name.contains('/') {
+                        if proto_name.contains('.') {
+                            protocol = proto_name.replace('.', "/");
+                        } else if proto_name.contains('/') {
                             protocol = proto_name;
                         } else {
                             protocol = format!("{}/{}", library_name, proto_name);
@@ -2407,7 +2632,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some(param) = type_ctor.parameters.first() {
                     if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
                         let proto_name = id.to_string();
-                        if proto_name.contains('/') {
+                        if proto_name.contains('.') {
+                            protocol = proto_name.replace('.', "/");
+                        } else if proto_name.contains('/') {
                             protocol = proto_name;
                         } else {
                             protocol = format!("{}/{}", library_name, proto_name);
@@ -2469,7 +2696,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape_v2: None, maybe_size_constant_name: None,
                     type_shape_v2: TypeShapeV2 {
                         inline_size: 4,
                         alignment: 4,
@@ -2499,7 +2726,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: TypeShapeV2 {
                             inline_size: 0,
                             alignment: 1,
@@ -2594,7 +2821,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: Some("zx/Handle".to_string()),
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: TypeShapeV2 {
                             inline_size: 4,
                             alignment: 4,
@@ -2682,7 +2909,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: shape.clone(),
                     }
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
@@ -2737,7 +2964,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: TypeShapeV2 {
                             inline_size: inline,
                             alignment: align,
@@ -2767,7 +2994,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                         type_shape_v2: TypeShapeV2 {
                             inline_size: 0,
                             alignment: 1,
@@ -3795,10 +4022,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                                 None,
                             );
-                            self.struct_declarations.push(compiled);
                             if library_name == self.library_name {
+                                self.struct_declarations.push(compiled);
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
+                            } else {
+                                self.external_struct_declarations.push(compiled);
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
@@ -3818,7 +4047,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape_v2: None, maybe_size_constant_name: None,
                             type_shape_v2: shape,
                         })
                     }
@@ -3862,7 +4091,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape_v2: None, maybe_size_constant_name: None,
                             type_shape_v2: shape,
                         })
                     }
@@ -3883,8 +4112,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 Some(ctx.clone()),
                             );
-                            self.union_declarations.push(compiled);
                             if library_name == self.library_name {
+                                self.union_declarations.push(compiled);
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }
@@ -3906,7 +4135,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape_v2: None, maybe_size_constant_name: None,
                             type_shape_v2: shape,
                         })
                     }
@@ -4044,7 +4273,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape_v2: None, maybe_size_constant_name: None,
                         })
                     }
                     raw_ast::Layout::Table(t) => {
@@ -4107,7 +4336,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape_v2: None, maybe_size_constant_name: None,
                         })
                     }
                     raw_ast::Layout::Union(u) => {
@@ -4170,7 +4399,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape_v2: None, maybe_size_constant_name: None,
                         })
                     }
                     _ => {
@@ -4285,7 +4514,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape_v2: None, maybe_size_constant_name: None,
                     };
                     maybe_response_success_type = Some(typ.clone());
                     typ
@@ -4402,7 +4631,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape_v2: None, maybe_size_constant_name: None,
                 })
             } else {
                 maybe_response_payload.clone()
@@ -4477,12 +4706,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut compiled_composed = vec![];
         for composed in &decl.composed_protocols {
-            let composed_name = composed.protocol_name.to_string();
+            let mut composed_name = composed.protocol_name.to_string();
+            if composed_name.contains('.') {
+                let parts: Vec<&str> = composed_name.split('.').collect();
+                composed_name = format!("{}/{}", parts[0], parts[1]);
+            }
             let full_composed_name = if composed_name.contains('/') {
                 composed_name.clone()
             } else {
                 format!("{}/{}", library_name, composed_name)
             };
+
+            self.compile_decl_by_name(&full_composed_name);
 
             let mut composed_openness = "open";
             if let Some(p) = self

@@ -92,6 +92,8 @@ pub struct Type {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub field_shape_v2: Option<FieldShapeV2>,
     pub type_shape_v2: TypeShapeV2,
+    #[serde(skip)]
+    pub maybe_size_constant_name: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]

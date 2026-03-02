@@ -27,6 +27,8 @@ pub mod consts_tests;
 #[cfg(test)]
 pub mod declaration_order_tests;
 #[cfg(test)]
+pub mod direct_dependencies_tests;
+#[cfg(test)]
 pub mod enums_tests;
 #[cfg(test)]
 pub mod method_tests;

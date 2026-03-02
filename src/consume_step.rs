@@ -93,6 +93,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     if let Some(s) = req_s {
                         let ctx = protocol_context.enter_request(method.name.element.span());
                         let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
+                        compiler.anonymous_structs.insert(full_synth.clone());
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
 
@@ -131,6 +132,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         }
 
                         let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
+                        compiler.anonymous_structs.insert(full_synth.clone());
                         compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
                     }
                 }

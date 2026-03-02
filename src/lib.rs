@@ -31,6 +31,8 @@ pub mod direct_dependencies_tests;
 #[cfg(test)]
 pub mod enums_tests;
 #[cfg(test)]
+pub mod handle_tests;
+#[cfg(test)]
 pub mod method_tests;
 #[cfg(test)]
 pub mod parsing_tests;

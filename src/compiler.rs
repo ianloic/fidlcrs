@@ -53,6 +53,7 @@ pub enum RawDecl<'node, 'src> {
     Table(&'node raw_ast::TableDeclaration<'src>),
     Protocol(&'node raw_ast::ProtocolDeclaration<'src>),
     Service(&'node raw_ast::ServiceDeclaration<'src>),
+    Resource(&'node raw_ast::ResourceDeclaration<'src>),
     Const(&'node raw_ast::ConstDeclaration<'src>),
     Alias(&'node raw_ast::AliasDeclaration<'src>),
     Type(&'node raw_ast::TypeDeclaration<'src>),
@@ -68,6 +69,7 @@ impl<'node, 'src> RawDecl<'node, 'src> {
             RawDecl::Table(d) => d.attributes.as_deref(),
             RawDecl::Protocol(d) => d.attributes.as_deref(),
             RawDecl::Service(d) => d.attributes.as_deref(),
+            RawDecl::Resource(d) => d.attributes.as_deref(),
             RawDecl::Const(d) => d.attributes.as_deref(),
             RawDecl::Alias(d) => d.attributes.as_deref(),
             RawDecl::Type(d) => d.attributes.as_deref(),
@@ -100,6 +102,7 @@ pub struct Compiler<'node, 'src> {
     pub table_declarations: Vec<TableDeclaration>,
     pub union_declarations: Vec<UnionDeclaration>,
     pub external_struct_declarations: Vec<StructDeclaration>,
+    pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
 
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
@@ -144,6 +147,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             dependency_declarations: BTreeMap::new(),
             inline_names: HashMap::new(),
             compiled_decls: HashSet::new(),
+            experimental_resource_declarations: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
@@ -1166,6 +1170,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let compiled = self.compile_service(short_name, s, &library_name);
                 if is_main_library {
                     self.service_declarations.push(compiled);
+                }
+            }
+            RawDecl::Resource(r) => {
+                let short_name = r.name.data();
+                let compiled = self.compile_resource(short_name, r, &library_name);
+                if is_main_library {
+                    self.experimental_resource_declarations.push(compiled);
                 }
             }
             RawDecl::Const(c) => {
@@ -3725,6 +3736,24 @@ fn get_dependencies<'node, 'src>(
                 );
             }
         }
+        RawDecl::Resource(r) => {
+            collect_deps_from_ctor(
+                &r.type_ctor,
+                library_name,
+                &mut deps,
+                skip_optional,
+                inline_names,
+            );
+            for prop in &r.properties {
+                collect_deps_from_ctor(
+                    &prop.type_ctor,
+                    library_name,
+                    &mut deps,
+                    skip_optional,
+                    inline_names,
+                );
+            }
+        }
         RawDecl::Const(c) => {
             collect_deps_from_ctor(
                 &c.type_ctor,
@@ -3902,6 +3931,215 @@ fn collect_deps_from_layout(
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
+    fn get_underlying_decl(&self, id: &str) -> Option<&RawDecl<'node, 'src>> {
+        let mut curr = id.to_string();
+        for _ in 0..100 {
+            if let Some(decl) = self.raw_decls.get(&curr) {
+                if let RawDecl::Alias(a) = decl {
+                    match &a.type_ctor.layout {
+                        raw_ast::LayoutParameter::Identifier(id) => {
+                            let next = id.to_string();
+                            curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                next
+                            } else {
+                                format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                            };
+                            continue;
+                        }
+                        _ => return Some(decl),
+                    }
+                } else {
+                    return Some(decl);
+                }
+            } else {
+                return None;
+            }
+        }
+        None
+    }
+
+    pub fn compile_resource(
+        &mut self,
+        name: &str,
+        decl: &'node raw_ast::ResourceDeclaration<'src>,
+        library_name: &str,
+    ) -> ExperimentalResourceDeclaration {
+        let full_name = format!("{}/{}", library_name, name);
+        let location = self.get_location(&decl.name.element);
+        
+        let mut properties = vec![];
+        let mut property_names = std::collections::HashSet::new();
+        
+        let ctx = crate::name::NamingContext::create(name);
+        let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
+        
+        // C++ checks if type resolves to a uint32 primitive
+        let mut is_uint32 = type_obj.kind_v2 == "primitive" && type_obj.subtype.as_deref() == Some("uint32");
+        if !is_uint32 {
+            if let Some(id) = type_obj.identifier.as_ref() {
+                let mut curr = id.clone();
+                for _ in 0..100 {
+                    if curr == "uint32" {
+                        is_uint32 = true;
+                        break;
+                    }
+                    if let Some(d) = self.raw_decls.get(&curr) {
+                        if let RawDecl::Alias(a) = d {
+                            match &a.type_ctor.layout {
+                                raw_ast::LayoutParameter::Identifier(inner_id) => {
+                                    let next = inner_id.to_string();
+                                    if next == "uint32" {
+                                        is_uint32 = true;
+                                        break;
+                                    }
+                                    curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                        next
+                                    } else {
+                                        format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                    };
+                                }
+                                _ => break,
+                            }
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if !is_uint32 {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrResourceMustBeUint32Derived,
+                decl.name.element.span(),
+                &[&name],
+            );
+        }
+
+        if decl.properties.is_empty() {
+             self.reporter.fail(
+                crate::diagnostics::Error::ErrMustHaveOneProperty,
+                decl.element.span(),
+                &[],
+             );
+        }
+
+        let mut has_subtype = false;
+
+        for prop in &decl.properties {
+            let prop_name = prop.name.data().to_string();
+            
+            if !property_names.insert(prop_name.clone()) {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrNameCollision,
+                    prop.name.element.span(),
+                    &[&"resource property", &prop_name, &"resource property", &prop.name.element.span().data],
+                );
+            }
+
+            let prop_ctx = crate::name::NamingContext::create(name).enter_member(prop_name.as_str());
+            let prop_type = self.resolve_type(&prop.type_ctor, library_name, Some(prop_ctx));
+
+            if prop_name == "subtype" {
+                has_subtype = true;
+                let is_enum = if let Some(id) = prop_type.identifier.as_ref() {
+                    match self.get_underlying_decl(id) {
+                        Some(RawDecl::Enum(_)) => true,
+                        Some(RawDecl::Type(t)) => matches!(t.layout, raw_ast::Layout::Enum(_)),
+                        _ => false,
+                    }
+                } else {
+                    false
+                };
+                if !is_enum {
+                     self.reporter.fail(
+                        crate::diagnostics::Error::ErrResourceSubtypePropertyMustReferToEnum,
+                        prop.name.element.span(),
+                        &[&name],
+                     );
+                }
+            } else if prop_name == "rights" {
+                let is_bits = if let Some(id) = prop_type.identifier.as_ref() {
+                    match self.get_underlying_decl(id) {
+                        Some(RawDecl::Bits(_)) => true,
+                        Some(RawDecl::Type(t)) => matches!(t.layout, raw_ast::Layout::Bits(_)),
+                        _ => false,
+                    }
+                } else {
+                    false
+                };
+                let mut is_uint32_prop = prop_type.kind_v2 == "primitive" && prop_type.subtype.as_deref() == Some("uint32");
+                if !is_uint32_prop {
+                    if let Some(id) = prop_type.identifier.as_ref() {
+                        let mut curr = id.clone();
+                        for _ in 0..100 {
+                            if curr == "uint32" {
+                                is_uint32_prop = true;
+                                break;
+                            }
+                            if let Some(d) = self.raw_decls.get(&curr) {
+                                if let RawDecl::Alias(a) = d {
+                                    match &a.type_ctor.layout {
+                                        raw_ast::LayoutParameter::Identifier(inner_id) => {
+                                            let next = inner_id.to_string();
+                                            if next == "uint32" {
+                                                is_uint32_prop = true;
+                                                break;
+                                            }
+                                            curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                                next
+                                            } else {
+                                                format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                            };
+                                        }
+                                        _ => break,
+                                    }
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+                if !is_bits && !is_uint32_prop {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrResourceRightsPropertyMustReferToBits,
+                        prop.name.element.span(),
+                        &[&name],
+                    );
+                }
+            }
+
+            properties.push(ResourceProperty {
+                type_: prop_type,
+                name: prop_name,
+                location: self.get_location(&prop.name.element),
+                deprecated: self.is_deprecated(prop.attributes.as_deref()),
+            });
+        }
+        
+        if !has_subtype && !decl.properties.is_empty() {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrResourceMissingSubtypeProperty,
+                decl.name.element.span(),
+                &[&name],
+            );
+        }
+
+        ExperimentalResourceDeclaration {
+            name: full_name,
+            location,
+            deprecated: self.is_deprecated(decl.attributes.as_deref()),
+            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            type_: type_obj,
+            properties,
+        }
+    }
+
     pub fn compile_service(
         &mut self,
         name: &str,

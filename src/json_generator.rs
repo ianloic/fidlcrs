@@ -248,7 +248,25 @@ pub struct Attribute {
     pub location: Location,
 }
 #[derive(Serialize, Clone, Debug)]
-pub struct ExperimentalResourceDeclaration {}
+pub struct ResourceProperty {
+    #[serde(rename = "type")]
+    pub type_: Type,
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ExperimentalResourceDeclaration {
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    #[serde(rename = "type")]
+    pub type_: Type,
+    pub properties: Vec<ResourceProperty>,
+}
 #[derive(Serialize, Clone, Debug)]
 pub struct ProtocolDeclaration {
     pub name: String,

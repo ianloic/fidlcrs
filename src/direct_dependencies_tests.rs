@@ -58,12 +58,7 @@ protocol ComposedProtocol {{
             );
             dep1.add_source(&dep2_source);
             dep1.add_source(&dep1_source);
-        let _dep1_root = match dep1.compile() {
-            Ok(r) => r,
-            Err(e) => {
-                panic!("dep1 compilation failed: {}", e);
-            }
-        };
+            let _dep1_root = dep1.compile().expect("dep1 compilation failed");
 
             let mut lib = TestLibrary::new();
             let lib_source = SourceFile::new(
@@ -330,7 +325,6 @@ protocol CapturesDependencyThroughCompose {
         lib.add_source(&lib_source);
         let root = lib.compile().expect("lib compilation failed");
         let expected: Vec<&str> = vec!["dep1", "dep2"];
-        let output = direct_and_composed_dependencies(&root);
-        assert_eq!(output, expected);
+        assert_eq!(direct_and_composed_dependencies(&root), expected);
     }
 }

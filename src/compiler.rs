@@ -118,6 +118,7 @@ pub struct Compiler<'node, 'src> {
     pub table_declarations: Vec<TableDeclaration>,
     pub union_declarations: Vec<UnionDeclaration>,
     pub external_struct_declarations: Vec<StructDeclaration>,
+    pub external_enum_declarations: Vec<EnumDeclaration>,
     pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
 
     pub declarations: IndexMap<String, String>,
@@ -155,6 +156,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             table_declarations: Vec::new(),
             union_declarations: Vec::new(),
             external_struct_declarations: Vec::new(),
+            external_enum_declarations: Vec::new(),
             declarations: IndexMap::new(),
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
@@ -1033,6 +1035,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                     if is_main_library {
                         self.enum_declarations.push(compiled);
+                    } else {
+                        self.external_enum_declarations.push(compiled);
                     }
                 } else if let raw_ast::Layout::Bits(ref b) = t.layout {
                     let compiled = self.compile_bits(
@@ -1121,6 +1125,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                     if is_main_library {
                         self.enum_declarations.push(compiled);
+                    } else {
+                        self.external_enum_declarations.push(compiled);
                     }
                 }
             }
@@ -4517,9 +4523,57 @@ impl<'node, 'src> Compiler<'node, 'src> {
             );
         }
 
+        let openness = decl
+            .modifiers
+            .iter()
+            .find(|m| {
+                m.subkind == crate::token::TokenSubkind::Open
+                    || m.subkind == crate::token::TokenSubkind::Ajar
+                    || m.subkind == crate::token::TokenSubkind::Closed
+            })
+            .map(|m| match m.subkind {
+                crate::token::TokenSubkind::Open => "open",
+                crate::token::TokenSubkind::Ajar => "ajar",
+                crate::token::TokenSubkind::Closed => "closed",
+                _ => unreachable!(),
+            })
+            .unwrap_or("open");
+
         let mut methods = vec![];
         let mut method_names = std::collections::HashSet::new();
         for m in &decl.methods {
+            let mut is_method_flexible = false;
+            for modifier in &m.modifiers {
+                match modifier.subkind {
+                    crate::token::TokenSubkind::Strict => {}
+                    crate::token::TokenSubkind::Flexible => {
+                        is_method_flexible = true;
+                    }
+                    _ => {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                            modifier.element.span(),
+                            &[&modifier.element.span().data, &"method"],
+                        );
+                    }
+                }
+            }
+
+            let two_way = m.has_request && m.has_response;
+            if is_method_flexible && two_way && openness != "open" {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
+                    m.name.element.span(),
+                    &[&openness],
+                );
+            } else if is_method_flexible && !two_way && openness == "closed" {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrFlexibleOneWayMethodInClosedProtocol,
+                    m.name.element.span(),
+                    &[&if !m.has_request && m.has_response { "event" } else { "one-way method" }],
+                );
+            }
+
             if !method_names.insert(m.name.data()) {
                 self.reporter.fail(
                     crate::diagnostics::Error::ErrNameCollision,
@@ -4576,6 +4630,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 s.element.span(),
                                 &[],
                             );
+                        }
+                        for sm in &s.members {
+                            if sm.default_value.is_some() {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrPayloadStructHasDefaultMembers,
+                                    sm.name.element.span(),
+                                    &[&sm.name.data()],
+                                );
+                            }
                         }
                         let ctx = crate::name::NamingContext::create(decl.name.element.span())
                             .enter_request(m.name.element.span());
@@ -4787,6 +4850,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 s.element.span(),
                                 &[],
                             );
+                        }
+                        for sm in &s.members {
+                            if sm.default_value.is_some() {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrPayloadStructHasDefaultMembers,
+                                    sm.name.element.span(),
+                                    &[&sm.name.data()],
+                                );
+                            }
                         }
                         let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
                         let mut ctx = if !m.has_request && !m.has_error {
@@ -5006,7 +5078,36 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         ctx.set_name_override(format!("{}_{}_Result", short_name, m.name.data()));
                         let ctx = ctx.enter_member("err");
                         ctx.set_name_override(format!("{}_{}_Error", short_name, m.name.data()));
-                        Some(self.resolve_type(tc, library_name, Some(ctx)))
+                        let err_type_resolved = self.resolve_type(tc, library_name, Some(ctx));
+                        
+                        let mut is_valid_error_type = false;
+                        if err_type_resolved.kind_v2 == "primitive" {
+                            if err_type_resolved.subtype.as_deref() == Some("int32") || err_type_resolved.subtype.as_deref() == Some("uint32") {
+                                is_valid_error_type = true;
+                            }
+                        } else if err_type_resolved.kind_v2 == "identifier" {
+                            if let Some(id) = &err_type_resolved.identifier {
+                                if let Some(e_decl) = self.enum_declarations.iter().find(|e| &e.name == id) {
+                                    if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
+                                        is_valid_error_type = true;
+                                    }
+                                } else if let Some(e_decl) = self.external_enum_declarations.iter().find(|e| &e.name == id) {
+                                    if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
+                                        is_valid_error_type = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if !is_valid_error_type {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrInvalidErrorType,
+                                tc.element.span(),
+                                &[],
+                            );
+                        }
+
+                        Some(err_type_resolved)
                     }
                     _ => None,
                 }

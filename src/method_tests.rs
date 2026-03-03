@@ -11,7 +11,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+
     fn good_valid_compose_method() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -34,7 +34,7 @@ open protocol HasComposeMethod2 {
     }
 
     #[test]
-    #[ignore]
+
     fn good_valid_strict_compose_method() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -57,7 +57,7 @@ open protocol HasComposeMethod2 {
     }
 
     #[test]
-    #[ignore]
+
     fn good_valid_flexible_compose_method() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -80,7 +80,7 @@ open protocol HasComposeMethod2 {
     }
 
     #[test]
-    #[ignore]
+
     fn disabled_good_valid_strict_method() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -119,7 +119,7 @@ open protocol HasStrictMethod6 {
     }
 
     #[test]
-    #[ignore]
+
     fn disabled_good_valid_flexible_two_way_method() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -319,7 +319,7 @@ open protocol Open {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_invalid_strictness_flexible_event_in_closed() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -338,7 +338,7 @@ closed protocol Closed {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_invalid_strictness_flexible_one_way_method_in_closed() {
         let mut lib = TestLibrary::new();
         let source = SourceFile::new(
@@ -350,7 +350,7 @@ closed protocol Closed {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_invalid_strictness_flexible_two_way_method_in_closed() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -369,7 +369,7 @@ closed protocol Closed {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_invalid_strictness_flexible_two_way_method_in_ajar() {
         let mut lib = TestLibrary::new();
         let source = SourceFile::new(
@@ -381,7 +381,7 @@ closed protocol Closed {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_invalid_openness_modifier_on_method() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -421,7 +421,7 @@ open protocol Test {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_invalid_empty_struct_payload_strict_no_error() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -440,7 +440,7 @@ open protocol Test {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_empty_struct_payload_flexible_no_error() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -459,7 +459,7 @@ open protocol Test {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_empty_struct_payload_strict_error() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -478,7 +478,7 @@ open protocol Test {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_empty_struct_payload_flexible_error() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

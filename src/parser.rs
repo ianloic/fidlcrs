@@ -1034,7 +1034,8 @@ impl<'a, 'b> Parser<'a, 'b> {
             let attrs = self.maybe_parse_attribute_list();
             let mods = self.parse_modifiers();
 
-            if self.last_token.subkind == TokenSubkind::Compose {
+            let peeked = self.peek_token();
+            if self.last_token.subkind == TokenSubkind::Compose && peeked.kind == TokenKind::Identifier {
                 let start_tok = mods
                     .first()
                     .map(|m| m.element.start_token.clone())
@@ -1103,13 +1104,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             .map(|a| a.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
-        let mut _strictness = None;
-        if self.last_token.subkind == TokenSubkind::Strict
-            || self.last_token.subkind == TokenSubkind::Flexible
-        {
-            _strictness = Some(self.last_token.clone());
-            self.consume_token(TokenKind::Identifier)?;
-        }
+
 
         let is_event = if self.last_token.kind == TokenKind::Arrow {
             self.consume_token(TokenKind::Arrow)?;
@@ -1236,7 +1231,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 | TokenSubkind::Ajar
                 | TokenSubkind::Open => {
                     let peeked = self.peek_token();
-                    if peeked.kind != TokenKind::Identifier && peeked.kind != TokenKind::LeftParen {
+                    if peeked.kind != TokenKind::Identifier && peeked.kind != TokenKind::Arrow {
                         break;
                     }
                     let start_tok = self.last_token.clone();

@@ -610,3 +610,53 @@ const BAR bool = "not a bool";
 
     // Type param tests omitted as they require dynamic evaluation to fully loop through array of names
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use crate::source_file::SourceFile;
+    use crate::test_library::TestLibrary;
+
+    #[test]
+    #[ignore]
+    fn bad_type_cannot_be_boxed_should_be_optional() {
+        let boxed_names = vec!["Endpoint", "server_end:Endpoint", "client_end:Endpoint"];
+        for boxed_name in boxed_names {
+            let source = SourceFile::new(
+                "example.fidl".to_string(),
+                format!(r#"
+library example;
+
+protocol Endpoint {{}};
+
+type MyStruct = struct {{
+    foo box<{}>;
+}};
+"#, boxed_name)
+            );
+            let mut lib = TestLibrary::new();
+            lib.add_source(&source);
+            assert!(lib.compile().is_err());
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn bad_type_cannot_be_boxed_nor_optional() {
+        let boxed_names = vec!["int32", "uint32", "bool"];
+        for boxed_name in boxed_names {
+            let source = SourceFile::new(
+                "example.fidl".to_string(),
+                format!(r#"
+library example;
+
+type MyStruct = struct {{
+    foo box<{}>;
+}};
+"#, boxed_name)
+            );
+            let mut lib = TestLibrary::new();
+            lib.add_source(&source);
+            assert!(lib.compile().is_err());
+        }
+    }
+}

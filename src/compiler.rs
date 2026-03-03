@@ -132,6 +132,7 @@ pub struct Compiler<'node, 'src> {
     pub generated_source_file: VirtualSourceFile,
     pub skip_eager_compile: bool,
     pub anonymous_structs: HashSet<String>,
+    pub experimental_flags: Vec<String>,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -169,6 +170,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
+            experimental_flags: Vec::new(),
         }
     }
 
@@ -581,7 +583,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
-            experiments: vec!["output_index_json".to_string()],
+            experiments: {
+                let mut exps = vec!["output_index_json".to_string()];
+                exps.extend(self.experimental_flags.clone());
+                exps
+            },
             library_dependencies,
             bits_declarations: self.bits_declarations.clone(),
             const_declarations: self.const_declarations.clone(),

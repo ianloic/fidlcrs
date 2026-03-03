@@ -225,6 +225,7 @@ fn main() {
 
     let mut compiler = Compiler::new(&reporter);
     compiler.version_selection = version_selection;
+    compiler.experimental_flags = cli.experimental;
     let source_refs: Vec<&SourceFile> = source_files.iter().collect();
     let (dep_files, main_files) = files.split_at(dep_filenames.len());
     let json_root = match compiler.compile(main_files, dep_files, &source_refs) {

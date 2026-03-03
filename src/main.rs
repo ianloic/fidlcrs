@@ -173,14 +173,22 @@ fn main() {
     // let source = SourceFile::new(filename, content);
     // parser.parse_file(); ... JSON output.
 
-    let mut filenames = Vec::new();
-    for group in source_managers {
-        filenames.extend(group);
-    }
-
-    if filenames.is_empty() {
+    if source_managers.is_empty() {
         fail_with_usage("No files provided");
     }
+
+    let main_filenames = source_managers.pop().unwrap();
+    let mut dep_filenames = Vec::new();
+    for group in source_managers {
+        dep_filenames.extend(group);
+    }
+
+    if main_filenames.is_empty() {
+        fail_with_usage("No files provided");
+    }
+
+    let mut filenames = dep_filenames.clone();
+    filenames.extend(main_filenames.clone());
 
     let mut source_files = Vec::new();
     for filename in &filenames {
@@ -218,7 +226,8 @@ fn main() {
     let mut compiler = Compiler::new(&reporter);
     compiler.version_selection = version_selection;
     let source_refs: Vec<&SourceFile> = source_files.iter().collect();
-    let json_root = match compiler.compile(&files, &source_refs) {
+    let (dep_files, main_files) = files.split_at(dep_filenames.len());
+    let json_root = match compiler.compile(main_files, dep_files, &source_refs) {
         Ok(root) => {
             reporter.print_reports();
             root

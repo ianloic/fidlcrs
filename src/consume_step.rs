@@ -3,24 +3,27 @@ use crate::raw_ast;
 use crate::step::Step;
 
 pub struct ConsumeStep<'node, 'src> {
-    pub files: &'node [raw_ast::File<'src>],
+    pub main_files: &'node [raw_ast::File<'src>],
+    pub dependency_files: &'node [raw_ast::File<'src>],
 }
 
 impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
     fn run(&mut self, compiler: &mut Compiler<'node, 'src>) {
         let main_library_name = self
-            .files
-            .last()
+            .main_files
+            .first()
             .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
         compiler.library_name = main_library_name.clone();
         compiler.library_decl = self
-            .files
-            .last()
+            .main_files
+            .first()
             .and_then(|f| f.library_decl.as_ref().map(|l| *l.clone()));
 
-        for file in self.files {
+        let all_files = self.dependency_files.iter().chain(self.main_files.iter());
+
+        for file in all_files {
             let file_library_name = file
                 .library_decl
                 .as_ref()

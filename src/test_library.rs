@@ -113,7 +113,23 @@ resource_definition handle : uint32 {
             }
         }
 
-        let res = compiler.compile(&asts, &self.source_files);
+        let main_library_name = asts.last()
+            .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
+            .unwrap_or_else(|| "unknown".to_string());
+
+        let mut main_asts = Vec::new();
+        let mut dep_asts = Vec::new();
+
+        for ast in asts {
+            let file_lib = ast.library_decl.as_ref().map(|l| l.path.to_string()).unwrap_or_else(|| "unknown".to_string());
+            if file_lib == main_library_name {
+                main_asts.push(ast);
+            } else {
+                dep_asts.push(ast);
+            }
+        }
+
+        let res = compiler.compile(&main_asts, &dep_asts, &self.source_files);
         if !self.reporter.diagnostics().is_empty() {
             return Err("Compilation failed".to_string());
         }

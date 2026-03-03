@@ -185,13 +185,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     pub fn compile(
         &mut self,
-        files: &'node [raw_ast::File<'src>],
+        main_files: &'node [raw_ast::File<'src>],
+        dependency_files: &'node [raw_ast::File<'src>],
         source_files: &[&'src SourceFile],
     ) -> Result<JsonRoot, String> {
         self.source_files = source_files.to_vec();
 
         // 1. Consume
-        let mut consume = ConsumeStep { files };
+        let mut consume = ConsumeStep { main_files, dependency_files };
         consume.run(self);
 
         // 2. Resolve
@@ -518,7 +519,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for (name, declarations) in &self.dependency_declarations {
             let using_stmt = format!("using {};", name);
             if used_deps.contains(name)
-                || files.iter().any(|f| {
+                || main_files.iter().any(|f| {
                     f.library_decl.as_ref().map(|l| l.path.to_string())
                         == Some(self.library_name.clone())
                         && f.element
@@ -572,7 +573,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 ("fuchsia".to_string(), vec!["HEAD".to_string()]),
                 ("test".to_string(), vec!["HEAD".to_string()]),
             ])),
-            maybe_attributes: files
+            maybe_attributes: main_files
                 .iter()
                 .filter(|f| {
                     f.library_decl.as_ref().map(|l| l.path.to_string())

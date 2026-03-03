@@ -4,7 +4,6 @@ mod tests {
     use crate::test_library::{LookupHelpers, TestLibrary};
 
     #[test]
-    #[ignore]
     fn good_handle_rights_test() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -65,7 +64,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_invalid_handle_rights_test() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -117,7 +115,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn good_handle_fidl_defined_test() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -160,7 +157,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_invalid_fidl_defined_handle_subtype() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -182,7 +178,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_disallow_old_handles() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -204,7 +199,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn good_resource_definition_only_subtype_no_rights_test() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -243,7 +237,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_invalid_subtype_at_use_site() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -273,7 +266,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_invalid_rights_at_use_site() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -304,7 +296,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_bare_handle_no_constraints() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -323,7 +314,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_bare_handle_with_constraints() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -342,7 +332,6 @@ type MyStruct = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_bare_handle_with_constraints_through_alias() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

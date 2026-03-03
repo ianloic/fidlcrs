@@ -113,7 +113,11 @@ resource_definition handle : uint32 {
             }
         }
 
-        compiler.compile(&asts, &self.source_files)
+        let res = compiler.compile(&asts, &self.source_files);
+        if !self.reporter.diagnostics().is_empty() {
+            return Err("Compilation failed".to_string());
+        }
+        res
     }
 
     pub fn parse(&'a self) -> Result<Vec<raw_ast::File<'a>>, String> {

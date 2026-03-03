@@ -2641,46 +2641,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     },
                 }
             }
-            "handle" => {
-                let subtype = if let Some(param) = type_ctor.parameters.first() {
-                    if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
-                        Some(id.to_string())
-                    } else {
-                        Some("handle".to_string())
-                    }
-                } else {
-                    Some("handle".to_string())
-                };
 
-                Type {
-                    kind_v2: "handle".to_string(),
-                    subtype,
-                    identifier: None,
-                    nullable: Some(nullable),
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: None,
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape_v2: None,
-                    maybe_size_constant_name: None,
-                    type_shape_v2: TypeShapeV2 {
-                        inline_size: 4,
-                        alignment: 4,
-                        depth: 0,
-                        max_handles: 1,
-                        max_out_of_line: 0,
-                        has_padding: false,
-                        has_flexible_envelope: false,
-                    },
-                }
-            }
             "client_end" | "server_end" => {
                 let role = if name == "client_end" {
                     "client"
@@ -2842,8 +2803,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 inner_type
             }
             _ => {
-                if name == "zx/Handle" || name == "zx.Handle" || name == "zx.handle" {
-                    self.compile_decl_by_name("zx/Handle");
+                // Try to resolve identifier
+                // 1. Check if name exists directly
+                // 2. Check if name exists with library prefix
+                let full_name = if name.contains('/') || self.shapes.contains_key(&name) {
+                    name.clone()
+                } else {
+                    format!("{}/{}", library_name, name)
+                };
+
+                if !nullable && !self.skip_eager_compile {
+                    self.compile_decl_by_name(&full_name);
+                }
+
+                if let Some(RawDecl::Resource(res_decl)) = self.get_underlying_decl(&full_name) {
                     let mut handle_subtype = "handle".to_string();
                     let mut handle_obj_type = 0;
                     let mut handle_rights = 2147483648;
@@ -2851,31 +2824,158 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let filtered_constraints: Vec<_> = type_ctor
                         .constraints
                         .iter()
-                        .filter(|c| {
-                            if let raw_ast::Constant::Identifier(id) = c {
-                                id.identifier.to_string() != "optional"
-                            } else {
-                                true
-                            }
-                        })
+                        .filter(|c| !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional"))
                         .collect();
 
-                    if let Some(param) = filtered_constraints.first() {
-                        let param_str = format!("{:?}", param);
-                        if param_str.contains("SOCKET") || param_str.contains("socket") {
-                            handle_subtype = "socket".to_string();
-                            handle_obj_type = 14;
-                        } else if param_str.contains("VMO") || param_str.contains("vmo") {
-                            handle_subtype = "vmo".to_string();
-                            handle_obj_type = 3;
-                        }
-                    }
+                    let res_library_name = if full_name.contains('/') {
+                        full_name.split('/').next().unwrap_or(library_name)
+                    } else {
+                        library_name
+                    };
 
-                    if filtered_constraints.len() > 1 {
-                        if let raw_ast::Constant::BinaryOperator { .. } = &filtered_constraints[1] {
-                            handle_rights = 3; // TRANSFER | DUPLICATE
-                        } else {
-                            handle_rights = 2; // TRANSFER
+                    if filtered_constraints.len() > res_decl.properties.len() {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrTooManyConstraints,
+                            type_ctor.element.start_token.span.clone(),
+                            &[&full_name, &0_usize, &res_decl.properties.len()],
+                        );
+                    } else {
+                        for (i, constraint) in filtered_constraints.iter().enumerate() {
+                            let prop = &res_decl.properties[i];
+                            let prop_name = prop.name.data();
+
+                            let mut prop_decl_full_name = "".to_string();
+                            if let raw_ast::LayoutParameter::Identifier(id) = &prop.type_ctor.layout
+                            {
+                                prop_decl_full_name = if id.to_string().contains('/')
+                                    || self.shapes.contains_key(&id.to_string())
+                                {
+                                    id.to_string()
+                                } else {
+                                    format!("{}/{}", res_library_name, id.to_string())
+                                };
+                            }
+
+                            if prop_name == "subtype" {
+                                if let raw_ast::Constant::Identifier(id) = constraint {
+                                    let ident_str = id.identifier.components.last().unwrap().data();
+                                    let mut found = false;
+
+                                    let decl = self.get_underlying_decl(&prop_decl_full_name);
+                                    let enum_decl = match decl {
+                                        Some(RawDecl::Enum(e)) => Some(*e),
+                                        Some(RawDecl::Type(t)) => {
+                                            if let raw_ast::Layout::Enum(e) = &t.layout {
+                                                Some(e)
+                                            } else {
+                                                None
+                                            }
+                                        }
+                                        _ => None,
+                                    };
+                                    if let Some(e) = enum_decl {
+                                        for mem in &e.members {
+                                            if mem.name.data() == ident_str {
+                                                found = true;
+                                                if full_name == "zx/Handle" {
+                                                    handle_subtype = ident_str.to_lowercase();
+                                                } else {
+                                                    handle_subtype = ident_str.to_string();
+                                                }
+                                                if let raw_ast::Constant::Literal(lit) = &mem.value
+                                                {
+                                                    if let Ok(v) = lit.literal.value.parse::<u32>()
+                                                    {
+                                                        handle_obj_type = v;
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if !found {
+                                        self.reporter.fail(
+                                            crate::diagnostics::Error::ErrUnexpectedConstraint,
+                                            type_ctor.element.start_token.span.clone(),
+                                            &[&full_name],
+                                        );
+                                    }
+                                } else {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrExpectedType,
+                                        type_ctor.element.start_token.span.clone(),
+                                        &[],
+                                    );
+                                }
+                            } else if prop_name == "rights" {
+                                let mut found = false;
+                                let decl = self.get_underlying_decl(&prop_decl_full_name);
+                                let bits_decl = match decl {
+                                    Some(RawDecl::Bits(b)) => Some(*b),
+                                    Some(RawDecl::Type(t)) => {
+                                        if let raw_ast::Layout::Bits(b) = &t.layout {
+                                            Some(b)
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                    _ => None,
+                                };
+                                if let Some(b) = bits_decl {
+                                    fn eval_bits(
+                                        c: &raw_ast::Constant<'_>,
+                                        b: &raw_ast::BitsDeclaration<'_>,
+                                    ) -> Option<u32> {
+                                        match c {
+                                            raw_ast::Constant::Identifier(id) => {
+                                                let ident_str =
+                                                    id.identifier.components.last().unwrap().data();
+                                                for mem in &b.members {
+                                                    if mem.name.data() == ident_str {
+                                                        if let raw_ast::Constant::Literal(lit) =
+                                                            &mem.value
+                                                        {
+                                                            let val_str = lit.literal.value.clone();
+                                                            let parsed = if val_str
+                                                                .starts_with("0x")
+                                                                || val_str.starts_with("0X")
+                                                            {
+                                                                u32::from_str_radix(
+                                                                    &val_str[2..],
+                                                                    16,
+                                                                )
+                                                            } else {
+                                                                val_str.parse::<u32>()
+                                                            };
+                                                            if let Ok(v) = parsed {
+                                                                return Some(v);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                None
+                                            }
+                                            raw_ast::Constant::BinaryOperator(binop) => {
+                                                let left = eval_bits(&binop.left, b)?;
+                                                let right = eval_bits(&binop.right, b)?;
+                                                Some(left | right)
+                                            }
+                                            _ => None,
+                                        }
+                                    }
+                                    if let Some(v) = eval_bits(constraint, b) {
+                                        found = true;
+                                        handle_rights = v;
+                                    }
+                                }
+                                if !found {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrUnexpectedConstraint,
+                                        type_ctor.element.start_token.span.clone(),
+                                        &[&full_name],
+                                    );
+                                }
+                            }
                         }
                     }
 
@@ -2890,9 +2990,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         role: None,
                         protocol: None,
                         protocol_transport: None,
-                        obj_type: Some(handle_obj_type), // zx_obj_type_t::ZX_OBJ_TYPE_NONE defaults to 0
-                        rights: Some(handle_rights),     // ZX_RIGHT_SAME_RIGHTS
-                        resource_identifier: Some("zx/Handle".to_string()),
+                        obj_type: Some(handle_obj_type),
+                        rights: Some(handle_rights),
+                        resource_identifier: Some(full_name.clone()),
                         deprecated: None,
                         maybe_attributes: vec![],
                         field_shape_v2: None,
@@ -2907,19 +3007,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: false,
                         },
                     };
-                }
-
-                // Try to resolve identifier
-                // 1. Check if name exists directly
-                // 2. Check if name exists with library prefix
-                let full_name = if name.contains('/') || self.shapes.contains_key(&name) {
-                    name.clone()
-                } else {
-                    format!("{}/{}", library_name, name)
-                };
-
-                if !nullable && !self.skip_eager_compile {
-                    self.compile_decl_by_name(&full_name);
                 }
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
@@ -3054,7 +3141,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 } else {
                     // eprintln!("Warning: Type not found: {} (tried {})", name, full_name);
-                    // eprintln!("Available shapes: {:?}", self.shapes.keys());
+                    if name == "handle" {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrNameNotFound,
+                            type_ctor.element.span(),
+                            &[&name, &library_name],
+                        );
+                    }
                     Type {
                         kind_v2: "unknown".to_string(),
                         subtype: None,

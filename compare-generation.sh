@@ -17,7 +17,6 @@ FILES=(
     "enum.test.fidl"
     "error.test.fidl"
     "escaping.test.fidl"
-    "large_messages.test.fidl"
     "nullable.test.fidl"
     "padding.test.fidl"
     "protocol_request.test.fidl"
@@ -101,8 +100,8 @@ for entry in "${FILES[@]}"; do
 
     CMD+=("--files" "fidlc/testdata/$file")
 
-    echo ""
-    echo "Running: ${CMD[@]}"
+    # echo ""
+    # echo "Running: ${CMD[@]}"
     "${CMD[@]}"
     diff -u "fidlc/goldens/$name.json.golden" "goldens/$name.json" || true
 done

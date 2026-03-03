@@ -96,7 +96,7 @@ fn main() {
     let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
 
     if cli.json_schema {
-        println!("{{}}"); // not genuinely implementing it right now
+        println!("{}", include_str!("../fidlc/schema.json"));
         process::exit(0);
     }
 

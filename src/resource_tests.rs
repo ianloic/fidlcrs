@@ -27,7 +27,8 @@ resource_definition SomeResource : uint32 {
         subtype MyEnum;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -59,7 +60,8 @@ resource_definition SomeResource : uint32 {
         rights uint32;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -91,7 +93,8 @@ resource_definition SomeResource : via {
         subtype MyEnum;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -124,7 +127,8 @@ resource_definition SomeResource : via {
         rights via;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -147,7 +151,8 @@ library example;
 
 resource_definition SomeResource : uint32 {
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -179,7 +184,8 @@ resource_definition MyResource : uint32 {
         rights uint32;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -229,7 +235,8 @@ resource_definition handle : uint32 {
         subtype uint32;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -259,7 +266,8 @@ resource_definition handle : uint32 {
         subtype handle;
     };
 };
-"#.to_string()
+"#
+            .to_string(),
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);

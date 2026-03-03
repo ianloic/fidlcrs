@@ -3966,15 +3966,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
     ) -> ExperimentalResourceDeclaration {
         let full_name = format!("{}/{}", library_name, name);
         let location = self.get_location(&decl.name.element);
-        
+
         let mut properties = vec![];
         let mut property_names = std::collections::HashSet::new();
-        
+
         let ctx = crate::name::NamingContext::create(name);
         let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
-        
+
         // C++ checks if type resolves to a uint32 primitive
-        let mut is_uint32 = type_obj.kind_v2 == "primitive" && type_obj.subtype.as_deref() == Some("uint32");
+        let mut is_uint32 =
+            type_obj.kind_v2 == "primitive" && type_obj.subtype.as_deref() == Some("uint32");
         if !is_uint32 {
             if let Some(id) = type_obj.identifier.as_ref() {
                 let mut curr = id.clone();
@@ -3992,7 +3993,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         is_uint32 = true;
                                         break;
                                     }
-                                    curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                    curr = if next.contains('/') || self.shapes.contains_key(&next)
+                                    {
                                         next
                                     } else {
                                         format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
@@ -4009,7 +4011,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        
+
         if !is_uint32 {
             self.reporter.fail(
                 crate::diagnostics::Error::ErrResourceMustBeUint32Derived,
@@ -4019,27 +4021,33 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         if decl.properties.is_empty() {
-             self.reporter.fail(
+            self.reporter.fail(
                 crate::diagnostics::Error::ErrMustHaveOneProperty,
                 decl.element.span(),
                 &[],
-             );
+            );
         }
 
         let mut has_subtype = false;
 
         for prop in &decl.properties {
             let prop_name = prop.name.data().to_string();
-            
+
             if !property_names.insert(prop_name.clone()) {
                 self.reporter.fail(
                     crate::diagnostics::Error::ErrNameCollision,
                     prop.name.element.span(),
-                    &[&"resource property", &prop_name, &"resource property", &prop.name.element.span().data],
+                    &[
+                        &"resource property",
+                        &prop_name,
+                        &"resource property",
+                        &prop.name.element.span().data,
+                    ],
                 );
             }
 
-            let prop_ctx = crate::name::NamingContext::create(name).enter_member(prop_name.as_str());
+            let prop_ctx =
+                crate::name::NamingContext::create(name).enter_member(prop_name.as_str());
             let prop_type = self.resolve_type(&prop.type_ctor, library_name, Some(prop_ctx));
 
             if prop_name == "subtype" {
@@ -4054,11 +4062,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     false
                 };
                 if !is_enum {
-                     self.reporter.fail(
+                    self.reporter.fail(
                         crate::diagnostics::Error::ErrResourceSubtypePropertyMustReferToEnum,
                         prop.name.element.span(),
                         &[&name],
-                     );
+                    );
                 }
             } else if prop_name == "rights" {
                 let is_bits = if let Some(id) = prop_type.identifier.as_ref() {
@@ -4070,7 +4078,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     false
                 };
-                let mut is_uint32_prop = prop_type.kind_v2 == "primitive" && prop_type.subtype.as_deref() == Some("uint32");
+                let mut is_uint32_prop = prop_type.kind_v2 == "primitive"
+                    && prop_type.subtype.as_deref() == Some("uint32");
                 if !is_uint32_prop {
                     if let Some(id) = prop_type.identifier.as_ref() {
                         let mut curr = id.clone();
@@ -4088,10 +4097,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                 is_uint32_prop = true;
                                                 break;
                                             }
-                                            curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                            curr = if next.contains('/')
+                                                || self.shapes.contains_key(&next)
+                                            {
                                                 next
                                             } else {
-                                                format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                                format!(
+                                                    "{}/{}",
+                                                    curr.split('/').next().unwrap_or(""),
+                                                    next
+                                                )
                                             };
                                         }
                                         _ => break,
@@ -4121,7 +4136,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 deprecated: self.is_deprecated(prop.attributes.as_deref()),
             });
         }
-        
+
         if !has_subtype && !decl.properties.is_empty() {
             self.reporter.fail(
                 crate::diagnostics::Error::ErrResourceMissingSubtypeProperty,

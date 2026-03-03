@@ -147,7 +147,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             for decl in &file.resource_decls {
                 let name = decl.name.data();
                 let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Resource(decl));
+                compiler
+                    .raw_decls
+                    .insert(full_name, RawDecl::Resource(decl));
             }
 
             for decl in &file.const_decls {

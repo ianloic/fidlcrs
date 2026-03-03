@@ -1,0 +1,135 @@
+diff --git a/src/compiler.rs b/src/compiler.rs
+index da5680a..19dcb94 100644
+--- a/src/compiler.rs
++++ b/src/compiler.rs
+@@ -5353,6 +5353,66 @@ impl<'node, 'src> Compiler<'node, 'src> {
+                 let _framework_err_loc = self.generated_location("framework_err");
+                 let _strict_loc = self.generated_location("strict");
+ 
++                let mut union_members = vec![
++                    crate::json_generator::UnionMember {
++                        ordinal: 1,
++                        reserved: None,
++                        name: Some("response".to_string()),
++                        type_: Some(success_type.clone()),
++                        location: Some(response_loc),
++                        deprecated: Some(false),
++                        maybe_attributes: vec![],
++                    },
++                    crate::json_generator::UnionMember {
++                        ordinal: 2,
++                        reserved: None,
++                        name: Some("err".to_string()),
++                        type_: Some(err_type.clone()),
++                        location: Some(err_loc),
++                        deprecated: Some(false),
++                        maybe_attributes: vec![],
++                    },
++                ];
++
++                if is_flexible {
++                    union_members.push(crate::json_generator::UnionMember {
++                        ordinal: 3,
++                        reserved: None,
++                        name: Some("framework_err".to_string()),
++                        type_: Some(Type {
++                            kind_v2: "identifier".to_string(),
++                            subtype: None,
++                            identifier: Some("fidl/internal/FrameworkErr".to_string()),
++                            nullable: Some(false),
++                            type_shape_v2: TypeShapeV2 {
++                                inline_size: 4,
++                                alignment: 4,
++                                depth: 0,
++                                max_handles: 0,
++                                max_out_of_line: 0,
++                                has_padding: false,
++                                has_flexible_envelope: false,
++                            },
++                            element_type: None,
++                            element_count: None,
++                            maybe_element_count: None,
++                            role: None,
++                            protocol: None,
++                            protocol_transport: None,
++                            obj_type: None,
++                            rights: None,
++                            resource_identifier: None,
++                            deprecated: None,
++                            maybe_attributes: vec![],
++                            field_shape_v2: None,
++                            maybe_size_constant_name: None,
++                        }),
++                        location: Some(_framework_err_loc),
++                        deprecated: Some(false),
++                        maybe_attributes: vec![],
++                    });
++                }
++
+                 let union_decl = crate::json_generator::UnionDeclaration {
+                     name: full_synth_union.clone(),
+                     naming_context: vec![
+@@ -5362,62 +5422,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
+                     ],
+                     location: union_loc,
+                     deprecated: false,
+-                    members: vec![
+-                        crate::json_generator::UnionMember {
+-                            ordinal: 1,
+-                            reserved: None,
+-                            name: Some("response".to_string()),
+-                            type_: Some(success_type.clone()),
+-                            location: Some(response_loc),
+-                            deprecated: Some(false),
+-                            maybe_attributes: vec![],
+-                        },
+-                        crate::json_generator::UnionMember {
+-                            ordinal: 2,
+-                            reserved: None,
+-                            name: Some("err".to_string()),
+-                            type_: Some(err_type.clone()),
+-                            location: Some(err_loc),
+-                            deprecated: Some(false),
+-                            maybe_attributes: vec![],
+-                        },
+-                        crate::json_generator::UnionMember {
+-                            ordinal: 3,
+-                            reserved: None,
+-                            name: Some("framework_err".to_string()),
+-                            type_: Some(Type {
+-                                kind_v2: "identifier".to_string(),
+-                                subtype: None,
+-                                identifier: Some("fidl/internal/FrameworkErr".to_string()),
+-                                nullable: Some(false),
+-                                type_shape_v2: TypeShapeV2 {
+-                                    inline_size: 4,
+-                                    alignment: 4,
+-                                    depth: 0,
+-                                    max_handles: 0,
+-                                    max_out_of_line: 0,
+-                                    has_padding: false,
+-                                    has_flexible_envelope: false,
+-                                },
+-                                element_type: None,
+-                                element_count: None,
+-                                maybe_element_count: None,
+-                                role: None,
+-                                protocol: None,
+-                                protocol_transport: None,
+-                                obj_type: None,
+-                                rights: None,
+-                                resource_identifier: None,
+-                                deprecated: None,
+-                                maybe_attributes: vec![],
+-                                field_shape_v2: None,
+-                                maybe_size_constant_name: None,
+-                            }),
+-                            location: Some(_framework_err_loc),
+-                            deprecated: Some(false),
+-                            maybe_attributes: vec![],
+-                        },
+-                    ],
++                    members: union_members,
+                     strict: true,
+                     resource: union_handles > 0,
+                     is_result: true,

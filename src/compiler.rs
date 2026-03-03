@@ -1578,7 +1578,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     }
                 }
-                raw_ast::Constant::Identifier(_id) => {
+                raw_ast::Constant::Identifier(_) | raw_ast::Constant::BinaryOperator(_) => {
                     // out of line var
                     let val_opt = self.eval_constant_usize(&member.value);
                     if let Some(val) = val_opt {
@@ -1608,13 +1608,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                 }
-                _ => {
-                    self.reporter.fail(
-                        crate::diagnostics::Error::ErrCannotResolveConstantValue,
-                        member.value.element().span(),
-                        &[],
-                    );
-                }
+                // No other Constant variants
             }
 
             members.push(BitsMember {
@@ -3456,21 +3450,69 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-    fn eval_constant_usize(&self, constant: &raw_ast::Constant<'_>) -> Option<usize> {
+    pub fn eval_constant_value(&self, constant: &raw_ast::Constant<'_>) -> Option<u64> {
         match constant {
             raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
-                raw_ast::LiteralKind::Numeric => lit.literal.value.parse::<usize>().ok(),
+                raw_ast::LiteralKind::Numeric => {
+                    let val_str = &lit.literal.value;
+                    if let Some(stripped) = val_str.strip_prefix("0x").or_else(|| val_str.strip_prefix("0X")) {
+                        u64::from_str_radix(stripped, 16).ok()
+                    } else if let Some(stripped) = val_str.strip_prefix("0b").or_else(|| val_str.strip_prefix("0B")) {
+                        u64::from_str_radix(stripped, 2).ok()
+                    } else {
+                        val_str.parse::<i64>().ok().map(|v| v as u64).or_else(|| val_str.parse::<u64>().ok())
+                    }
+                }
+                raw_ast::LiteralKind::Bool(b) => Some(if *b { 1 } else { 0 }),
                 _ => None,
             },
             raw_ast::Constant::Identifier(id) => {
-                if id.identifier.to_string() == "MAX" {
-                    Some(u32::MAX as usize)
-                } else {
-                    None // TODO lookup const
+                let name = id.identifier.to_string();
+                if name == "MAX" {
+                    return Some(u32::MAX as u64); // Approximation
                 }
+                
+                let mut full_name = name.clone();
+                if !full_name.contains('/') {
+                    full_name = format!("{}/{}", self.library_name, name);
+                }
+
+                if let Some(decl) = self.raw_decls.get(&full_name) {
+                    if let RawDecl::Const(c) = decl {
+                        return self.eval_constant_value(&c.value);
+                    }
+                }
+
+                if let Some((type_name, member_name)) = name.rsplit_once('.') {
+                    let mut type_full_name = type_name.to_string();
+                    if !type_full_name.contains('/') {
+                        type_full_name = format!("{}/{}", self.library_name, type_name);
+                    }
+                    if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                        return match decl {
+                            RawDecl::Bits(b) => {
+                                b.members.iter().find(|m| m.name.data() == member_name).and_then(|m| self.eval_constant_value(&m.value))
+                            }
+                            RawDecl::Enum(e) => {
+                                e.members.iter().find(|m| m.name.data() == member_name).and_then(|m| self.eval_constant_value(&m.value))
+                            }
+                            _ => None,
+                        };
+                    }
+                }
+
+                None
             }
-            _ => None,
+            raw_ast::Constant::BinaryOperator(binop) => {
+                let left = self.eval_constant_value(&binop.left)?;
+                let right = self.eval_constant_value(&binop.right)?;
+                Some(left | right)
+            }
         }
+    }
+
+    fn eval_constant_usize(&self, constant: &raw_ast::Constant<'_>) -> Option<usize> {
+        self.eval_constant_value(constant).map(|v| v as usize)
     }
 
     fn eval_type_constant_usize(&self, ty: &raw_ast::TypeConstructor<'_>) -> Option<usize> {
@@ -3879,53 +3921,46 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             raw_ast::Constant::Identifier(id) => {
                 let id_str = id.identifier.to_string();
-                let (val, expr, ident) = if id_str == "HEAD" {
-                    ("4292870144", "HEAD", "fidl/HEAD")
-                } else if id_str == "NEXT" {
-                    ("4291821568", "NEXT", "fidl/NEXT")
-                } else {
-                    ("0", "0", "0") // Default
-                };
-
-                let mut c = Constant {
-                    kind: "identifier".to_string(),
-                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", val))
-                        .unwrap(),
-                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr))
-                        .unwrap(),
-                    literal: if id_str == "HEAD" || id_str == "NEXT" {
-                        None
-                    } else {
-                        Some(Literal {
-                            kind: "numeric".to_string(),
-                            value: serde_json::value::RawValue::from_string(format!("\"{}\"", val))
-                                .unwrap(),
-                            expression: serde_json::value::RawValue::from_string(format!(
-                                "\"{}\"",
-                                expr
-                            ))
-                            .unwrap(),
-                        })
-                    },
-                    identifier: None,
-                };
                 if id_str == "HEAD" || id_str == "NEXT" {
-                    c.identifier = Some(ident.to_string());
+                    let (val, expr, ident) = if id_str == "HEAD" {
+                        ("4292870144", "HEAD", "fidl/HEAD")
+                    } else {
+                        ("4291821568", "NEXT", "fidl/NEXT")
+                    };
+                    return Constant {
+                        kind: "identifier".to_string(),
+                        value: serde_json::value::RawValue::from_string(format!("\"{}\"", val)).unwrap(),
+                        expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr)).unwrap(),
+                        literal: None,
+                        identifier: Some(ident.to_string()),
+                    };
                 }
-                c
+
+                let value = self.eval_constant_value(constant).unwrap_or(0);
+                
+                let mut full_name = id_str.clone();
+                if !full_name.contains('/') {
+                    full_name = format!("{}/{}", self.library_name, id_str);
+                }
+
+                Constant {
+                    kind: "identifier".to_string(),
+                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value)).unwrap(),
+                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", id.element.span().data)).unwrap(),
+                    literal: None,
+                    identifier: Some(full_name),
+                }
             }
-            raw_ast::Constant::BinaryOperator(_) => Constant {
-                kind: "binary_operator".to_string(),
-                value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                expression: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                literal: Some(Literal {
-                    kind: "numeric".to_string(),
-                    value: serde_json::value::RawValue::from_string("\"0\"".to_string()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string("\"0\"".to_string())
-                        .unwrap(),
-                }),
-                identifier: None,
-            },
+            raw_ast::Constant::BinaryOperator(binop) => {
+                let value = self.eval_constant_value(constant).unwrap_or(0);
+                Constant {
+                    kind: "binary_operator".to_string(),
+                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value)).unwrap(),
+                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", binop.element.span().data)).unwrap(),
+                    literal: None,
+                    identifier: None,
+                }
+            }
         }
     }
 }

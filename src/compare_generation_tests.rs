@@ -85,7 +85,7 @@ mod tests {
         let disabled_tests = vec![
             TestCase::new("bits_constants.test.fidl"),
             TestCase::new("byte_and_bytes.test.fidl"),
-            // TestCase::new("constants.test.fidl"),
+            TestCase::new("constants.test.fidl"),
             TestCase::new("consts.test.fidl"),
             TestCase::new("driver_handle.test.fidl").contains_drivers(),
             TestCase::new("driver_service.test.fidl").contains_drivers(),
@@ -103,7 +103,7 @@ mod tests {
             TestCase::new("time.test.fidl"),
             TestCase::new("types_in_protocols.test.fidl"),
             TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
-            // TestCase::new("versions.test.fidl").available("test:HEAD"),
+            TestCase::new("versions.test.fidl").available("test:HEAD"),
         ];
 
         let mut failed = false;

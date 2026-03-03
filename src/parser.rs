@@ -1240,7 +1240,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                 | TokenSubkind::Ajar
                 | TokenSubkind::Open => {
                     let peeked = self.peek_token();
-                    if peeked.kind != TokenKind::Identifier && peeked.kind != TokenKind::Arrow {
+                    if peeked.kind != TokenKind::Identifier 
+                        && peeked.kind != TokenKind::Arrow 
+                        && peeked.kind != TokenKind::LeftParen {
                         break;
                     }
                     let start_tok = self.last_token.clone();

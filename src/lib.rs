@@ -23,6 +23,8 @@ pub mod bits_tests;
 #[cfg(test)]
 pub mod canonical_names_tests;
 #[cfg(test)]
+pub mod compare_generation_tests;
+#[cfg(test)]
 pub mod consts_tests;
 #[cfg(test)]
 pub mod declaration_order_tests;

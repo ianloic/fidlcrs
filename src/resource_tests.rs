@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::source_file::SourceFile;
-    use crate::test_library::{LookupHelpers, TestLibrary};
+    use crate::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -32,7 +32,7 @@ resource_definition SomeResource : uint32 {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let root = match lib.compile() {
+        let _root = match lib.compile() {
             Ok(root) => root,
             Err(e) => {
                 lib.reporter().print_reports();
@@ -65,7 +65,7 @@ resource_definition SomeResource : uint32 {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let root = match lib.compile() {
+        let _root = match lib.compile() {
             Ok(root) => root,
             Err(e) => {
                 lib.reporter().print_reports();
@@ -98,7 +98,7 @@ resource_definition SomeResource : via {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let root = match lib.compile() {
+        let _root = match lib.compile() {
             Ok(root) => root,
             Err(e) => {
                 lib.reporter().print_reports();
@@ -132,7 +132,7 @@ resource_definition SomeResource : via {
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        let root = match lib.compile() {
+        let _root = match lib.compile() {
             Ok(root) => root,
             Err(e) => {
                 lib.reporter().print_reports();

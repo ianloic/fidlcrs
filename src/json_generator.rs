@@ -106,6 +106,8 @@ pub struct StructMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
     pub field_shape_v2: FieldShapeV2,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_default_value: Option<Constant>,
 }
 
 #[derive(Serialize, Clone, Debug)]

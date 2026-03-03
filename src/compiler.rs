@@ -75,6 +75,22 @@ impl<'node, 'src> RawDecl<'node, 'src> {
             RawDecl::Type(d) => d.attributes.as_deref(),
         }
     }
+
+    pub fn element(&self) -> &'node raw_ast::SourceElement<'src> {
+        match self {
+            RawDecl::Struct(d) => &d.element,
+            RawDecl::Enum(d) => &d.element,
+            RawDecl::Bits(d) => &d.element,
+            RawDecl::Union(d) => &d.element,
+            RawDecl::Table(d) => &d.element,
+            RawDecl::Protocol(d) => &d.element,
+            RawDecl::Service(d) => &d.element,
+            RawDecl::Resource(d) => &d.element,
+            RawDecl::Const(d) => &d.element,
+            RawDecl::Alias(d) => &d.element,
+            RawDecl::Type(d) => &d.element,
+        }
+    }
 }
 
 pub struct Compiler<'node, 'src> {
@@ -866,29 +882,53 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn topological_sort(&self, skip_optional: bool) -> Vec<String> {
         let mut visited = HashSet::new();
         let mut sorted = vec![];
-        let mut temp_mark = HashSet::new(); // for cycle detection
+        let mut temp_path = vec![]; // for cycle detection
 
         let mut keys: Vec<&String> = self.raw_decls.keys().collect();
         keys.sort();
 
-        fn visit(
+        fn visit<'a, 'b>(
             name: &str,
-            decls: &HashMap<String, RawDecl<'_, '_>>,
+            decls: &HashMap<String, RawDecl<'a, 'b>>,
             library_name: &str,
             visited: &mut HashSet<String>,
-            temp_mark: &mut HashSet<String>,
+            temp_path: &mut Vec<String>,
             sorted: &mut Vec<String>,
             decl_kinds: &HashMap<String, &str>,
             skip_optional: bool,
             inline_names: &HashMap<usize, String>,
+            reporter: &Reporter<'b>,
         ) {
             if visited.contains(name) {
                 return;
             }
-            if temp_mark.contains(name) {
+            if let Some(idx) = temp_path.iter().position(|x| x == name) {
+                let cycle_names = &temp_path[idx..];
+                let mut cycle_str = String::new();
+                for cname in cycle_names {
+                    let ckind = decl_kinds.get(cname).unwrap_or(&"unknown");
+                    let short_name = cname.split('/').last().unwrap_or(cname);
+                    cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
+                }
+                let kind = decl_kinds.get(name).unwrap_or(&"unknown");
+                let short_name = name.split('/').last().unwrap_or(name);
+                cycle_str.push_str(&format!("{} '{}'", kind, short_name));
+
+                let span = if let Some(decl) = decls.get(name) {
+                    decl.element().span()
+                } else {
+                    let first_decl = decls.values().next().unwrap();
+                    first_decl.element().span()
+                };
+
+                reporter.fail(
+                    crate::diagnostics::Error::ErrIncludeCycle,
+                    span,
+                    &[&cycle_str],
+                );
                 return;
             }
-            temp_mark.insert(name.to_string());
+            temp_path.push(name.to_string());
 
             if let Some(decl) = decls.get(name) {
                 let deps =
@@ -900,16 +940,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         decls,
                         library_name,
                         visited,
-                        temp_mark,
+                        temp_path,
                         sorted,
                         decl_kinds,
                         skip_optional,
                         inline_names,
+                        reporter,
                     );
                 }
             }
 
-            temp_mark.remove(name);
+            temp_path.pop();
             visited.insert(name.to_string());
             if decls.contains_key(name) {
                 sorted.push(name.to_string());
@@ -922,11 +963,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 &self.raw_decls,
                 &self.library_name,
                 &mut visited,
-                &mut temp_mark,
+                &mut temp_path,
                 &mut sorted,
                 &self.decl_kinds,
                 skip_optional,
                 &self.inline_names,
+                self.reporter,
             );
         }
 
@@ -1965,6 +2007,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut depth: u32 = 0;
 
         for member in &decl.members {
+            let member_name = member.name.data();
+            if let Some(prev) = members
+                .iter()
+                .find(|m: &&StructMember| m.name == member_name)
+            {
+                let location_str = format!(
+                    "{}:{}:{}",
+                    prev.location.filename, prev.location.line, prev.location.column
+                );
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrNameCollision,
+                    member.name.element.span(),
+                    &[
+                        &"struct member",
+                        &member_name,
+                        &"struct member",
+                        &location_str,
+                    ],
+                );
+            }
+
             let ctx = naming_context.clone().unwrap_or_else(|| {
                 crate::name::NamingContext::create(if let Some(id) = &decl.name {
                     id.element.span()
@@ -1997,6 +2060,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let field_offset = offset;
             let location = self.get_location(&member.name.element);
 
+            let has_allow_deprecated = member.attributes.as_ref().is_some_and(|a| {
+                a.attributes
+                    .iter()
+                    .any(|attr| attr.name.data() == "allow_deprecated_struct_defaults")
+            });
+            if member.default_value.is_some() && !has_allow_deprecated {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrDeprecatedStructDefaults,
+                    member.name.element.span(),
+                    &[],
+                );
+            }
+
+            let mut maybe_default_value = None;
+            if let Some(def_val) = &member.default_value {
+                maybe_default_value = Some(self.compile_constant(def_val));
+            }
+
             members.push(StructMember {
                 type_: type_obj,
                 name: member.name.data().to_string(),
@@ -2007,6 +2088,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     offset: field_offset,
                     padding: 0,
                 },
+                maybe_default_value,
             });
 
             offset += size;
@@ -2061,6 +2143,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
         } else {
             self.get_location(&decl.element)
         };
+
+        if total_size > 65535 {
+            let span = decl.element.span();
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrInlineSizeExceedsLimit,
+                span,
+                &[&name, &total_size.to_string(), &"65535".to_string()],
+            );
+        }
 
         StructDeclaration {
             name: full_name,
@@ -2779,6 +2870,56 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut inner_type = self.resolve_type(inner, library_name, naming_context);
                 self.skip_eager_compile = prev;
 
+                if nullable {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrBoxCannotBeOptional,
+                        type_ctor.element.span(),
+                        &[],
+                    );
+                }
+
+                if inner_type.kind_v2 != "struct" {
+                    let k = inner_type.kind_v2.as_str();
+                    let mut is_nor_opt = false;
+                    let mut is_struct = false;
+                    if let Some(decl) = self.get_underlying_decl(
+                        inner_type.identifier.as_ref().unwrap_or(&"".to_string()),
+                    ) {
+                        match decl {
+                            RawDecl::Enum(_) | RawDecl::Bits(_) | RawDecl::Table(_) => {
+                                is_nor_opt = true
+                            }
+                            RawDecl::Struct(_) => is_struct = true,
+                            RawDecl::Type(t) => match &t.layout {
+                                raw_ast::Layout::Enum(_)
+                                | raw_ast::Layout::Bits(_)
+                                | raw_ast::Layout::Table(_) => is_nor_opt = true,
+                                raw_ast::Layout::Struct(_) => is_struct = true,
+                                _ => {}
+                            },
+                            _ => {}
+                        }
+                    } else {
+                        is_nor_opt = k == "array" || k == "primitive";
+                    }
+
+                    if !is_struct {
+                        if is_nor_opt {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrCannotBeBoxedNorOptional,
+                                inner.element.span(),
+                                &[&inner.element.span().data],
+                            );
+                        } else {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional,
+                                inner.element.span(),
+                                &[&inner.element.span().data],
+                            );
+                        }
+                    }
+                }
+
                 let boxed_inline = inner_type.type_shape_v2.inline_size;
                 let padding = (8 - (boxed_inline % 8)) % 8;
                 let max_ool = inner_type
@@ -3050,6 +3191,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     );
                                 }
                             }
+                        }
+                    }
+                }
+
+                if nullable {
+                    if let Some(decl) = self.raw_decls.get(&full_name) {
+                        let is_struct = match decl {
+                            RawDecl::Struct(_) => true,
+                            RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Struct(_)),
+                            _ => false,
+                        };
+                        if is_struct {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrStructCannotBeOptional,
+                                type_ctor.element.span(),
+                                &[&name],
+                            );
                         }
                     }
                 }
@@ -3949,7 +4107,7 @@ fn collect_deps_from_ctor(
         match name.as_str() {
             "bool" | "int8" | "uint8" | "int16" | "uint16" | "int32" | "uint32" | "int64"
             | "uint64" | "string" => {}
-            "box" | "vector" | "client_end" | "server_end" => {
+            "box" | "client_end" | "server_end" => {
                 if skip_optional {
                     return;
                 }

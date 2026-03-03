@@ -42,7 +42,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_primitive_default_value_no_annotation() {
         let source = SourceFile::new(
             "bad/fi-0050.test.fidl".to_string(),
@@ -301,7 +300,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_duplicate_member_name() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -339,7 +337,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_inline_size_exceeds_64k() {
         let source = SourceFile::new(
             "bad/fi-0111.test.fidl".to_string(),
@@ -351,7 +348,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_mutually_recursive() {
         let source = SourceFile::new(
             "bad/fi-0057-a.test.fidl".to_string(),
@@ -363,7 +359,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_self_recursive() {
         let source = SourceFile::new(
             "bad/fi-0057-c.test.fidl".to_string(),
@@ -386,7 +381,6 @@ type MyStruct = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_recursive_through_vector() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -423,7 +417,6 @@ type MySelf = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_mutually_recursive_with_incoming_leaf() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -450,7 +443,6 @@ type Leaf = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_mutually_recursive_with_outoging_leaf() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -478,7 +470,6 @@ type Leaf = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_mutually_recursive_intersecting_loops() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -506,7 +497,6 @@ type Intersection = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_box_cannot_be_optional() {
         let source = SourceFile::new(
             "bad/fi-0169.test.fidl".to_string(),
@@ -518,7 +508,6 @@ type Intersection = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_struct_cannot_be_optional() {
         let source = SourceFile::new(
             "bad/fi-0159.test.fidl".to_string(),
@@ -530,7 +519,6 @@ type Intersection = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_handle_cannot_be_boxed_should_be_optional() {
         let source = SourceFile::new(
             "bad/fi-0171.test.fidl".to_string(),
@@ -551,7 +539,6 @@ type Foo = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_cannot_box_primitive() {
         let source = SourceFile::new(
             "bad/fi-0193.test.fidl".to_string(),
@@ -617,13 +604,13 @@ mod additional_tests {
     use crate::test_library::TestLibrary;
 
     #[test]
-    #[ignore]
     fn bad_type_cannot_be_boxed_should_be_optional() {
         let boxed_names = vec!["Endpoint", "server_end:Endpoint", "client_end:Endpoint"];
         for boxed_name in boxed_names {
             let source = SourceFile::new(
                 "example.fidl".to_string(),
-                format!(r#"
+                format!(
+                    r#"
 library example;
 
 protocol Endpoint {{}};
@@ -631,7 +618,9 @@ protocol Endpoint {{}};
 type MyStruct = struct {{
     foo box<{}>;
 }};
-"#, boxed_name)
+"#,
+                    boxed_name
+                ),
             );
             let mut lib = TestLibrary::new();
             lib.add_source(&source);
@@ -640,19 +629,21 @@ type MyStruct = struct {{
     }
 
     #[test]
-    #[ignore]
     fn bad_type_cannot_be_boxed_nor_optional() {
         let boxed_names = vec!["int32", "uint32", "bool"];
         for boxed_name in boxed_names {
             let source = SourceFile::new(
                 "example.fidl".to_string(),
-                format!(r#"
+                format!(
+                    r#"
 library example;
 
 type MyStruct = struct {{
     foo box<{}>;
 }};
-"#, boxed_name)
+"#,
+                    boxed_name
+                ),
             );
             let mut lib = TestLibrary::new();
             lib.add_source(&source);

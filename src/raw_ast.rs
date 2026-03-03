@@ -333,6 +333,7 @@ pub struct UnionMember<'a> {
     pub ordinal: Option<Literal<'a>>,
     pub name: Option<Identifier<'a>>, // Reserved members have no name
     pub type_ctor: Option<TypeConstructor<'a>>,
+    pub default_value: Option<Constant<'a>>,
 }
 
 #[derive(Debug, Clone)]

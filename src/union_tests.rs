@@ -114,7 +114,7 @@ type Foo = flexible union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_must_have_explicit_ordinals() {
         let file_content = get_file_content("bad/fi-0016-b.noformat.test.fidl");
         let source = SourceFile::new("bad/fi-0016-b.noformat.test.fidl".to_string(), file_content);
@@ -195,7 +195,7 @@ type Foo = strict union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_ordinal_out_of_bounds_negative() {
         let file_content = get_file_content("bad/fi-0017-b.noformat.test.fidl");
         let source = SourceFile::new("bad/fi-0017-b.noformat.test.fidl".to_string(), file_content);
@@ -205,7 +205,7 @@ type Foo = strict union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_ordinal_out_of_bounds_large() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -223,7 +223,7 @@ type Foo = union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_ordinals_must_be_unique() {
         let file_content = get_file_content("bad/fi-0097.test.fidl");
         let source = SourceFile::new("bad/fi-0097.test.fidl".to_string(), file_content);
@@ -233,7 +233,7 @@ type Foo = union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_member_names_must_be_unique() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -252,7 +252,7 @@ type MyUnion = strict union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_cannot_start_at_zero() {
         let file_content = get_file_content("bad/fi-0018.noformat.test.fidl");
         let source = SourceFile::new("bad/fi-0018.noformat.test.fidl".to_string(), file_content);
@@ -262,7 +262,7 @@ type MyUnion = strict union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_default_not_allowed() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -315,7 +315,7 @@ type Example = strict union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_no_nullable_members() {
         let file_content = get_file_content("bad/fi-0049.test.fidl");
         let source = SourceFile::new("bad/fi-0049.test.fidl".to_string(), file_content);
@@ -325,7 +325,7 @@ type Example = strict union {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_no_directly_recursive_unions() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -363,7 +363,7 @@ type Foo = flexible union {};
     }
 
     #[test]
-    #[ignore]
+
     fn bad_empty_strict_union() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -379,7 +379,7 @@ type Value = strict union {};
     }
 
     #[test]
-    #[ignore]
+
     fn good_error_syntax_explicit_ordinals() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -404,7 +404,7 @@ open protocol Example {
     }
 
     #[test]
-    #[ignore]
+
     fn bad_no_selector() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

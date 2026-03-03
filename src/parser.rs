@@ -427,6 +427,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 ordinal,
                 name: None,
                 type_ctor: None,
+                default_value: None,
             });
         }
 
@@ -435,6 +436,13 @@ impl<'a, 'b> Parser<'a, 'b> {
             None => {
                 panic!("Failed to parse type for {}", name_or_reserved.data());
             }
+        };
+
+        let default_value = if self.last_token.kind == TokenKind::Equal {
+            self.consume_token(TokenKind::Equal)?;
+            Some(self.parse_constant()?)
+        } else {
+            None
         };
 
         if self.last_token.kind != TokenKind::Semicolon {
@@ -453,6 +461,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             ordinal,
             name: Some(name_or_reserved),
             type_ctor: Some(type_ctor),
+            default_value,
         })
     }
 

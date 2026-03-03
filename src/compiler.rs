@@ -1847,12 +1847,78 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for member in &decl.members {
             let ordinal = if let Some(ord) = &member.ordinal {
                 match &ord.kind {
-                    raw_ast::LiteralKind::Numeric => ord.value.parse::<u32>().unwrap_or(0),
-                    _ => 0,
+                    raw_ast::LiteralKind::Numeric => ord.value.parse::<u32>().map_err(|_| ()),
+                    _ => Err(()),
                 }
             } else {
-                0
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrMissingOrdinalBeforeMember,
+                    member.element.span(),
+                    &[],
+                );
+                Ok(0)
             };
+
+            let ordinal = match ordinal {
+                Ok(o) => {
+                    if o == 0 {
+                        if member.ordinal.is_some() {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrOrdinalsMustStartAtOne,
+                                member.ordinal.as_ref().unwrap().element.span(),
+                                &[],
+                            );
+                        }
+                    }
+                    o
+                }
+                Err(_) => {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrOrdinalOutOfBound,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[],
+                    );
+                    0
+                }
+            };
+
+            if let Some(prev) = members.iter().find(|m: &&UnionMember| m.ordinal == ordinal) {
+                if ordinal != 0 {
+                    let location_str = format!(
+                        "{}:{}:{}",
+                        prev.location.as_ref().unwrap().filename, 
+                        prev.location.as_ref().unwrap().line, 
+                        prev.location.as_ref().unwrap().column
+                    );
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrDuplicateUnionMemberOrdinal,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[&location_str],
+                    );
+                }
+            }
+
+            if let Some(n_name) = &member.name {
+                let member_name = n_name.data();
+                if let Some(prev) = members.iter().find(|m: &&UnionMember| m.name.as_deref() == Some(member_name)) {
+                    let location_str = format!(
+                        "{}:{}:{}",
+                        prev.location.as_ref().unwrap().filename, 
+                        prev.location.as_ref().unwrap().line, 
+                        prev.location.as_ref().unwrap().column
+                    );
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrNameCollision,
+                        n_name.element.span(),
+                        &[
+                            &"union member",
+                            &member_name,
+                            &"union member",
+                            &location_str,
+                        ],
+                    );
+                }
+            }
 
             let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
                 let ctx = naming_context.clone().unwrap_or_else(|| {
@@ -1872,6 +1938,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     })
                 };
                 let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                if type_obj.nullable.unwrap_or(false) {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrOptionalUnionMember,
+                        type_ctor.element.span(),
+                        &[],
+                    );
+                }
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None)
             } else {
@@ -1879,6 +1952,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let attributes = self.compile_attribute_list(&member.attributes);
+
+            if member.default_value.is_some() {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrUnexpectedToken,
+                    member.default_value.as_ref().unwrap().element().span(),
+                    &[],
+                );
+            }
+
+            if attributes.iter().any(|a| a.name == "selector") {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrInvalidAttributePlacement,
+                    member.element.span(),
+                    &[&"selector"],
+                );
+            }
 
             members.push(UnionMember {
                 ordinal,
@@ -1889,6 +1978,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 deprecated: Some(self.is_deprecated(member.attributes.as_deref())),
                 maybe_attributes: attributes,
             });
+        }
+
+        let strict = decl.modifiers.iter().any(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
+        });
+
+        if strict && members.is_empty() {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrMustHaveOneMember,
+                decl.element.span(),
+                &[],
+            );
         }
 
         // Sort members by ordinal
@@ -5277,6 +5378,42 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             name: Some("err".to_string()),
                             type_: Some(err_type.clone()),
                             location: Some(err_loc),
+                            deprecated: Some(false),
+                            maybe_attributes: vec![],
+                        },
+                        crate::json_generator::UnionMember {
+                            ordinal: 3,
+                            reserved: None,
+                            name: Some("framework_err".to_string()),
+                            type_: Some(Type {
+                                kind_v2: "identifier".to_string(),
+                                subtype: None,
+                                identifier: Some("fidl/internal/FrameworkErr".to_string()),
+                                nullable: Some(false),
+                                type_shape_v2: TypeShapeV2 {
+                                    inline_size: 4,
+                                    alignment: 4,
+                                    depth: 0,
+                                    max_handles: 0,
+                                    max_out_of_line: 0,
+                                    has_padding: false,
+                                    has_flexible_envelope: false,
+                                },
+                                element_type: None,
+                                element_count: None,
+                                maybe_element_count: None,
+                                role: None,
+                                protocol: None,
+                                protocol_transport: None,
+                                obj_type: None,
+                                rights: None,
+                                resource_identifier: None,
+                                deprecated: None,
+                                maybe_attributes: vec![],
+                                field_shape_v2: None,
+                                maybe_size_constant_name: None,
+                            }),
+                            location: Some(_framework_err_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
                         },

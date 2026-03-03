@@ -4,8 +4,7 @@ use std::cell::RefCell;
 
 pub struct Reporter<'a> {
     diagnostics: RefCell<Vec<Diagnostic<'a>>>,
-    #[allow(dead_code)]
-    warnings_as_errors: bool,
+    pub warnings_as_errors: bool,
 }
 
 impl<'a> Default for Reporter<'a> {
@@ -52,11 +51,14 @@ impl<'a> Reporter<'a> {
 
     pub fn print_reports(&self) {
         for diag in self.diagnostics.borrow().iter() {
+            let prefix = match diag.def.kind() {
+                crate::diagnostics::ErrorKind::Warning => "warning",
+                _ => "error",
+            };
             if let Some(span) = &diag.span {
-                println!("{}: error: {}", span.position_str(), diag.message);
-                // Print squiggle?
+                println!("{}: {}: {}", span.position_str(), prefix, diag.message);
             } else {
-                println!("error: {}", diag.message);
+                println!("{}: {}", prefix, diag.message);
             }
         }
     }

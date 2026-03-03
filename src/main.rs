@@ -194,7 +194,8 @@ fn main() {
         source_files.push(SourceFile::new(filename.to_string(), content));
     }
 
-    let reporter = Reporter::new();
+    let mut reporter = Reporter::new();
+    reporter.warnings_as_errors = _warnings_as_errors;
     let mut files = Vec::new();
 
     for source in &source_files {
@@ -218,12 +219,85 @@ fn main() {
     compiler.version_selection = version_selection;
     let source_refs: Vec<&SourceFile> = source_files.iter().collect();
     let json_root = match compiler.compile(&files, &source_refs) {
-        Ok(root) => root,
+        Ok(root) => {
+            reporter.print_reports();
+            root
+        }
         Err(e) => {
             reporter.print_reports();
             fail(&format!("Compilation failed: {}\n", e));
         }
     };
+
+    if let Some(expected_name) = _expected_library_name {
+        if compiler.library_name != expected_name {
+            fail(&format!(
+                "Library name '{}' does not match the expected name '{}'\n",
+                compiler.library_name, expected_name
+            ));
+        }
+    }
+
+    if let Some(expected_platform) = _expected_platform {
+        if !compiler.is_versioned_library() {
+            fail(&format!(
+                "Library '{}' is unversioned, but expected to be versioned under platform '{}'\n",
+                compiler.library_name, expected_platform
+            ));
+        }
+        let actual_platform = compiler
+            .library_name
+            .split('.')
+            .next()
+            .unwrap_or(&compiler.library_name)
+            .to_string();
+        if actual_platform != expected_platform {
+            fail(&format!(
+                "Library platform '{}' does not match the expected platform '{}'\n",
+                actual_platform, expected_platform
+            ));
+        }
+        if let Some(expected_version) = _expected_version_added {
+            let mut found_added: Option<Version> = None;
+            if let Some(decl) = &compiler.library_decl {
+                if let Some(attrs) = &decl.attributes {
+                    for attr in &attrs.attributes {
+                        if attr.name.data() == "available" {
+                            for arg in &attr.args {
+                                let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
+                                if arg_name == "added" || arg_name == "value" {
+                                    let val_str = match &arg.value {
+                                        fidlcrs::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                                        fidlcrs::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                                        _ => "".to_string(),
+                                    };
+                                    found_added = Version::parse(&val_str);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            match found_added {
+                Some(v) => {
+                    let expected_v = Version::parse(&expected_version).unwrap_or(Version::HEAD);
+                    if v != expected_v {
+                        fail(&format!(
+                            "Library is added at version {:?}, but expected version {:?}\n",
+                            v, expected_v
+                        ));
+                    }
+                }
+                None => {
+                    fail(&format!(
+                        "Library does not specify an added version, but expected version {}\n",
+                        expected_version
+                    ));
+                }
+            }
+        }
+    }
 
     let json_string = serde_json::to_string_pretty(&json_root).unwrap();
 

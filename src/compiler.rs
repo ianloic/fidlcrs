@@ -605,7 +605,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             declarations: self.declarations.clone(),
         };
 
-        if !self.reporter.diagnostics().is_empty() {
+        let has_errors = self.reporter.diagnostics().iter().any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Error);
+        let has_warnings = self.reporter.diagnostics().iter().any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Warning);
+
+        if has_errors || (self.reporter.warnings_as_errors && has_warnings) {
             Err("Compilation failed".to_string())
         } else {
             Ok(json_root)

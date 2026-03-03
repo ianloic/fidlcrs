@@ -50,7 +50,7 @@ FILES=(
     # "time.test.fidl"
     # "types_in_protocols.test.fidl"
     # "unknown_interactions.test.fidl contains_drivers=true"
-    # "versions.test.fidl versioned=test:HEAD"
+    # "versions.test.fidl available=test:HEAD"
 )
 
 for entry in "${FILES[@]}"; do
@@ -61,7 +61,7 @@ for entry in "${FILES[@]}"; do
     
     public_deps=()
     experimental_flags=()
-    versioned="fuchsia:42,NEXT,HEAD"
+    available="fuchsia:42,NEXT,HEAD"
     contains_drivers=false
 
     while [ $# -gt 0 ]; do
@@ -69,8 +69,8 @@ for entry in "${FILES[@]}"; do
             experimental=*)
                 experimental_flags+=("${1#*=}")
                 ;;
-            versioned=*)
-                versioned="${1#*=}"
+            available=*)
+                available="${1#*=}"
                 ;;
             public_deps=*)
                 public_deps+=("${1#*=}")
@@ -91,8 +91,8 @@ for entry in "${FILES[@]}"; do
         CMD+=("--experimental" "$flag")
     done
 
-    if [ -n "$versioned" ]; then
-        CMD+=("--versioned" "$versioned")
+    if [ -n "$available" ]; then
+        CMD+=("--available" "$available")
     fi
 
     # manually include zx dependency - it's weird so we can't just glob *.fidl from a directory.

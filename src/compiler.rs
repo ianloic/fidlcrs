@@ -1750,6 +1750,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
         naming_context: Option<std::rc::Rc<crate::name::NamingContext<'src>>>,
     ) -> TableDeclaration {
+        if let Some(m) = decl.modifiers.iter().find(|m| m.subkind == crate::token::TokenSubkind::Strict || m.subkind == crate::token::TokenSubkind::Flexible) {
+            self.reporter.fail(crate::diagnostics::Error::ErrCannotSpecifyModifier, m.element.span(), &[&m.element.span().data.to_string(), &"table".to_string()]);
+        }
+
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(el) = name_element {
             self.get_location(el)
@@ -2220,6 +2224,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         naming_context: Option<std::rc::Rc<crate::name::NamingContext<'src>>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> StructDeclaration {
+        if let Some(m) = decl.modifiers.iter().find(|m| m.subkind == crate::token::TokenSubkind::Strict || m.subkind == crate::token::TokenSubkind::Flexible) {
+            self.reporter.fail(crate::diagnostics::Error::ErrCannotSpecifyModifier, m.element.span(), &[&m.element.span().data.to_string(), &"struct".to_string()]);
+        }
+
         let full_name = format!("{}/{}", library_name, name);
 
         let mut members = vec![];

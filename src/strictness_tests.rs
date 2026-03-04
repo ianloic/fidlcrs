@@ -3,7 +3,6 @@ use crate::source_file::SourceFile;
 use crate::test_library::TestLibrary;
 
 #[test]
-#[ignore]
 fn bad_duplicate_modifier() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -36,9 +35,8 @@ type Three = strict strict strict union { 1: b bool; };
 }
 
 #[test]
-#[ignore]
 fn bad_duplicate_modifier_non_consecutive() {
-    let content = std::fs::read_to_string("fidlc/tests/bad/fi-0032.noformat.test.fidl").unwrap();
+    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0032.noformat.test.fidl").unwrap();
     let source = SourceFile::new("bad/fi-0032.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
@@ -52,9 +50,8 @@ fn bad_duplicate_modifier_non_consecutive() {
 }
 
 #[test]
-#[ignore]
 fn bad_conflicting_modifiers() {
-    let content = std::fs::read_to_string("fidlc/tests/bad/fi-0033.noformat.test.fidl").unwrap();
+    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0033.noformat.test.fidl").unwrap();
     let source = SourceFile::new("bad/fi-0033.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
@@ -72,7 +69,6 @@ fn bad_conflicting_modifiers() {
 }
 
 #[test]
-#[ignore]
 fn good_bits_strictness() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -99,7 +95,6 @@ type FlexibleFoo = flexible bits {
 }
 
 #[test]
-#[ignore]
 fn good_enum_strictness() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -126,7 +121,6 @@ type FlexibleFoo = flexible enum {
 }
 
 #[test]
-#[ignore]
 fn good_flexible_enum() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -145,7 +139,6 @@ type Foo = flexible enum {
 }
 
 #[test]
-#[ignore]
 fn good_flexible_bits_redundant() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -164,9 +157,8 @@ type Foo = flexible bits {
 }
 
 #[test]
-#[ignore]
 fn bad_strictness_struct() {
-    let content = std::fs::read_to_string("fidlc/tests/bad/fi-0030.noformat.test.fidl").unwrap();
+    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0030.noformat.test.fidl").unwrap();
     let source = SourceFile::new("bad/fi-0030.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
@@ -180,7 +172,6 @@ fn bad_strictness_struct() {
 }
 
 #[test]
-#[ignore]
 fn bad_strictness_table() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -203,9 +194,8 @@ type StrictFoo = strict table {};
 }
 
 #[test]
-#[ignore]
 fn good_union_strictness() {
-    let content = std::fs::read_to_string("fidlc/tests/good/fi-0033.test.fidl").unwrap();
+    let content = std::fs::read_to_string("fidlc/tests/fidl/good/fi-0033.test.fidl").unwrap();
     let source = SourceFile::new("good/fi-0033.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
@@ -213,7 +203,6 @@ fn good_union_strictness() {
 }
 
 #[test]
-#[ignore]
 fn good_strict_union_redundant() {
     let source = SourceFile::new(
         "example.fidl".to_string(),

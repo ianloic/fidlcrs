@@ -43,6 +43,8 @@ pub mod protocol_tests;
 #[cfg(test)]
 pub mod resource_tests;
 #[cfg(test)]
+pub mod resourceness_tests;
+#[cfg(test)]
 pub mod structs_tests;
 #[cfg(test)]
 pub mod test_library;

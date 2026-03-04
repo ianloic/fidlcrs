@@ -1330,6 +1330,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
         naming_context: Option<std::rc::Rc<crate::name::NamingContext<'src>>>,
     ) -> EnumDeclaration {
+        if let Some(m) = decl
+            .modifiers
+            .iter()
+            .find(|m| m.subkind == crate::token::TokenSubkind::Resource)
+        {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                m.element.span(),
+                &[&"resource".to_string(), &"enum".to_string()],
+            );
+        }
+
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
             self.get_location(elem)
@@ -1444,6 +1456,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
         naming_context: Option<std::rc::Rc<crate::name::NamingContext<'src>>>,
     ) -> BitsDeclaration {
+        if let Some(m) = decl
+            .modifiers
+            .iter()
+            .find(|m| m.subkind == crate::token::TokenSubkind::Resource)
+        {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                m.element.span(),
+                &[&"resource".to_string(), &"bits".to_string()],
+            );
+        }
+
         let full_name = format!("{}/{}", library_name, name);
         let location = if let Some(elem) = name_element {
             self.get_location(elem)
@@ -1689,6 +1713,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 attrs
             },
             type_: Type {
+                resource: false,
                 experimental_maybe_from_alias: None,
 
                 kind: TypeKind::Primitive,
@@ -1754,6 +1779,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     ctx.enter_member(member.ordinal.element.span())
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                if type_obj.resource
+                    && !decl
+                        .modifiers
+                        .iter()
+                        .any(|m| m.subkind == crate::token::TokenSubkind::Resource)
+                {
+                    let member_name = member.name.as_ref().unwrap().data().to_string();
+                    let n = name.to_string();
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrTypeMustBeResource,
+                        type_ctor.element.span(),
+                        &[&"table", &n, &member_name, &"table", &"table", &n],
+                    );
+                }
                 let alias = if type_obj.kind != TypeKind::Array
                     && type_obj.kind != TypeKind::Vector
                     && type_obj.kind != TypeKind::String
@@ -1990,6 +2029,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     })
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                if type_obj.resource
+                    && !decl
+                        .modifiers
+                        .iter()
+                        .any(|m| m.subkind == crate::token::TokenSubkind::Resource)
+                {
+                    let member_name = member.name.as_ref().unwrap().data().to_string();
+                    let n = name.to_string();
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrTypeMustBeResource,
+                        type_ctor.element.span(),
+                        &[&"union", &n, &member_name, &"union", &"union", &n],
+                    );
+                }
                 let alias = if type_obj.kind != TypeKind::Array
                     && type_obj.kind != TypeKind::Vector
                     && type_obj.kind != TypeKind::String
@@ -2207,6 +2260,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
             });
             let member_ctx = ctx.enter_member(member.name.element.span());
             let mut type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
+            if type_obj.resource
+                && !decl
+                    .modifiers
+                    .iter()
+                    .any(|m| m.subkind == crate::token::TokenSubkind::Resource)
+            {
+                let member_name = member.name.data().to_string();
+                let n = name.to_string();
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrTypeMustBeResource,
+                    member.type_ctor.element.span(),
+                    &[&"struct", &n, &member_name, &"struct", &"struct", &n],
+                );
+            }
             let alias = if type_obj.kind != TypeKind::Array
                 && type_obj.kind != TypeKind::Vector
                 && type_obj.kind != TypeKind::String
@@ -2576,6 +2643,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => (0, 0),
                 };
                 Type {
+                    resource: false,
                     experimental_maybe_from_alias: None,
 
                     kind: TypeKind::Primitive,
@@ -2613,6 +2681,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     u32::MAX
                 };
                 Type {
+                    resource: false,
                     experimental_maybe_from_alias: None,
 
                     kind: TypeKind::String,
@@ -2670,6 +2739,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     u32::MAX
                 };
                 Type {
+                    resource: false,
                     experimental_maybe_from_alias: None,
 
                     kind: TypeKind::StringArray,
@@ -2713,6 +2783,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !is_bytes && inner.is_none() {
                     // Error handling?
                     return Type {
+                        resource: false,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Unknown,
@@ -2743,9 +2814,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     };
                 }
-                
+
                 let mut inner_type = if is_bytes {
                     Type {
+                        resource: false,
                         experimental_maybe_from_alias: None,
                         kind: TypeKind::Primitive,
                         subtype: Some("uint8".to_string()),
@@ -2800,8 +2872,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let max_handles = max_count.saturating_mul(inner_type.type_shape.max_handles);
 
                 Type {
+                    resource: inner_type.resource,
                     experimental_maybe_from_alias: inner_alias,
-
                     kind: TypeKind::Vector,
                     subtype: None,
                     identifier: None,
@@ -2851,6 +2923,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[],
                     );
                     return Type {
+                        resource: false,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Unknown,
@@ -2935,6 +3008,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let max_ool = count.saturating_mul(inner_type.type_shape.max_out_of_line);
 
                 Type {
+                    resource: inner_type.resource,
                     experimental_maybe_from_alias: inner_alias,
                     kind: TypeKind::Array,
                     subtype: None,
@@ -3045,6 +3119,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 Type {
+                    resource: true,
                     experimental_maybe_from_alias: None,
 
                     kind: TypeKind::Endpoint,
@@ -3078,6 +3153,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "box" => {
                 if type_ctor.parameters.is_empty() {
                     return Type {
+                        resource: false,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Unknown,
@@ -3365,6 +3441,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
 
                     return Type {
+                        resource: true,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Handle,
@@ -3458,8 +3535,44 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
+                let is_resource = if let Some(decl) = self.raw_decls.get(&full_name) {
+                    match decl {
+                        RawDecl::Struct(s) => s
+                            .modifiers
+                            .iter()
+                            .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+                        RawDecl::Table(t) => t
+                            .modifiers
+                            .iter()
+                            .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+                        RawDecl::Union(u) => u
+                            .modifiers
+                            .iter()
+                            .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+                        RawDecl::Type(t) => match &t.layout {
+                            raw_ast::Layout::Struct(s) => s
+                                .modifiers
+                                .iter()
+                                .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+                            raw_ast::Layout::Table(t) => t
+                                .modifiers
+                                .iter()
+                                .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+                            raw_ast::Layout::Union(u) => u
+                                .modifiers
+                                .iter()
+                                .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
+                            _ => false,
+                        },
+                        RawDecl::Protocol(_) => true,
+                        _ => false,
+                    }
+                } else {
+                    false
+                };
                 if let Some(shape) = self.shapes.get(&full_name) {
                     Type {
+                        resource: is_resource,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Identifier,
@@ -3535,6 +3648,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         (0, 1, false, false)
                     };
                     Type {
+                        resource: is_resource,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Identifier,
@@ -3574,6 +3688,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                     Type {
+                        resource: false,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Unknown,
@@ -5074,6 +5189,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5121,6 +5237,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5168,6 +5285,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5317,6 +5435,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5383,6 +5502,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5449,6 +5569,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5604,6 +5725,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         shape
                     };
                     let typ = Type {
+                        resource: false,
                         experimental_maybe_from_alias: None,
 
                         kind: TypeKind::Identifier,
@@ -5712,6 +5834,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         reserved: None,
                         name: Some("framework_err".to_string()),
                         type_: Some(Type {
+                            resource: false,
                             experimental_maybe_from_alias: None,
 
                             kind: TypeKind::Identifier,
@@ -5770,6 +5893,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 Some(Type {
+                    resource: false,
                     experimental_maybe_from_alias: None,
 
                     kind: TypeKind::Identifier,

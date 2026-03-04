@@ -57,6 +57,37 @@ impl<'a, 'b> Parser<'a, 'b> {
 
             let mods = self.parse_modifiers();
 
+            if self.last_token.subkind == TokenSubkind::Const
+                || self.last_token.subkind == TokenSubkind::Alias
+            {
+                for m in &mods {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                        m.element.span(),
+                        &[
+                            &m.element.span().data.to_string(),
+                            &self.last_token.span.data.to_string(),
+                        ],
+                    );
+                }
+            } else if self.last_token.subkind == TokenSubkind::Protocol
+                || self.last_token.subkind == TokenSubkind::Enum
+                || self.last_token.subkind == TokenSubkind::Bits
+            {
+                for m in &mods {
+                    if m.subkind == TokenSubkind::Resource {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                            m.element.span(),
+                            &[
+                                &"resource".to_string(),
+                                &self.last_token.span.data.to_string(),
+                            ],
+                        );
+                    }
+                }
+            }
+
             if self.last_token.subkind == TokenSubkind::Library {
                 let _ = library_decl.is_some();
                 library_decl = self.parse_library_declaration(attributes.take());
@@ -1278,6 +1309,17 @@ impl<'a, 'b> Parser<'a, 'b> {
                                 provenance: AttributeProvenance::ModifierAvailability,
                             }],
                         });
+                    }
+
+                    if modifiers
+                        .iter()
+                        .any(|m: &Modifier<'a>| m.subkind == subkind)
+                    {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrDuplicateModifier,
+                            start_tok.span.clone(),
+                            &[],
+                        );
                     }
 
                     modifiers.push(Modifier {

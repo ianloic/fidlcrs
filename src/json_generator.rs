@@ -115,6 +115,8 @@ pub struct Type {
     pub type_shape: TypeShape,
     #[serde(skip)]
     pub maybe_size_constant_name: Option<String>,
+    #[serde(skip)]
+    pub resource: bool,
 }
 
 #[derive(Serialize, Clone, Debug)]

@@ -5,7 +5,6 @@ mod tests {
     use crate::test_library::TestLibrary;
 
     #[test]
-    #[ignore]
     fn bad_bits_resourceness() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -29,7 +28,6 @@ type Foo = resource bits {
     }
 
     #[test]
-    #[ignore]
     fn bad_enum_resourceness() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -53,7 +51,6 @@ type Foo = resource enum {
     }
 
     #[test]
-    #[ignore]
     fn bad_const_resourceness() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -71,12 +68,11 @@ resource const BAR uint32 = 1;
         assert_eq!(errors.len(), 1);
         assert_eq!(
             errors[0].def,
-            crate::diagnostics::Error::ErrExpectedDeclaration
+            crate::diagnostics::Error::ErrCannotSpecifyModifier
         );
     }
 
     #[test]
-    #[ignore]
     fn bad_protocol_resourceness() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -94,12 +90,11 @@ resource protocol Foo {};
         assert_eq!(errors.len(), 1);
         assert_eq!(
             errors[0].def,
-            crate::diagnostics::Error::ErrExpectedDeclaration
+            crate::diagnostics::Error::ErrCannotSpecifyModifier
         );
     }
 
     #[test]
-    #[ignore]
     fn bad_alias_resourceness() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -117,12 +112,11 @@ resource alias B = bool;
         assert_eq!(errors.len(), 1);
         assert_eq!(
             errors[0].def,
-            crate::diagnostics::Error::ErrExpectedDeclaration
+            crate::diagnostics::Error::ErrCannotSpecifyModifier
         );
     }
 
     #[test]
-    #[ignore]
     fn bad_duplicate_modifier() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -155,9 +149,8 @@ type Three = resource resource resource struct {};
     }
 
     #[test]
-    #[ignore]
     fn good_resource_simple() {
-        let content = std::fs::read_to_string("fidlc/tests/good/fi-0110-a.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/good/fi-0110-a.test.fidl").unwrap();
         let source = SourceFile::new("good/fi-0110-a.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
@@ -165,9 +158,8 @@ type Three = resource resource resource struct {};
         lib.compile().unwrap();
     }
     #[test]
-    #[ignore]
     fn bad_resource_modifier_missing() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0110.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0110.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0110.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
@@ -181,7 +173,6 @@ type Three = resource resource resource struct {};
         );
     }
     #[test]
-    #[ignore]
     fn good_resource_struct() {
         let definitions = vec![
             "type Foo =  resource struct {};",
@@ -200,7 +191,6 @@ type Three = resource resource resource struct {};
         }
     }
     #[test]
-    #[ignore]
     fn good_resource_table() {
         let definitions = vec![
             "type Foo = resource table {};",
@@ -219,7 +209,6 @@ type Three = resource resource resource struct {};
         }
     }
     #[test]
-    #[ignore]
     fn good_resource_union() {
         let definitions = vec![
             "type Foo = resource union { 1: b bool; };",
@@ -237,7 +226,6 @@ type Three = resource resource resource struct {};
         }
     }
     #[test]
-    #[ignore]
     fn bad_handles_in_value_struct() {
         let definitions = vec![
             "type Foo = struct { bad_member zx.Handle; };",
@@ -262,7 +250,6 @@ type Three = resource resource resource struct {};
         }
     }
     #[test]
-    #[ignore]
     fn bad_handles_in_value_table() {
         let definitions = vec![
             "type Foo = table { 1: bad_member zx.Handle; };",
@@ -286,7 +273,6 @@ type Three = resource resource resource struct {};
         }
     }
     #[test]
-    #[ignore]
     fn bad_handles_in_value_union() {
         let definitions = vec![
             "type Foo = union { 1: bad_member zx.Handle; };",
@@ -310,7 +296,6 @@ type Three = resource resource resource struct {};
         }
     }
     #[test]
-    #[ignore]
     fn bad_protocols_in_value_type() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -319,6 +304,8 @@ library example;
 using zx;
 
 protocol Protocol {};
+
+type Foo = struct { bad_member client_end:Protocol; };
 
 "#
             .to_string(),
@@ -336,7 +323,6 @@ protocol Protocol {};
     }
 
     #[test]
-    #[ignore]
     fn bad_resource_types_in_value_type() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -347,6 +333,8 @@ type ResourceStruct = resource struct {};
 type ResourceTable = resource table {};
 type ResourceUnion = resource union { 1: b bool; };
 
+type Foo = struct { bad_member ResourceStruct; };
+
 "#
             .to_string(),
         );
@@ -363,7 +351,6 @@ type ResourceUnion = resource union { 1: b bool; };
     }
 
     #[test]
-    #[ignore]
     fn bad_resource_aliases_in_value_type() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -382,6 +369,8 @@ type ResourceStruct = resource struct {};
 type ResourceTable = resource table {};
 type ResourceUnion = resource union { 1: b bool; };
 
+type Foo = struct { bad_member HandleAlias; };
+
 "#
             .to_string(),
         );
@@ -398,7 +387,6 @@ type ResourceUnion = resource union { 1: b bool; };
     }
 
     #[test]
-    #[ignore]
     fn bad_resources_in_nested_containers() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -411,6 +399,8 @@ type ResourceStruct = resource struct {};
 type ResourceTable = resource table {};
 type ResourceUnion = resource union { 1: b bool; };
 
+type Foo = struct { bad_member vector<vector<zx.Handle>>; };
+
 "#
             .to_string(),
         );
@@ -427,7 +417,6 @@ type ResourceUnion = resource union { 1: b bool; };
     }
 
     #[test]
-    #[ignore]
     fn bad_multiple_resource_types_in_value_type() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -466,7 +455,6 @@ type ResourceStruct = resource struct {};
     }
 
     #[test]
-    #[ignore]
     fn good_transitive_resource_member() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -489,7 +477,6 @@ type Bottom = resource struct {};
     }
 
     #[test]
-    #[ignore]
     fn bad_transitive_resource_member() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -518,7 +505,6 @@ type Bottom = resource struct {};
     }
 
     #[test]
-    #[ignore]
     fn good_recursive_value_types() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -541,7 +527,6 @@ type Boros = struct {
     }
 
     #[test]
-    #[ignore]
     fn good_recursive_resource_types() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -564,7 +549,6 @@ type Boros = resource struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_recursive_resource_types() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -593,7 +577,6 @@ type Boros = struct {
     }
 
     #[test]
-    #[ignore]
     fn good_strict_resource_order_independent() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

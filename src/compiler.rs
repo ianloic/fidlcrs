@@ -2560,10 +2560,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-        match name.as_str() {
+        let mut resolved_name = name.clone();
+        if resolved_name == "byte" {
+            resolved_name = "uint8".to_string();
+        }
+
+        match resolved_name.as_str() {
             "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32"
             | "uint64" | "float32" | "float64" => {
-                let (inline_size, alignment) = match name.as_str() {
+                let (inline_size, alignment) = match resolved_name.as_str() {
                     "bool" | "int8" | "uint8" => (1, 1),
                     "int16" | "uint16" => (2, 2),
                     "int32" | "uint32" | "float32" => (4, 4),
@@ -2574,7 +2579,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     experimental_maybe_from_alias: None,
 
                     kind: TypeKind::Primitive,
-                    subtype: Some(name),
+                    subtype: Some(resolved_name),
                     identifier: None,
                     nullable: None,
                     element_type: None,
@@ -2695,8 +2700,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     },
                 }
             }
-            "vector" => {
-                if type_ctor.parameters.is_empty() {
+            "vector" | "bytes" => {
+                let is_bytes = resolved_name == "bytes";
+                let inner = if is_bytes {
+                    None
+                } else if type_ctor.parameters.is_empty() {
+                    None
+                } else {
+                    Some(&type_ctor.parameters[0])
+                };
+
+                if !is_bytes && inner.is_none() {
                     // Error handling?
                     return Type {
                         experimental_maybe_from_alias: None,
@@ -2729,8 +2743,40 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     };
                 }
-                let inner = &type_ctor.parameters[0];
-                let mut inner_type = self.resolve_type(inner, library_name, naming_context);
+                
+                let mut inner_type = if is_bytes {
+                    Type {
+                        experimental_maybe_from_alias: None,
+                        kind: TypeKind::Primitive,
+                        subtype: Some("uint8".to_string()),
+                        identifier: None,
+                        nullable: None,
+                        element_type: None,
+                        element_count: None,
+                        maybe_element_count: None,
+                        role: None,
+                        protocol: None,
+                        protocol_transport: None,
+                        obj_type: None,
+                        rights: None,
+                        resource_identifier: None,
+                        deprecated: None,
+                        maybe_attributes: vec![],
+                        field_shape: None,
+                        maybe_size_constant_name: None,
+                        type_shape: TypeShape {
+                            inline_size: 1,
+                            alignment: 1,
+                            depth: 0,
+                            max_handles: 0,
+                            max_out_of_line: 0,
+                            has_padding: false,
+                            has_flexible_envelope: false,
+                        },
+                    }
+                } else {
+                    self.resolve_type(inner.unwrap(), library_name, naming_context)
+                };
                 let inner_alias = inner_type.experimental_maybe_from_alias.take();
 
                 let max_count = if let Some(c) = type_ctor.constraints.first() {

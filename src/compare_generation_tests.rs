@@ -59,6 +59,7 @@ mod tests {
         let active_tests = vec![
             TestCase::new("anonymous.test.fidl"),
             TestCase::new("arrays.test.fidl"),
+            TestCase::new("byte_and_bytes.test.fidl"),
             TestCase::new("bits.test.fidl"),
             TestCase::new("doc_comments.test.fidl"),
             TestCase::new("empty_struct.test.fidl"),
@@ -87,7 +88,6 @@ mod tests {
 
         let disabled_tests = vec![
             TestCase::new("bits_constants.test.fidl"),
-            TestCase::new("byte_and_bytes.test.fidl"),
             TestCase::new("constants.test.fidl"),
             TestCase::new("consts.test.fidl"),
             TestCase::new("driver_handle.test.fidl").contains_drivers(),

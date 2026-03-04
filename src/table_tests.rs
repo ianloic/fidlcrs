@@ -5,7 +5,6 @@ mod tests {
     use crate::test_library::TestLibrary;
 
     #[test]
-    #[ignore]
     fn good_populated_fields() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -24,7 +23,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn good_out_of_order_fields() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -45,7 +43,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn good_allow_empty_tables() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -62,10 +59,9 @@ type Foo = table {};
     }
 
     #[test]
-    #[ignore]
     fn bad_missing_ordinals() {
         let content =
-            std::fs::read_to_string("fidlc/tests/bad/fi-0016-a.noformat.test.fidl").unwrap();
+            std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0016-a.noformat.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0016-a.noformat.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -79,10 +75,9 @@ type Foo = table {};
     }
 
     #[test]
-    #[ignore]
     fn bad_ordinal_out_of_bounds_negative() {
         let content =
-            std::fs::read_to_string("fidlc/tests/bad/fi-0017-a.noformat.test.fidl").unwrap();
+            std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0017-a.noformat.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0017-a.noformat.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -96,7 +91,6 @@ type Foo = table {};
     }
 
     #[test]
-    #[ignore]
     fn bad_ordinal_out_of_bounds_large() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -121,7 +115,6 @@ type Foo = union {
     }
 
     #[test]
-    #[ignore]
     fn bad_duplicate_field_names() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -144,9 +137,8 @@ type MyTable = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_duplicate_ordinals() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0094.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0094.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0094.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -160,7 +152,6 @@ type MyTable = table {
     }
 
     #[test]
-    #[ignore]
     fn good_attributes_on_fields() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -182,7 +173,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn good_attributes_on_tables() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -203,7 +193,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn good_keywords_as_field_names() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -230,7 +219,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_optional_in_struct() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -259,7 +247,6 @@ type OptionalTableContainer = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_table_multiple_constraints() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -288,7 +275,6 @@ type OptionalTableContainer = struct {
     }
 
     #[test]
-    #[ignore]
     fn bad_optional_in_union() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -317,7 +303,6 @@ type OptionalTableContainer = union {
     }
 
     #[test]
-    #[ignore]
     fn good_table_in_table() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -340,7 +325,6 @@ type Bar = table {
     }
 
     #[test]
-    #[ignore]
     fn good_tables_in_unions() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -363,9 +347,8 @@ type OptionalTableContainer = flexible union {
     }
 
     #[test]
-    #[ignore]
     fn bad_optional_table_member() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0048.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0048.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0048.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -379,7 +362,6 @@ type OptionalTableContainer = flexible union {
     }
 
     #[test]
-    #[ignore]
     fn bad_optional_non_optional_table_member() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -405,7 +387,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_default_not_allowed() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -434,7 +415,6 @@ type Foo = table {
     }
 
     #[test]
-    #[ignore]
     fn good_ordinal_gap_start() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -453,7 +433,6 @@ type MyTable = table {
     }
 
     #[test]
-    #[ignore]
     fn good_ordinal_gap_middle() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -473,9 +452,8 @@ type MyTable = table {
     }
 
     #[test]
-    #[ignore]
     fn good64_ordinals_max_is_table() {
-        let content = std::fs::read_to_string("fidlc/tests/good/fi-0093.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/good/fi-0093.test.fidl").unwrap();
         let source = SourceFile::new("good/fi-0093.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -483,9 +461,8 @@ type MyTable = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_max_ordinal_not_table() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0093.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0093.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0093.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -499,7 +476,6 @@ type MyTable = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_max_ordinal_not_table_not_primitive() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -589,9 +565,8 @@ type Example = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_too_many_ordinals() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0092.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0092.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0092.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
@@ -605,9 +580,8 @@ type Example = table {
     }
 
     #[test]
-    #[ignore]
     fn bad_recursion_disallowed() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0057-d.test.fidl").unwrap();
+        let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0057-d.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0057-d.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);

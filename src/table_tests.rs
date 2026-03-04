@@ -1,19 +1,23 @@
 #![allow(unused_mut, unused_variables)]
 #[cfg(test)]
 mod tests {
-    use crate::test_library::TestLibrary;
     use crate::source_file::SourceFile;
+    use crate::test_library::TestLibrary;
 
     #[test]
     #[ignore]
     fn good_populated_fields() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
     1: x int64;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -22,7 +26,9 @@ type Foo = table {
     #[test]
     #[ignore]
     fn good_out_of_order_fields() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -30,7 +36,9 @@ type Foo = table {
     1: y int64;
     2: z int64;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -39,11 +47,15 @@ type Foo = table {
     #[test]
     #[ignore]
     fn good_allow_empty_tables() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {};
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -52,58 +64,77 @@ type Foo = table {};
     #[test]
     #[ignore]
     fn bad_missing_ordinals() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0016-a.noformat.test.fidl").unwrap();
+        let content =
+            std::fs::read_to_string("fidlc/tests/bad/fi-0016-a.noformat.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0016-a.noformat.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrMissingOrdinalBeforeMember);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrMissingOrdinalBeforeMember
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_ordinal_out_of_bounds_negative() {
-        let content = std::fs::read_to_string("fidlc/tests/bad/fi-0017-a.noformat.test.fidl").unwrap();
+        let content =
+            std::fs::read_to_string("fidlc/tests/bad/fi-0017-a.noformat.test.fidl").unwrap();
         let source = SourceFile::new("bad/fi-0017-a.noformat.test.fidl".to_string(), content);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrOrdinalOutOfBound);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrOrdinalOutOfBound
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_ordinal_out_of_bounds_large() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library test;
 
 type Foo = union {
   4294967296: foo string;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrOrdinalOutOfBound);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrOrdinalOutOfBound
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_duplicate_field_names() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library test;
 
 type MyTable = table {
     1: my_field string;
     2: my_field uint32;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
@@ -122,13 +153,18 @@ type MyTable = table {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrDuplicateTableFieldOrdinal);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrDuplicateTableFieldOrdinal
+        );
     }
 
     #[test]
     #[ignore]
     fn good_attributes_on_fields() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -137,7 +173,9 @@ type Foo = table {
     @bar_attr
     2: bar bool;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -146,7 +184,9 @@ type Foo = table {
     #[test]
     #[ignore]
     fn good_attributes_on_tables() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 @foo_attr("bar")
@@ -154,7 +194,9 @@ type Foo = table {
     1: x int64;
     2: please bool;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -163,7 +205,9 @@ type Foo = table {
     #[test]
     #[ignore]
     fn good_keywords_as_field_names() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type struct = struct {
@@ -177,7 +221,9 @@ type Foo = table {
     4: member struct;
     5: reserved bool;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -186,7 +232,9 @@ type Foo = table {
     #[test]
     #[ignore]
     fn bad_optional_in_struct() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -196,19 +244,26 @@ type Foo = table {
 type OptionalTableContainer = struct {
     foo Foo:optional;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrCannotBeOptional);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrCannotBeOptional
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_table_multiple_constraints() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -218,19 +273,26 @@ type Foo = table {
 type OptionalTableContainer = struct {
     foo Foo:<1, 2, 3>;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrTooManyConstraints);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrTooManyConstraints
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_optional_in_union() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -240,19 +302,26 @@ type Foo = table {
 type OptionalTableContainer = union {
     1: foo Foo:optional;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrCannotBeOptional);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrCannotBeOptional
+        );
     }
 
     #[test]
     #[ignore]
     fn good_table_in_table() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -262,7 +331,9 @@ type Foo = table {
 type Bar = table {
     1: foo Foo;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -271,7 +342,9 @@ type Bar = table {
     #[test]
     #[ignore]
     fn good_tables_in_unions() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
@@ -281,7 +354,9 @@ type Foo = table {
 type OptionalTableContainer = flexible union {
     1: foo Foo;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -297,57 +372,81 @@ type OptionalTableContainer = flexible union {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrOptionalTableMember);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrOptionalTableMember
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_optional_non_optional_table_member() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
     // Integers can never be optional.
     1: t int64:optional;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrCannotBeOptional);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrCannotBeOptional
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_default_not_allowed() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library fidl.test.tables;
 
 type Foo = table {
     1: t int64 = 1;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 2);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrUnexpectedTokenOfKind);
-        assert_eq!(errors[1].def, crate::diagnostics::Error::ErrMissingOrdinalBeforeMember);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrUnexpectedTokenOfKind
+        );
+        assert_eq!(
+            errors[1].def,
+            crate::diagnostics::Error::ErrMissingOrdinalBeforeMember
+        );
     }
 
     #[test]
     #[ignore]
     fn good_ordinal_gap_start() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library example;
 
 type MyTable = table {
     2: two int64;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -356,14 +455,18 @@ type MyTable = table {
     #[test]
     #[ignore]
     fn good_ordinal_gap_middle() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library example;
 
 type MyTable = table {
     1: one int64;
     3: three int64;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         lib.compile().unwrap();
@@ -389,13 +492,18 @@ type MyTable = table {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrMaxOrdinalNotTable);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrMaxOrdinalNotTable
+        );
     }
 
     #[test]
     #[ignore]
     fn bad_max_ordinal_not_table_not_primitive() {
-        let source = SourceFile::new("example.fidl".to_string(), r#"
+        let source = SourceFile::new(
+            "example.fidl".to_string(),
+            r#"
 library example;
 
 type MyStruct = struct {};
@@ -466,13 +574,18 @@ type Example = table {
     63: v63 int64;
     64: v64 MyStruct;
 };
-"#.to_string());
+"#
+            .to_string(),
+        );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrMaxOrdinalNotTable);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrMaxOrdinalNotTable
+        );
     }
 
     #[test]
@@ -485,7 +598,10 @@ type Example = table {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, crate::diagnostics::Error::ErrTableOrdinalTooLarge);
+        assert_eq!(
+            errors[0].def,
+            crate::diagnostics::Error::ErrTableOrdinalTooLarge
+        );
     }
 
     #[test]
@@ -500,5 +616,4 @@ type Example = table {
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].def, crate::diagnostics::Error::ErrIncludeCycle);
     }
-
 }

@@ -1750,8 +1750,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
         naming_context: Option<std::rc::Rc<crate::name::NamingContext<'src>>>,
     ) -> TableDeclaration {
-        if let Some(m) = decl.modifiers.iter().find(|m| m.subkind == crate::token::TokenSubkind::Strict || m.subkind == crate::token::TokenSubkind::Flexible) {
-            self.reporter.fail(crate::diagnostics::Error::ErrCannotSpecifyModifier, m.element.span(), &[&m.element.span().data.to_string(), &"table".to_string()]);
+        if let Some(m) = decl.modifiers.iter().find(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict
+                || m.subkind == crate::token::TokenSubkind::Flexible
+        }) {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                m.element.span(),
+                &[&m.element.span().data.to_string(), &"table".to_string()],
+            );
         }
 
         let full_name = format!("{}/{}", library_name, name);
@@ -1763,12 +1770,84 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         for member in &decl.members {
-            let ordinal = match &member.ordinal.kind {
-                raw_ast::LiteralKind::Numeric => member.ordinal.value.parse::<u32>().unwrap_or(0),
-                _ => 0,
+            let ordinal = if let Some(ord) = &member.ordinal {
+                match &ord.kind {
+                    raw_ast::LiteralKind::Numeric => ord.value.parse::<i64>().unwrap_or(0),
+                    _ => 0,
+                }
+            } else {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrMissingOrdinalBeforeMember,
+                    member.element.span(),
+                    &[],
+                );
+                0
             };
 
+            let ordinal = match ordinal {
+                0 => {
+                    if member.ordinal.is_some() {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrOrdinalsMustStartAtOne,
+                            member.ordinal.as_ref().unwrap().element.span(),
+                            &[],
+                        );
+                    }
+                    0
+                }
+                o if o < 0 => {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrOrdinalOutOfBound,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[],
+                    );
+                    0
+                }
+                o if o > 64 => {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrTableOrdinalTooLarge,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[],
+                    );
+                    o as u32
+                }
+                o => o as u32,
+            };
+
+            if let Some(prev) = members.iter().find(|m: &&TableMember| m.ordinal == ordinal) {
+                if ordinal != 0 {
+                    let location_str = format!(
+                        "{}:{}:{}",
+                        prev.location.as_ref().unwrap().filename,
+                        prev.location.as_ref().unwrap().line,
+                        prev.location.as_ref().unwrap().column
+                    );
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrDuplicateTableFieldOrdinal,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[&location_str],
+                    );
+                }
+            }
+
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
+                let name_str = member.name.as_ref().unwrap().data().to_string();
+                if let Some(prev) = members
+                    .iter()
+                    .find(|m: &&TableMember| m.name.as_deref() == Some(name_str.as_str()))
+                {
+                    let location_str = format!(
+                        "{}:{}:{}",
+                        prev.location.as_ref().unwrap().filename,
+                        prev.location.as_ref().unwrap().line,
+                        prev.location.as_ref().unwrap().column
+                    );
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrNameCollision,
+                        member.name.as_ref().unwrap().element.span(),
+                        &[&"table field", &name_str, &"table field", &location_str],
+                    );
+                }
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     crate::name::NamingContext::create(
                         name_element
@@ -1780,9 +1859,43 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     ctx.enter_member(m_name.element.span())
                 } else {
                     // This case should be unreachable for valid table members with types
-                    ctx.enter_member(member.ordinal.element.span())
+                    ctx.enter_member(
+                        member
+                            .ordinal
+                            .as_ref()
+                            .map_or_else(|| member.element.span(), |o| o.element.span()),
+                    )
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                if type_obj.nullable.unwrap_or(false) {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrOptionalTableMember,
+                        type_ctor.element.span(),
+                        &[],
+                    );
+                }
+                if ordinal == 64 {
+                    let is_table = if let Some(decl) = self
+                        .raw_decls
+                        .get(type_obj.identifier.as_deref().unwrap_or(""))
+                    {
+                        match decl {
+                            RawDecl::Table(_) => true,
+                            RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Table(_)),
+                            _ => false,
+                        }
+                    } else {
+                        false
+                    };
+
+                    if !is_table {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrMaxOrdinalNotTable,
+                            type_ctor.element.span(),
+                            &[],
+                        );
+                    }
+                }
                 if type_obj.resource
                     && !decl
                         .modifiers
@@ -2224,8 +2337,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
         naming_context: Option<std::rc::Rc<crate::name::NamingContext<'src>>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> StructDeclaration {
-        if let Some(m) = decl.modifiers.iter().find(|m| m.subkind == crate::token::TokenSubkind::Strict || m.subkind == crate::token::TokenSubkind::Flexible) {
-            self.reporter.fail(crate::diagnostics::Error::ErrCannotSpecifyModifier, m.element.span(), &[&m.element.span().data.to_string(), &"struct".to_string()]);
+        if let Some(m) = decl.modifiers.iter().find(|m| {
+            m.subkind == crate::token::TokenSubkind::Strict
+                || m.subkind == crate::token::TokenSubkind::Flexible
+        }) {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                m.element.span(),
+                &[&m.element.span().data.to_string(), &"struct".to_string()],
+            );
         }
 
         let full_name = format!("{}/{}", library_name, name);
@@ -2643,6 +2763,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
         match resolved_name.as_str() {
             "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32"
             | "uint64" | "float32" | "float64" => {
+                if nullable {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrCannotBeOptional,
+                        type_ctor.element.start_token.span.clone(),
+                        &[&resolved_name],
+                    );
+                }
                 let (inline_size, alignment) = match resolved_name.as_str() {
                     "bool" | "int8" | "uint8" => (1, 1),
                     "int16" | "uint16" => (2, 2),
@@ -3482,19 +3609,25 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
-                    let is_bits = match decl {
-                        RawDecl::Bits(_) => true,
-                        RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Bits(_)),
+                    let is_user_decl_no_params = match decl {
+                        RawDecl::Bits(_)
+                        | RawDecl::Enum(_)
+                        | RawDecl::Struct(_)
+                        | RawDecl::Table(_)
+                        | RawDecl::Union(_)
+                        | RawDecl::Protocol(_)
+                        | RawDecl::Service(_) => true,
+                        RawDecl::Type(t) => match t.layout {
+                            raw_ast::Layout::Bits(_)
+                            | raw_ast::Layout::Enum(_)
+                            | raw_ast::Layout::Struct(_)
+                            | raw_ast::Layout::Table(_)
+                            | raw_ast::Layout::Union(_) => true,
+                            _ => false,
+                        },
                         _ => false,
                     };
-                    if is_bits {
-                        if nullable {
-                            self.reporter.fail(
-                                crate::diagnostics::Error::ErrCannotBeOptional,
-                                type_ctor.element.start_token.span.clone(),
-                                &[&name],
-                            );
-                        }
+                    if is_user_decl_no_params {
                         if type_ctor.nullable
                             || type_ctor.constraints.iter().any(|c| {
                                 if let raw_ast::Constant::Identifier(id) = c {
@@ -3539,6 +3672,36 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_ctor.element.span(),
                                 &[&name],
                             );
+                            nullable = false;
+                        }
+                        let is_table = match decl {
+                            RawDecl::Table(_) => true,
+                            RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Table(_)),
+                            _ => false,
+                        };
+                        if is_table {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrCannotBeOptional,
+                                type_ctor.element.span(),
+                                &[&name],
+                            );
+                            nullable = false;
+                        }
+                        let is_enum_or_bits_or_service = match decl {
+                            RawDecl::Enum(_) | RawDecl::Bits(_) | RawDecl::Service(_) => true,
+                            RawDecl::Type(t) => matches!(
+                                t.layout,
+                                raw_ast::Layout::Enum(_) | raw_ast::Layout::Bits(_)
+                            ),
+                            _ => false,
+                        };
+                        if is_enum_or_bits_or_service {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrCannotBeOptional,
+                                type_ctor.element.span(),
+                                &[&name],
+                            );
+                            nullable = false;
                         }
                     }
                 }

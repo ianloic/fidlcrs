@@ -505,11 +505,19 @@ impl<'a, 'b> Parser<'a, 'b> {
             .map(|a| a.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
-        let ordinal = self.parse_literal()?;
-        self.consume_token(TokenKind::Colon)?;
+        let ordinal = if self.last_token.kind == TokenKind::NumericLiteral {
+            Some(self.parse_literal()?)
+        } else {
+            None
+        };
 
-        if self.last_token.subkind == TokenSubkind::Reserved {
-            self.consume_token_with_subkind(TokenSubkind::Reserved)?;
+        if ordinal.is_some() {
+            self.consume_token(TokenKind::Colon)?;
+        }
+
+        let name_or_reserved = self.parse_identifier()?;
+
+        if name_or_reserved.data() == "reserved" && self.last_token.kind == TokenKind::Semicolon {
             self.consume_token(TokenKind::Semicolon)?;
             let end = self.previous_token.as_ref().unwrap().clone();
             return Some(TableMember {
@@ -521,8 +529,24 @@ impl<'a, 'b> Parser<'a, 'b> {
             });
         }
 
-        let name = self.parse_identifier()?;
+        let name = name_or_reserved;
         let type_ctor = self.parse_type_constructor()?;
+
+        if self.last_token.kind == TokenKind::Equal {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+                self.last_token.span.clone(),
+                &[&"=".to_string(), &";".to_string()],
+            );
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrMissingOrdinalBeforeMember,
+                self.last_token.span.clone(),
+                &[],
+            );
+            self.last_token = self.lexer.lex(); // Consume equal
+            self.parse_literal(); // Attempt to consume the default value
+        }
+
         self.consume_token(TokenKind::Semicolon)?;
 
         let end = self.previous_token.as_ref().unwrap().clone();
@@ -1311,26 +1335,53 @@ impl<'a, 'b> Parser<'a, 'b> {
                         });
                     }
 
-                                                    if modifiers
-                    .iter()
-                    .any(|m: &Modifier<'a>| m.subkind == subkind && m.attributes.is_none() && modifier_attrs.is_none())
-                {
-                    self.reporter.fail(
-                        crate::diagnostics::Error::ErrDuplicateModifier,
-                        start_tok.span.clone(),
-                        &[&start_tok.span.data.to_string()],
-                    );
-                } else if subkind == TokenSubkind::Strict || subkind == TokenSubkind::Flexible {
-                    if let Some(m) = modifiers.iter().find(|m| (m.subkind == TokenSubkind::Strict || m.subkind == TokenSubkind::Flexible) && m.attributes.is_none() && modifier_attrs.is_none()) {
-                        self.reporter.fail(crate::diagnostics::Error::ErrConflictingModifier, start_tok.span.clone(), &[&start_tok.span.data.to_string(), &m.element.span().data.to_string()]);
+                    if modifiers.iter().any(|m: &Modifier<'a>| {
+                        m.subkind == subkind && m.attributes.is_none() && modifier_attrs.is_none()
+                    }) {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrDuplicateModifier,
+                            start_tok.span.clone(),
+                            &[&start_tok.span.data.to_string()],
+                        );
+                    } else if subkind == TokenSubkind::Strict || subkind == TokenSubkind::Flexible {
+                        if let Some(m) = modifiers.iter().find(|m| {
+                            (m.subkind == TokenSubkind::Strict
+                                || m.subkind == TokenSubkind::Flexible)
+                                && m.attributes.is_none()
+                                && modifier_attrs.is_none()
+                        }) {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrConflictingModifier,
+                                start_tok.span.clone(),
+                                &[
+                                    &start_tok.span.data.to_string(),
+                                    &m.element.span().data.to_string(),
+                                ],
+                            );
+                        }
+                    } else if subkind == TokenSubkind::Open
+                        || subkind == TokenSubkind::Ajar
+                        || subkind == TokenSubkind::Closed
+                    {
+                        if let Some(m) = modifiers.iter().find(|m| {
+                            (m.subkind == TokenSubkind::Open
+                                || m.subkind == TokenSubkind::Ajar
+                                || m.subkind == TokenSubkind::Closed)
+                                && m.attributes.is_none()
+                                && modifier_attrs.is_none()
+                        }) {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrConflictingModifier,
+                                start_tok.span.clone(),
+                                &[
+                                    &start_tok.span.data.to_string(),
+                                    &m.element.span().data.to_string(),
+                                ],
+                            );
+                        }
                     }
-                } else if subkind == TokenSubkind::Open || subkind == TokenSubkind::Ajar || subkind == TokenSubkind::Closed {
-                    if let Some(m) = modifiers.iter().find(|m| (m.subkind == TokenSubkind::Open || m.subkind == TokenSubkind::Ajar || m.subkind == TokenSubkind::Closed) && m.attributes.is_none() && modifier_attrs.is_none()) {
-                        self.reporter.fail(crate::diagnostics::Error::ErrConflictingModifier, start_tok.span.clone(), &[&start_tok.span.data.to_string(), &m.element.span().data.to_string()]);
-                    }
-                }
 
-                modifiers.push(Modifier {
+                    modifiers.push(Modifier {
                         element: SourceElement::new(
                             start_tok,
                             self.previous_token.as_ref().unwrap().clone(),

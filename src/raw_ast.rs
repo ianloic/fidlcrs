@@ -349,7 +349,7 @@ pub struct TableDeclaration<'a> {
 pub struct TableMember<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
-    pub ordinal: Literal<'a>,
+    pub ordinal: Option<Literal<'a>>,
     pub name: Option<Identifier<'a>>,
     pub type_ctor: Option<TypeConstructor<'a>>,
 }

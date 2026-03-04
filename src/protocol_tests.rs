@@ -196,10 +196,10 @@ protocol D {
         assert_eq!(protocol_a.methods.len(), 1);
 
         let protocol_b = root.lookup_protocol("example/B").expect("B not found");
-        assert_eq!(protocol_b.methods.len(), 1); // Not all methods computed yet in fidlcrs maybe
+        assert_eq!(protocol_b.methods.len(), 2);
 
         let protocol_d = root.lookup_protocol("example/D").expect("D not found");
-        assert_eq!(protocol_d.methods.len(), 1);
+        assert_eq!(protocol_d.methods.len(), 5);
         assert_eq!(protocol_d.composed_protocols.len(), 2);
     }
 

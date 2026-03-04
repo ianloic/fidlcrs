@@ -70,6 +70,8 @@ pub struct Type {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub element_type: Option<Box<Type>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>,
@@ -97,9 +99,18 @@ pub struct Type {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub struct ExperimentalMaybeFromAlias {
+    pub name: String,
+    pub args: Vec<String>,
+    pub nullable: bool,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct StructMember {
     #[serde(rename = "type")]
     pub type_: Type,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
     pub name: String,
     pub location: Location,
     pub deprecated: bool,
@@ -358,6 +369,8 @@ pub struct TableMember {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_: Option<Type>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<Location>,
@@ -392,6 +405,8 @@ pub struct UnionMember {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_: Option<Type>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<Location>,
     #[serde(skip_serializing_if = "Option::is_none")]

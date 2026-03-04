@@ -131,6 +131,9 @@ resource_definition handle : uint32 {
 
         let res = compiler.compile(&main_asts, &dep_asts, &self.source_files);
         if !self.reporter.diagnostics().is_empty() {
+            for err in self.reporter.diagnostics().iter() {
+                println!("{:?}", err);
+            }
             return Err("Compilation failed".to_string());
         }
         res

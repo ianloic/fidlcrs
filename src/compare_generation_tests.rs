@@ -80,6 +80,9 @@ mod tests {
             TestCase::new("vectors.test.fidl"),
             TestCase::new("driver_one_way.test.fidl").contains_drivers(),
             TestCase::new("driver_two_way.test.fidl").contains_drivers(),
+            TestCase::new("inheritance.test.fidl"),
+            TestCase::new("inheritance_with_recursive_decl.test.fidl"),
+            TestCase::new("time.test.fidl"),
         ];
 
         let disabled_tests = vec![
@@ -95,12 +98,9 @@ mod tests {
             TestCase::new("handles.test.fidl")
                 .public_dep("//sdk/fidl/fdf")
                 .contains_drivers(),
-            TestCase::new("inheritance_with_recursive_decl.test.fidl"),
-            TestCase::new("inheritance.test.fidl"),
             TestCase::new("new_type.test.fidl").experimental("allow_new_types"),
             TestCase::new("overlay.test.fidl").experimental("zx_c_types"),
             TestCase::new("string_arrays.test.fidl").experimental("zx_c_types"),
-            TestCase::new("time.test.fidl"),
             TestCase::new("types_in_protocols.test.fidl"),
             TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
             TestCase::new("versions.test.fidl").available("test:HEAD"),

@@ -307,7 +307,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut used_deps = HashSet::new();
 
         fn extract_deps_from_type(ty: &Type, deps: &mut HashSet<String>, compiler: &Compiler) {
-            if let Some(id) = &ty.identifier {
+            let mut target_id = ty.identifier.as_ref();
+            if let Some(alias) = &ty.experimental_maybe_from_alias {
+                target_id = Some(&alias.name);
+            }
+
+            if let Some(id) = target_id {
                 if let Some(pos) = id.find('/') {
                     let d = id[..pos].to_string();
                     if d != compiler.library_name {
@@ -328,7 +333,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             if let Some(inner) = &ty.element_type {
-                extract_deps_from_type(inner, deps, compiler);
+                if ty.experimental_maybe_from_alias.is_none() {
+                    extract_deps_from_type(inner, deps, compiler);
+                }
             }
             if let Some(proto) = &ty.protocol {
                 if let Some(pos) = proto.find('/') {
@@ -362,24 +369,30 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         for u in &self.union_declarations {
-            for m in &u.members {
-                if let Some(t) = &m.type_ {
-                    extract_deps_from_type(t, &mut used_deps, self);
+            if u.name.starts_with(&format!("{}/", self.library_name)) {
+                for m in &u.members {
+                    if let Some(t) = &m.type_ {
+                        extract_deps_from_type(t, &mut used_deps, self);
+                    }
                 }
             }
         }
         for a in &self.alias_declarations {
-            let id = &a.partial_type_ctor.name;
-            if let Some(pos) = id.find('/') {
-                let d = id[..pos].to_string();
-                if d != self.library_name {
-                    used_deps.insert(d);
+            if a.name.starts_with(&format!("{}/", self.library_name)) {
+                let id = &a.partial_type_ctor.name;
+                if let Some(pos) = id.find('/') {
+                    let d = id[..pos].to_string();
+                    if d != self.library_name {
+                        used_deps.insert(d);
+                    }
                 }
             }
         }
         for s in &self.struct_declarations {
-            for m in &s.members {
-                extract_deps_from_type(&m.type_, &mut used_deps, self);
+            if s.name.starts_with(&format!("{}/", self.library_name)) {
+                for m in &s.members {
+                    extract_deps_from_type(&m.type_, &mut used_deps, self);
+                }
             }
         }
         fn extract_deps_from_type_value(
@@ -387,7 +400,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
             deps: &mut HashSet<String>,
             compiler: &Compiler,
         ) {
-            if let Some(id) = val.get("identifier").and_then(|i| i.as_str()) {
+            let mut target_id = val.get("identifier").and_then(|i| i.as_str());
+            if let Some(alias) = val.get("experimental_maybe_from_alias") {
+                if let Some(n) = alias.get("name").and_then(|n| n.as_str()) {
+                    target_id = Some(n);
+                }
+            }
+
+            if let Some(id) = target_id {
                 if let Some(pos) = id.find('/') {
                     let d = id[..pos].to_string();
                     if d != compiler.library_name {
@@ -408,7 +428,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             if let Some(inner) = val.get("element_type") {
-                extract_deps_from_type_value(inner, deps, compiler);
+                if val.get("experimental_maybe_from_alias").is_none() {
+                    extract_deps_from_type_value(inner, deps, compiler);
+                }
             }
             if let Some(proto) = val.get("protocol").and_then(|p| p.as_str()) {
                 if let Some(pos) = proto.find('/') {
@@ -1657,6 +1679,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 attrs
             },
             type_: Type {
+experimental_maybe_from_alias: None,
+
                 kind_v2: "primitive".to_string(),
                 subtype: Some(subtype_name),
                 identifier: None,
@@ -1705,7 +1729,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 _ => 0,
             };
 
-            let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
+            let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     crate::name::NamingContext::create(
                         name_element
@@ -1719,16 +1743,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     // This case should be unreachable for valid table members with types
                     ctx.enter_member(member.ordinal.element.span())
                 };
-                let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                let alias = if type_obj.kind_v2 != "array" && type_obj.kind_v2 != "vector" && type_obj.kind_v2 != "string" && type_obj.kind_v2 != "request" {
+                    type_obj.experimental_maybe_from_alias.take()
+                } else {
+                    None
+                };
                 let name = member.name.as_ref().unwrap().data().to_string();
-                (Some(type_obj), Some(name), None)
+                (Some(type_obj), Some(name), None, alias)
             } else {
-                (None, None, Some(true))
+                (None, None, Some(true), None)
             };
 
             let attributes = self.compile_attribute_list(&member.attributes);
 
             members.push(TableMember {
+experimental_maybe_from_alias: alias,
+
                 ordinal,
                 reserved,
                 type_,
@@ -1924,7 +1955,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
 
-            let (type_, name, reserved) = if let Some(type_ctor) = &member.type_ctor {
+            let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     crate::name::NamingContext::create(
                         name_element
@@ -1941,7 +1972,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None => member.element.span(),
                     })
                 };
-                let type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
+                let alias = if type_obj.kind_v2 != "array" && type_obj.kind_v2 != "vector" && type_obj.kind_v2 != "string" && type_obj.kind_v2 != "request" {
+                    type_obj.experimental_maybe_from_alias.take()
+                } else {
+                    None
+                };
                 if type_obj.nullable.unwrap_or(false) {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrOptionalUnionMember,
@@ -1950,9 +1986,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
                 let name = member.name.as_ref().unwrap().data().to_string();
-                (Some(type_obj), Some(name), None)
+                (Some(type_obj), Some(name), None, alias)
             } else {
-                (None, None, Some(true))
+                (None, None, Some(true), None)
             };
 
             let attributes = self.compile_attribute_list(&member.attributes);
@@ -1974,6 +2010,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
 
             members.push(UnionMember {
+experimental_maybe_from_alias: alias,
+
                 ordinal,
                 reserved,
                 name,
@@ -2147,7 +2185,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
             });
             let member_ctx = ctx.enter_member(member.name.element.span());
-            let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
+            let mut type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
+            let alias = if type_obj.kind_v2 != "array" && type_obj.kind_v2 != "vector" && type_obj.kind_v2 != "string" && type_obj.kind_v2 != "request" {
+                type_obj.experimental_maybe_from_alias.take()
+            } else {
+                None
+            };
             let type_shape = &type_obj.type_shape_v2;
 
             let align = type_shape.alignment;
@@ -2192,7 +2235,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             members.push(StructMember {
                 type_: type_obj,
                 name: member.name.data().to_string(),
-                location,
+experimental_maybe_from_alias: alias,
+location,
                 deprecated: self.is_deprecated(member.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&member.attributes),
                 field_shape_v2: FieldShapeV2 {
@@ -2502,6 +2546,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => (0, 0),
                 };
                 Type {
+experimental_maybe_from_alias: None,
+
                     kind_v2: "primitive".to_string(),
                     subtype: Some(name),
                     identifier: None,
@@ -2537,6 +2583,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     u32::MAX
                 };
                 Type {
+experimental_maybe_from_alias: None,
+
                     kind_v2: "string".to_string(),
                     subtype: None,
                     identifier: None,
@@ -2592,6 +2640,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     u32::MAX
                 };
                 Type {
+experimental_maybe_from_alias: None,
+
                     kind_v2: "string_array".to_string(),
                     subtype: None,
                     identifier: None,
@@ -2624,6 +2674,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if type_ctor.parameters.is_empty() {
                     // Error handling?
                     return Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "unknown".to_string(),
                         subtype: None,
                         identifier: None,
@@ -2653,7 +2705,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                 }
                 let inner = &type_ctor.parameters[0];
-                let inner_type = self.resolve_type(inner, library_name, naming_context);
+                let mut inner_type = self.resolve_type(inner, library_name, naming_context);
+                let inner_alias = inner_type.experimental_maybe_from_alias.take();
 
                 let max_count = if let Some(c) = type_ctor.constraints.first() {
                     self.eval_constant_usize(c).unwrap_or(u32::MAX as usize) as u32
@@ -2676,6 +2729,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let max_handles = max_count.saturating_mul(inner_type.type_shape_v2.max_handles);
 
                 Type {
+                    experimental_maybe_from_alias: inner_alias,
+
                     kind_v2: "vector".to_string(),
                     subtype: None,
                     identifier: None,
@@ -2725,6 +2780,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[],
                     );
                     return Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "unknown".to_string(),
                         subtype: None,
                         identifier: None,
@@ -2801,12 +2858,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
 
-                let inner_type = self.resolve_type(elt_type, library_name, naming_context);
-
+                let mut inner_type = self.resolve_type(elt_type, library_name, naming_context);
+                let inner_alias = inner_type.experimental_maybe_from_alias.take();
                 let total_size = count.saturating_mul(inner_type.type_shape_v2.inline_size);
                 let max_ool = count.saturating_mul(inner_type.type_shape_v2.max_out_of_line);
 
                 Type {
+                    experimental_maybe_from_alias: inner_alias,
                     kind_v2: "array".to_string(),
                     subtype: None,
                     identifier: None,
@@ -2916,6 +2974,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 Type {
+experimental_maybe_from_alias: None,
+
                     kind_v2: "endpoint".to_string(),
                     subtype: None,
                     identifier: None,
@@ -2947,6 +3007,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "box" => {
                 if type_ctor.parameters.is_empty() {
                     return Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "unknown".to_string(),
                         subtype: None,
                         identifier: None,
@@ -3232,6 +3294,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
 
                     return Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "handle".to_string(),
                         subtype: Some(handle_subtype),
                         identifier: None,
@@ -3325,6 +3389,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if let Some(shape) = self.shapes.get(&full_name) {
                     Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "identifier".to_string(),
                         subtype: None,
                         identifier: Some(full_name.clone()),
@@ -3345,6 +3411,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_shape_v2: shape.clone(),
                     }
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
+                    if let RawDecl::Alias(a) = decl {
+                        let mut resolved_type = self.resolve_type(&a.type_ctor, library_name, naming_context);
+                        resolved_type.experimental_maybe_from_alias = Some(crate::json_generator::ExperimentalMaybeFromAlias {
+                            name: full_name.clone(),
+                            args: vec![], // TODO handle args if any
+                            nullable,
+                        });
+                        if nullable {
+                            resolved_type.nullable = Some(true);
+                            if resolved_type.kind_v2 != "primitive" {
+                                resolved_type.type_shape_v2.depth += 1;
+                            }
+                        }
+                        return resolved_type;
+                    }
                     let is_union_or_table = match decl {
                         RawDecl::Union(_) | RawDecl::Table(_) => true,
                         RawDecl::Type(t) => matches!(
@@ -3381,6 +3462,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         (0, 1, false, false)
                     };
                     Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "identifier".to_string(),
                         subtype: None,
                         identifier: Some(full_name.clone()),
@@ -3418,6 +3501,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                     Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "unknown".to_string(),
                         subtype: None,
                         identifier: Some(full_name),
@@ -4669,24 +4754,95 @@ impl<'node, 'src> Compiler<'node, 'src> {
             );
         }
 
-        let openness = decl
-            .modifiers
-            .iter()
-            .find(|m| {
-                m.subkind == crate::token::TokenSubkind::Open
-                    || m.subkind == crate::token::TokenSubkind::Ajar
-                    || m.subkind == crate::token::TokenSubkind::Closed
-            })
-            .map(|m| match m.subkind {
-                crate::token::TokenSubkind::Open => "open",
-                crate::token::TokenSubkind::Ajar => "ajar",
-                crate::token::TokenSubkind::Closed => "closed",
-                _ => unreachable!(),
-            })
-            .unwrap_or("open");
-
         let mut methods = vec![];
         let mut method_names = std::collections::HashSet::new();
+        let openness = if decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == crate::token::TokenSubkind::Ajar)
+        {
+            "ajar"
+        } else if decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == crate::token::TokenSubkind::Closed)
+        {
+            "closed"
+        } else {
+            "open"
+        };
+
+        let mut compiled_composed = vec![];
+        for composed in &decl.composed_protocols {
+            let mut composed_name = composed.protocol_name.to_string();
+            if composed_name.contains('.') {
+                let parts: Vec<&str> = composed_name.split('.').collect();
+                composed_name = format!("{}/{}", parts[0], parts[1]);
+            }
+            let full_composed_name = if composed_name.contains('/') {
+                composed_name.clone()
+            } else {
+                format!("{}/{}", library_name, composed_name)
+            };
+
+            self.compile_decl_by_name(&full_composed_name);
+
+            let mut composed_openness = "open";
+            let mut parent_methods = vec![];
+            if let Some(p) = self
+                .protocol_declarations
+                .iter()
+                .find(|p| p.name == full_composed_name)
+            {
+                composed_openness = p.openness.as_str();
+                parent_methods = p.methods.clone();
+            } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
+                if p.modifiers
+                    .iter()
+                    .any(|m| m.subkind == crate::token::TokenSubkind::Ajar)
+                {
+                    composed_openness = "ajar";
+                } else if p
+                    .modifiers
+                    .iter()
+                    .any(|m| m.subkind == crate::token::TokenSubkind::Closed)
+                {
+                    composed_openness = "closed";
+                }
+            }
+
+            let valid = match openness {
+                "open" => true,
+                "ajar" => composed_openness == "ajar" || composed_openness == "closed",
+                "closed" => composed_openness == "closed",
+                _ => true,
+            };
+
+            if !valid {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrComposedProtocolTooOpen,
+                    composed.element.span(),
+                    &[
+                        &openness,
+                        &decl.name.data(),
+                        &composed_openness,
+                        &full_composed_name,
+                    ],
+                );
+            }
+
+            for mut pm in parent_methods {
+                pm.is_composed = true;
+                methods.push(pm);
+            }
+            compiled_composed.push(crate::json_generator::ProtocolCompose {
+                name: full_composed_name,
+                location: self.get_location(&composed.protocol_name.element),
+                deprecated: self.is_deprecated(composed.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&composed.attributes),
+            });
+        }
+
         for m in &decl.methods {
             let mut is_method_flexible = false;
             for modifier in &m.modifiers {
@@ -4812,6 +4968,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some(full_synth),
@@ -4857,6 +5015,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some(full_synth),
@@ -4902,6 +5062,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some(full_synth),
@@ -5049,6 +5211,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some(full_synth),
@@ -5113,6 +5277,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some(full_synth),
@@ -5177,6 +5343,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some(full_synth),
@@ -5322,6 +5490,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         shape
                     };
                     let typ = Type {
+experimental_maybe_from_alias: None,
+
                         kind_v2: "identifier".to_string(),
                         subtype: None,
                         identifier: Some(full_synth.clone()),
@@ -5404,7 +5574,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         reserved: None,
                         name: Some("response".to_string()),
                         type_: Some(success_type.clone()),
-                        location: Some(response_loc),
+experimental_maybe_from_alias: None,
+location: Some(response_loc),
                         deprecated: Some(false),
                         maybe_attributes: vec![],
                     },
@@ -5413,7 +5584,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         reserved: None,
                         name: Some("err".to_string()),
                         type_: Some(err_type.clone()),
-                        location: Some(err_loc),
+experimental_maybe_from_alias: None,
+location: Some(err_loc),
                         deprecated: Some(false),
                         maybe_attributes: vec![],
                     },
@@ -5421,10 +5593,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if is_method_flexible {
                     union_members.push(crate::json_generator::UnionMember {
-                        ordinal: 3,
-                        reserved: None,
-                        name: Some("framework_err".to_string()),
-                        type_: Some(Type {
+experimental_maybe_from_alias: None,
+ordinal: 3,
+reserved: None,
+name: Some("framework_err".to_string()),
+type_: Some(Type {
+experimental_maybe_from_alias: None,
+
                             kind_v2: "identifier".to_string(),
                             subtype: None,
                             identifier: Some("fidl/internal/FrameworkErr".to_string()),
@@ -5481,6 +5656,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 Some(Type {
+experimental_maybe_from_alias: None,
+
                     kind_v2: "identifier".to_string(),
                     subtype: None,
                     identifier: Some(full_synth_union.clone()),
@@ -5552,87 +5729,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 has_error: m.has_error,
                 maybe_response_success_type,
                 maybe_response_err_type,
-            });
-        }
-
-        let openness = if decl
-            .modifiers
-            .iter()
-            .any(|m| m.subkind == crate::token::TokenSubkind::Ajar)
-        {
-            "ajar"
-        } else if decl
-            .modifiers
-            .iter()
-            .any(|m| m.subkind == crate::token::TokenSubkind::Closed)
-        {
-            "closed"
-        } else {
-            "open"
-        };
-
-        let mut compiled_composed = vec![];
-        for composed in &decl.composed_protocols {
-            let mut composed_name = composed.protocol_name.to_string();
-            if composed_name.contains('.') {
-                let parts: Vec<&str> = composed_name.split('.').collect();
-                composed_name = format!("{}/{}", parts[0], parts[1]);
-            }
-            let full_composed_name = if composed_name.contains('/') {
-                composed_name.clone()
-            } else {
-                format!("{}/{}", library_name, composed_name)
-            };
-
-            self.compile_decl_by_name(&full_composed_name);
-
-            let mut composed_openness = "open";
-            if let Some(p) = self
-                .protocol_declarations
-                .iter()
-                .find(|p| p.name == full_composed_name)
-            {
-                composed_openness = p.openness.as_str();
-            } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
-                if p.modifiers
-                    .iter()
-                    .any(|m| m.subkind == crate::token::TokenSubkind::Ajar)
-                {
-                    composed_openness = "ajar";
-                } else if p
-                    .modifiers
-                    .iter()
-                    .any(|m| m.subkind == crate::token::TokenSubkind::Closed)
-                {
-                    composed_openness = "closed";
-                }
-            }
-
-            let valid = match openness {
-                "open" => true,
-                "ajar" => composed_openness == "ajar" || composed_openness == "closed",
-                "closed" => composed_openness == "closed",
-                _ => true,
-            };
-
-            if !valid {
-                self.reporter.fail(
-                    crate::diagnostics::Error::ErrComposedProtocolTooOpen,
-                    composed.element.span(),
-                    &[
-                        &openness,
-                        &decl.name.data(),
-                        &composed_openness,
-                        &full_composed_name,
-                    ],
-                );
-            }
-
-            compiled_composed.push(crate::json_generator::ProtocolCompose {
-                name: full_composed_name,
-                location: self.get_location(&composed.protocol_name.element),
-                deprecated: self.is_deprecated(composed.attributes.as_deref()),
-                maybe_attributes: self.compile_attribute_list(&composed.attributes),
             });
         }
 

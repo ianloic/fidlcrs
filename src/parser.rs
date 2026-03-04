@@ -1240,9 +1240,16 @@ impl<'a, 'b> Parser<'a, 'b> {
                 | TokenSubkind::Ajar
                 | TokenSubkind::Open => {
                     let peeked = self.peek_token();
-                    if peeked.kind != TokenKind::Identifier 
-                        && peeked.kind != TokenKind::Arrow 
-                        && peeked.kind != TokenKind::LeftParen {
+                    if peeked.kind == TokenKind::LeftParen {
+                        let peek2 = self.peek_token_n(2);
+                        if peek2.kind == TokenKind::RightParen {
+                            break;
+                        }
+                        let peek3 = self.peek_token_n(3);
+                        if peek3.kind != TokenKind::Equal {
+                            break;
+                        }
+                    } else if peeked.kind != TokenKind::Identifier && peeked.kind != TokenKind::Arrow {
                         break;
                     }
                     let start_tok = self.last_token.clone();
@@ -1405,6 +1412,14 @@ impl<'a, 'b> Parser<'a, 'b> {
     pub fn peek_token(&mut self) -> Token<'a> {
         let mut cloned_lexer = self.lexer.clone();
         cloned_lexer.lex()
+    }
+
+    pub fn peek_token_n(&mut self, n: usize) -> Token<'a> {
+        let mut cloned = self.lexer.clone();
+        for _ in 0..n-1 {
+            cloned.lex();
+        }
+        cloned.lex()
     }
 
     pub fn consume_token(&mut self, kind: TokenKind) -> Option<Token<'a>> {

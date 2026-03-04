@@ -42,7 +42,7 @@ pub struct Location {
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct TypeShapeV2 {
+pub struct TypeShape {
     pub inline_size: u32,
     pub alignment: u32,
     pub depth: u32,
@@ -53,14 +53,31 @@ pub struct TypeShapeV2 {
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct FieldShapeV2 {
+pub struct FieldShape {
     pub offset: u32,
     pub padding: u32,
 }
 
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TypeKind {
+    Primitive,
+    String,
+    StringArray,
+    Unknown,
+    Vector,
+    Array,
+    Endpoint,
+    Handle,
+    Identifier,
+    Struct,
+    Request,
+}
+
 #[derive(Serialize, Clone, Debug)]
 pub struct Type {
-    pub kind_v2: String,
+    #[serde(rename = "kind_v2")]
+    pub kind: TypeKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub obj_type: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -91,9 +108,11 @@ pub struct Type {
     pub resource_identifier: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
+    #[serde(rename = "field_shape_v2")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub field_shape_v2: Option<FieldShapeV2>,
-    pub type_shape_v2: TypeShapeV2,
+    pub field_shape: Option<FieldShape>,
+    #[serde(rename = "type_shape_v2")]
+    pub type_shape: TypeShape,
     #[serde(skip)]
     pub maybe_size_constant_name: Option<String>,
 }
@@ -116,7 +135,8 @@ pub struct StructMember {
     pub deprecated: bool,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
-    pub field_shape_v2: FieldShapeV2,
+    #[serde(rename = "field_shape_v2")]
+    pub field_shape: FieldShape,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_default_value: Option<Constant>,
 }
@@ -132,7 +152,8 @@ pub struct StructDeclaration {
     pub members: Vec<StructMember>,
     pub resource: bool,
     pub is_empty_success_struct: bool,
-    pub type_shape_v2: TypeShapeV2,
+    #[serde(rename = "type_shape_v2")]
+    pub type_shape: TypeShape,
 }
 
 // Placeholders for other declarations
@@ -357,7 +378,8 @@ pub struct TableDeclaration {
     pub members: Vec<TableMember>,
     pub strict: bool,
     pub resource: bool,
-    pub type_shape_v2: TypeShapeV2,
+    #[serde(rename = "type_shape_v2")]
+    pub type_shape: TypeShape,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -392,7 +414,8 @@ pub struct UnionDeclaration {
     pub strict: bool,
     pub resource: bool,
     pub is_result: bool,
-    pub type_shape_v2: TypeShapeV2,
+    #[serde(rename = "type_shape_v2")]
+    pub type_shape: TypeShape,
 }
 
 #[derive(Serialize, Clone, Debug)]

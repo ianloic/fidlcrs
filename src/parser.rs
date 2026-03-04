@@ -1044,7 +1044,9 @@ impl<'a, 'b> Parser<'a, 'b> {
             let mods = self.parse_modifiers();
 
             let peeked = self.peek_token();
-            if self.last_token.subkind == TokenSubkind::Compose && peeked.kind == TokenKind::Identifier {
+            if self.last_token.subkind == TokenSubkind::Compose
+                && peeked.kind == TokenKind::Identifier
+            {
                 let start_tok = mods
                     .first()
                     .map(|m| m.element.start_token.clone())
@@ -1112,8 +1114,6 @@ impl<'a, 'b> Parser<'a, 'b> {
             .as_ref()
             .map(|a| a.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
-
-
 
         let is_event = if self.last_token.kind == TokenKind::Arrow {
             self.consume_token(TokenKind::Arrow)?;
@@ -1249,7 +1249,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                         if peek3.kind != TokenKind::Equal {
                             break;
                         }
-                    } else if peeked.kind != TokenKind::Identifier && peeked.kind != TokenKind::Arrow {
+                    } else if peeked.kind != TokenKind::Identifier
+                        && peeked.kind != TokenKind::Arrow
+                    {
                         break;
                     }
                     let start_tok = self.last_token.clone();
@@ -1416,7 +1418,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     pub fn peek_token_n(&mut self, n: usize) -> Token<'a> {
         let mut cloned = self.lexer.clone();
-        for _ in 0..n-1 {
+        for _ in 0..n - 1 {
             cloned.lex();
         }
         cloned.lex()

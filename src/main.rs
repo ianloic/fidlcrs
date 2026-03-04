@@ -274,11 +274,16 @@ fn main() {
                     for attr in &attrs.attributes {
                         if attr.name.data() == "available" {
                             for arg in &attr.args {
-                                let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
+                                let arg_name =
+                                    arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
                                 if arg_name == "added" || arg_name == "value" {
                                     let val_str = match &arg.value {
-                                        fidlcrs::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
-                                        fidlcrs::raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                                        fidlcrs::raw_ast::Constant::Literal(lit) => {
+                                            lit.literal.value.clone()
+                                        }
+                                        fidlcrs::raw_ast::Constant::Identifier(id) => {
+                                            id.identifier.to_string()
+                                        }
                                         _ => "".to_string(),
                                     };
                                     found_added = Version::parse(&val_str);

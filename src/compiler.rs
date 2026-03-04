@@ -95,7 +95,7 @@ impl<'node, 'src> RawDecl<'node, 'src> {
 
 pub struct Compiler<'node, 'src> {
     // Compiled shapes for types
-    pub shapes: HashMap<String, TypeShapeV2>,
+    pub shapes: HashMap<String, TypeShape>,
     pub source_files: Vec<&'src SourceFile>,
     pub reporter: &'src Reporter<'src>,
 
@@ -194,7 +194,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.source_files = source_files.to_vec();
 
         // 1. Consume
-        let mut consume = ConsumeStep { main_files, dependency_files };
+        let mut consume = ConsumeStep {
+            main_files,
+            dependency_files,
+        };
         consume.run(self);
 
         // 2. Resolve
@@ -210,18 +213,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
         compile.run(self);
         // Fixup max_handles for resources in cycles
         for decl in &mut self.struct_declarations {
-            if decl.resource && decl.type_shape_v2.depth == u32::MAX {
-                decl.type_shape_v2.max_handles = u32::MAX;
+            if decl.resource && decl.type_shape.depth == u32::MAX {
+                decl.type_shape.max_handles = u32::MAX;
             }
         }
         for decl in &mut self.table_declarations {
-            if decl.resource && decl.type_shape_v2.depth == u32::MAX {
-                decl.type_shape_v2.max_handles = u32::MAX;
+            if decl.resource && decl.type_shape.depth == u32::MAX {
+                decl.type_shape.max_handles = u32::MAX;
             }
         }
         for decl in &mut self.union_declarations {
-            if decl.resource && decl.type_shape_v2.depth == u32::MAX {
-                decl.type_shape_v2.max_handles = u32::MAX;
+            if decl.resource && decl.type_shape.depth == u32::MAX {
+                decl.type_shape.max_handles = u32::MAX;
             }
         }
 
@@ -634,8 +637,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
             declarations: self.declarations.clone(),
         };
 
-        let has_errors = self.reporter.diagnostics().iter().any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Error);
-        let has_warnings = self.reporter.diagnostics().iter().any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Warning);
+        let has_errors = self
+            .reporter
+            .diagnostics()
+            .iter()
+            .any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Error);
+        let has_warnings = self
+            .reporter
+            .diagnostics()
+            .iter()
+            .any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Warning);
 
         if has_errors || (self.reporter.warnings_as_errors && has_warnings) {
             Err("Compilation failed".to_string())
@@ -668,7 +679,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        let envelope = |shape: &TypeShapeV2| -> TypeShapeV2 {
+        let envelope = |shape: &TypeShape| -> TypeShape {
             let inlined = shape.inline_size <= 4;
             let align = if inlined { 4 } else { 8 };
             let padding = (align - (shape.inline_size % align)) % align;
@@ -677,7 +688,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             } else {
                 shape.inline_size.saturating_add(padding)
             };
-            TypeShapeV2 {
+            TypeShape {
                 inline_size: 8,
                 alignment: 8,
                 depth: shape.depth.saturating_add(1),
@@ -699,7 +710,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             for member in &mut decl.members {
                 Self::update_type_shape(&mut member.type_, &shapes, &struct_names);
-                let type_shape = &member.type_.type_shape_v2;
+                let type_shape = &member.type_.type_shape;
 
                 let align = type_shape.alignment;
                 let size = type_shape.inline_size;
@@ -719,7 +730,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let padding_before = (align - (offset % align)) % align;
                 offset += padding_before;
-                member.field_shape_v2.offset = offset;
+                member.field_shape.offset = offset;
                 offset += size;
 
                 has_flex |= type_shape.has_flexible_envelope;
@@ -734,24 +745,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             for i in 0..decl.members.len() {
                 let next_offset = if i + 1 < decl.members.len() {
-                    decl.members[i + 1].field_shape_v2.offset
+                    decl.members[i + 1].field_shape.offset
                 } else {
                     total_size
                 };
-                let current_end = decl.members[i].field_shape_v2.offset
-                    + decl.members[i].type_.type_shape_v2.inline_size;
-                decl.members[i].field_shape_v2.padding = next_offset - current_end;
-                has_padding |= decl.members[i].field_shape_v2.padding > 0
-                    || decl.members[i].type_.type_shape_v2.has_padding;
+                let current_end = decl.members[i].field_shape.offset
+                    + decl.members[i].type_.type_shape.inline_size;
+                decl.members[i].field_shape.padding = next_offset - current_end;
+                has_padding |= decl.members[i].field_shape.padding > 0
+                    || decl.members[i].type_.type_shape.has_padding;
             }
 
-            decl.type_shape_v2.inline_size = total_size;
-            decl.type_shape_v2.alignment = alignment;
-            decl.type_shape_v2.depth = max_depth;
-            decl.type_shape_v2.max_out_of_line = sum_ool;
-            decl.type_shape_v2.max_handles = sum_handles;
-            decl.type_shape_v2.has_padding = has_padding || final_padding > 0;
-            decl.type_shape_v2.has_flexible_envelope = has_flex;
+            decl.type_shape.inline_size = total_size;
+            decl.type_shape.alignment = alignment;
+            decl.type_shape.depth = max_depth;
+            decl.type_shape.max_out_of_line = sum_ool;
+            decl.type_shape.max_handles = sum_handles;
+            decl.type_shape.has_padding = has_padding || final_padding > 0;
+            decl.type_shape.has_flexible_envelope = has_flex;
         }
         for decl in &mut self.union_declarations {
             let mut max_ool = 0u32;
@@ -761,21 +772,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
             for member in &mut decl.members {
                 if let Some(ty) = &mut member.type_ {
                     Self::update_type_shape(ty, &shapes, &struct_names);
-                    let env = envelope(&ty.type_shape_v2);
+                    let env = envelope(&ty.type_shape);
                     max_ool = std::cmp::max(max_ool, env.max_out_of_line);
                     max_handles = std::cmp::max(max_handles, env.max_handles);
                     has_padding |= env.has_padding;
                     has_flex |= env.has_flexible_envelope;
                 }
             }
-            if decl.type_shape_v2.depth != u32::MAX {
-                decl.type_shape_v2.max_out_of_line = max_ool;
-                decl.type_shape_v2.max_handles = max_handles;
-                decl.type_shape_v2.has_padding = has_padding;
+            if decl.type_shape.depth != u32::MAX {
+                decl.type_shape.max_out_of_line = max_ool;
+                decl.type_shape.max_handles = max_handles;
+                decl.type_shape.has_padding = has_padding;
                 let is_flexible =
                     decl.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
                 // Also check if any member has the flexible trait
-                decl.type_shape_v2.has_flexible_envelope = has_flex || is_flexible;
+                decl.type_shape.has_flexible_envelope = has_flex || is_flexible;
             }
         }
         for decl in &mut self.table_declarations {
@@ -788,19 +799,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 max_ordinal = std::cmp::max(max_ordinal, member.ordinal);
                 if let Some(ty) = &mut member.type_ {
                     Self::update_type_shape(ty, &shapes, &struct_names);
-                    let env = envelope(&ty.type_shape_v2);
+                    let env = envelope(&ty.type_shape);
                     max_ool = max_ool.saturating_add(env.max_out_of_line);
                     max_handles = max_handles.saturating_add(env.max_handles);
                     has_padding |= env.has_padding;
                     has_flex |= env.has_flexible_envelope;
                 }
             }
-            if decl.type_shape_v2.depth != u32::MAX {
-                decl.type_shape_v2.max_out_of_line =
+            if decl.type_shape.depth != u32::MAX {
+                decl.type_shape.max_out_of_line =
                     max_ool.saturating_add(max_ordinal.saturating_mul(8));
-                decl.type_shape_v2.max_handles = max_handles;
-                decl.type_shape_v2.has_padding = has_padding;
-                decl.type_shape_v2.has_flexible_envelope = has_flex || true;
+                decl.type_shape.max_handles = max_handles;
+                decl.type_shape.has_padding = has_padding;
+                decl.type_shape.has_flexible_envelope = has_flex || true;
             }
         }
         for decl in &mut self.alias_declarations {
@@ -829,10 +840,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     fn update_type_shape(
         ty: &mut Type,
-        shapes: &HashMap<String, TypeShapeV2>,
+        shapes: &HashMap<String, TypeShape>,
         struct_names: &HashSet<String>,
     ) {
-        if ty.kind_v2 == "identifier" {
+        if ty.kind == TypeKind::Identifier {
             if let Some(id) = &ty.identifier {
                 if let Some(shape) = shapes.get(id) {
                     if ty.nullable == Some(true) && struct_names.contains(id) {
@@ -842,7 +853,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .max_out_of_line
                             .saturating_add(inner_inline.saturating_add(padding));
 
-                        ty.type_shape_v2 = TypeShapeV2 {
+                        ty.type_shape = TypeShape {
                             inline_size: 8,
                             alignment: 8,
                             depth: shape.depth.saturating_add(1),
@@ -852,7 +863,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: shape.has_flexible_envelope,
                         };
                     } else {
-                        ty.type_shape_v2 = shape.clone();
+                        ty.type_shape = shape.clone();
                     }
                 }
             }
@@ -860,8 +871,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if let Some(inner) = &mut ty.element_type {
             Self::update_type_shape(inner, shapes, struct_names);
 
-            if ty.kind_v2 == "vector" {
-                let inner_shape = &inner.type_shape_v2;
+            if ty.kind == TypeKind::Vector {
+                let inner_shape = &inner.type_shape;
                 let count = ty.maybe_element_count.unwrap_or(u32::MAX);
 
                 let new_depth = inner_shape.depth.saturating_add(1);
@@ -880,7 +891,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let max_handles = count.saturating_mul(inner_shape.max_handles);
                 let has_padding = inner_shape.has_padding || !elem_size.is_multiple_of(8);
 
-                ty.type_shape_v2 = TypeShapeV2 {
+                ty.type_shape = TypeShape {
                     inline_size: 16,
                     alignment: 8,
                     depth: new_depth,
@@ -889,8 +900,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     has_padding,
                     has_flexible_envelope: inner_shape.has_flexible_envelope,
                 };
-            } else if ty.kind_v2 == "array" {
-                let inner_shape = &inner.type_shape_v2;
+            } else if ty.kind == TypeKind::Array {
+                let inner_shape = &inner.type_shape;
                 let count = ty.element_count.unwrap_or(0);
 
                 let elem_size = inner_shape.inline_size;
@@ -900,7 +911,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let max_handles = count.saturating_mul(inner_shape.max_handles);
                 let max_out_of_line = count.saturating_mul(elem_ool);
 
-                ty.type_shape_v2 = TypeShapeV2 {
+                ty.type_shape = TypeShape {
                     inline_size: count.saturating_mul(elem_size),
                     alignment: inner_shape.alignment,
                     depth,
@@ -1375,7 +1386,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         self.shapes.insert(
             full_name.clone(),
-            TypeShapeV2 {
+            TypeShape {
                 inline_size,
                 alignment,
                 depth: 0,
@@ -1629,8 +1640,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             &[],
                         );
                     }
-                }
-                // No other Constant variants
+                } // No other Constant variants
             }
 
             members.push(BitsMember {
@@ -1650,7 +1660,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             _ => (4, 4),
         };
 
-        let type_shape_v2 = TypeShapeV2 {
+        let type_shape = TypeShape {
             inline_size,
             alignment,
             depth: 0,
@@ -1660,7 +1670,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             has_flexible_envelope: false,
         };
 
-        self.shapes.insert(full_name.clone(), type_shape_v2.clone());
+        self.shapes.insert(full_name.clone(), type_shape.clone());
 
         BitsDeclaration {
             name: full_name,
@@ -1679,9 +1689,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 attrs
             },
             type_: Type {
-experimental_maybe_from_alias: None,
+                experimental_maybe_from_alias: None,
 
-                kind_v2: "primitive".to_string(),
+                kind: TypeKind::Primitive,
                 subtype: Some(subtype_name),
                 identifier: None,
                 nullable: None,
@@ -1696,9 +1706,9 @@ experimental_maybe_from_alias: None,
                 resource_identifier: None,
                 deprecated: None,
                 maybe_attributes: vec![],
-                field_shape_v2: None,
+                field_shape: None,
                 maybe_size_constant_name: None,
-                type_shape_v2,
+                type_shape,
             },
             mask: mask.to_string(),
             members,
@@ -1744,7 +1754,11 @@ experimental_maybe_from_alias: None,
                     ctx.enter_member(member.ordinal.element.span())
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
-                let alias = if type_obj.kind_v2 != "array" && type_obj.kind_v2 != "vector" && type_obj.kind_v2 != "string" && type_obj.kind_v2 != "request" {
+                let alias = if type_obj.kind != TypeKind::Array
+                    && type_obj.kind != TypeKind::Vector
+                    && type_obj.kind != TypeKind::String
+                    && type_obj.kind != TypeKind::Request
+                {
                     type_obj.experimental_maybe_from_alias.take()
                 } else {
                     None
@@ -1758,7 +1772,7 @@ experimental_maybe_from_alias: None,
             let attributes = self.compile_attribute_list(&member.attributes);
 
             members.push(TableMember {
-experimental_maybe_from_alias: alias,
+                experimental_maybe_from_alias: alias,
 
                 ordinal,
                 reserved,
@@ -1791,7 +1805,7 @@ experimental_maybe_from_alias: alias,
 
         for member in &members {
             if let Some(type_obj) = &member.type_ {
-                let shape = &type_obj.type_shape_v2;
+                let shape = &type_obj.type_shape;
                 max_handles = max_handles.saturating_add(shape.max_handles);
 
                 let inlined = shape.inline_size <= 4;
@@ -1820,7 +1834,7 @@ experimental_maybe_from_alias: alias,
 
         depth = depth.saturating_add(1);
 
-        let mut type_shape_v2 = TypeShapeV2 {
+        let mut type_shape = TypeShape {
             inline_size: 16,
             alignment: 8,
             depth,
@@ -1830,11 +1844,11 @@ experimental_maybe_from_alias: alias,
             has_flexible_envelope: true,
         };
 
-        if type_shape_v2.depth == u32::MAX && type_shape_v2.max_handles != 0 {
-            type_shape_v2.max_handles = u32::MAX;
+        if type_shape.depth == u32::MAX && type_shape.max_handles != 0 {
+            type_shape.max_handles = u32::MAX;
         }
 
-        self.shapes.insert(full_name.clone(), type_shape_v2.clone());
+        self.shapes.insert(full_name.clone(), type_shape.clone());
 
         TableDeclaration {
             name: full_name,
@@ -1858,7 +1872,7 @@ experimental_maybe_from_alias: alias,
                 }
                 attrs
             },
-            type_shape_v2,
+            type_shape,
         }
     }
 
@@ -1921,8 +1935,8 @@ experimental_maybe_from_alias: alias,
                 if ordinal != 0 {
                     let location_str = format!(
                         "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename, 
-                        prev.location.as_ref().unwrap().line, 
+                        prev.location.as_ref().unwrap().filename,
+                        prev.location.as_ref().unwrap().line,
                         prev.location.as_ref().unwrap().column
                     );
                     self.reporter.fail(
@@ -1935,11 +1949,14 @@ experimental_maybe_from_alias: alias,
 
             if let Some(n_name) = &member.name {
                 let member_name = n_name.data();
-                if let Some(prev) = members.iter().find(|m: &&UnionMember| m.name.as_deref() == Some(member_name)) {
+                if let Some(prev) = members
+                    .iter()
+                    .find(|m: &&UnionMember| m.name.as_deref() == Some(member_name))
+                {
                     let location_str = format!(
                         "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename, 
-                        prev.location.as_ref().unwrap().line, 
+                        prev.location.as_ref().unwrap().filename,
+                        prev.location.as_ref().unwrap().line,
                         prev.location.as_ref().unwrap().column
                     );
                     self.reporter.fail(
@@ -1973,7 +1990,11 @@ experimental_maybe_from_alias: alias,
                     })
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
-                let alias = if type_obj.kind_v2 != "array" && type_obj.kind_v2 != "vector" && type_obj.kind_v2 != "string" && type_obj.kind_v2 != "request" {
+                let alias = if type_obj.kind != TypeKind::Array
+                    && type_obj.kind != TypeKind::Vector
+                    && type_obj.kind != TypeKind::String
+                    && type_obj.kind != TypeKind::Request
+                {
                     type_obj.experimental_maybe_from_alias.take()
                 } else {
                     None
@@ -2010,7 +2031,7 @@ experimental_maybe_from_alias: alias,
             }
 
             members.push(UnionMember {
-experimental_maybe_from_alias: alias,
+                experimental_maybe_from_alias: alias,
 
                 ordinal,
                 reserved,
@@ -2055,7 +2076,7 @@ experimental_maybe_from_alias: alias,
 
         for member in &members {
             if let Some(type_obj) = &member.type_ {
-                let shape = &type_obj.type_shape_v2;
+                let shape = &type_obj.type_shape;
                 if shape.max_handles > max_handles {
                     max_handles = shape.max_handles;
                 }
@@ -2089,7 +2110,7 @@ experimental_maybe_from_alias: alias,
         // Union depth is 1 + max(member depth).
         // Zero fields or reserved fields = 0 depth.
 
-        let mut type_shape_v2 = TypeShapeV2 {
+        let mut type_shape = TypeShape {
             inline_size: 16,
             alignment: 8,
             depth,
@@ -2100,15 +2121,15 @@ experimental_maybe_from_alias: alias,
                 || members.iter().any(|m| {
                     m.type_
                         .as_ref()
-                        .is_some_and(|t| t.type_shape_v2.has_flexible_envelope)
+                        .is_some_and(|t| t.type_shape.has_flexible_envelope)
                 }),
         };
 
-        if type_shape_v2.depth == u32::MAX && type_shape_v2.max_handles != 0 {
-            type_shape_v2.max_handles = u32::MAX;
+        if type_shape.depth == u32::MAX && type_shape.max_handles != 0 {
+            type_shape.max_handles = u32::MAX;
         }
 
-        self.shapes.insert(full_name.clone(), type_shape_v2.clone());
+        self.shapes.insert(full_name.clone(), type_shape.clone());
 
         UnionDeclaration {
             name: full_name,
@@ -2133,7 +2154,7 @@ experimental_maybe_from_alias: alias,
                 }
                 attrs
             },
-            type_shape_v2,
+            type_shape,
         }
     }
 
@@ -2186,12 +2207,16 @@ experimental_maybe_from_alias: alias,
             });
             let member_ctx = ctx.enter_member(member.name.element.span());
             let mut type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
-            let alias = if type_obj.kind_v2 != "array" && type_obj.kind_v2 != "vector" && type_obj.kind_v2 != "string" && type_obj.kind_v2 != "request" {
+            let alias = if type_obj.kind != TypeKind::Array
+                && type_obj.kind != TypeKind::Vector
+                && type_obj.kind != TypeKind::String
+                && type_obj.kind != TypeKind::Request
+            {
                 type_obj.experimental_maybe_from_alias.take()
             } else {
                 None
             };
-            let type_shape = &type_obj.type_shape_v2;
+            let type_shape = &type_obj.type_shape;
 
             let align = type_shape.alignment;
             let size = type_shape.inline_size;
@@ -2235,11 +2260,11 @@ experimental_maybe_from_alias: alias,
             members.push(StructMember {
                 type_: type_obj,
                 name: member.name.data().to_string(),
-experimental_maybe_from_alias: alias,
-location,
+                experimental_maybe_from_alias: alias,
+                location,
                 deprecated: self.is_deprecated(member.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&member.attributes),
-                field_shape_v2: FieldShapeV2 {
+                field_shape: FieldShape {
                     offset: field_offset,
                     padding: 0,
                 },
@@ -2260,20 +2285,20 @@ location,
         // Fixup padding
         for i in 0..members.len() {
             let next_offset = if i + 1 < members.len() {
-                members[i + 1].field_shape_v2.offset
+                members[i + 1].field_shape.offset
             } else {
                 total_size
             };
             let current_end =
-                members[i].field_shape_v2.offset + members[i].type_.type_shape_v2.inline_size;
-            members[i].field_shape_v2.padding = next_offset - current_end;
+                members[i].field_shape.offset + members[i].type_.type_shape.inline_size;
+            members[i].field_shape.padding = next_offset - current_end;
         }
 
         if depth == u32::MAX && max_handles != 0 {
             max_handles = u32::MAX;
         }
 
-        let type_shape = TypeShapeV2 {
+        let type_shape = TypeShape {
             inline_size: total_size,
             alignment,
             depth,
@@ -2282,10 +2307,10 @@ location,
             has_padding: final_padding > 0
                 || members
                     .iter()
-                    .any(|m| m.field_shape_v2.padding > 0 || m.type_.type_shape_v2.has_padding),
+                    .any(|m| m.field_shape.padding > 0 || m.type_.type_shape.has_padding),
             has_flexible_envelope: members
                 .iter()
-                .any(|m| m.type_.type_shape_v2.has_flexible_envelope),
+                .any(|m| m.type_.type_shape.has_flexible_envelope),
         };
 
         // Register shape
@@ -2330,7 +2355,7 @@ location,
                 .iter()
                 .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
             is_empty_success_struct: false,
-            type_shape_v2: type_shape,
+            type_shape: type_shape,
         }
     }
 
@@ -2546,9 +2571,9 @@ location,
                     _ => (0, 0),
                 };
                 Type {
-experimental_maybe_from_alias: None,
+                    experimental_maybe_from_alias: None,
 
-                    kind_v2: "primitive".to_string(),
+                    kind: TypeKind::Primitive,
                     subtype: Some(name),
                     identifier: None,
                     nullable: None,
@@ -2563,9 +2588,9 @@ experimental_maybe_from_alias: None,
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: None,
-                    type_shape_v2: TypeShapeV2 {
+                    type_shape: TypeShape {
                         inline_size,
                         alignment,
                         depth: 0,
@@ -2583,9 +2608,9 @@ experimental_maybe_from_alias: None,
                     u32::MAX
                 };
                 Type {
-experimental_maybe_from_alias: None,
+                    experimental_maybe_from_alias: None,
 
-                    kind_v2: "string".to_string(),
+                    kind: TypeKind::String,
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
@@ -2604,7 +2629,7 @@ experimental_maybe_from_alias: None,
                     },
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
                         if let raw_ast::Constant::Identifier(id) = c {
                             Some(id.identifier.to_string())
@@ -2614,7 +2639,7 @@ experimental_maybe_from_alias: None,
                     } else {
                         None
                     },
-                    type_shape_v2: TypeShapeV2 {
+                    type_shape: TypeShape {
                         inline_size: 16,
                         alignment: 8,
                         depth: 1,
@@ -2640,9 +2665,9 @@ experimental_maybe_from_alias: None,
                     u32::MAX
                 };
                 Type {
-experimental_maybe_from_alias: None,
+                    experimental_maybe_from_alias: None,
 
-                    kind_v2: "string_array".to_string(),
+                    kind: TypeKind::StringArray,
                     subtype: None,
                     identifier: None,
                     nullable: None,
@@ -2657,9 +2682,9 @@ experimental_maybe_from_alias: None,
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: None,
-                    type_shape_v2: TypeShapeV2 {
+                    type_shape: TypeShape {
                         inline_size: max_len,
                         alignment: 1,
                         depth: 0,
@@ -2674,9 +2699,9 @@ experimental_maybe_from_alias: None,
                 if type_ctor.parameters.is_empty() {
                     // Error handling?
                     return Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "unknown".to_string(),
+                        kind: TypeKind::Unknown,
                         subtype: None,
                         identifier: None,
                         nullable: None,
@@ -2691,9 +2716,9 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: TypeShapeV2 {
+                        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -2714,11 +2739,11 @@ experimental_maybe_from_alias: None,
                     u32::MAX
                 };
 
-                let new_depth = inner_type.type_shape_v2.depth.saturating_add(1);
-                // println!("Vector depth calculation: inner {}, new {}", inner_type.type_shape_v2.depth, new_depth);
+                let new_depth = inner_type.type_shape.depth.saturating_add(1);
+                // println!("Vector depth calculation: inner {}, new {}", inner_type.type_shape.depth, new_depth);
 
-                let elem_size = inner_type.type_shape_v2.inline_size;
-                let elem_ool = inner_type.type_shape_v2.max_out_of_line;
+                let elem_size = inner_type.type_shape.inline_size;
+                let elem_ool = inner_type.type_shape.max_out_of_line;
                 let content_size = max_count.saturating_mul(elem_size.saturating_add(elem_ool));
                 let max_ool = if content_size % 8 == 0 {
                     content_size
@@ -2726,12 +2751,12 @@ experimental_maybe_from_alias: None,
                     content_size.saturating_add(8 - (content_size % 8))
                 };
 
-                let max_handles = max_count.saturating_mul(inner_type.type_shape_v2.max_handles);
+                let max_handles = max_count.saturating_mul(inner_type.type_shape.max_handles);
 
                 Type {
                     experimental_maybe_from_alias: inner_alias,
 
-                    kind_v2: "vector".to_string(),
+                    kind: TypeKind::Vector,
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
@@ -2750,7 +2775,7 @@ experimental_maybe_from_alias: None,
                     },
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
                         if let raw_ast::Constant::Identifier(id) = c {
                             Some(id.identifier.to_string())
@@ -2760,15 +2785,15 @@ experimental_maybe_from_alias: None,
                     } else {
                         None
                     },
-                    type_shape_v2: TypeShapeV2 {
+                    type_shape: TypeShape {
                         inline_size: 16,
                         alignment: 8,
                         depth: new_depth,
                         max_handles,
                         max_out_of_line: max_ool,
-                        has_padding: inner_type.type_shape_v2.has_padding
+                        has_padding: inner_type.type_shape.has_padding
                             || !elem_size.is_multiple_of(8),
-                        has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
+                        has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
                     },
                 }
             }
@@ -2780,9 +2805,9 @@ experimental_maybe_from_alias: None,
                         &[],
                     );
                     return Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "unknown".to_string(),
+                        kind: TypeKind::Unknown,
                         subtype: None,
                         identifier: None,
                         nullable: None,
@@ -2797,9 +2822,9 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: TypeShapeV2 {
+                        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -2860,12 +2885,12 @@ experimental_maybe_from_alias: None,
 
                 let mut inner_type = self.resolve_type(elt_type, library_name, naming_context);
                 let inner_alias = inner_type.experimental_maybe_from_alias.take();
-                let total_size = count.saturating_mul(inner_type.type_shape_v2.inline_size);
-                let max_ool = count.saturating_mul(inner_type.type_shape_v2.max_out_of_line);
+                let total_size = count.saturating_mul(inner_type.type_shape.inline_size);
+                let max_ool = count.saturating_mul(inner_type.type_shape.max_out_of_line);
 
                 Type {
                     experimental_maybe_from_alias: inner_alias,
-                    kind_v2: "array".to_string(),
+                    kind: TypeKind::Array,
                     subtype: None,
                     identifier: None,
                     nullable: None, // Arrays themselves are not nullable
@@ -2880,7 +2905,7 @@ experimental_maybe_from_alias: None,
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: if let Some(param) = type_ctor.parameters.get(1) {
                         if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
                             Some(id.to_string())
@@ -2890,14 +2915,14 @@ experimental_maybe_from_alias: None,
                     } else {
                         None
                     },
-                    type_shape_v2: TypeShapeV2 {
+                    type_shape: TypeShape {
                         inline_size: total_size,
-                        alignment: inner_type.type_shape_v2.alignment,
-                        depth: inner_type.type_shape_v2.depth,
-                        max_handles: inner_type.type_shape_v2.max_handles.saturating_mul(count),
+                        alignment: inner_type.type_shape.alignment,
+                        depth: inner_type.type_shape.depth,
+                        max_handles: inner_type.type_shape.max_handles.saturating_mul(count),
                         max_out_of_line: max_ool,
-                        has_padding: inner_type.type_shape_v2.has_padding,
-                        has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
+                        has_padding: inner_type.type_shape.has_padding,
+                        has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
                     },
                 }
             }
@@ -2974,9 +2999,9 @@ experimental_maybe_from_alias: None,
                 }
 
                 Type {
-experimental_maybe_from_alias: None,
+                    experimental_maybe_from_alias: None,
 
-                    kind_v2: "endpoint".to_string(),
+                    kind: TypeKind::Endpoint,
                     subtype: None,
                     identifier: None,
                     nullable: Some(nullable),
@@ -2991,9 +3016,9 @@ experimental_maybe_from_alias: None,
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: None,
-                    type_shape_v2: TypeShapeV2 {
+                    type_shape: TypeShape {
                         inline_size: 4,
                         alignment: 4,
                         depth: 0,
@@ -3007,9 +3032,9 @@ experimental_maybe_from_alias: None,
             "box" => {
                 if type_ctor.parameters.is_empty() {
                     return Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "unknown".to_string(),
+                        kind: TypeKind::Unknown,
                         subtype: None,
                         identifier: None,
                         nullable: None,
@@ -3024,9 +3049,9 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: TypeShapeV2 {
+                        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -3051,8 +3076,7 @@ experimental_maybe_from_alias: None,
                     );
                 }
 
-                if inner_type.kind_v2 != "struct" {
-                    let k = inner_type.kind_v2.as_str();
+                if inner_type.kind != TypeKind::Struct {
                     let mut is_nor_opt = false;
                     let mut is_struct = false;
                     if let Some(decl) = self.get_underlying_decl(
@@ -3073,7 +3097,8 @@ experimental_maybe_from_alias: None,
                             _ => {}
                         }
                     } else {
-                        is_nor_opt = k == "array" || k == "primitive";
+                        is_nor_opt = inner_type.kind == TypeKind::Array
+                            || inner_type.kind == TypeKind::Primitive;
                     }
 
                     if !is_struct {
@@ -3093,25 +3118,25 @@ experimental_maybe_from_alias: None,
                     }
                 }
 
-                let boxed_inline = inner_type.type_shape_v2.inline_size;
+                let boxed_inline = inner_type.type_shape.inline_size;
                 let padding = (8 - (boxed_inline % 8)) % 8;
                 let max_ool = inner_type
-                    .type_shape_v2
+                    .type_shape
                     .max_out_of_line
                     .saturating_add(boxed_inline.saturating_add(padding));
 
                 inner_type.nullable = Some(true); // box always makes it nullable for JSON output
 
-                let new_depth = inner_type.type_shape_v2.depth.saturating_add(1);
+                let new_depth = inner_type.type_shape.depth.saturating_add(1);
 
-                inner_type.type_shape_v2 = TypeShapeV2 {
+                inner_type.type_shape = TypeShape {
                     inline_size: 8,
                     alignment: 8,
                     depth: new_depth,
-                    max_handles: inner_type.type_shape_v2.max_handles,
+                    max_handles: inner_type.type_shape.max_handles,
                     max_out_of_line: max_ool,
-                    has_padding: inner_type.type_shape_v2.has_padding || padding > 0,
-                    has_flexible_envelope: inner_type.type_shape_v2.has_flexible_envelope,
+                    has_padding: inner_type.type_shape.has_padding || padding > 0,
+                    has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
                 };
 
                 inner_type
@@ -3294,9 +3319,9 @@ experimental_maybe_from_alias: None,
                     }
 
                     return Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "handle".to_string(),
+                        kind: TypeKind::Handle,
                         subtype: Some(handle_subtype),
                         identifier: None,
                         nullable: Some(nullable),
@@ -3311,9 +3336,9 @@ experimental_maybe_from_alias: None,
                         resource_identifier: Some(full_name.clone()),
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: TypeShapeV2 {
+                        type_shape: TypeShape {
                             inline_size: 4,
                             alignment: 4,
                             depth: 0,
@@ -3389,9 +3414,9 @@ experimental_maybe_from_alias: None,
 
                 if let Some(shape) = self.shapes.get(&full_name) {
                     Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "identifier".to_string(),
+                        kind: TypeKind::Identifier,
                         subtype: None,
                         identifier: Some(full_name.clone()),
                         nullable: Some(nullable),
@@ -3406,22 +3431,24 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: shape.clone(),
+                        type_shape: shape.clone(),
                     }
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     if let RawDecl::Alias(a) = decl {
-                        let mut resolved_type = self.resolve_type(&a.type_ctor, library_name, naming_context);
-                        resolved_type.experimental_maybe_from_alias = Some(crate::json_generator::ExperimentalMaybeFromAlias {
-                            name: full_name.clone(),
-                            args: vec![], // TODO handle args if any
-                            nullable,
-                        });
+                        let mut resolved_type =
+                            self.resolve_type(&a.type_ctor, library_name, naming_context);
+                        resolved_type.experimental_maybe_from_alias =
+                            Some(crate::json_generator::ExperimentalMaybeFromAlias {
+                                name: full_name.clone(),
+                                args: vec![], // TODO handle args if any
+                                nullable,
+                            });
                         if nullable {
                             resolved_type.nullable = Some(true);
-                            if resolved_type.kind_v2 != "primitive" {
-                                resolved_type.type_shape_v2.depth += 1;
+                            if resolved_type.kind != TypeKind::Primitive {
+                                resolved_type.type_shape.depth += 1;
                             }
                         }
                         return resolved_type;
@@ -3462,9 +3489,9 @@ experimental_maybe_from_alias: None,
                         (0, 1, false, false)
                     };
                     Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "identifier".to_string(),
+                        kind: TypeKind::Identifier,
                         subtype: None,
                         identifier: Some(full_name.clone()),
                         nullable: Some(nullable),
@@ -3479,9 +3506,9 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: TypeShapeV2 {
+                        type_shape: TypeShape {
                             inline_size: inline,
                             alignment: align,
                             depth: u32::MAX,
@@ -3501,9 +3528,9 @@ experimental_maybe_from_alias: None,
                         );
                     }
                     Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "unknown".to_string(),
+                        kind: TypeKind::Unknown,
                         subtype: None,
                         identifier: Some(full_name),
                         nullable: Some(nullable),
@@ -3518,9 +3545,9 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
-                        type_shape_v2: TypeShapeV2 {
+                        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -3540,12 +3567,22 @@ experimental_maybe_from_alias: None,
             raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
                 raw_ast::LiteralKind::Numeric => {
                     let val_str = &lit.literal.value;
-                    if let Some(stripped) = val_str.strip_prefix("0x").or_else(|| val_str.strip_prefix("0X")) {
+                    if let Some(stripped) = val_str
+                        .strip_prefix("0x")
+                        .or_else(|| val_str.strip_prefix("0X"))
+                    {
                         u64::from_str_radix(stripped, 16).ok()
-                    } else if let Some(stripped) = val_str.strip_prefix("0b").or_else(|| val_str.strip_prefix("0B")) {
+                    } else if let Some(stripped) = val_str
+                        .strip_prefix("0b")
+                        .or_else(|| val_str.strip_prefix("0B"))
+                    {
                         u64::from_str_radix(stripped, 2).ok()
                     } else {
-                        val_str.parse::<i64>().ok().map(|v| v as u64).or_else(|| val_str.parse::<u64>().ok())
+                        val_str
+                            .parse::<i64>()
+                            .ok()
+                            .map(|v| v as u64)
+                            .or_else(|| val_str.parse::<u64>().ok())
                     }
                 }
                 raw_ast::LiteralKind::Bool(b) => Some(if *b { 1 } else { 0 }),
@@ -3556,7 +3593,7 @@ experimental_maybe_from_alias: None,
                 if name == "MAX" {
                     return Some(u32::MAX as u64); // Approximation
                 }
-                
+
                 let mut full_name = name.clone();
                 if !full_name.contains('/') {
                     full_name = format!("{}/{}", self.library_name, name);
@@ -3575,12 +3612,16 @@ experimental_maybe_from_alias: None,
                     }
                     if let Some(decl) = self.raw_decls.get(&type_full_name) {
                         return match decl {
-                            RawDecl::Bits(b) => {
-                                b.members.iter().find(|m| m.name.data() == member_name).and_then(|m| self.eval_constant_value(&m.value))
-                            }
-                            RawDecl::Enum(e) => {
-                                e.members.iter().find(|m| m.name.data() == member_name).and_then(|m| self.eval_constant_value(&m.value))
-                            }
+                            RawDecl::Bits(b) => b
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value(&m.value)),
+                            RawDecl::Enum(e) => e
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value(&m.value)),
                             _ => None,
                         };
                     }
@@ -4014,15 +4055,20 @@ experimental_maybe_from_alias: None,
                     };
                     return Constant {
                         kind: "identifier".to_string(),
-                        value: serde_json::value::RawValue::from_string(format!("\"{}\"", val)).unwrap(),
-                        expression: serde_json::value::RawValue::from_string(format!("\"{}\"", expr)).unwrap(),
+                        value: serde_json::value::RawValue::from_string(format!("\"{}\"", val))
+                            .unwrap(),
+                        expression: serde_json::value::RawValue::from_string(format!(
+                            "\"{}\"",
+                            expr
+                        ))
+                        .unwrap(),
                         literal: None,
                         identifier: Some(ident.to_string()),
                     };
                 }
 
                 let value = self.eval_constant_value(constant).unwrap_or(0);
-                
+
                 let mut full_name = id_str.clone();
                 if !full_name.contains('/') {
                     full_name = format!("{}/{}", self.library_name, id_str);
@@ -4030,8 +4076,13 @@ experimental_maybe_from_alias: None,
 
                 Constant {
                     kind: "identifier".to_string(),
-                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value)).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", id.element.span().data)).unwrap(),
+                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value))
+                        .unwrap(),
+                    expression: serde_json::value::RawValue::from_string(format!(
+                        "\"{}\"",
+                        id.element.span().data
+                    ))
+                    .unwrap(),
                     literal: None,
                     identifier: Some(full_name),
                 }
@@ -4040,8 +4091,13 @@ experimental_maybe_from_alias: None,
                 let value = self.eval_constant_value(constant).unwrap_or(0);
                 Constant {
                     kind: "binary_operator".to_string(),
-                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value)).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(format!("\"{}\"", binop.element.span().data)).unwrap(),
+                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value))
+                        .unwrap(),
+                    expression: serde_json::value::RawValue::from_string(format!(
+                        "\"{}\"",
+                        binop.element.span().data
+                    ))
+                    .unwrap(),
                     literal: None,
                     identifier: None,
                 }
@@ -4463,7 +4519,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         // C++ checks if type resolves to a uint32 primitive
         let mut is_uint32 =
-            type_obj.kind_v2 == "primitive" && type_obj.subtype.as_deref() == Some("uint32");
+            type_obj.kind == TypeKind::Primitive && type_obj.subtype.as_deref() == Some("uint32");
         if !is_uint32 {
             if let Some(id) = type_obj.identifier.as_ref() {
                 let mut curr = id.clone();
@@ -4566,7 +4622,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     false
                 };
-                let mut is_uint32_prop = prop_type.kind_v2 == "primitive"
+                let mut is_uint32_prop = prop_type.kind == TypeKind::Primitive
                     && prop_type.subtype.as_deref() == Some("uint32");
                 if !is_uint32_prop {
                     if let Some(id) = prop_type.identifier.as_ref() {
@@ -4872,7 +4928,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.reporter.fail(
                     crate::diagnostics::Error::ErrFlexibleOneWayMethodInClosedProtocol,
                     m.name.element.span(),
-                    &[&if !m.has_request && m.has_response { "event" } else { "one-way method" }],
+                    &[&if !m.has_request && m.has_response {
+                        "event"
+                    } else {
+                        "one-way method"
+                    }],
                 );
             }
 
@@ -4898,7 +4958,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .enter_request(m.name.element.span());
                         let resolved_type = self.resolve_type(tc, library_name, Some(ctx));
 
-                        let is_allowed = if resolved_type.kind_v2 != "identifier" {
+                        let is_allowed = if resolved_type.kind != TypeKind::Identifier {
                             false
                         } else if let Some(id) = &resolved_type.identifier {
                             if let Some(kind) = self.decl_kinds.get(id) {
@@ -4968,9 +5028,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
-experimental_maybe_from_alias: None,
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some(full_synth),
                             nullable: Some(false),
@@ -4985,9 +5045,9 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
-                            type_shape_v2: shape,
+                            type_shape: shape,
                         })
                     }
                     raw_ast::Layout::Table(t) => {
@@ -5015,9 +5075,9 @@ experimental_maybe_from_alias: None,
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
-experimental_maybe_from_alias: None,
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some(full_synth),
                             nullable: Some(false),
@@ -5032,9 +5092,9 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
-                            type_shape_v2: shape,
+                            type_shape: shape,
                         })
                     }
                     raw_ast::Layout::Union(u) => {
@@ -5062,9 +5122,9 @@ experimental_maybe_from_alias: None,
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
-experimental_maybe_from_alias: None,
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some(full_synth),
                             nullable: Some(false),
@@ -5079,9 +5139,9 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
-                            type_shape_v2: shape,
+                            type_shape: shape,
                         })
                     }
                     _ => {
@@ -5124,7 +5184,7 @@ experimental_maybe_from_alias: None,
 
                         let resolved_type = self.resolve_type(tc, library_name, Some(ctx));
 
-                        let is_allowed = if resolved_type.kind_v2 != "identifier" {
+                        let is_allowed = if resolved_type.kind != TypeKind::Identifier {
                             false
                         } else if let Some(id) = &resolved_type.identifier {
                             if let Some(kind) = self.decl_kinds.get(id) {
@@ -5211,13 +5271,13 @@ experimental_maybe_from_alias: None,
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
-experimental_maybe_from_alias: None,
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some(full_synth),
                             nullable: Some(false),
-                            type_shape_v2: shape,
+                            type_shape: shape,
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
@@ -5229,7 +5289,7 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
                         })
                     }
@@ -5277,13 +5337,13 @@ experimental_maybe_from_alias: None,
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
-experimental_maybe_from_alias: None,
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some(full_synth),
                             nullable: Some(false),
-                            type_shape_v2: shape,
+                            type_shape: shape,
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
@@ -5295,7 +5355,7 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
                         })
                     }
@@ -5343,13 +5403,13 @@ experimental_maybe_from_alias: None,
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
                         Some(Type {
-experimental_maybe_from_alias: None,
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some(full_synth),
                             nullable: Some(false),
-                            type_shape_v2: shape,
+                            type_shape: shape,
                             element_type: None,
                             element_count: None,
                             maybe_element_count: None,
@@ -5361,7 +5421,7 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
                         })
                     }
@@ -5393,19 +5453,27 @@ experimental_maybe_from_alias: None,
                         let ctx = ctx.enter_member("err");
                         ctx.set_name_override(format!("{}_{}_Error", short_name, m.name.data()));
                         let err_type_resolved = self.resolve_type(tc, library_name, Some(ctx));
-                        
+
                         let mut is_valid_error_type = false;
-                        if err_type_resolved.kind_v2 == "primitive" {
-                            if err_type_resolved.subtype.as_deref() == Some("int32") || err_type_resolved.subtype.as_deref() == Some("uint32") {
+                        if err_type_resolved.kind == TypeKind::Primitive {
+                            if err_type_resolved.subtype.as_deref() == Some("int32")
+                                || err_type_resolved.subtype.as_deref() == Some("uint32")
+                            {
                                 is_valid_error_type = true;
                             }
-                        } else if err_type_resolved.kind_v2 == "identifier" {
+                        } else if err_type_resolved.kind == TypeKind::Identifier {
                             if let Some(id) = &err_type_resolved.identifier {
-                                if let Some(e_decl) = self.enum_declarations.iter().find(|e| &e.name == id) {
+                                if let Some(e_decl) =
+                                    self.enum_declarations.iter().find(|e| &e.name == id)
+                                {
                                     if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
                                         is_valid_error_type = true;
                                     }
-                                } else if let Some(e_decl) = self.external_enum_declarations.iter().find(|e| &e.name == id) {
+                                } else if let Some(e_decl) = self
+                                    .external_enum_declarations
+                                    .iter()
+                                    .find(|e| &e.name == id)
+                                {
                                     if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
                                         is_valid_error_type = true;
                                     }
@@ -5445,7 +5513,7 @@ experimental_maybe_from_alias: None,
                     let shape = if self.compiled_decls.contains(&full_synth) {
                         self.shapes.get(&full_synth).cloned().unwrap()
                     } else {
-                        let shape = TypeShapeV2 {
+                        let shape = TypeShape {
                             inline_size: 1,
                             alignment: 1,
                             depth: 0,
@@ -5478,7 +5546,7 @@ experimental_maybe_from_alias: None,
                             members: vec![],
                             resource: false,
                             is_empty_success_struct: true,
-                            type_shape_v2: shape.clone(),
+                            type_shape: shape.clone(),
                             maybe_attributes: vec![],
                         };
                         self.struct_declarations.push(decl);
@@ -5490,13 +5558,13 @@ experimental_maybe_from_alias: None,
                         shape
                     };
                     let typ = Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
 
-                        kind_v2: "identifier".to_string(),
+                        kind: TypeKind::Identifier,
                         subtype: None,
                         identifier: Some(full_synth.clone()),
                         nullable: Some(false),
-                        type_shape_v2: shape,
+                        type_shape: shape,
                         element_type: None,
                         element_count: None,
                         maybe_element_count: None,
@@ -5508,7 +5576,7 @@ experimental_maybe_from_alias: None,
                         resource_identifier: None,
                         deprecated: None,
                         maybe_attributes: vec![],
-                        field_shape_v2: None,
+                        field_shape: None,
                         maybe_size_constant_name: None,
                     };
                     maybe_response_success_type = Some(typ.clone());
@@ -5523,7 +5591,7 @@ experimental_maybe_from_alias: None,
                 let mut union_has_padding = false;
                 let mut union_handles = 0;
                 for t in [&success_type, &err_type] {
-                    let shape = &t.type_shape_v2;
+                    let shape = &t.type_shape;
                     let inlined = shape.inline_size <= 4;
                     let padding = if inlined {
                         (4 - (shape.inline_size % 4)) % 4
@@ -5545,7 +5613,7 @@ experimental_maybe_from_alias: None,
                     }
                 }
 
-                let union_shape = TypeShapeV2 {
+                let union_shape = TypeShape {
                     inline_size: 16,
                     alignment: 8,
                     depth: 1,
@@ -5574,8 +5642,8 @@ experimental_maybe_from_alias: None,
                         reserved: None,
                         name: Some("response".to_string()),
                         type_: Some(success_type.clone()),
-experimental_maybe_from_alias: None,
-location: Some(response_loc),
+                        experimental_maybe_from_alias: None,
+                        location: Some(response_loc),
                         deprecated: Some(false),
                         maybe_attributes: vec![],
                     },
@@ -5584,8 +5652,8 @@ location: Some(response_loc),
                         reserved: None,
                         name: Some("err".to_string()),
                         type_: Some(err_type.clone()),
-experimental_maybe_from_alias: None,
-location: Some(err_loc),
+                        experimental_maybe_from_alias: None,
+                        location: Some(err_loc),
                         deprecated: Some(false),
                         maybe_attributes: vec![],
                     },
@@ -5593,18 +5661,18 @@ location: Some(err_loc),
 
                 if is_method_flexible {
                     union_members.push(crate::json_generator::UnionMember {
-experimental_maybe_from_alias: None,
-ordinal: 3,
-reserved: None,
-name: Some("framework_err".to_string()),
-type_: Some(Type {
-experimental_maybe_from_alias: None,
+                        experimental_maybe_from_alias: None,
+                        ordinal: 3,
+                        reserved: None,
+                        name: Some("framework_err".to_string()),
+                        type_: Some(Type {
+                            experimental_maybe_from_alias: None,
 
-                            kind_v2: "identifier".to_string(),
+                            kind: TypeKind::Identifier,
                             subtype: None,
                             identifier: Some("fidl/internal/FrameworkErr".to_string()),
                             nullable: Some(false),
-                            type_shape_v2: TypeShapeV2 {
+                            type_shape: TypeShape {
                                 inline_size: 4,
                                 alignment: 4,
                                 depth: 0,
@@ -5624,7 +5692,7 @@ experimental_maybe_from_alias: None,
                             resource_identifier: None,
                             deprecated: None,
                             maybe_attributes: vec![],
-                            field_shape_v2: None,
+                            field_shape: None,
                             maybe_size_constant_name: None,
                         }),
                         location: Some(_framework_err_loc),
@@ -5646,7 +5714,7 @@ experimental_maybe_from_alias: None,
                     strict: true,
                     resource: union_handles > 0,
                     is_result: true,
-                    type_shape_v2: union_shape.clone(),
+                    type_shape: union_shape.clone(),
                     maybe_attributes: vec![],
                 };
                 self.union_declarations.push(union_decl);
@@ -5656,13 +5724,13 @@ experimental_maybe_from_alias: None,
                 }
 
                 Some(Type {
-experimental_maybe_from_alias: None,
+                    experimental_maybe_from_alias: None,
 
-                    kind_v2: "identifier".to_string(),
+                    kind: TypeKind::Identifier,
                     subtype: None,
                     identifier: Some(full_synth_union.clone()),
                     nullable: Some(false),
-                    type_shape_v2: union_shape,
+                    type_shape: union_shape,
                     element_type: None,
                     element_count: None,
                     maybe_element_count: None,
@@ -5674,7 +5742,7 @@ experimental_maybe_from_alias: None,
                     resource_identifier: None,
                     deprecated: None,
                     maybe_attributes: vec![],
-                    field_shape_v2: None,
+                    field_shape: None,
                     maybe_size_constant_name: None,
                 })
             } else {

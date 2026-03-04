@@ -74,7 +74,7 @@ alias alias_of_int16 = int16;
         assert_eq!(msg.members.len(), 1);
 
         let type_ = &msg.members[0].type_;
-        assert_eq!(type_.kind_v2, "primitive");
+        assert_eq!(type_.kind, crate::json_generator::TypeKind::Primitive);
         // We cannot check `resolved_params` easily as it relies on internal compiler state,
         // but checking the resulting JSON is sufficient for now.
     }
@@ -101,7 +101,7 @@ type Message = struct {
         assert_eq!(msg.members.len(), 1);
 
         let type_ = &msg.members[0].type_;
-        assert_eq!(type_.kind_v2, "primitive");
+        assert_eq!(type_.kind, crate::json_generator::TypeKind::Primitive);
     }
 
     #[test]
@@ -214,7 +214,7 @@ alias alias_of_vector_of_string = vector<string>;
         assert_eq!(msg.members.len(), 1);
 
         let type_ = &msg.members[0].type_;
-        assert_eq!(type_.kind_v2, "vector");
+        assert_eq!(type_.kind, crate::json_generator::TypeKind::Vector);
         assert_eq!(type_.element_count, None); // default is max size
     }
 
@@ -280,7 +280,7 @@ alias alias_of_vector_of_string = vector<string>;
         assert_eq!(msg.members.len(), 1);
 
         let type_ = &msg.members[0].type_;
-        assert_eq!(type_.kind_v2, "vector");
+        assert_eq!(type_.kind, crate::json_generator::TypeKind::Vector);
         assert_eq!(type_.element_count, Some(8));
     }
 
@@ -315,7 +315,7 @@ alias alias_of_vector_of_string_nullable = vector<string>:optional;
         assert_eq!(msg.members.len(), 1);
 
         let type_ = &msg.members[0].type_;
-        assert_eq!(type_.kind_v2, "vector");
+        assert_eq!(type_.kind, crate::json_generator::TypeKind::Vector);
         assert_eq!(type_.nullable, Some(true));
     }
 
@@ -341,7 +341,7 @@ alias alias_of_vector_of_string = vector<string>;
         assert_eq!(msg.members.len(), 1);
 
         let type_ = &msg.members[0].type_;
-        assert_eq!(type_.kind_v2, "vector");
+        assert_eq!(type_.kind, crate::json_generator::TypeKind::Vector);
         assert_eq!(type_.nullable, Some(true));
     }
 

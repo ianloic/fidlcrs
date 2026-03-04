@@ -113,7 +113,8 @@ resource_definition handle : uint32 {
             }
         }
 
-        let main_library_name = asts.last()
+        let main_library_name = asts
+            .last()
             .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
@@ -121,7 +122,11 @@ resource_definition handle : uint32 {
         let mut dep_asts = Vec::new();
 
         for ast in asts {
-            let file_lib = ast.library_decl.as_ref().map(|l| l.path.to_string()).unwrap_or_else(|| "unknown".to_string());
+            let file_lib = ast
+                .library_decl
+                .as_ref()
+                .map(|l| l.path.to_string())
+                .unwrap_or_else(|| "unknown".to_string());
             if file_lib == main_library_name {
                 main_asts.push(ast);
             } else {

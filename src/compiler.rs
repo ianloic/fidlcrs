@@ -598,10 +598,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let json_root = JsonRoot {
             name: self.library_name.clone(),
             platform,
-            available: Some(BTreeMap::from([
-                ("fuchsia".to_string(), vec!["HEAD".to_string()]),
-                ("test".to_string(), vec!["HEAD".to_string()]),
-            ])),
+            available: Some(self.version_selection.as_available_map()),
             maybe_attributes: main_files
                 .iter()
                 .filter(|f| {

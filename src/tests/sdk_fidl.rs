@@ -129,7 +129,7 @@ impl SdkFidl {
         // TODO: get versions from //sdk/version_history.json
         let cli = crate::cli::Cli {
             json: None,
-            available: vec!["fuchsia:28,29,30,NEXT,HEAD".to_string()],
+            available: vec!["fuchsia:27,28,29,30,NEXT,HEAD".to_string()],
             experimental: all_experimental.into_iter().collect(),
             files: vec![],
             format: "text".to_string(),
@@ -698,21 +698,15 @@ mod tests {
         // mismatched output
         "fuchsia.accessibility.gesture",
         "fuchsia.accessibility.tts",
-        "fuchsia.accessibility",
         "fuchsia.acpi.tables",
-        "fuchsia.auth.oldtokens",
-        "fuchsia.bluetooth.a2dp",
         "fuchsia.bluetooth.deviceid",
-        "fuchsia.bluetooth.hfp.test",
         "fuchsia.bluetooth.pandora",
         "fuchsia.bluetooth",
         "fuchsia.buildinfo",
-        "fuchsia.camera2.debug",
         "fuchsia.castconfig",
         "fuchsia.castremotecontrol",
         "fuchsia.castsetup",
         "fuchsia.castsysteminfo",
-        "fuchsia.castwindow",
         "fuchsia.cobalt",
         "fuchsia.data",
         "fuchsia.developer.ffx.speedtest",
@@ -723,7 +717,6 @@ mod tests {
         "fuchsia.driver.metadata",
         "fuchsia.driver.test.logger",
         "fuchsia.drm",
-        "fuchsia.ebpf",
         "fuchsia.exception",
         "fuchsia.factory.wlan",
         "fuchsia.feedback",
@@ -814,7 +807,6 @@ mod tests {
         "fuchsia.location",
         "fuchsia.lowpan.spinel",
         "fuchsia.lowpan",
-        // "fuchsia.math",
         "fuchsia.media.audio",
         "fuchsia.media.tuning",
         "fuchsia.media2",
@@ -1001,6 +993,11 @@ mod tests {
 
         if !mismatched.is_empty() {
             println!("Mismatched JSON for libraries: {:?}", mismatched);
+            let mut m = mismatched.clone();
+            m.sort();
+            for name in m {
+                println!("  {}", name);
+            }
         }
         if !missing.is_empty() {
             println!("Missing JSON for libraries: {:?}", missing);

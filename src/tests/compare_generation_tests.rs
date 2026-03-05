@@ -104,9 +104,11 @@ fn test_compare_generation() {
         }
 
         let mut available_args = Vec::new();
-        let available = tc.available.unwrap_or("fuchsia:42,NEXT,HEAD");
-        if !available.is_empty() {
-            available_args.push(available.to_string());
+        if let Some(av) = tc.available {
+            available_args.push(av.to_string());
+        } else {
+            available_args.push("fuchsia:HEAD".to_string());
+            available_args.push("test:HEAD".to_string());
         }
 
         let vdso1 = "vdso-fidl/rights.fidl".to_string();

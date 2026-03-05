@@ -480,6 +480,15 @@ impl VersionSelection {
         assert!(!platform.is_unversioned());
         self.map.contains_key(platform)
     }
+
+    pub fn as_available_map(&self) -> BTreeMap<String, Vec<String>> {
+        let mut result = BTreeMap::new();
+        for (platform, versions) in &self.map {
+            let version_strings: Vec<String> = versions.iter().map(|v| v.to_string()).collect();
+            result.insert(platform.name().to_string(), version_strings);
+        }
+        result
+    }
 }
 impl Default for Availability {
     fn default() -> Self {

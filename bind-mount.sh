@@ -13,5 +13,5 @@ function bind_mount() {
 
 bind_mount "tools/fidl/fidlc" "fidlc"
 bind_mount "sdk/fidl" "sdk-fidl"
-bind_mount "out/default/fidling/gen" "sdk-fidl-gen"
+bind_mount "out/default/fidling/gen/sdk/fidl" "sdk-fidl-gen"
 bind_mount "zircon/vdso" "vdso-fidl"

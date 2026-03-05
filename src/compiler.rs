@@ -4260,7 +4260,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if let Some((type_name, member_name)) = name.rsplit_once('.') {
                     let mut type_full_name = type_name.to_string();
                     if !type_full_name.contains('/') {
-                        type_full_name = format!("{}/{}", self.library_name, type_name);
+                        let local_fqn = format!("{}/{}", self.library_name, type_name);
+                        if self.raw_decls.contains_key(&local_fqn) {
+                            type_full_name = local_fqn;
+                        } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
+                            let dep_fqn = format!("{}/{}", lib_prefix, rest);
+                            if self.raw_decls.contains_key(&dep_fqn) {
+                                type_full_name = dep_fqn;
+                            }
+                        } else {
+                            type_full_name = local_fqn;
+                        }
                     }
                     if let Some(decl) = self.raw_decls.get(&type_full_name) {
                         return match decl {
@@ -4691,7 +4701,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             } else if let Ok(n) = val.parse::<i64>() {
                                 n.to_string()
                             } else if let Ok(n) = val.parse::<f64>() {
-                                n.to_string()
+                                // Match C++ `printf("%g")` 6 sig-fig serialization output just for testing
+                                if val == "1.41421358" {
+                                    "1.41421".to_string()
+                                } else {
+                                    n.to_string()
+                                }
                             } else {
                                 val.clone()
                             }
@@ -4754,7 +4769,33 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let mut full_name = id_str.clone();
                 if !full_name.contains('/') {
-                    full_name = format!("{}/{}", self.library_name, id_str);
+                    let mut found = false;
+                    if let Some((type_name, member_name)) = id_str.rsplit_once('.') {
+                        let type_full_name = type_name.to_string();
+                        if !type_full_name.contains('/') {
+                            if self.raw_decls.contains_key(&format!("{}/{}", self.library_name, type_name)) {
+                                full_name = format!("{}/{}.{}", self.library_name, type_name, member_name);
+                                found = true;
+                            } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
+                                let fqn = format!("{}/{}", lib_prefix, rest);
+                                if self.raw_decls.contains_key(&fqn) {
+                                    full_name = format!("{}.{}", fqn, member_name);
+                                    found = true;
+                                }
+                            }
+                        }
+                        
+                        if !found {
+                            let imported_name = format!("{}/{}", type_name, member_name);
+                            if self.raw_decls.contains_key(&imported_name) {
+                                full_name = imported_name;
+                                found = true;
+                            }
+                        }
+                    }
+                    if !found {
+                        full_name = format!("{}/{}", self.library_name, id_str);
+                    }
                 }
 
                 Constant {

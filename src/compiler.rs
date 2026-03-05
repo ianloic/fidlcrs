@@ -6124,6 +6124,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut union_out_of_line = 0;
                 let mut union_has_padding = false;
                 let mut union_handles = 0;
+                let mut union_depth = 0;
+                let mut union_has_flexible_envelope = is_method_flexible;
                 for t in [&success_type, &err_type] {
                     let shape = &t.type_shape;
                     let inlined = shape.inline_size <= 4;
@@ -6145,16 +6147,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if shape.max_handles > union_handles {
                         union_handles = shape.max_handles;
                     }
+                    if shape.depth > union_depth {
+                        union_depth = shape.depth;
+                    }
+                    if shape.has_flexible_envelope {
+                        union_has_flexible_envelope = true;
+                    }
                 }
 
                 let union_shape = TypeShape {
                     inline_size: 16,
                     alignment: 8,
-                    depth: 1,
+                    depth: union_depth.saturating_add(1),
                     max_handles: union_handles,
                     max_out_of_line: union_out_of_line,
                     has_padding: union_has_padding,
-                    has_flexible_envelope: false,
+                    has_flexible_envelope: union_has_flexible_envelope,
                 };
 
                 let union_loc = if let Some(elem) = &m.response_param_element {

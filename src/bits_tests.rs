@@ -23,10 +23,10 @@ mod tests {
             .expect("Fruit bits not found");
         assert_eq!(type_decl.members.len(), 3);
         assert_eq!(
-            type_decl.type_.kind,
+            type_decl.type_.kind(),
             crate::json_generator::TypeKind::Primitive
         );
-        assert_eq!(type_decl.type_.subtype.as_deref(), Some("uint64"));
+        assert_eq!(type_decl.type_.subtype().as_deref(), Some("uint64"));
     }
 
     #[test]
@@ -49,10 +49,10 @@ type Fruit = bits {
             .lookup_bits("example/Fruit")
             .expect("Fruit bits not found");
         assert_eq!(
-            type_decl.type_.kind,
+            type_decl.type_.kind(),
             crate::json_generator::TypeKind::Primitive
         );
-        assert_eq!(type_decl.type_.subtype.as_deref(), Some("uint32"));
+        assert_eq!(type_decl.type_.subtype().as_deref(), Some("uint32"));
     }
 
     #[test]

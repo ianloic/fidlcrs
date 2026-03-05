@@ -310,7 +310,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut used_deps = HashSet::new();
 
         fn extract_deps_from_type(ty: &Type, deps: &mut HashSet<String>, compiler: &Compiler) {
-            let mut target_id = ty.identifier.as_ref();
+            let identifier = ty.identifier();
+            let mut target_id = identifier.as_deref();
             if let Some(alias) = &ty.experimental_maybe_from_alias {
                 target_id = Some(&alias.name);
             }
@@ -335,12 +336,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
             }
-            if let Some(inner) = &ty.element_type {
+            if let Some(inner) = ty.element_type() {
                 if ty.experimental_maybe_from_alias.is_none() {
                     extract_deps_from_type(inner, deps, compiler);
                 }
             }
-            if let Some(proto) = &ty.protocol {
+            if let Some(proto) = ty.protocol() {
                 if let Some(pos) = proto.find('/') {
                     let d = proto[..pos].to_string();
                     if d != compiler.library_name {
@@ -348,7 +349,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
             }
-            if let Some(res) = &ty.resource_identifier {
+            if let Some(res) = ty.resource_identifier() {
                 if let Some(pos) = res.find('/') {
                     let d = res[..pos].to_string();
                     if d != compiler.library_name {
@@ -888,10 +889,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         shapes: &HashMap<String, TypeShape>,
         struct_names: &HashSet<String>,
     ) {
-        if ty.kind == TypeKind::Identifier {
-            if let Some(id) = &ty.identifier {
+        if ty.kind() == crate::json_generator::TypeKind::Identifier {
+            if let Some(ref id) = ty.identifier() {
                 if let Some(shape) = shapes.get(id) {
-                    if ty.nullable == Some(true) && struct_names.contains(id) {
+                    if ty.nullable() == Some(true) && struct_names.contains(id) {
                         let inner_inline = shape.inline_size;
                         let padding = (8 - (inner_inline % 8)) % 8;
                         let max_out_of_line = shape
@@ -913,12 +914,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        if let Some(inner) = &mut ty.element_type {
+        let mut inner_shape_opt = None;
+        if let Some(inner) = ty.element_type_mut() {
             Self::update_type_shape(inner, shapes, struct_names);
+            inner_shape_opt = Some(inner.type_shape.clone());
+        }
 
-            if ty.kind == TypeKind::Vector {
-                let inner_shape = &inner.type_shape;
-                let count = ty.maybe_element_count.unwrap_or(u32::MAX);
+        if let Some(inner_shape) = inner_shape_opt {
+            if ty.kind() == crate::json_generator::TypeKind::Vector {
+                let count = ty.maybe_element_count().unwrap_or(u32::MAX);
 
                 let new_depth = inner_shape.depth.saturating_add(1);
                 let elem_size = inner_shape.inline_size;
@@ -945,9 +949,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     has_padding,
                     has_flexible_envelope: inner_shape.has_flexible_envelope,
                 };
-            } else if ty.kind == TypeKind::Array {
-                let inner_shape = &inner.type_shape;
-                let count = ty.element_count.unwrap_or(0);
+            } else if ty.kind() == crate::json_generator::TypeKind::Array {
+                let count = ty.element_count().unwrap_or(0);
 
                 let elem_size = inner_shape.inline_size;
                 let elem_ool = inner_shape.max_out_of_line;
@@ -1285,22 +1288,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut extra_to_compile = vec![];
                 for m in &compiled.methods {
                     if let Some(req) = &m.maybe_request_payload {
-                        if let Some(id) = &req.identifier {
+                        if let Some(id) = req.identifier() {
                             extra_to_compile.push(id.clone());
                         }
                     }
                     if let Some(res) = &m.maybe_response_payload {
-                        if let Some(id) = &res.identifier {
+                        if let Some(id) = res.identifier() {
                             extra_to_compile.push(id.clone());
                         }
                     }
                     if let Some(suc) = &m.maybe_response_success_type {
-                        if let Some(id) = &suc.identifier {
+                        if let Some(id) = suc.identifier() {
                             extra_to_compile.push(id.clone());
                         }
                     }
                     if let Some(err) = &m.maybe_response_err_type {
-                        if let Some(id) = &err.identifier {
+                        if let Some(id) = err.identifier() {
                             extra_to_compile.push(id.clone());
                         }
                     }
@@ -1313,6 +1316,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 for id in extra_to_compile {
+                    if id.is_empty() { continue; }
                     self.compile_decl_by_name(&id);
                 }
             }
@@ -1772,29 +1776,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 attrs
             },
-            type_: Type {
-                resource: false,
-                experimental_maybe_from_alias: None,
-
-                kind: TypeKind::Primitive,
-                subtype: Some(subtype_name),
-                identifier: None,
-                nullable: None,
-                element_type: None,
-                element_count: None,
-                maybe_element_count: None,
-                role: None,
-                protocol: None,
-                protocol_transport: None,
-                obj_type: None,
-                rights: None,
-                resource_identifier: None,
-                deprecated: None,
-                maybe_attributes: vec![],
-                field_shape: None,
-                maybe_size_constant_name: None,
-                type_shape,
-            },
+            type_: crate::json_generator::Type::Primitive(crate::json_generator::PrimitiveType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: type_shape
+    },
+    subtype: Some(subtype_name)
+}),
             mask: mask.to_string(),
             members,
             strict,
@@ -1927,7 +1920,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     )
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
-                if type_obj.nullable.unwrap_or(false) {
+                if type_obj.nullable().unwrap_or(false) {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrOptionalTableMember,
                         type_ctor.element.span(),
@@ -1937,7 +1930,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if ordinal == 64 {
                     let is_table = if let Some(decl) = self
                         .raw_decls
-                        .get(type_obj.identifier.as_deref().unwrap_or(""))
+                        .get(type_obj.identifier().as_deref().unwrap_or(""))
                     {
                         match decl {
                             RawDecl::Table(_) => true,
@@ -1970,10 +1963,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[&"table", &n, &member_name, &"table", &"table", &n],
                     );
                 }
-                let alias = if type_obj.kind != TypeKind::Array
-                    && type_obj.kind != TypeKind::Vector
-                    && type_obj.kind != TypeKind::String
-                    && type_obj.kind != TypeKind::Request
+                let alias = if type_obj.kind() != crate::json_generator::TypeKind::Array
+                    && type_obj.kind() != crate::json_generator::TypeKind::Vector
+                    && type_obj.kind() != crate::json_generator::TypeKind::String
+                    && type_obj.kind() != crate::json_generator::TypeKind::Request
                 {
                     type_obj.experimental_maybe_from_alias.take()
                 } else {
@@ -2220,16 +2213,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[&"union", &n, &member_name, &"union", &"union", &n],
                     );
                 }
-                let alias = if type_obj.kind != TypeKind::Array
-                    && type_obj.kind != TypeKind::Vector
-                    && type_obj.kind != TypeKind::String
-                    && type_obj.kind != TypeKind::Request
+                let alias = if type_obj.kind() != crate::json_generator::TypeKind::Array
+                    && type_obj.kind() != crate::json_generator::TypeKind::Vector
+                    && type_obj.kind() != crate::json_generator::TypeKind::String
+                    && type_obj.kind() != crate::json_generator::TypeKind::Request
                 {
                     type_obj.experimental_maybe_from_alias.take()
                 } else {
                     None
                 };
-                if type_obj.nullable.unwrap_or(false) {
+                if type_obj.nullable().unwrap_or(false) {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrOptionalUnionMember,
                         type_ctor.element.span(),
@@ -2462,10 +2455,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     &[&"struct", &n, &member_name, &"struct", &"struct", &n],
                 );
             }
-            let alias = if type_obj.kind != TypeKind::Array
-                && type_obj.kind != TypeKind::Vector
-                && type_obj.kind != TypeKind::String
-                && type_obj.kind != TypeKind::Request
+            let alias = if type_obj.kind() != crate::json_generator::TypeKind::Array
+                && type_obj.kind() != crate::json_generator::TypeKind::Vector
+                && type_obj.kind() != crate::json_generator::TypeKind::String
+                && type_obj.kind() != crate::json_generator::TypeKind::Request
             {
                 type_obj.experimental_maybe_from_alias.take()
             } else {
@@ -2642,27 +2635,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     type_ctor.element.span(),
                     &[],
                 );
-                return Type {
-                    resource: false,
-                    experimental_maybe_from_alias: None,
-                    kind: TypeKind::Unknown,
-                    subtype: None,
-                    identifier: None,
-                    nullable: None,
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: None,
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                    type_shape: TypeShape {
+                return crate::json_generator::Type::Unknown(crate::json_generator::UnknownType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: 0,
                         alignment: 1,
                         depth: 0,
@@ -2670,8 +2651,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: 0,
                         has_padding: false,
                         has_flexible_envelope: false,
-                    },
-                };
+                    }
+    },
+
+});
             }
             raw_ast::LayoutParameter::Type(_) => {
                 panic!("Type layout not supported in resolve_type yet")
@@ -2934,28 +2917,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     "int64" | "uint64" | "float64" | "usize64" | "uintptr64" => (8, 8),
                     _ => (0, 0),
                 };
-                Type {
-                    resource: false,
-                    experimental_maybe_from_alias: None,
-
-                    kind: TypeKind::Primitive,
-                    subtype: Some(resolved_name),
-                    identifier: None,
-                    nullable: None,
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: None,
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                    type_shape: TypeShape {
+                crate::json_generator::Type::Primitive(crate::json_generator::PrimitiveType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size,
                         alignment,
                         depth: 0,
@@ -2963,8 +2933,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: 0,
                         has_padding: false,
                         has_flexible_envelope: false,
-                    },
-                }
+                    }
+    },
+    subtype: Some(resolved_name)
+})
             }
             "experimental_pointer" => {
                 if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
@@ -2987,28 +2959,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     None
                 };
 
-                Type {
-                    resource: false,
-                    experimental_maybe_from_alias: None,
-
-                    kind: TypeKind::ExperimentalPointer,
-                    subtype: None,
-                    identifier: None,
-                    nullable: Some(nullable),
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    element_type: inner_type_opt,
-                    element_count: None,
-                    maybe_element_count: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                    type_shape: TypeShape {
+                crate::json_generator::Type::ExperimentalPointer(crate::json_generator::ExperimentalPointerType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: 8,
                         alignment: 8,
                         depth: 1, // approximate
@@ -3016,8 +2975,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: 0,
                         has_padding: false,
                         has_flexible_envelope: false,
-                    },
-                }
+                    }
+    },
+    element_type: inner_type_opt,
+    nullable: Some(nullable)
+})
             }
             "string" => {
                 if actual_constraints.len() > 1 {
@@ -3044,31 +3006,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                 }
-                Type {
-                    resource: false,
-                    experimental_maybe_from_alias: None,
-
-                    kind: TypeKind::String,
-                    subtype: None,
-                    identifier: None,
-                    nullable: Some(nullable),
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: if max_len == u32::MAX {
-                        None
-                    } else {
-                        Some(max_len)
-                    },
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
+                crate::json_generator::Type::String(crate::json_generator::StringType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
                         if let raw_ast::Constant::Identifier(id) = c {
                             Some(id.identifier.to_string())
                         } else {
@@ -3077,7 +3020,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         None
                     },
-                    type_shape: TypeShape {
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: 16,
                         alignment: 8,
                         depth: 1,
@@ -3091,8 +3036,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                         has_padding: true,
                         has_flexible_envelope: false,
+                    }
+    },
+    maybe_element_count: if max_len == u32::MAX {
+                        None
+                    } else {
+                        Some(max_len)
                     },
-                }
+    nullable: Some(nullable)
+})
             }
             "string_array" => {
                 let max_len = if !type_ctor.parameters.is_empty() {
@@ -3102,28 +3054,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     u32::MAX
                 };
-                Type {
-                    resource: false,
-                    experimental_maybe_from_alias: None,
-
-                    kind: TypeKind::StringArray,
-                    subtype: None,
-                    identifier: None,
-                    nullable: None,
-                    element_type: None,
-                    element_count: Some(max_len),
-                    maybe_element_count: Some(max_len),
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                    type_shape: TypeShape {
+                crate::json_generator::Type::StringArray(crate::json_generator::StringArrayType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: max_len,
                         alignment: 1,
                         depth: 0,
@@ -3131,8 +3070,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: 0,
                         has_padding: false,
                         has_flexible_envelope: false,
-                    },
-                }
+                    }
+    },
+
+})
             }
             "vector" | "bytes" => {
                 let is_bytes = resolved_name == "bytes";
@@ -3153,28 +3094,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if !is_bytes && inner.is_none() {
                     // Error handling?
-                    return Type {
-                        resource: false,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Unknown,
-                        subtype: None,
-                        identifier: None,
-                        nullable: None,
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    return crate::json_generator::Type::Unknown(crate::json_generator::UnknownType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -3182,32 +3110,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: 0,
                             has_padding: false,
                             has_flexible_envelope: false,
-                        },
-                    };
+                        }
+    },
+
+});
                 }
 
                 let mut inner_type = if is_bytes {
-                    Type {
-                        resource: false,
-                        experimental_maybe_from_alias: None,
-                        kind: TypeKind::Primitive,
-                        subtype: Some("uint8".to_string()),
-                        identifier: None,
-                        nullable: None,
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    crate::json_generator::Type::Primitive(crate::json_generator::PrimitiveType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: 1,
                             alignment: 1,
                             depth: 0,
@@ -3215,8 +3133,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: 0,
                             has_padding: false,
                             has_flexible_envelope: false,
-                        },
-                    }
+                        }
+    },
+    subtype: Some("uint8".to_string())
+})
                 } else {
                     self.resolve_type(inner.unwrap(), library_name, naming_context)
                 };
@@ -3254,30 +3174,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let max_handles = max_count.saturating_mul(inner_type.type_shape.max_handles);
 
-                Type {
-                    resource: inner_type.resource,
-                    experimental_maybe_from_alias: inner_alias,
-                    kind: TypeKind::Vector,
-                    subtype: None,
-                    identifier: None,
-                    nullable: Some(nullable),
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    element_type: Some(Box::new(inner_type.clone())),
-                    element_count: None,
-                    maybe_element_count: if max_count == u32::MAX {
-                        None
-                    } else {
-                        Some(max_count)
-                    },
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
+                crate::json_generator::Type::Vector(crate::json_generator::VectorType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: inner_alias,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
                         if let raw_ast::Constant::Identifier(id) = c {
                             Some(id.identifier.to_string())
                         } else {
@@ -3286,7 +3188,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         None
                     },
-                    type_shape: TypeShape {
+        resource: inner_type.resource,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: 16,
                         alignment: 8,
                         depth: new_depth,
@@ -3295,8 +3199,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         has_padding: inner_type.type_shape.has_padding
                             || !elem_size.is_multiple_of(8),
                         has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
+                    }
+    },
+    element_type: Some(Box::new(inner_type.clone())),
+    maybe_element_count: if max_count == u32::MAX {
+                        None
+                    } else {
+                        Some(max_count)
                     },
-                }
+    nullable: Some(nullable)
+})
             }
             "array" => {
                 if type_ctor.parameters.len() < 2 {
@@ -3305,28 +3217,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_ctor.element.start_token.span.clone(),
                         &[],
                     );
-                    return Type {
-                        resource: false,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Unknown,
-                        subtype: None,
-                        identifier: None,
-                        nullable: None,
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    return crate::json_generator::Type::Unknown(crate::json_generator::UnknownType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -3334,8 +3233,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: 0,
                             has_padding: false,
                             has_flexible_envelope: false,
-                        },
-                    };
+                        }
+    },
+
+});
                 }
                 // Array validation
                 let elt_type = &type_ctor.parameters[0];
@@ -3446,26 +3347,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let total_size = count.saturating_mul(inner_type.type_shape.inline_size);
                 let max_ool = count.saturating_mul(inner_type.type_shape.max_out_of_line);
 
-                Type {
-                    resource: inner_type.resource,
-                    experimental_maybe_from_alias: inner_alias,
-                    kind: TypeKind::Array,
-                    subtype: None,
-                    identifier: None,
-                    nullable: None, // Arrays themselves are not nullable
-                    element_type: Some(Box::new(inner_type.clone())),
-                    element_count: Some(count),
-                    maybe_element_count: None,
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: if let Some(param) = type_ctor.parameters.get(1) {
+                crate::json_generator::Type::Array(crate::json_generator::ArrayType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: inner_alias,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: if let Some(param) = type_ctor.parameters.get(1) {
                         if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
                             Some(id.to_string())
                         } else {
@@ -3474,7 +3361,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         None
                     },
-                    type_shape: TypeShape {
+        resource: inner_type.resource,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: total_size,
                         alignment: inner_type.type_shape.alignment,
                         depth: inner_type.type_shape.depth,
@@ -3482,8 +3371,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: max_ool,
                         has_padding: inner_type.type_shape.has_padding,
                         has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
-                    },
-                }
+                    }
+    },
+    element_type: Some(Box::new(inner_type.clone())),
+    element_count: Some(count)
+})
             }
 
             "client_end" | "server_end" => {
@@ -3557,28 +3449,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                Type {
-                    resource: true,
-                    experimental_maybe_from_alias: None,
-
-                    kind: TypeKind::Endpoint,
-                    subtype: None,
-                    identifier: None,
-                    nullable: Some(nullable),
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: None,
-                    role: Some(role.to_string()),
-                    protocol: Some(protocol),
-                    protocol_transport: Some("Channel".to_string()),
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                    type_shape: TypeShape {
+                crate::json_generator::Type::Endpoint(crate::json_generator::EndpointType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: true,
+        deprecated: None,
+        type_shape: TypeShape {
                         inline_size: 4,
                         alignment: 4,
                         depth: 0,
@@ -3586,33 +3465,25 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         max_out_of_line: 0,
                         has_padding: false,
                         has_flexible_envelope: false,
-                    },
-                }
+                    }
+    },
+    role: Some(role.to_string()),
+    protocol: Some(protocol),
+    protocol_transport: Some("Channel".to_string()),
+    nullable: Some(nullable)
+})
             }
             "box" => {
                 if type_ctor.parameters.is_empty() {
-                    return Type {
-                        resource: false,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Unknown,
-                        subtype: None,
-                        identifier: None,
-                        nullable: None,
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    return crate::json_generator::Type::Unknown(crate::json_generator::UnknownType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -3620,8 +3491,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: 0,
                             has_padding: false,
                             has_flexible_envelope: false,
-                        },
-                    };
+                        }
+    },
+
+});
                 }
                 let inner = &type_ctor.parameters[0];
                 let prev = self.skip_eager_compile;
@@ -3637,11 +3510,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
 
-                if inner_type.kind != TypeKind::Struct {
+                if inner_type.kind() != crate::json_generator::TypeKind::Struct {
                     let mut is_nor_opt = false;
                     let mut is_struct = false;
                     if let Some(decl) = self.get_underlying_decl(
-                        inner_type.identifier.as_ref().unwrap_or(&"".to_string()),
+                        inner_type.identifier().as_ref().unwrap_or(&"".to_string()),
                     ) {
                         match decl {
                             RawDecl::Enum(_) | RawDecl::Bits(_) | RawDecl::Table(_) => {
@@ -3658,8 +3531,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             _ => {}
                         }
                     } else {
-                        is_nor_opt = inner_type.kind == TypeKind::Array
-                            || inner_type.kind == TypeKind::Primitive;
+                        is_nor_opt = inner_type.kind() == crate::json_generator::TypeKind::Array
+                            || inner_type.kind() == crate::json_generator::TypeKind::Primitive;
                     }
 
                     if !is_struct {
@@ -3686,7 +3559,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     .max_out_of_line
                     .saturating_add(boxed_inline.saturating_add(padding));
 
-                inner_type.nullable = Some(true); // box always makes it nullable for JSON output
+                inner_type.set_nullable(true); // box always makes it nullable for JSON output
 
                 let new_depth = inner_type.type_shape.depth.saturating_add(1);
 
@@ -3879,28 +3752,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     }
 
-                    return Type {
-                        resource: true,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Handle,
-                        subtype: Some(handle_subtype),
-                        identifier: None,
-                        nullable: Some(nullable),
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: Some(handle_obj_type),
-                        rights: Some(handle_rights),
-                        resource_identifier: Some(full_name.clone()),
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    return crate::json_generator::Type::Handle(crate::json_generator::HandleType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: true,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: 4,
                             alignment: 4,
                             depth: 0,
@@ -3908,8 +3768,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: 0,
                             has_padding: false,
                             has_flexible_envelope: false,
-                        },
-                    };
+                        }
+    },
+    obj_type: Some(handle_obj_type),
+    subtype: Some(handle_subtype),
+    rights: Some(handle_rights),
+    nullable: Some(nullable),
+    resource_identifier: Some(full_name.clone())
+});
                 }
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
@@ -4046,29 +3912,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     false
                 };
                 if let Some(shape) = self.shapes.get(&full_name) {
-                    Type {
-                        resource: is_resource,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Identifier,
-                        subtype: None,
-                        identifier: Some(full_name.clone()),
-                        nullable: Some(nullable),
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: shape.clone(),
-                    }
+                    crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: is_resource,
+        deprecated: None,
+        type_shape: shape.clone()
+    },
+    identifier: Some(full_name.clone()),
+    nullable: Some(nullable)
+})
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     if !type_ctor.parameters.is_empty() {
                         self.reporter.fail(
@@ -4096,8 +3952,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 nullable,
                             });
                         if nullable {
-                            resolved_type.nullable = Some(true);
-                            if resolved_type.kind != TypeKind::Primitive {
+                            resolved_type.set_nullable(true);
+                            if resolved_type.kind() != crate::json_generator::TypeKind::Primitive {
                                 resolved_type.type_shape.depth += 1;
                             }
                         }
@@ -4141,28 +3997,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         (0, 1, false, false)
                     };
-                    Type {
-                        resource: is_resource,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Identifier,
-                        subtype: None,
-                        identifier: Some(full_name.clone()),
-                        nullable: Some(nullable),
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: is_resource,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: inline,
                             alignment: align,
                             depth: u32::MAX,
@@ -4170,36 +4013,26 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: u32::MAX,
                             has_padding: padding,
                             has_flexible_envelope: flex,
-                        },
-                    }
+                        }
+    },
+    identifier: Some(full_name.clone()),
+    nullable: Some(nullable)
+})
                 } else {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrNameNotFound,
                         type_ctor.element.span(),
                         &[&name, &library_name],
                     );
-                    Type {
-                        resource: false,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Unknown,
-                        subtype: None,
-                        identifier: Some(full_name),
-                        nullable: Some(nullable),
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        type_shape: TypeShape {
+                    crate::json_generator::Type::Unknown(crate::json_generator::UnknownType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                             inline_size: 0,
                             alignment: 1,
                             depth: 0,
@@ -4207,8 +4040,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             max_out_of_line: 0,
                             has_padding: false,
                             has_flexible_envelope: false,
-                        },
-                    }
+                        }
+    },
+
+})
                 }
             }
         }
@@ -5281,9 +5116,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         // C++ checks if type resolves to a uint32 primitive
         let mut is_uint32 =
-            type_obj.kind == TypeKind::Primitive && type_obj.subtype.as_deref() == Some("uint32");
+            type_obj.kind() == crate::json_generator::TypeKind::Primitive && type_obj.subtype().as_deref() == Some("uint32");
         if !is_uint32 {
-            if let Some(id) = type_obj.identifier.as_ref() {
+            if let Some(id) = type_obj.identifier().as_ref() {
                 let mut curr = id.clone();
                 for _ in 0..100 {
                     if curr == "uint32" {
@@ -5358,7 +5193,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if prop_name == "subtype" {
                 has_subtype = true;
-                let is_enum = if let Some(id) = prop_type.identifier.as_ref() {
+                let is_enum = if let Some(id) = prop_type.identifier().as_ref() {
                     match self.get_underlying_decl(id) {
                         Some(RawDecl::Enum(_)) => true,
                         Some(RawDecl::Type(t)) => matches!(t.layout, raw_ast::Layout::Enum(_)),
@@ -5375,7 +5210,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
             } else if prop_name == "rights" {
-                let is_bits = if let Some(id) = prop_type.identifier.as_ref() {
+                let is_bits = if let Some(id) = prop_type.identifier().as_ref() {
                     match self.get_underlying_decl(id) {
                         Some(RawDecl::Bits(_)) => true,
                         Some(RawDecl::Type(t)) => matches!(t.layout, raw_ast::Layout::Bits(_)),
@@ -5384,10 +5219,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     false
                 };
-                let mut is_uint32_prop = prop_type.kind == TypeKind::Primitive
-                    && prop_type.subtype.as_deref() == Some("uint32");
+                let mut is_uint32_prop = prop_type.kind() == crate::json_generator::TypeKind::Primitive
+                    && prop_type.subtype().as_deref() == Some("uint32");
                 if !is_uint32_prop {
-                    if let Some(id) = prop_type.identifier.as_ref() {
+                    if let Some(id) = prop_type.identifier().as_ref() {
                         let mut curr = id.clone();
                         for _ in 0..100 {
                             if curr == "uint32" {
@@ -5720,9 +5555,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .enter_request(m.name.element.span());
                         let resolved_type = self.resolve_type(tc, library_name, Some(ctx));
 
-                        let is_allowed = if resolved_type.kind != TypeKind::Identifier {
+                        let is_allowed = if resolved_type.kind() != crate::json_generator::TypeKind::Identifier {
                             false
-                        } else if let Some(id) = &resolved_type.identifier {
+                        } else if let Some(id) = &resolved_type.identifier() {
                             if let Some(kind) = self.decl_kinds.get(id) {
                                 *kind == "struct"
                                     || *kind == "table"
@@ -5789,29 +5624,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some(full_synth),
-                            nullable: Some(false),
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            type_shape: shape,
-                        })
+                        Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth),
+    nullable: Some(false)
+}))
                     }
                     raw_ast::Layout::Table(t) => {
                         let ctx = crate::name::NamingContext::create(decl.name.element.span())
@@ -5837,29 +5662,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some(full_synth),
-                            nullable: Some(false),
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            type_shape: shape,
-                        })
+                        Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth),
+    nullable: Some(false)
+}))
                     }
                     raw_ast::Layout::Union(u) => {
                         let ctx = crate::name::NamingContext::create(decl.name.element.span())
@@ -5885,29 +5700,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some(full_synth),
-                            nullable: Some(false),
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            type_shape: shape,
-                        })
+                        Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth),
+    nullable: Some(false)
+}))
                     }
                     _ => {
                         // primitive or other inline layout
@@ -5949,9 +5754,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         let resolved_type = self.resolve_type(tc, library_name, Some(ctx));
 
-                        let is_allowed = if resolved_type.kind != TypeKind::Identifier {
+                        let is_allowed = if resolved_type.kind() != crate::json_generator::TypeKind::Identifier {
                             false
-                        } else if let Some(id) = &resolved_type.identifier {
+                        } else if let Some(id) = &resolved_type.identifier() {
                             if let Some(kind) = self.decl_kinds.get(id) {
                                 *kind == "struct"
                                     || *kind == "table"
@@ -6035,29 +5840,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some(full_synth),
-                            nullable: Some(false),
-                            type_shape: shape,
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                        })
+                        Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth),
+    nullable: Some(false)
+}))
                     }
                     raw_ast::Layout::Table(t) => {
                         let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
@@ -6102,29 +5897,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some(full_synth),
-                            nullable: Some(false),
-                            type_shape: shape,
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                        })
+                        Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth),
+    nullable: Some(false)
+}))
                     }
                     raw_ast::Layout::Union(u) => {
                         let p_ctx = crate::name::NamingContext::create(decl.name.element.span());
@@ -6169,29 +5954,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some(full_synth),
-                            nullable: Some(false),
-                            type_shape: shape,
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                        })
+                        Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth),
+    nullable: Some(false)
+}))
                     }
                     _ => {
                         self.reporter.fail(
@@ -6223,14 +5998,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let err_type_resolved = self.resolve_type(tc, library_name, Some(ctx));
 
                         let mut is_valid_error_type = false;
-                        if err_type_resolved.kind == TypeKind::Primitive {
-                            if err_type_resolved.subtype.as_deref() == Some("int32")
-                                || err_type_resolved.subtype.as_deref() == Some("uint32")
+                        if err_type_resolved.kind() == crate::json_generator::TypeKind::Primitive {
+                            if err_type_resolved.subtype().as_deref() == Some("int32")
+                                || err_type_resolved.subtype().as_deref() == Some("uint32")
                             {
                                 is_valid_error_type = true;
                             }
-                        } else if err_type_resolved.kind == TypeKind::Identifier {
-                            if let Some(id) = &err_type_resolved.identifier {
+                        } else if err_type_resolved.kind() == crate::json_generator::TypeKind::Identifier {
+                            if let Some(id) = &err_type_resolved.identifier() {
                                 if let Some(e_decl) =
                                     self.enum_declarations.iter().find(|e| &e.name == id)
                                 {
@@ -6325,29 +6100,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.shapes.insert(full_synth.clone(), shape.clone());
                         shape
                     };
-                    let typ = Type {
-                        resource: false,
-                        experimental_maybe_from_alias: None,
-
-                        kind: TypeKind::Identifier,
-                        subtype: None,
-                        identifier: Some(full_synth.clone()),
-                        nullable: Some(false),
-                        type_shape: shape,
-                        element_type: None,
-                        element_count: None,
-                        maybe_element_count: None,
-                        role: None,
-                        protocol: None,
-                        protocol_transport: None,
-                        obj_type: None,
-                        rights: None,
-                        resource_identifier: None,
-                        deprecated: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                    };
+                    let typ = crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: shape
+    },
+    identifier: Some(full_synth.clone()),
+    nullable: Some(false)
+});
                     maybe_response_success_type = Some(typ.clone());
                     typ
                 };
@@ -6434,15 +6199,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         ordinal: 3,
                         reserved: None,
                         name: Some("framework_err".to_string()),
-                        type_: Some(Type {
-                            resource: false,
-                            experimental_maybe_from_alias: None,
-
-                            kind: TypeKind::Identifier,
-                            subtype: None,
-                            identifier: Some("fidl/internal/FrameworkErr".to_string()),
-                            nullable: Some(false),
-                            type_shape: TypeShape {
+                        type_: Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: TypeShape {
                                 inline_size: 4,
                                 alignment: 4,
                                 depth: 0,
@@ -6450,21 +6215,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 max_out_of_line: 0,
                                 has_padding: false,
                                 has_flexible_envelope: false,
-                            },
-                            element_type: None,
-                            element_count: None,
-                            maybe_element_count: None,
-                            role: None,
-                            protocol: None,
-                            protocol_transport: None,
-                            obj_type: None,
-                            rights: None,
-                            resource_identifier: None,
-                            deprecated: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                        }),
+                            }
+    },
+    identifier: Some("fidl/internal/FrameworkErr".to_string()),
+    nullable: Some(false)
+})),
                         location: Some(_framework_err_loc),
                         deprecated: Some(false),
                         maybe_attributes: vec![],
@@ -6493,29 +6248,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.compiled_decls.insert(full_synth_union.clone());
                 }
 
-                Some(Type {
-                    resource: false,
-                    experimental_maybe_from_alias: None,
-
-                    kind: TypeKind::Identifier,
-                    subtype: None,
-                    identifier: Some(full_synth_union.clone()),
-                    nullable: Some(false),
-                    type_shape: union_shape,
-                    element_type: None,
-                    element_count: None,
-                    maybe_element_count: None,
-                    role: None,
-                    protocol: None,
-                    protocol_transport: None,
-                    obj_type: None,
-                    rights: None,
-                    resource_identifier: None,
-                    deprecated: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                })
+                Some(crate::json_generator::Type::Identifier(crate::json_generator::IdentifierType {
+    common: crate::json_generator::TypeCommon {
+        experimental_maybe_from_alias: None,
+        maybe_attributes: vec![],
+        field_shape: None,
+        maybe_size_constant_name: None,
+        resource: false,
+        deprecated: None,
+        type_shape: union_shape
+    },
+    identifier: Some(full_synth_union.clone()),
+    nullable: Some(false)
+}))
             } else {
                 maybe_response_payload.clone()
             };

@@ -28,9 +28,9 @@ type MyStruct = resource struct {
             .expect("struct not found");
         let h_type = &type_decl.members[0].type_;
 
-        assert_eq!(h_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(h_type.subtype.as_deref(), Some("thread"));
-        assert_eq!(h_type.rights, Some(3));
+        assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(h_type.subtype().as_deref(), Some("thread"));
+        assert_eq!(h_type.rights(), Some(3));
     }
 
     #[test]
@@ -58,9 +58,9 @@ type MyStruct = resource struct {
             .expect("struct not found");
         let h_type = &type_decl.members[0].type_;
 
-        assert_eq!(h_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(h_type.subtype.as_deref(), Some("vmo"));
-        assert_eq!(h_type.rights, Some(2147483648));
+        assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(h_type.subtype().as_deref(), Some("vmo"));
+        assert_eq!(h_type.rights(), Some(2147483648));
     }
 
     #[test]
@@ -109,9 +109,9 @@ type MyStruct = resource struct {
             .expect("struct not found");
         let h_type = &type_decl.members[0].type_;
 
-        assert_eq!(h_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(h_type.subtype.as_deref(), Some("handle"));
-        assert_eq!(h_type.rights, Some(2147483648)); // kHandleSameRights
+        assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(h_type.subtype().as_deref(), Some("handle"));
+        assert_eq!(h_type.rights(), Some(2147483648)); // kHandleSameRights
     }
 
     #[test]
@@ -141,19 +141,19 @@ type MyStruct = resource struct {
             .expect("struct not found");
 
         let a_type = &type_decl.members[0].type_;
-        assert_eq!(a_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(a_type.subtype.as_deref(), Some("thread"));
-        assert_eq!(a_type.rights, Some(2147483648));
+        assert_eq!(a_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(a_type.subtype().as_deref(), Some("thread"));
+        assert_eq!(a_type.rights(), Some(2147483648));
 
         let b_type = &type_decl.members[1].type_;
-        assert_eq!(b_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(b_type.subtype.as_deref(), Some("process"));
-        assert_eq!(b_type.rights, Some(2147483648));
+        assert_eq!(b_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(b_type.subtype().as_deref(), Some("process"));
+        assert_eq!(b_type.rights(), Some(2147483648));
 
         let c_type = &type_decl.members[2].type_;
-        assert_eq!(c_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(c_type.subtype.as_deref(), Some("vmo"));
-        assert_eq!(c_type.rights, Some(2));
+        assert_eq!(c_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(c_type.subtype().as_deref(), Some("vmo"));
+        assert_eq!(c_type.rights(), Some(2));
     }
 
     #[test]
@@ -231,9 +231,9 @@ type MyStruct = resource struct {
             .expect("struct not found");
         let h_type = &type_decl.members[0].type_;
 
-        assert_eq!(h_type.kind, crate::json_generator::TypeKind::Handle);
-        assert_eq!(h_type.subtype.as_deref(), Some("VMO"));
-        assert_eq!(h_type.rights, Some(2147483648));
+        assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
+        assert_eq!(h_type.subtype().as_deref(), Some("VMO"));
+        assert_eq!(h_type.rights(), Some(2147483648));
     }
 
     #[test]

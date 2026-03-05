@@ -75,50 +75,316 @@ pub enum TypeKind {
     ExperimentalPointer,
 }
 
-#[derive(Serialize, Clone, Debug)]
-pub struct Type {
-    #[serde(rename = "kind_v2")]
-    pub kind: TypeKind,
+#[derive(Clone, Debug, Serialize)]
+pub struct TypeCommon {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub obj_type: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subtype: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_type: Option<Box<Type>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
+    pub experimental_maybe_from_alias: Option<crate::json_generator::ExperimentalMaybeFromAlias>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub role: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_count: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_element_count: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rights: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol_transport: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource_identifier: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub maybe_attributes: Vec<Attribute>,
+    pub maybe_attributes: Vec<crate::json_generator::Attribute>,
     #[serde(rename = "field_shape_v2")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub field_shape: Option<FieldShape>,
+    pub field_shape: Option<crate::json_generator::FieldShape>,
     #[serde(rename = "type_shape_v2")]
-    pub type_shape: TypeShape,
+    pub type_shape: crate::json_generator::TypeShape,
     #[serde(skip)]
     pub maybe_size_constant_name: Option<String>,
     #[serde(skip)]
     pub resource: bool,
 }
+
+#[derive(Clone, Debug)]
+pub enum Type {
+    Primitive(PrimitiveType),
+    String(StringType),
+    StringArray(StringArrayType),
+    Unknown(UnknownType),
+    Vector(VectorType),
+    Array(ArrayType),
+    Endpoint(EndpointType),
+    Handle(HandleType),
+    Identifier(IdentifierType),
+    Struct(StructType),
+    Request(RequestType),
+    ExperimentalPointer(ExperimentalPointerType),
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PrimitiveType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtype: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct StringType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_element_count: Option<u32>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct StringArrayType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct UnknownType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct VectorType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_type: Option<Box<Type>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_element_count: Option<u32>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ArrayType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_type: Option<Box<Type>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_count: Option<u32>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct EndpointType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol_transport: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct HandleType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtype: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rights: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub obj_type: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_identifier: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct IdentifierType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct StructType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct RequestType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtype: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ExperimentalPointerType {
+    #[serde(flatten)]
+    pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_type: Option<Box<Type>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+}
+
+impl std::ops::Deref for Type {
+    type Target = TypeCommon;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Type::Primitive(t) => &t.common,
+            Type::String(t) => &t.common,
+            Type::StringArray(t) => &t.common,
+            Type::Unknown(t) => &t.common,
+            Type::Vector(t) => &t.common,
+            Type::Array(t) => &t.common,
+            Type::Endpoint(t) => &t.common,
+            Type::Handle(t) => &t.common,
+            Type::Identifier(t) => &t.common,
+            Type::Struct(t) => &t.common,
+            Type::Request(t) => &t.common,
+            Type::ExperimentalPointer(t) => &t.common,
+        }
+    }
+}
+
+impl std::ops::DerefMut for Type {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Type::Primitive(t) => &mut t.common,
+            Type::String(t) => &mut t.common,
+            Type::StringArray(t) => &mut t.common,
+            Type::Unknown(t) => &mut t.common,
+            Type::Vector(t) => &mut t.common,
+            Type::Array(t) => &mut t.common,
+            Type::Endpoint(t) => &mut t.common,
+            Type::Handle(t) => &mut t.common,
+            Type::Identifier(t) => &mut t.common,
+            Type::Struct(t) => &mut t.common,
+            Type::Request(t) => &mut t.common,
+            Type::ExperimentalPointer(t) => &mut t.common,
+        }
+    }
+}
+
+impl Type {
+    pub fn kind(&self) -> TypeKind {
+        match self {
+            Type::Primitive(_) => TypeKind::Primitive,
+            Type::String(_) => TypeKind::String,
+            Type::StringArray(_) => TypeKind::StringArray,
+            Type::Unknown(_) => TypeKind::Unknown,
+            Type::Vector(_) => TypeKind::Vector,
+            Type::Array(_) => TypeKind::Array,
+            Type::Endpoint(_) => TypeKind::Endpoint,
+            Type::Handle(_) => TypeKind::Handle,
+            Type::Identifier(_) => TypeKind::Identifier,
+            Type::Struct(_) => TypeKind::Struct,
+            Type::Request(_) => TypeKind::Request,
+            Type::ExperimentalPointer(_) => TypeKind::ExperimentalPointer,
+        }
+    }
+
+    pub fn subtype(&self) -> Option<String> {
+        match self {
+            Type::Primitive(t) => t.subtype.clone(),
+            Type::Handle(t) => t.subtype.clone(),
+            Type::Request(t) => t.subtype.clone(),
+            _ => None,
+        }
+    }
+
+    pub fn identifier(&self) -> Option<String> {
+        match self {
+            Type::Identifier(t) => t.identifier.clone(),
+            Type::Struct(t) => t.identifier.clone(),
+            Type::Request(t) => t.identifier.clone(),
+            _ => None,
+        }
+    }
+
+    pub fn element_type(&self) -> Option<&Type> {
+        match self {
+            Type::Array(t) => t.element_type.as_deref(),
+            Type::Vector(t) => t.element_type.as_deref(),
+            Type::ExperimentalPointer(t) => t.element_type.as_deref(),
+            _ => None,
+        }
+    }
+
+    pub fn nullable(&self) -> Option<bool> {
+        match self {
+            Type::String(t) => t.nullable,
+            Type::Vector(t) => t.nullable,
+            Type::Endpoint(t) => t.nullable,
+            Type::Handle(t) => t.nullable,
+            Type::Identifier(t) => t.nullable,
+            Type::Struct(t) => t.nullable,
+            Type::Request(t) => t.nullable,
+            Type::ExperimentalPointer(t) => t.nullable,
+            _ => None,
+        }
+    }
+    pub fn set_nullable(&mut self, val: bool) {
+        match self {
+            Type::String(t) => t.nullable = Some(val),
+            Type::Vector(t) => t.nullable = Some(val),
+            Type::Endpoint(t) => t.nullable = Some(val),
+            Type::Handle(t) => t.nullable = Some(val),
+            Type::Identifier(t) => t.nullable = Some(val),
+            Type::Struct(t) => t.nullable = Some(val),
+            Type::Request(t) => t.nullable = Some(val),
+            Type::ExperimentalPointer(t) => t.nullable = Some(val),
+            _ => {}
+        }
+    }
+    pub fn protocol(&self) -> Option<String> {
+        match self {
+            Type::Endpoint(t) => t.protocol.clone(),
+            _ => None,
+        }
+    }
+    pub fn resource_identifier(&self) -> Option<String> {
+        match self {
+            Type::Handle(t) => t.resource_identifier.clone(),
+            _ => None,
+        }
+    }
+    pub fn element_type_mut(&mut self) -> Option<&mut Type> {
+        match self {
+            Type::Array(t) => t.element_type.as_deref_mut(),
+            Type::Vector(t) => t.element_type.as_deref_mut(),
+            Type::ExperimentalPointer(t) => t.element_type.as_deref_mut(),
+            _ => None,
+        }
+    }
+    pub fn rights(&self) -> Option<u32> {
+        match self {
+            Type::Handle(t) => t.rights.clone(),
+            _ => None,
+        }
+    }
+    pub fn maybe_element_count(&self) -> Option<u32> {
+        match self {
+            Type::String(t) => t.maybe_element_count,
+            Type::Vector(t) => t.maybe_element_count,
+            _ => None,
+        }
+    }
+    pub fn element_count(&self) -> Option<u32> {
+        match self {
+            Type::Array(t) => t.element_count,
+            _ => None,
+        }
+    }
+}
+
 
 #[derive(Serialize, Clone, Debug)]
 pub struct ExperimentalMaybeFromAlias {
@@ -460,3 +726,75 @@ pub struct AliasDeclaration {
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct NewTypeDeclaration {}
+
+impl serde::Serialize for Type {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(serde::Serialize)]
+        struct TypeOldFormat<'a> {
+            #[serde(rename = "kind_v2")]
+            kind: crate::json_generator::TypeKind,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            obj_type: Option<u32>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            subtype: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            identifier: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            element_type: Option<&'a crate::json_generator::Type>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            experimental_maybe_from_alias: Option<&'a crate::json_generator::ExperimentalMaybeFromAlias>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            deprecated: Option<bool>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            role: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            protocol: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            element_count: Option<u32>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            maybe_element_count: Option<u32>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            rights: Option<u32>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            nullable: Option<bool>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            protocol_transport: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            resource_identifier: Option<String>,
+            #[serde(skip_serializing_if = "Vec::is_empty")]
+            maybe_attributes: &'a Vec<crate::json_generator::Attribute>,
+            #[serde(rename = "field_shape_v2")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            field_shape: Option<&'a crate::json_generator::FieldShape>,
+            #[serde(rename = "type_shape_v2")]
+            type_shape: &'a crate::json_generator::TypeShape,
+        }
+
+        let old = TypeOldFormat {
+            kind: self.kind(),
+            obj_type: match self { Type::Handle(t) => t.obj_type, _ => None },
+            subtype: self.subtype(),
+            identifier: self.identifier(),
+            element_type: self.element_type(),
+            experimental_maybe_from_alias: self.experimental_maybe_from_alias.as_ref(),
+            deprecated: self.deprecated,
+            role: match self { Type::Endpoint(t) => t.role.clone(), _ => None },
+            protocol: self.protocol(),
+            element_count: self.element_count(),
+            maybe_element_count: self.maybe_element_count(),
+            rights: self.rights(),
+            nullable: self.nullable(),
+            protocol_transport: match self { Type::Endpoint(t) => t.protocol_transport.clone(), _ => None },
+            resource_identifier: self.resource_identifier(),
+            maybe_attributes: &self.maybe_attributes,
+            field_shape: self.field_shape.as_ref(),
+            type_shape: &self.type_shape,
+        };
+
+        old.serialize(serializer)
+    }
+}
+

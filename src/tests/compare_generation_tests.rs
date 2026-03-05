@@ -98,7 +98,7 @@ fn test_compare_generation() {
 
         let output_json = goldens_dir.join(format!("{}.json", name));
 
-        let mut experimental = Vec::new();
+        let mut experimental = vec!["output_index_json".to_string()];
         for flag in &tc.experimental_flags {
             experimental.push(flag.to_string());
         }

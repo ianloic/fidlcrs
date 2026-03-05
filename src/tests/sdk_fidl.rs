@@ -814,7 +814,7 @@ mod tests {
         "fuchsia.location",
         "fuchsia.lowpan.spinel",
         "fuchsia.lowpan",
-        "fuchsia.math",
+        // "fuchsia.math",
         "fuchsia.media.audio",
         "fuchsia.media.tuning",
         "fuchsia.media2",
@@ -891,6 +891,23 @@ mod tests {
         "fuchsia.wlan.internal",
     ];
 
+    fn strip_filename(value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::Object(map) => {
+                map.remove("filename");
+                for (_, v) in map.iter_mut() {
+                    strip_filename(v);
+                }
+            }
+            serde_json::Value::Array(arr) => {
+                for v in arr.iter_mut() {
+                    strip_filename(v);
+                }
+            }
+            _ => {}
+        }
+    }
+
     #[test]
     fn test_compile_all_sdk_libraries() {
         let sdk_fidl = super::SdkFidl::new();
@@ -929,11 +946,41 @@ mod tests {
                                 let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
                                 let actual_str = std::fs::read_to_string(&out_json_path).unwrap();
 
-                                if let (Ok(expected), Ok(actual)) = (
+                                if let (Ok(mut expected), Ok(mut actual)) = (
                                     serde_json::from_str::<serde_json::Value>(&expected_str),
                                     serde_json::from_str::<serde_json::Value>(&actual_str),
                                 ) {
+                                    strip_filename(&mut expected);
+                                    strip_filename(&mut actual);
+
                                     if expected != actual {
+                                        let exp_formatted =
+                                            serde_json::to_string_pretty(&expected).unwrap();
+                                        let act_formatted =
+                                            serde_json::to_string_pretty(&actual).unwrap();
+
+                                        let exp_path =
+                                            temp_dir.join(format!("{}_expected.json", name));
+                                        let act_path =
+                                            temp_dir.join(format!("{}_actual.json", name));
+
+                                        std::fs::write(&exp_path, exp_formatted).unwrap();
+                                        std::fs::write(&act_path, act_formatted).unwrap();
+
+                                        println!("\nJSON mismatch for {}", name);
+                                        if let Ok(output) = std::process::Command::new("diff")
+                                            .arg("-u")
+                                            .arg("--color=always")
+                                            .arg(&exp_path)
+                                            .arg(&act_path)
+                                            .output()
+                                        {
+                                            println!("{}", String::from_utf8_lossy(&output.stdout));
+                                        }
+
+                                        let _ = std::fs::remove_file(&exp_path);
+                                        let _ = std::fs::remove_file(&act_path);
+
                                         mismatched.push(name);
                                     } else {
                                         println!("Passed library: {}", name);

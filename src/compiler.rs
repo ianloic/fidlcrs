@@ -611,7 +611,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: {
-                let mut exps = vec!["output_index_json".to_string()];
+                let mut exps = vec![];
                 exps.extend(self.experimental_flags.clone());
                 exps
             },

@@ -85,7 +85,6 @@ mod tests {
         ];
 
         let disabled_tests = vec![
-            
             TestCase::new("driver_handle.test.fidl").contains_drivers(),
             TestCase::new("driver_service.test.fidl").contains_drivers(),
             TestCase::new("experimental_maybe_from_alias.test.fidl"),
@@ -98,7 +97,6 @@ mod tests {
             TestCase::new("new_type.test.fidl").experimental("allow_new_types"),
             TestCase::new("overlay.test.fidl").experimental("zx_c_types"),
             TestCase::new("string_arrays.test.fidl").experimental("zx_c_types"),
-
             TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
             TestCase::new("versions.test.fidl").available("test:HEAD"),
         ];
@@ -138,44 +136,23 @@ mod tests {
             }
 
             let expected_path = manifest_dir.join(format!("fidlc/goldens/{}.json.golden", name));
-            let mut expected_json_str = fs::read_to_string(&expected_path).unwrap_or_default();
-            let mut actual_json_str = fs::read_to_string(&output_json).unwrap_or_default();
-
-            if let (Ok(mut e), Ok(mut a)) = (
-                serde_json::from_str::<serde_json::Value>(&expected_json_str),
-                serde_json::from_str::<serde_json::Value>(&actual_json_str),
-            ) {
-                if let (Some(e_arr), Some(a_arr)) = (
-                    e.get_mut("declaration_order").and_then(|v| v.as_array_mut()),
-                    a.get_mut("declaration_order").and_then(|v| v.as_array_mut()),
-                ) {
-                    e_arr.sort_by(|x, y| x.as_str().cmp(&y.as_str()));
-                    a_arr.sort_by(|x, y| x.as_str().cmp(&y.as_str()));
-                    expected_json_str = serde_json::to_string_pretty(&e).unwrap();
-                    actual_json_str = serde_json::to_string_pretty(&a).unwrap();
-                }
-            }
+            let expected_json = fs::read_to_string(&expected_path).unwrap_or_default();
+            let actual_json = fs::read_to_string(&output_json).unwrap_or_default();
 
             if expect_match {
-                if expected_json_str != actual_json_str {
+                if expected_json != actual_json {
                     println!("Golden mismatch for {}", file);
-                    // Write the normalized JSONs to tmp files for diffing
-                    let expected_tmp = goldens_dir.join(format!("{}_expected.json", name));
-                    fs::write(&expected_tmp, &expected_json_str).unwrap();
-                    let actual_tmp = goldens_dir.join(format!("{}_actual.json", name));
-                    fs::write(&actual_tmp, &actual_json_str).unwrap();
-
                     let diff_output = Command::new("diff")
                         .arg("-u")
-                        .arg(&expected_tmp)
-                        .arg(&actual_tmp)
+                        .arg(&expected_path)
+                        .arg(&output_json)
                         .output()
                         .unwrap();
                     println!("{}", String::from_utf8_lossy(&diff_output.stdout));
                     return false;
                 }
             } else {
-                if expected_json_str == actual_json_str {
+                if expected_json == actual_json {
                     println!(
                         "Error: Disabled test {} matches golden output. It should be moved from disabled_tests to active_tests.",
                         file

@@ -1,4 +1,3 @@
-
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -9,16 +8,7 @@ fn test_compare_generation() {
     let goldens_dir = manifest_dir.join("goldens");
     fs::create_dir_all(&goldens_dir).unwrap();
 
-    let status = Command::new("cargo")
-        .arg("build")
-        .arg("--bin")
-        .arg("fidlcrs")
-        .status()
-        .expect("Failed to run cargo build");
-    assert!(status.success(), "cargo build failed");
-
-    let fidlcrs_bin = manifest_dir.join("target/debug/fidlcrs");
-
+    // Removed cargo build since we call the run function directly
     struct TestCase {
         filename: &'static str,
         experimental_flags: Vec<&'static str>,
@@ -108,29 +98,39 @@ fn test_compare_generation() {
 
         let output_json = goldens_dir.join(format!("{}.json", name));
 
-        let mut cmd = Command::new(&fidlcrs_bin);
-        cmd.current_dir(&manifest_dir);
-        cmd.arg("--json").arg(&output_json);
-
+        let mut experimental = Vec::new();
         for flag in &tc.experimental_flags {
-            cmd.arg("--experimental").arg(flag);
+            experimental.push(flag.to_string());
         }
+
+        let mut available_args = Vec::new();
         let available = tc.available.unwrap_or("fuchsia:42,NEXT,HEAD");
         if !available.is_empty() {
-            cmd.arg("--available").arg(available);
+            available_args.push(available.to_string());
         }
 
-        cmd.arg("--files");
-        cmd.arg("vdso-fidl/rights.fidl");
-        cmd.arg("vdso-fidl/zx_common.fidl");
-        cmd.arg("vdso-fidl/overview.fidl");
+        let vdso1 = "vdso-fidl/rights.fidl".to_string();
+        let vdso2 = "vdso-fidl/zx_common.fidl".to_string();
+        let vdso3 = "vdso-fidl/overview.fidl".to_string();
+        let main_file = format!("fidlc/testdata/{}", file);
 
-        cmd.arg("--files").arg(format!("fidlc/testdata/{}", file));
+        let cli = crate::cli::Cli {
+            json: Some(output_json.to_string_lossy().to_string()),
+            available: available_args,
+            experimental,
+            files: vec![vdso1.clone(), vdso2.clone(), vdso3.clone(), main_file.clone()],
+            format: "text".to_string(),
+            ..Default::default()
+        };
 
-        let output = cmd.output().unwrap();
-        if !output.status.success() {
+        let source_managers = vec![
+            vec![vdso1, vdso2, vdso3],
+            vec![main_file],
+        ];
+
+        if let Err(e) = crate::cli::run(&cli, &source_managers) {
             println!("fidlcrs failed for {}:", file);
-            println!("{}", String::from_utf8_lossy(&output.stderr));
+            println!("{}", e);
             return false;
         }
 

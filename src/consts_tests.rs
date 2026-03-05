@@ -45,7 +45,7 @@ const c bool = false;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_bool_with_string() {
         let file_content = get_file_content("bad/fi-0065-a.test.fidl");
         let source = SourceFile::new("bad/fi-0065-a.test.fidl".to_string(), file_content);
@@ -55,7 +55,7 @@ const c bool = false;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_bool_with_numeric() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -102,7 +102,7 @@ const c int32 = b;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_int32_with_string() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -118,7 +118,7 @@ const c int32 = "foo";
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_int32_with_bool() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -168,7 +168,7 @@ const b uint64 = a;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_uint64_negative() {
         let file_content = get_file_content("bad/fi-0066.test.fidl");
         let source = SourceFile::new("bad/fi-0066.test.fidl".to_string(), file_content);
@@ -178,7 +178,7 @@ const b uint64 = a;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_uint64_overflow() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -240,7 +240,7 @@ const lo float32 = -3.40282e38;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_float32_high_limit() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -256,7 +256,7 @@ const hi float32 = 3.41e38;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_float32_low_limit() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -297,7 +297,7 @@ const d string:5 = c;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_string_with_numeric() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -313,7 +313,7 @@ const c string = 4;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_string_with_bool() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -329,7 +329,7 @@ const c string = true;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_string_with_string_too_long() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -361,7 +361,7 @@ const c foo = 2;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_using_with_inconvertible_value() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -378,7 +378,7 @@ const c foo = "nope";
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_nullable_string() {
         let file_content = get_file_content("bad/fi-0059.test.fidl");
         let source = SourceFile::new("bad/fi-0059.test.fidl".to_string(), file_content);
@@ -388,7 +388,7 @@ const c foo = "nope";
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_array() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -404,7 +404,7 @@ const c array<int32,2> = -1;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_vector() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -420,7 +420,7 @@ const c vector<int32>:2 = -1;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_test_handle_of_thread() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -537,7 +537,7 @@ const c MyBits = 0;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_different_enum_member_reference() {
         let file_content = get_file_content("bad/fi-0064.test.fidl");
         let source = SourceFile::new("bad/fi-0064.test.fidl".to_string(), file_content);
@@ -547,7 +547,7 @@ const c MyBits = 0;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_different_bits_member_reference() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -565,7 +565,7 @@ const c MyBits = OtherBits.VALUE;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_assign_primitive_to_enum() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -582,7 +582,7 @@ const c MyEnum = 5;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_assign_primitive_to_bits() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -651,7 +651,7 @@ const B string:MAX = A;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_max_bound_test_assign_to_const() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -667,7 +667,7 @@ const FOO uint32 = MAX;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_max_bound_test_library_qualified() {
         let dependency = SourceFile::new(
             "dependency.fidl".to_string(),
@@ -694,7 +694,7 @@ type Example = struct { s string:dependency.MAX; };
     }
 
     #[test]
-    #[ignore]
+
     fn bad_parameterize_primitive() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -710,6 +710,7 @@ const u uint8<string> = 0;
     }
 
     #[test]
+
     #[ignore]
     fn bad_name_collision() {
         let file_content = get_file_content("bad/fi-0034.test.fidl");
@@ -764,6 +765,7 @@ const SMALL_SIZE uint32 = 4;
     }
 
     #[test]
+
     #[ignore]
     fn bad_unknown_enum_member_test() {
         let source = SourceFile::new(
@@ -786,6 +788,7 @@ const dee EnumType = EnumType.D;
     }
 
     #[test]
+
     #[ignore]
     fn bad_unknown_bits_member_test() {
         let source = SourceFile::new(
@@ -830,6 +833,7 @@ const Result uint16 = MyBits.A | MyBits.B | MyBits.D;
     }
 
     #[test]
+
     #[ignore]
     fn bad_or_operator_different_types_test() {
         let file_content = get_file_content("bad/fi-0065-b.test.fidl");
@@ -857,6 +861,7 @@ const two_fifty_seven uint16 = one | two_fifty_six;
     }
 
     #[test]
+
     #[ignore]
     fn bad_or_operator_non_primitive_types_test() {
         let file_content = get_file_content("bad/fi-0061.test.fidl");
@@ -891,7 +896,7 @@ const bitsValue MyBits = MyBits.A | ( ( (MyBits.A | MyBits.B) | MyBits.D) | MyBi
     }
 
     #[test]
-    #[ignore]
+
     fn bad_identifier_const_mismatched_types_test() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -914,7 +919,7 @@ const b AnotherEnum = a;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_enum_bits_const_mismatched_types_test() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -936,7 +941,7 @@ const a OneEnum = AnotherEnum.B;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_const_references_invalid_const() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1021,7 +1026,7 @@ const UNSIGNED uint16 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_integer_convert_narrower_out_of_range() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1037,7 +1042,7 @@ const NARROW uint8 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_integer_convert_to_signed_out_of_range() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1053,7 +1058,7 @@ const SIGNED int16 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_integer_convert_to_unsigned_negative() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1099,7 +1104,7 @@ const NARROW float32 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_convert_float_narrower_out_of_range_positive() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1115,7 +1120,7 @@ const NARROW float32 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_convert_float_narrower_out_of_range_negative() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1131,7 +1136,7 @@ const NARROW float32 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_convert_integer_to_float() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -1147,7 +1152,7 @@ const FLOAT float32 = X;
     }
 
     #[test]
-    #[ignore]
+
     fn bad_convert_float_to_integer() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

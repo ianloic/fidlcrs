@@ -1261,7 +1261,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.declaration_order = order;
     }
 
-    pub fn compile_partial_type_ctor(&mut self, type_ctor: &raw_ast::TypeConstructor<'src>, library_name: &str) -> crate::json_generator::PartialTypeCtor {
+    pub fn compile_partial_type_ctor(
+        &mut self,
+        type_ctor: &raw_ast::TypeConstructor<'src>,
+        library_name: &str,
+    ) -> crate::json_generator::PartialTypeCtor {
         let name = if let raw_ast::LayoutParameter::Identifier(id) = &type_ctor.layout {
             let mut n = id.to_string();
             if n == "client_end" {
@@ -1286,14 +1290,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     n = n.replace('.', "/");
                 } else if !n.contains('/') {
                     let full = format!("{}/{}", library_name, n);
-                    if self.declarations.contains_key(&full) || self.decl_kinds.contains_key(&full) || self.shapes.contains_key(&n) {
+                    if self.declarations.contains_key(&full)
+                        || self.decl_kinds.contains_key(&full)
+                        || self.shapes.contains_key(&n)
+                    {
                         n = full.clone();
                     }
                 }
-                
+
                 // Resolving aliases recursively to base primitive if applicable!
                 // Only primitive types are substituted back in PartialTypeCtor output
-                if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&n).or_else(|| self.get_underlying_decl(&n)) {
+                if let Some(RawDecl::Alias(a)) = self
+                    .raw_decls
+                    .get(&n)
+                    .or_else(|| self.get_underlying_decl(&n))
+                {
                     let resolved = self.resolve_type(&a.type_ctor, library_name, None);
                     if let crate::json_generator::Type::Primitive(p) = &resolved {
                         if let Some(subtype) = &p.subtype {
@@ -1322,7 +1333,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
                 if !p_name.is_empty() {
-                    let full = if p_name.contains('.') { p_name.replace('.', "/") } else if p_name.contains('/') { p_name } else { format!("{}/{}", library_name, p_name) };
+                    let full = if p_name.contains('.') {
+                        p_name.replace('.', "/")
+                    } else if p_name.contains('/') {
+                        p_name
+                    } else {
+                        format!("{}/{}", library_name, p_name)
+                    };
                     args.push(crate::json_generator::PartialTypeCtor {
                         name: full,
                         args: vec![],
@@ -1350,20 +1367,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let n = id.to_string();
             if n == "array" {
                 if type_ctor.parameters.len() > 1 {
-                    if let raw_ast::LayoutParameter::Literal(lit) = &type_ctor.parameters[1].layout {
+                    if let raw_ast::LayoutParameter::Literal(lit) = &type_ctor.parameters[1].layout
+                    {
                         let c = raw_ast::Constant::Literal(lit.clone());
                         maybe_size = Some(self.compile_constant(&c));
-                    } else if let raw_ast::LayoutParameter::Identifier(id) = &type_ctor.parameters[1].layout {
+                    } else if let raw_ast::LayoutParameter::Identifier(id) =
+                        &type_ctor.parameters[1].layout
+                    {
                         let c = raw_ast::Constant::Identifier(raw_ast::IdentifierConstant {
                             identifier: id.clone(),
-                            element: type_ctor.parameters[1].element.clone()
+                            element: type_ctor.parameters[1].element.clone(),
                         });
                         maybe_size = Some(self.compile_constant(&c));
                     }
                 }
             } else if n == "vector" || n == "string" {
                 if let Some(c) = type_ctor.constraints.first() {
-                    if !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional") {
+                    if !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")
+                    {
                         maybe_size = Some(self.compile_constant(c));
                     }
                 }
@@ -2269,7 +2290,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
                 let mut alias = type_obj.outer_alias.take();
-                if alias.is_none() && type_obj.kind() != crate::json_generator::TypeKind::Array && type_obj.kind() != crate::json_generator::TypeKind::Vector && type_obj.kind() != crate::json_generator::TypeKind::String && type_obj.kind() != crate::json_generator::TypeKind::Request {
+                if alias.is_none()
+                    && type_obj.kind() != crate::json_generator::TypeKind::Array
+                    && type_obj.kind() != crate::json_generator::TypeKind::Vector
+                    && type_obj.kind() != crate::json_generator::TypeKind::String
+                    && type_obj.kind() != crate::json_generator::TypeKind::Request
+                {
                     alias = type_obj.experimental_maybe_from_alias.take();
                 }
                 let name = member.name.as_ref().unwrap().data().to_string();
@@ -2514,7 +2540,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
                 let mut alias = type_obj.outer_alias.take();
-                if alias.is_none() && type_obj.kind() != crate::json_generator::TypeKind::Array && type_obj.kind() != crate::json_generator::TypeKind::Vector && type_obj.kind() != crate::json_generator::TypeKind::String && type_obj.kind() != crate::json_generator::TypeKind::Request {
+                if alias.is_none()
+                    && type_obj.kind() != crate::json_generator::TypeKind::Array
+                    && type_obj.kind() != crate::json_generator::TypeKind::Vector
+                    && type_obj.kind() != crate::json_generator::TypeKind::String
+                    && type_obj.kind() != crate::json_generator::TypeKind::Request
+                {
                     alias = type_obj.experimental_maybe_from_alias.take();
                 }
                 if type_obj.nullable().unwrap_or(false) {
@@ -2751,7 +2782,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 );
             }
             let mut alias = type_obj.outer_alias.take();
-            if alias.is_none() && type_obj.kind() != crate::json_generator::TypeKind::Array && type_obj.kind() != crate::json_generator::TypeKind::Vector && type_obj.kind() != crate::json_generator::TypeKind::String && type_obj.kind() != crate::json_generator::TypeKind::Request {
+            if alias.is_none()
+                && type_obj.kind() != crate::json_generator::TypeKind::Array
+                && type_obj.kind() != crate::json_generator::TypeKind::Vector
+                && type_obj.kind() != crate::json_generator::TypeKind::String
+                && type_obj.kind() != crate::json_generator::TypeKind::Request
+            {
                 alias = type_obj.experimental_maybe_from_alias.take();
             }
             let type_shape = &type_obj.type_shape;
@@ -3440,8 +3476,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     self.resolve_type(inner.unwrap(), library_name, naming_context)
                 };
-                                let mut inner_alias = inner_type.outer_alias.take();
-                if inner_alias.is_none() && inner_type.kind() != crate::json_generator::TypeKind::Array && inner_type.kind() != crate::json_generator::TypeKind::Vector && inner_type.kind() != crate::json_generator::TypeKind::String && inner_type.kind() != crate::json_generator::TypeKind::Request {
+                let mut inner_alias = inner_type.outer_alias.take();
+                if inner_alias.is_none()
+                    && inner_type.kind() != crate::json_generator::TypeKind::Array
+                    && inner_type.kind() != crate::json_generator::TypeKind::Vector
+                    && inner_type.kind() != crate::json_generator::TypeKind::String
+                    && inner_type.kind() != crate::json_generator::TypeKind::Request
+                {
                     inner_alias = inner_type.experimental_maybe_from_alias.take();
                 }
 
@@ -3649,8 +3690,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 let mut inner_type = self.resolve_type(elt_type, library_name, naming_context);
-                                let mut inner_alias = inner_type.outer_alias.take();
-                if inner_alias.is_none() && inner_type.kind() != crate::json_generator::TypeKind::Array && inner_type.kind() != crate::json_generator::TypeKind::Vector && inner_type.kind() != crate::json_generator::TypeKind::String && inner_type.kind() != crate::json_generator::TypeKind::Request {
+                let mut inner_alias = inner_type.outer_alias.take();
+                if inner_alias.is_none()
+                    && inner_type.kind() != crate::json_generator::TypeKind::Array
+                    && inner_type.kind() != crate::json_generator::TypeKind::Vector
+                    && inner_type.kind() != crate::json_generator::TypeKind::String
+                    && inner_type.kind() != crate::json_generator::TypeKind::Request
+                {
                     inner_alias = inner_type.experimental_maybe_from_alias.take();
                 }
                 let total_size = count.saturating_mul(inner_type.type_shape.inline_size);
@@ -5434,6 +5480,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut property_names = std::collections::HashSet::new();
 
         let ctx = crate::name::NamingContext::create(name);
+
         let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
 
         // C++ checks if type resolves to a uint32 primitive
@@ -5668,6 +5715,349 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
+    pub fn type_can_be_const(&self, type_obj: &crate::json_generator::Type) -> bool {
+        match type_obj {
+            crate::json_generator::Type::String(s) => !s.nullable.unwrap_or(false),
+            crate::json_generator::Type::Primitive(_) => true,
+            crate::json_generator::Type::Identifier(i) => {
+                let Some(decl_kind) = self
+                    .decl_kinds
+                    .get(i.identifier.as_ref().unwrap_or(&"".to_string()))
+                else {
+                    return false;
+                };
+                *decl_kind == "enum" || *decl_kind == "bits"
+            }
+            _ => false,
+        }
+    }
+
+    fn check_numeric_bounds(&self, val_str: &str, subtype: &str) -> bool {
+        let mut s = val_str;
+        let is_negative = s.starts_with('-');
+        if is_negative {
+            s = &s[1..];
+        }
+        let (radix, s) = if s.starts_with("0x") || s.starts_with("0X") {
+            (16, &s[2..])
+        } else if s.starts_with("0b") || s.starts_with("0B") {
+            (2, &s[2..])
+        } else {
+            (10, s)
+        };
+
+        if subtype.starts_with("float") {
+            return match subtype {
+                "float32" => {
+                    let r = val_str.parse::<f64>().map_or(false, |v| {
+                        !v.is_infinite() && v >= f32::MIN as f64 && v <= f32::MAX as f64
+                    });
+                    println!("DEBUG: parsing f32 from {}, valid: {}", val_str, r);
+                    r
+                }
+                "float64" => val_str.parse::<f64>().map_or(false, |v| !v.is_infinite()),
+                _ => false,
+            };
+        }
+
+        if is_negative && subtype.starts_with("u") {
+            return false;
+        }
+
+        let signed_s = format!("{}{}", if is_negative { "-" } else { "" }, s);
+
+        match subtype {
+            "int8" => i8::from_str_radix(&signed_s, radix).is_ok(),
+            "int16" => i16::from_str_radix(&signed_s, radix).is_ok(),
+            "int32" => i32::from_str_radix(&signed_s, radix).is_ok(),
+            "int64" => i64::from_str_radix(&signed_s, radix).is_ok(),
+            "uint8" => u8::from_str_radix(s, radix).is_ok(),
+            "uint16" => u16::from_str_radix(s, radix).is_ok(),
+            "uint32" => u32::from_str_radix(s, radix).is_ok(),
+            "uint64" => u64::from_str_radix(s, radix).is_ok(),
+            _ => true,
+        }
+    }
+
+    pub fn validate_constant(
+        &mut self,
+        constant: &raw_ast::Constant<'src>,
+        expected_type: &crate::json_generator::Type,
+    ) {
+        println!(
+            "DEBUG: validate_constant expected={:?}, constant={:?}",
+            expected_type, constant
+        );
+        match expected_type {
+            crate::json_generator::Type::Primitive(p) => {
+                let Some(subtype) = &p.subtype else {
+                    return;
+                };
+                match constant {
+                    raw_ast::Constant::Literal(lit) => {
+                        let span = lit.literal.element.start_token.span.clone();
+                        match &lit.literal.kind {
+                            raw_ast::LiteralKind::String => {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                    span,
+                                    &[&"string", &"string", subtype],
+                                );
+                            }
+                            raw_ast::LiteralKind::Bool(_) => {
+                                if subtype != "bool" {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                        span,
+                                        &[&"bool", &"bool", subtype],
+                                    );
+                                }
+                            }
+                            raw_ast::LiteralKind::Numeric => {
+                                if subtype == "bool" {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                        span,
+                                        &[&"numeric", &"numeric", subtype],
+                                    );
+                                    return;
+                                }
+                                let valid = self.check_numeric_bounds(&lit.literal.value, subtype);
+                                if !valid {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrConstantOverflowsType,
+                                        span,
+                                        &[&lit.literal.value, subtype],
+                                    );
+                                }
+                            }
+                            crate::raw_ast::LiteralKind::DocComment => {}
+                        }
+                    }
+                    raw_ast::Constant::Identifier(id) => {
+                        let span = id.element.start_token.span.clone();
+                        let name = id.identifier.to_string();
+                        if name == "MAX" {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                span,
+                                &[&"MAX", &"MAX", subtype],
+                            );
+                            return;
+                        }
+
+                        let mut full_name = name.clone();
+                        if !full_name.contains('/') {
+                            full_name = format!("{}/{}", self.library_name, name);
+                        }
+
+                        let decl_info = self
+                            .raw_decls
+                            .get(&full_name)
+                            .or_else(|| self.get_underlying_decl(&name));
+                        let mut c_layout_str = None;
+                        let mut is_other = false;
+                        if let Some(decl) = decl_info {
+                            match decl {
+                                crate::compiler::RawDecl::Const(c) => {
+                                    c_layout_str = Some(c.type_ctor.element.start_token.span.data)
+                                }
+                                crate::compiler::RawDecl::Bits(_)
+                                | crate::compiler::RawDecl::Enum(_) => is_other = true,
+                                _ => {}
+                            }
+                        } else if let Some((type_name, _member_name)) = name.rsplit_once('.') {
+                            let mut type_full_name = type_name.to_string();
+                            if !type_full_name.contains('/') {
+                                type_full_name = format!("{}/{}", self.library_name, type_name);
+                            }
+                            if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                                match decl {
+                                    crate::compiler::RawDecl::Bits(_)
+                                    | crate::compiler::RawDecl::Enum(_) => is_other = true,
+                                    _ => {}
+                                }
+                            }
+                        }
+
+                        println!(
+                            "DEBUG: processing identifier: name={}, full_name={}, decl_info.is_some()={}, c_layout_str={:?}",
+                            name,
+                            full_name,
+                            decl_info.is_some(),
+                            c_layout_str
+                        );
+                        if let Some(c_layout) = c_layout_str {
+                            let left_is_bool = subtype == "bool";
+                            let right_is_bool = c_layout == "bool";
+                            let left_is_float = subtype.starts_with("float");
+                            let right_is_float = c_layout.starts_with("float");
+
+                            if c_layout != subtype {
+                                if let Some(crate::compiler::RawDecl::Const(c)) = decl_info {
+                                    if let crate::raw_ast::Constant::Literal(lit) = &c.value {
+                                        if !self.check_numeric_bounds(&lit.literal.value, subtype) {
+                                            self.reporter.fail(
+                                                crate::diagnostics::Error::ErrConstantOverflowsType,
+                                                span,
+                                                &[&lit.literal.value, subtype],
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
+                            if left_is_bool != right_is_bool || left_is_float != right_is_float {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                    span,
+                                    &[&name, &c_layout, subtype],
+                                );
+                            }
+                        } else if is_other {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                span,
+                                &[&full_name, &"identifier", subtype],
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            crate::json_generator::Type::String(s) => match constant {
+                raw_ast::Constant::Literal(lit) => {
+                    let span = lit.literal.element.start_token.span.clone();
+                    if !matches!(lit.literal.kind, raw_ast::LiteralKind::String) {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                            span,
+                            &[&"primitive", &"primitive", &"string"],
+                        );
+                    } else {
+                        if let Some(c) = s.maybe_element_count.as_ref() {
+                            let max_len = *c as usize;
+                            let mut len = lit.literal.value.len();
+                            if len >= 2 {
+                                len -= 2;
+                            }
+                            len -= lit.literal.value.matches('\\').count();
+                            if len > max_len {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                    span,
+                                    &[
+                                        &lit.literal.value,
+                                        &format!("string:{}", len),
+                                        &format!("string:{}", max_len),
+                                    ],
+                                );
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            },
+            crate::json_generator::Type::Identifier(idt) => {
+                let expected_name = idt.identifier.as_ref().unwrap_or(&"".to_string()).clone();
+                let Some(expected_decl_kind) = self.decl_kinds.get(&expected_name).cloned() else {
+                    return;
+                };
+
+                match constant {
+                    raw_ast::Constant::Literal(lit) => {
+                        let span = lit.literal.element.start_token.span.clone();
+                        if expected_decl_kind == "bits"
+                            && lit.literal.kind == raw_ast::LiteralKind::Numeric
+                            && lit.literal.value == "0"
+                        {
+                            return;
+                        }
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                            span,
+                            &[&lit.literal.value, &"literal", &expected_name],
+                        );
+                    }
+                    raw_ast::Constant::Identifier(id) => {
+                        let span = id.element.start_token.span.clone();
+                        let name = id.identifier.to_string();
+                        if let Some((type_name, _member_name)) = name.rsplit_once('.') {
+                            let mut type_full_name = type_name.to_string();
+                            if !type_full_name.contains('/') {
+                                type_full_name = format!("{}/{}", self.library_name, type_name);
+                            }
+                            if type_full_name != expected_name {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrMismatchedNameTypeAssignment,
+                                    span,
+                                    &[&expected_name, &type_full_name],
+                                );
+                            }
+                        } else {
+                            let mut full_name = name.clone();
+                            if !full_name.contains('/') {
+                                full_name = format!("{}/{}", self.library_name, name);
+                            }
+
+                            let decl_info = self
+                                .raw_decls
+                                .get(&full_name)
+                                .or_else(|| self.get_underlying_decl(&name));
+                            let mut c_layout_str = None;
+                            let mut err_reason = None;
+                            if let Some(decl) = decl_info {
+                                match decl {
+                                    crate::compiler::RawDecl::Const(c) => {
+                                        c_layout_str =
+                                            Some(c.type_ctor.element.start_token.span.data)
+                                    }
+                                    _ => err_reason = Some("Non-const Type"),
+                                }
+                            } else {
+                                err_reason = Some("Unknown");
+                            }
+
+                            if let Some(c_layout) = c_layout_str {
+                                if c_layout != expected_name
+                                    && !(expected_name.contains('/')
+                                        && c_layout.contains('/')
+                                        && c_layout != expected_name)
+                                {
+                                    let is_primitive = c_layout == "bool"
+                                        || c_layout.starts_with("int")
+                                        || c_layout.starts_with("uint")
+                                        || c_layout.starts_with("float");
+                                    if is_primitive {
+                                        self.reporter.fail(crate::diagnostics::Error::ErrMismatchedNameTypeAssignment, span, &[&expected_name, &"Primitive"]);
+                                    } else if c_layout != expected_name {
+                                        self.reporter.fail(crate::diagnostics::Error::ErrMismatchedNameTypeAssignment, span, &[&expected_name, &c_layout]);
+                                    }
+                                }
+                            } else if let Some(r) = err_reason {
+                                if r == "Unknown" {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrCannotResolveConstantValue,
+                                        span,
+                                        &[],
+                                    );
+                                } else {
+                                    self.reporter.fail(
+                                        crate::diagnostics::Error::ErrMismatchedNameTypeAssignment,
+                                        span,
+                                        &[&expected_name, &r],
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+    }
+
     pub fn compile_const(
         &mut self,
         decl: &'node raw_ast::ConstDeclaration<'src>,
@@ -5678,7 +6068,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let location = self.get_location(&decl.name.element);
 
         let ctx = crate::name::NamingContext::create(name);
+
         let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
+        if !self.type_can_be_const(&type_obj) {
+            let layout_str = decl.type_ctor.element.start_token.span.data;
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrInvalidConstantType,
+                decl.name.element.start_token.span.clone(),
+                &[&layout_str],
+            );
+        }
+        self.validate_constant(&decl.value, &type_obj);
+
         let constant = self.compile_constant(&decl.value);
 
         ConstDeclaration {

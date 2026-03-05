@@ -14,6 +14,7 @@ pub mod parsing_tests;
 pub mod protocol_tests;
 pub mod resource_tests;
 pub mod resourceness_tests;
+pub mod sdk_fidl;
 pub mod service_tests;
 pub mod strictness_tests;
 pub mod structs_tests;

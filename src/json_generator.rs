@@ -79,6 +79,8 @@ pub enum TypeKind {
 pub struct TypeCommon {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub experimental_maybe_from_alias: Option<crate::json_generator::ExperimentalMaybeFromAlias>,
+    #[serde(skip)]
+    pub outer_alias: Option<crate::json_generator::ExperimentalMaybeFromAlias>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -708,8 +710,10 @@ pub struct UnionMember {
 #[derive(Serialize, Clone, Debug)]
 pub struct PartialTypeCtor {
     pub name: String,
-    pub args: Vec<String>,
+    pub args: Vec<PartialTypeCtor>,
     pub nullable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_size: Option<Constant>,
 }
 
 #[derive(Serialize, Clone, Debug)]

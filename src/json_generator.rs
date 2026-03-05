@@ -72,6 +72,7 @@ pub enum TypeKind {
     Identifier,
     Struct,
     Request,
+    ExperimentalPointer,
 }
 
 #[derive(Serialize, Clone, Debug)]

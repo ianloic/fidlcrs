@@ -12,6 +12,7 @@ pub struct TestLibrary<'a> {
     shared_sources: Vec<Box<SourceFile>>,
     #[allow(dead_code)]
     generated_source_file: VirtualSourceFile,
+    pub experimental_flags: Vec<String>,
 }
 
 impl<'a> Default for TestLibrary<'a> {
@@ -27,6 +28,7 @@ impl<'a> TestLibrary<'a> {
             source_files: Vec::new(),
             shared_sources: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
+            experimental_flags: Vec::new(),
         }
     }
 
@@ -34,6 +36,10 @@ impl<'a> TestLibrary<'a> {
         let mut lib = Self::new();
         lib.add_source(source_file);
         lib
+    }
+
+    pub fn enable_flag(&mut self, flag: &str) {
+        self.experimental_flags.push(flag.to_string());
     }
 
     pub fn add_source(&mut self, source_file: &'a SourceFile) {
@@ -101,6 +107,7 @@ resource_definition handle : uint32 {
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {
         let mut compiler = Compiler::new(&self.reporter);
+        compiler.experimental_flags = self.experimental_flags.clone();
         let mut asts = Vec::new();
 
         for file in &self.source_files {

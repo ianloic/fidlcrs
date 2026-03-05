@@ -1118,6 +1118,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.union_declarations.push(compiled);
                     }
                 } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
+                    let mut existing_type_name = "unknown".to_string();
+                    if let raw_ast::LayoutParameter::Identifier(id) = &tc.layout {
+                        existing_type_name = id.to_string();
+                    }
+                    self.reporter.fail(crate::diagnostics::Error::ErrNewTypesNotAllowed, t.name.element.span().clone(), &[&t.name.data(), &existing_type_name]);
                     let compiled = AliasDeclaration {
                         name: format!("{}/{}", library_name, t.name.data()),
                         location: self.get_location(&t.name.element),
@@ -2577,7 +2582,37 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             raw_ast::LayoutParameter::Literal(_) => {
-                panic!("Literal layout not supported in resolve_type")
+                self.reporter.fail(crate::diagnostics::Error::ErrExpectedType, type_ctor.element.span(), &[]);
+                return Type {
+                    resource: false,
+                    experimental_maybe_from_alias: None,
+                    kind: TypeKind::Unknown,
+                    subtype: None,
+                    identifier: None,
+                    nullable: None,
+                    element_type: None,
+                    element_count: None,
+                    maybe_element_count: None,
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
+                    deprecated: None,
+                    maybe_attributes: vec![],
+                    field_shape: None,
+                    maybe_size_constant_name: None,
+                    type_shape: TypeShape {
+                        inline_size: 0,
+                        alignment: 1,
+                        depth: 0,
+                        max_handles: 0,
+                        max_out_of_line: 0,
+                        has_padding: false,
+                        has_flexible_envelope: false,
+                    },
+                };
             }
             raw_ast::LayoutParameter::Type(_) => {
                 panic!("Type layout not supported in resolve_type yet")
@@ -2649,6 +2684,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     None
                 };
+                
+                if !type_ctor.parameters.is_empty() {
+                    self.reporter.fail(crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters, type_ctor.element.start_token.span.clone(), &[&generated_name.as_deref().unwrap_or(default_name), &0_usize, &type_ctor.parameters.len()]);
+                }
 
                 let _decl_context = naming_context
                     .as_ref()
@@ -2742,27 +2781,46 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         };
 
+        let mut actual_constraints = type_ctor.constraints.clone();
         let mut nullable = type_ctor.nullable;
-        if !nullable {
-            // Check constraints for "optional"
-            for constraint in &type_ctor.constraints {
-                if let raw_ast::Constant::Identifier(id) = constraint
-                    && id.identifier.to_string() == "optional"
-                {
-                    nullable = true;
-                    break;
+        
+        if let Some(c) = actual_constraints.last() {
+            if let raw_ast::Constant::Identifier(id) = c {
+                if id.identifier.to_string() == "optional" {
+                    let mut is_nullability = true;
+                    // If it is in the same scope, it might resolve to a constant.
+                    if self.eval_constant_value(c).is_some() {
+                        is_nullability = false;
+                    }
+                    if is_nullability {
+                        actual_constraints.pop();
+                        nullable = true;
+                    }
                 }
             }
         }
 
         let mut resolved_name = name.clone();
+        if resolved_name.starts_with("fidl/") {
+            let bare = &resolved_name["fidl/".len()..];
+            if matches!(bare, "bool" | "int8" | "int16" | "int32" | "int64" 
+                | "uint8" | "uint16" | "uint32" | "uint64" | "float32" | "float64"
+                | "uchar" | "usize64" | "uintptr64" | "string" | "vector" | "bytes" | "string_array")
+            {
+                resolved_name = bare.to_string();
+            }
+        }
         if resolved_name == "byte" {
             resolved_name = "uint8".to_string();
         }
 
         match resolved_name.as_str() {
             "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32"
-            | "uint64" | "float32" | "float64" => {
+            | "uint64" | "float32" | "float64" | "uchar" | "usize64" | "uintptr64" => {
+                if !type_ctor.parameters.is_empty() {
+                    self.reporter.fail(crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters, type_ctor.element.start_token.span.clone(), &[&resolved_name, &0_usize, &type_ctor.parameters.len()]);
+                }
+                
                 if nullable {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrCannotBeOptional,
@@ -2770,11 +2828,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[&resolved_name],
                     );
                 }
+                
+                if matches!(resolved_name.as_str(), "uchar" | "usize64" | "uintptr64") {
+                    if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
+                        self.reporter.fail(crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed, type_ctor.element.start_token.span.clone(), &[&resolved_name]);
+                    }
+                }
+
                 let (inline_size, alignment) = match resolved_name.as_str() {
-                    "bool" | "int8" | "uint8" => (1, 1),
+                    "bool" | "int8" | "uint8" | "uchar" => (1, 1),
                     "int16" | "uint16" => (2, 2),
                     "int32" | "uint32" | "float32" => (4, 4),
-                    "int64" | "uint64" | "float64" => (8, 8),
+                    "int64" | "uint64" | "float64" | "usize64" | "uintptr64" => (8, 8),
                     _ => (0, 0),
                 };
                 Type {
@@ -2809,12 +2874,68 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     },
                 }
             }
-            "string" => {
-                let max_len = if let Some(c) = type_ctor.constraints.first() {
-                    self.eval_constant_usize(c).unwrap_or(u32::MAX as usize) as u32
+            "experimental_pointer" => {
+                if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
+                    self.reporter.fail(crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed, type_ctor.element.start_token.span.clone(), &[&resolved_name]);
+                }
+                
+                let inner = if type_ctor.parameters.is_empty() {
+                    None
                 } else {
-                    u32::MAX
+                    Some(&type_ctor.parameters[0])
                 };
+                
+                let inner_type_opt = if let Some(i) = inner {
+                    Some(Box::new(self.resolve_type(i, library_name, naming_context)))
+                } else {
+                    None
+                };
+
+                Type {
+                    resource: false,
+                    experimental_maybe_from_alias: None,
+
+                    kind: TypeKind::ExperimentalPointer,
+                    subtype: None,
+                    identifier: None,
+                    nullable: Some(nullable),
+                    role: None,
+                    protocol: None,
+                    protocol_transport: None,
+                    obj_type: None,
+                    rights: None,
+                    resource_identifier: None,
+                    element_type: inner_type_opt,
+                    element_count: None,
+                    maybe_element_count: None,
+                    deprecated: None,
+                    maybe_attributes: vec![],
+                    field_shape: None,
+                    maybe_size_constant_name: None,
+                    type_shape: TypeShape {
+                        inline_size: 8,
+                        alignment: 8,
+                        depth: 1, // approximate
+                        max_handles: 0,
+                        max_out_of_line: 0,
+                        has_padding: false,
+                        has_flexible_envelope: false,
+                    },
+                }
+            }
+            "string" => {
+                if actual_constraints.len() > 1 {
+                    self.reporter.fail(crate::diagnostics::Error::ErrTooManyConstraints, type_ctor.element.start_token.span.clone(), &[&resolved_name, &1_usize, &actual_constraints.len()]);
+                }
+                let mut max_len = u32::MAX;
+                if let Some(c) = actual_constraints.first() {
+                    if let Some(val) = self.eval_constant_usize(c) {
+                        max_len = val as u32;
+                    } else {
+                        self.reporter.fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, c.element().span(), &[]);
+                        self.reporter.fail(crate::diagnostics::Error::ErrCouldNotResolveSizeBound, c.element().span(), &[]);
+                    }
+                }
                 Type {
                     resource: false,
                     experimental_maybe_from_alias: None,
@@ -2907,6 +3028,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             "vector" | "bytes" => {
                 let is_bytes = resolved_name == "bytes";
+                if actual_constraints.len() > 1 {
+                    self.reporter.fail(crate::diagnostics::Error::ErrUnexpectedConstraint, actual_constraints[1].element().span(), &[&resolved_name]);
+                }
                 let inner = if is_bytes {
                     None
                 } else if type_ctor.parameters.is_empty() {
@@ -2986,11 +3110,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
                 let inner_alias = inner_type.experimental_maybe_from_alias.take();
 
-                let max_count = if let Some(c) = type_ctor.constraints.first() {
-                    self.eval_constant_usize(c).unwrap_or(u32::MAX as usize) as u32
-                } else {
-                    u32::MAX
-                };
+                let mut max_count = u32::MAX;
+                if let Some(c) = actual_constraints.first() {
+                    if let Some(val) = self.eval_constant_usize(c) {
+                        max_count = val as u32;
+                    } else {
+                        self.reporter.fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, c.element().span(), &[]);
+                        self.reporter.fail(crate::diagnostics::Error::ErrCouldNotResolveSizeBound, c.element().span(), &[]);
+                    }
+                }
 
                 let new_depth = inner_type.type_shape.depth.saturating_add(1);
                 // println!("Vector depth calculation: inner {}, new {}", inner_type.type_shape.depth, new_depth);
@@ -3104,28 +3232,38 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 // Check count
                 let mut count: u32 = 0;
-                match &count_param.layout {
-                    raw_ast::LayoutParameter::Literal(lit) => {
-                        if let raw_ast::LiteralKind::Numeric = lit.literal.kind {
-                            if let Ok(val) = lit.literal.value.parse::<u32>() {
-                                if val == 0 {
-                                    self.reporter.fail(
-                                        crate::diagnostics::Error::ErrMustHaveNonZeroSize,
-                                        count_param.element.start_token.span.clone(),
-                                        &[&"array"],
-                                    );
+                
+                if let Some(val) = self.eval_type_constant_usize(count_param) {
+                    if val == 0 {
+                        self.reporter.fail(crate::diagnostics::Error::ErrMustHaveNonZeroSize, count_param.element.start_token.span.clone(), &[&"array"]);
+                    }
+                    count = val as u32;
+                } else {
+                    let is_type = match &count_param.layout {
+                        raw_ast::LayoutParameter::Identifier(id) => {
+                            let mut inner_name = if id.components.len() > 1 {
+                                let mut parts = vec![];
+                                for c in &id.components[..id.components.len() - 1] {
+                                    parts.push(c.data());
                                 }
-                                count = val;
-                            }
+                                format!("{}/{}", parts.join("."), id.components.last().unwrap().data())
+                            } else {
+                                id.to_string()
+                            };
+                            let bare = if inner_name.starts_with("fidl/") { &inner_name["fidl/".len()..] } else { &inner_name };
+                            matches!(bare, "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32" | "uint64" | "float32" | "float64" | "string" | "vector" | "bytes" | "array" | "handle" | "request" | "client_end" | "server_end") || self.raw_decls.contains_key(&inner_name) || self.raw_decls.contains_key(&format!("{}/{}", library_name, inner_name))
                         }
+                        _ => false,
+                    };
+                    if is_type {
+                        let name_str = match &count_param.layout {
+                            raw_ast::LayoutParameter::Identifier(id) => id.components.last().unwrap().data().to_string(),
+                            _ => "unknown".to_string(),
+                        };
+                        self.reporter.fail(crate::diagnostics::Error::ErrExpectedValueButGotType, count_param.element.span(), &[&name_str]);
+                    } else {
+                        self.reporter.fail(crate::diagnostics::Error::ErrNameNotFound, count_param.element.span(), &[&"unknown", &library_name]); // To fix argument count
                     }
-                    raw_ast::LayoutParameter::Identifier(id) => {
-                        if id.to_string() == "MAX" {
-                            count = u32::MAX;
-                        }
-                        // TODO: actually resolve constant value to check for 0
-                    }
-                    _ => {}
                 }
 
                 // Check constraints
@@ -3766,7 +3904,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_shape: shape.clone(),
                     }
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
+                    if !type_ctor.parameters.is_empty() {
+                        self.reporter.fail(crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters, type_ctor.element.start_token.span.clone(), &[&name, &0_usize, &type_ctor.parameters.len()]);
+                    }
                     if let RawDecl::Alias(a) = decl {
+                        let mut has_err = false;
+                        if !actual_constraints.is_empty() && !a.type_ctor.constraints.is_empty() {
+                            self.reporter.fail(crate::diagnostics::Error::ErrCannotConstrainTwice, type_ctor.element.start_token.span.clone(), &[&name]);
+                            has_err = true;
+                        }
                         let mut resolved_type =
                             self.resolve_type(&a.type_ctor, library_name, naming_context);
                         resolved_type.experimental_maybe_from_alias =
@@ -3780,6 +3926,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if resolved_type.kind != TypeKind::Primitive {
                                 resolved_type.type_shape.depth += 1;
                             }
+                        }
+                        if has_err {
+                            resolved_type.resource = false;
                         }
                         return resolved_type;
                     }
@@ -3850,14 +3999,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     }
                 } else {
-                    // eprintln!("Warning: Type not found: {} (tried {})", name, full_name);
-                    if name == "handle" {
-                        self.reporter.fail(
-                            crate::diagnostics::Error::ErrNameNotFound,
-                            type_ctor.element.span(),
-                            &[&name, &library_name],
-                        );
-                    }
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrNameNotFound,
+                        type_ctor.element.span(),
+                        &[&name, &library_name],
+                    );
                     Type {
                         resource: false,
                         experimental_maybe_from_alias: None,

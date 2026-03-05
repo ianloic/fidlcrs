@@ -385,7 +385,6 @@ impl Type {
     }
 }
 
-
 #[derive(Serialize, Clone, Debug)]
 pub struct ExperimentalMaybeFromAlias {
     pub name: String,
@@ -745,7 +744,8 @@ impl serde::Serialize for Type {
             #[serde(skip_serializing_if = "Option::is_none")]
             element_type: Option<&'a crate::json_generator::Type>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            experimental_maybe_from_alias: Option<&'a crate::json_generator::ExperimentalMaybeFromAlias>,
+            experimental_maybe_from_alias:
+                Option<&'a crate::json_generator::ExperimentalMaybeFromAlias>,
             #[serde(skip_serializing_if = "Option::is_none")]
             deprecated: Option<bool>,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -775,19 +775,28 @@ impl serde::Serialize for Type {
 
         let old = TypeOldFormat {
             kind: self.kind(),
-            obj_type: match self { Type::Handle(t) => t.obj_type, _ => None },
+            obj_type: match self {
+                Type::Handle(t) => t.obj_type,
+                _ => None,
+            },
             subtype: self.subtype(),
             identifier: self.identifier(),
             element_type: self.element_type(),
             experimental_maybe_from_alias: self.experimental_maybe_from_alias.as_ref(),
             deprecated: self.deprecated,
-            role: match self { Type::Endpoint(t) => t.role.clone(), _ => None },
+            role: match self {
+                Type::Endpoint(t) => t.role.clone(),
+                _ => None,
+            },
             protocol: self.protocol(),
             element_count: self.element_count(),
             maybe_element_count: self.maybe_element_count(),
             rights: self.rights(),
             nullable: self.nullable(),
-            protocol_transport: match self { Type::Endpoint(t) => t.protocol_transport.clone(), _ => None },
+            protocol_transport: match self {
+                Type::Endpoint(t) => t.protocol_transport.clone(),
+                _ => None,
+            },
             resource_identifier: self.resource_identifier(),
             maybe_attributes: &self.maybe_attributes,
             field_shape: self.field_shape.as_ref(),
@@ -797,4 +806,3 @@ impl serde::Serialize for Type {
         old.serialize(serializer)
     }
 }
-

@@ -26,7 +26,7 @@ impl<'a> SourceElement<'a> {
             let slice = std::slice::from_raw_parts(start_ptr, len);
             std::str::from_utf8_unchecked(slice)
         };
-        
+
         SourceSpan {
             data: combined_data,
             source_file: self.start_token.span.source_file,

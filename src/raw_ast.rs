@@ -16,30 +16,21 @@ impl<'a> SourceElement<'a> {
     }
 
     pub fn span(&self) -> SourceSpan<'a> {
-        // Assume start and end are from same file and valid.
-        // Logic to combine spans.
         let start_data = self.start_token.span.data;
         let end_data = self.end_token.span.data;
         let start_ptr = start_data.as_ptr();
         let end_ptr = unsafe { end_data.as_ptr().add(end_data.len()) };
-        let _len = unsafe { end_ptr.offset_from(start_ptr) } as usize;
+        let len = unsafe { end_ptr.offset_from(start_ptr) } as usize;
 
-        // Safety: assuming tokens are from the same buffer and ordered.
-        // We can just query SourceFile for slice?
-        // SourceSpan holds &str.
-        // We need to construct a new &str from the range.
-        // But SourceSpan::new takes &str.
-        // We can use the underlying SourceFile to slice.
-        // Or if we trust the ptr logic (which SourceSpan relies on string view).
-        // Rust strings are standard utf8.
-        // We need the full slice.
-
-        // Better: implement `from_tokens` in SourceSpan or similar.
-        // For now, let's just store tokens.
-        // We can implement `span()` later properly.
-        // Actually, we probably want to store the computed span if we use it often.
-        // But C++ computes it on demand.
-        self.start_token.span // Placeholder
+        let combined_data = unsafe {
+            let slice = std::slice::from_raw_parts(start_ptr, len);
+            std::str::from_utf8_unchecked(slice)
+        };
+        
+        SourceSpan {
+            data: combined_data,
+            source_file: self.start_token.span.source_file,
+        }
     }
 }
 

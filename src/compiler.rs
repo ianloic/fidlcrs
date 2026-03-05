@@ -4196,19 +4196,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 _ => None,
             },
             raw_ast::Constant::Identifier(id) => {
-                let name = if id.identifier.components.len() > 1 {
-                    let mut parts = vec![];
-                    for c in &id.identifier.components[..id.identifier.components.len() - 1] {
-                        parts.push(c.data());
-                    }
-                    format!(
-                        "{}/{}",
-                        parts.join("."),
-                        id.identifier.components.last().unwrap().data()
-                    )
-                } else {
-                    id.identifier.to_string()
-                };
+                let name = id.identifier.to_string();
                 if name == "MAX" {
                     return Some(u32::MAX as u64); // Approximation
                 }
@@ -4241,8 +4229,28 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 .iter()
                                 .find(|m| m.name.data() == member_name)
                                 .and_then(|m| self.eval_constant_value(&m.value)),
+                            RawDecl::Type(t) => match &t.layout {
+                                raw_ast::Layout::Bits(b) => b
+                                    .members
+                                    .iter()
+                                    .find(|m| m.name.data() == member_name)
+                                    .and_then(|m| self.eval_constant_value(&m.value)),
+                                raw_ast::Layout::Enum(e) => e
+                                    .members
+                                    .iter()
+                                    .find(|m| m.name.data() == member_name)
+                                    .and_then(|m| self.eval_constant_value(&m.value)),
+                                _ => None,
+                            },
                             _ => None,
                         };
+                    }
+                    
+                    let imported_name = format!("{}/{}", type_name, member_name);
+                    if let Some(decl) = self.raw_decls.get(&imported_name) {
+                        if let RawDecl::Const(c) = decl {
+                            return self.eval_constant_value(&c.value);
+                        }
                     }
                 }
 
@@ -4633,7 +4641,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 val.clone()
                             }
                         } else {
-                            val.clone()
+                            if let Ok(n) = val.parse::<u64>() {
+                                n.to_string()
+                            } else if let Ok(n) = val.parse::<i64>() {
+                                n.to_string()
+                            } else if let Ok(n) = val.parse::<f64>() {
+                                n.to_string()
+                            } else {
+                                val.clone()
+                            }
                         };
                         (
                             "numeric",
@@ -4728,6 +4744,32 @@ impl<'node, 'src> Compiler<'node, 'src> {
     }
 }
 
+fn collect_deps_from_constant(
+    constant: &raw_ast::Constant<'_>,
+    library_name: &str,
+    deps: &mut Vec<String>,
+) {
+    match constant {
+        raw_ast::Constant::Identifier(id) => {
+            let name = id.identifier.to_string();
+            if !name.contains('/') && !name.contains('.') {
+                deps.push(format!("{}/{}", library_name, name));
+            } else if !name.contains('/') {
+                if let Some((type_name, _)) = name.rsplit_once('.') {
+                    deps.push(format!("{}/{}", library_name, type_name));
+                }
+            } else {
+                deps.push(name);
+            }
+        }
+        raw_ast::Constant::BinaryOperator(binop) => {
+            collect_deps_from_constant(&binop.left, library_name, deps);
+            collect_deps_from_constant(&binop.right, library_name, deps);
+        }
+        _ => {}
+    }
+}
+
 fn get_dependencies<'node, 'src>(
     decl: &RawDecl<'node, 'src>,
     library_name: &str,
@@ -4758,6 +4800,9 @@ fn get_dependencies<'node, 'src>(
                     inline_names,
                 );
             }
+            for member in &e.members {
+                collect_deps_from_constant(&member.value, library_name, &mut deps);
+            }
         }
         RawDecl::Bits(b) => {
             if let Some(ref subtype) = b.subtype {
@@ -4768,6 +4813,9 @@ fn get_dependencies<'node, 'src>(
                     skip_optional,
                     inline_names,
                 );
+            }
+            for member in &b.members {
+                collect_deps_from_constant(&member.value, library_name, &mut deps);
             }
         }
         RawDecl::Union(u) => {
@@ -4817,6 +4865,9 @@ fn get_dependencies<'node, 'src>(
                         inline_names,
                     );
                 }
+                for member in &e.members {
+                    collect_deps_from_constant(&member.value, library_name, &mut deps);
+                }
             } else if let Some(b) = option_layout_as_bits(&t.layout) {
                 if let Some(ref subtype) = b.subtype {
                     collect_deps_from_ctor(
@@ -4826,6 +4877,9 @@ fn get_dependencies<'node, 'src>(
                         skip_optional,
                         inline_names,
                     );
+                }
+                for member in &b.members {
+                    collect_deps_from_constant(&member.value, library_name, &mut deps);
                 }
             } else if let Some(u) = option_layout_as_union(&t.layout) {
                 for member in &u.members {

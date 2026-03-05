@@ -138,10 +138,10 @@ pub struct StructMember {
     pub deprecated: bool,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
-    #[serde(rename = "field_shape_v2")]
-    pub field_shape: FieldShape,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_default_value: Option<Constant>,
+    #[serde(rename = "field_shape_v2")]
+    pub field_shape: FieldShape,
 }
 
 #[derive(Serialize, Clone, Debug)]

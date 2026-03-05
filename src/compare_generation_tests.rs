@@ -78,11 +78,11 @@ mod tests {
             TestCase::new("inheritance.test.fidl"),
             TestCase::new("inheritance_with_recursive_decl.test.fidl"),
             TestCase::new("time.test.fidl"),
+            TestCase::new("bits_constants.test.fidl"),
+            TestCase::new("constants.test.fidl"),
         ];
 
         let disabled_tests = vec![
-            TestCase::new("bits_constants.test.fidl"),
-            TestCase::new("constants.test.fidl"),
             TestCase::new("consts.test.fidl"),
             TestCase::new("driver_handle.test.fidl").contains_drivers(),
             TestCase::new("driver_service.test.fidl").contains_drivers(),

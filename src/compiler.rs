@@ -707,6 +707,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let mut max_depth = 0u32;
             let mut has_padding = false;
             let mut has_flex = false;
+            let mut overflowed = false;
 
             for member in &mut decl.members {
                 Self::update_type_shape(&mut member.type_, &shapes, &struct_names);
@@ -729,9 +730,32 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 let padding_before = (align - (offset % align)) % align;
-                offset += padding_before;
+
+                let maybe_offset = offset.checked_add(padding_before);
+                if maybe_offset.is_none() {
+                    if !overflowed {
+                        overflowed = true;
+                        if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                            let span = raw_decl.element().span();
+                            self.reporter.fail(crate::diagnostics::Error::ErrTypeShapeIntegerOverflow, span, &[&offset, &"+", &padding_before]);
+                        }
+                    }
+                }
+                offset = maybe_offset.unwrap_or(u32::MAX);
+
                 member.field_shape.offset = offset;
-                offset += size;
+
+                let maybe_offset2 = offset.checked_add(size);
+                if maybe_offset2.is_none() {
+                    if !overflowed {
+                        overflowed = true;
+                        if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                            let span = raw_decl.element().span();
+                            self.reporter.fail(crate::diagnostics::Error::ErrTypeShapeIntegerOverflow, span, &[&offset, &"+", &size]);
+                        }
+                    }
+                }
+                offset = maybe_offset2.unwrap_or(u32::MAX);
 
                 has_flex |= type_shape.has_flexible_envelope;
             }
@@ -740,7 +764,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let total_size = if offset == 0 && final_padding == 0 {
                 1
             } else {
-                offset + final_padding
+                let maybe_total = offset.checked_add(final_padding);
+                if maybe_total.is_none() {
+                    if !overflowed {
+                        overflowed = true;
+                        if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                            let span = raw_decl.element().span();
+                            self.reporter.fail(crate::diagnostics::Error::ErrTypeShapeIntegerOverflow, span, &[&offset, &"+", &final_padding]);
+                        }
+                    }
+                }
+                maybe_total.unwrap_or(u32::MAX)
             };
 
             for i in 0..decl.members.len() {
@@ -749,9 +783,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     total_size
                 };
-                let current_end = decl.members[i].field_shape.offset
-                    + decl.members[i].type_.type_shape.inline_size;
-                decl.members[i].field_shape.padding = next_offset - current_end;
+                let current_end = decl.members[i].field_shape.offset.saturating_add(decl.members[i].type_.type_shape.inline_size);
+                decl.members[i].field_shape.padding = next_offset.saturating_sub(current_end);
                 has_padding |= decl.members[i].field_shape.padding > 0
                     || decl.members[i].type_.type_shape.has_padding;
             }
@@ -763,6 +796,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
             decl.type_shape.max_handles = sum_handles;
             decl.type_shape.has_padding = has_padding || final_padding > 0;
             decl.type_shape.has_flexible_envelope = has_flex;
+
+            if !overflowed && total_size > 65535 {
+                if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                    let span = raw_decl.element().span();
+                    let display_name = decl.name.rsplit_once('/').map(|x| x.1).unwrap_or(&decl.name);
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrInlineSizeExceedsLimit,
+                        span,
+                        &[&display_name, &total_size, &65535u32]
+                    );
+                }
+            }
         }
         for decl in &mut self.union_declarations {
             let mut max_ool = 0u32;
@@ -2481,7 +2526,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 maybe_default_value,
             });
 
-            offset += size;
+            offset = offset.saturating_add(size);
         }
 
         // Final padding
@@ -2489,7 +2534,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let total_size = if offset == 0 && final_padding == 0 {
             1 // Empty struct has size 1
         } else {
-            offset + final_padding
+            offset.saturating_add(final_padding)
         };
 
         // Fixup padding
@@ -2500,8 +2545,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 total_size
             };
             let current_end =
-                members[i].field_shape.offset + members[i].type_.type_shape.inline_size;
-            members[i].field_shape.padding = next_offset - current_end;
+                members[i].field_shape.offset.saturating_add(members[i].type_.type_shape.inline_size);
+            members[i].field_shape.padding = next_offset.saturating_sub(current_end);
         }
 
         if depth == u32::MAX && max_handles != 0 {

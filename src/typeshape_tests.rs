@@ -5320,7 +5320,6 @@ type A = resource struct {
     }
 
     #[test]
-    #[ignore] // TODO: diagnostics checks not mostly implemented
     fn bad_integer_overflow_struct() {
         let source = SourceFile::new(
             "example.fidl".to_string(),
@@ -5339,7 +5338,6 @@ type Foo = struct {
     }
 
     #[test]
-    #[ignore] // TODO: diagnostics checks not mostly implemented
     fn bad_inline_size_exceeds_limit() {
         let source = SourceFile::new(
             "example.fidl".to_string(),

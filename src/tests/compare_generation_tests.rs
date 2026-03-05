@@ -118,15 +118,17 @@ fn test_compare_generation() {
             json: Some(output_json.to_string_lossy().to_string()),
             available: available_args,
             experimental,
-            files: vec![vdso1.clone(), vdso2.clone(), vdso3.clone(), main_file.clone()],
+            files: vec![
+                vdso1.clone(),
+                vdso2.clone(),
+                vdso3.clone(),
+                main_file.clone(),
+            ],
             format: "text".to_string(),
             ..Default::default()
         };
 
-        let source_managers = vec![
-            vec![vdso1, vdso2, vdso3],
-            vec![main_file],
-        ];
+        let source_managers = vec![vec![vdso1, vdso2, vdso3], vec![main_file]];
 
         if let Err(e) = crate::cli::run(&cli, &source_managers) {
             println!("fidlcrs failed for {}:", file);

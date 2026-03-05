@@ -1,4 +1,5 @@
 #![allow(unused_crate_dependencies)]
+pub mod cli;
 pub mod compiler;
 pub mod diagnostics;
 pub mod json_generator;
@@ -11,7 +12,6 @@ pub mod source_file;
 pub mod source_span;
 pub mod token;
 pub mod versioning_types;
-pub mod cli;
 
 pub mod availability_step;
 pub mod compile_step;

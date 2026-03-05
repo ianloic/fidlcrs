@@ -1,4 +1,3 @@
-
 use crate::source_file::VirtualSourceFile;
 
 #[test]

@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -596,12 +595,9 @@ const BAR bool = "not a bool";
     }
 
     // Type param tests omitted as they require dynamic evaluation to fully loop through array of names
-}
 
-#[cfg(test)]
-mod additional_tests {
-    use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+
+
 
     #[test]
     fn bad_type_cannot_be_boxed_should_be_optional() {
@@ -650,4 +646,4 @@ type MyStruct = struct {{
             assert!(lib.compile().is_err());
         }
     }
-}
+

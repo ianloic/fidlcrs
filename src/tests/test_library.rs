@@ -208,10 +208,6 @@ impl LookupHelpers for JsonRoot {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
     #[test]
     fn test_test_library() {
         let source = SourceFile::new(
@@ -224,4 +220,4 @@ mod tests {
         assert_eq!(root.name, "example");
         assert!(root.lookup_struct("example/Foo").is_some());
     }
-}
+

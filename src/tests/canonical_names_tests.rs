@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -722,4 +721,4 @@ mod tests {
     fn bad_inconsistent_bits_member_spelling() {
         // TODO: port manually
     }
-}
+

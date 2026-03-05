@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod tests {
+
     use std::fs;
     use std::path::PathBuf;
     use std::process::Command;
@@ -180,4 +179,4 @@ mod tests {
             "One or more golden tests failed. See output above."
         );
     }
-}
+

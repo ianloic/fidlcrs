@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::{LookupHelpers, TestLibrary};
+    use crate::tests::test_library::{LookupHelpers, TestLibrary};
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -599,4 +598,4 @@ protocol MyProtocol {
         lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
-}
+

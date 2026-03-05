@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -273,4 +272,4 @@ resource_definition handle : uint32 {
         lib.add_source(&source);
         assert!(lib.compile().is_err(), "expected compilation to fail");
     }
-}
+

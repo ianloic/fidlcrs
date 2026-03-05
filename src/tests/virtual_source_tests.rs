@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::VirtualSourceFile;
 
     #[test]
@@ -29,4 +28,4 @@ mod tests {
         assert_eq!(pos.line, 2);
         assert_eq!(pos.column, 1);
     }
-}
+

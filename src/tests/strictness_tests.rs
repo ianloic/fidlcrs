@@ -1,6 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 use crate::source_file::SourceFile;
-use crate::test_library::TestLibrary;
+use crate::tests::test_library::TestLibrary;
 
 #[test]
 fn bad_duplicate_modifier() {

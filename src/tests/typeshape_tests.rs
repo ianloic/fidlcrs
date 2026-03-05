@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::{LookupHelpers, TestLibrary};
+    use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
     #[test]
     fn good_empty_struct() {
@@ -5353,4 +5352,4 @@ type Foo = struct {
         lib.add_source(&source);
         assert!(lib.compile().is_err());
     }
-}
+

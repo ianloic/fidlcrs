@@ -1,8 +1,7 @@
 #![allow(unused_mut, unused_variables)]
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
 
     #[test]
     fn good_populated_fields() {
@@ -590,4 +589,4 @@ type Example = table {
         assert_eq!(errors.len(), 1);
         assert_eq!(errors[0].def, crate::diagnostics::Error::ErrIncludeCycle);
     }
-}
+

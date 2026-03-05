@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
 
     fn direct_and_composed_dependencies(root: &crate::json_generator::JsonRoot) -> Vec<String> {
         let mut names: Vec<String> = root
@@ -327,4 +326,4 @@ protocol CapturesDependencyThroughCompose {
         let expected: Vec<&str> = vec!["dep1", "dep2"];
         assert_eq!(direct_and_composed_dependencies(&root), expected);
     }
-}
+

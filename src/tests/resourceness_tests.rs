@@ -1,8 +1,7 @@
 #![allow(unused_mut, unused_variables)]
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
 
     #[test]
     fn bad_bits_resourceness() {
@@ -596,4 +595,4 @@ type RS = strict resource union {
         lib.add_source(&source);
         lib.compile().unwrap();
     }
-}
+

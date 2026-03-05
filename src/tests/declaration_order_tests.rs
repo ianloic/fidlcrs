@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
     use std::collections::HashMap;
 
     fn mangle(input: &str) -> String {
@@ -469,4 +468,4 @@ alias #Alias# = uint32;
             assert_eq!(unmangle_decls(&root.declaration_order), expected);
         }
     }
-}
+

@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests {
+
     use crate::source_file::SourceFile;
-    use crate::test_library::TestLibrary;
+    use crate::tests::test_library::TestLibrary;
     use std::fs;
 
     fn get_file_content(path: &str) -> String {
@@ -589,4 +588,4 @@ open protocol Example {
         lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }
-}
+

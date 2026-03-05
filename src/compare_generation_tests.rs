@@ -89,6 +89,10 @@ mod tests {
             TestCase::new("experimental_maybe_from_alias.test.fidl"),
             TestCase::new("experimental_zx_c_types.test.fidl").experimental("zx_c_types"),
             TestCase::new("handles_in_types.test.fidl"),
+            // TODO(ianloic): Add this back when we support public deps
+            // TestCase::new("handles.test.fidl")
+            //     .public_dep("//sdk/fidl/fdf")
+            //     .contains_drivers(),
             TestCase::new("new_type.test.fidl").experimental("allow_new_types"),
             TestCase::new("overlay.test.fidl").experimental("zx_c_types"),
             TestCase::new("string_arrays.test.fidl").experimental("zx_c_types"),

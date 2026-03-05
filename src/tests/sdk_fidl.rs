@@ -2,10 +2,168 @@ use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct FidlBuild {
+    pub base_dir: PathBuf,
     pub target_name: String,
     pub sources: Vec<String>,
-    pub public_deps: Option<Vec<String>>,
-    pub experimental_flags: Option<Vec<String>>,
+    pub public_deps: Vec<String>,
+    pub experimental_flags: Vec<String>,
+}
+
+impl FidlBuild {
+    pub fn resolved_sources(&self) -> Vec<PathBuf> {
+        self.sources.iter().map(|s| self.base_dir.join(s)).collect()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SdkFidl {
+    pub libs: std::collections::HashMap<String, FidlBuild>,
+}
+
+impl SdkFidl {
+    pub fn new() -> Self {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let sdk_fidl_dir = manifest_dir.join("sdk-fidl");
+
+        let mut libs = std::collections::HashMap::new();
+
+        if let Ok(entries) = std::fs::read_dir(&sdk_fidl_dir) {
+            for entry in entries {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.is_dir() {
+                    let build_gn_path = path.join("BUILD.gn");
+                    if build_gn_path.exists() {
+                        let content = std::fs::read_to_string(&build_gn_path).unwrap();
+                        if let Some(parsed) = parse_build_gn(&path, &content) {
+                            let name = path.file_name().unwrap().to_str().unwrap().to_string();
+                            libs.insert(name, parsed);
+                        }
+                    }
+                }
+            }
+        }
+
+        Self { libs }
+    }
+
+    pub fn cli_for_library(&self, name: &str) -> Option<(crate::cli::Cli, Vec<Vec<String>>)> {
+        let parsed = self.libs.get(name)?;
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+        let vdso1 = manifest_dir
+            .join("vdso-fidl/rights.fidl")
+            .to_string_lossy()
+            .to_string();
+        let vdso2 = manifest_dir
+            .join("vdso-fidl/zx_common.fidl")
+            .to_string_lossy()
+            .to_string();
+        let vdso3 = manifest_dir
+            .join("vdso-fidl/overview.fidl")
+            .to_string_lossy()
+            .to_string();
+
+        let mut dep_filenames = vec![vdso1, vdso2, vdso3];
+
+        let mut visited = std::collections::HashSet::new();
+        let mut all_experimental: std::collections::HashSet<String> =
+            std::collections::HashSet::new();
+
+        for flag in &parsed.experimental_flags {
+            all_experimental.insert(flag.clone());
+        }
+
+        fn visit(
+            lib_name: &str,
+            all_libs: &std::collections::HashMap<String, FidlBuild>,
+            visited: &mut std::collections::HashSet<String>,
+            dep_filenames: &mut Vec<String>,
+            all_experimental: &mut std::collections::HashSet<String>,
+        ) {
+            println!("DEBUG: visiting library: {}", lib_name);
+            if !visited.insert(lib_name.to_string()) {
+                return;
+            }
+            if let Some(p) = all_libs.get(lib_name) {
+                for flag in &p.experimental_flags {
+                    all_experimental.insert(flag.clone());
+                }
+                for dep in &p.public_deps {
+                    let dep_name = dep.trim_start_matches("//sdk/fidl/").to_string();
+                    if dep_name == "//zircon/vdso/zx" {
+                        continue;
+                    }
+                    visit(
+                        &dep_name,
+                        all_libs,
+                        visited,
+                        dep_filenames,
+                        all_experimental,
+                    );
+                }
+                for src in p.resolved_sources() {
+                    dep_filenames.push(src.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        for dep in &parsed.public_deps {
+            let dep_name = dep.trim_start_matches("//sdk/fidl/").to_string();
+            if dep_name == "//zircon/vdso/zx" {
+                continue;
+            }
+            visit(
+                &dep_name,
+                &self.libs,
+                &mut visited,
+                &mut dep_filenames,
+                &mut all_experimental,
+            );
+        }
+
+        let mut main_filenames = Vec::new();
+        for src in parsed.resolved_sources() {
+            main_filenames.push(src.to_string_lossy().to_string());
+        }
+
+        // TODO: get versions from //sdk/version_history.json
+        let cli = crate::cli::Cli {
+            json: None,
+            available: vec!["fuchsia:28,29,30,NEXT,HEAD".to_string()],
+            experimental: all_experimental.into_iter().collect(),
+            files: vec![],
+            format: "text".to_string(),
+            ..Default::default()
+        };
+
+        let source_managers = vec![dep_filenames, main_filenames];
+
+        Some((cli, source_managers))
+    }
+}
+
+pub struct SdkFidlIter<'a> {
+    keys: std::collections::hash_map::Keys<'a, String, FidlBuild>,
+}
+
+impl<'a> Iterator for SdkFidlIter<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.keys.next().map(|s| s.as_str())
+    }
+}
+
+impl<'a> IntoIterator for &'a SdkFidl {
+    type Item = &'a str;
+    type IntoIter = SdkFidlIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        SdkFidlIter {
+            keys: self.libs.keys(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -63,14 +221,14 @@ fn tokenize(content: &str) -> Vec<Token<'_>> {
     tokens
 }
 
-pub fn parse_build_gn(content: &str) -> Option<FidlBuild> {
+pub fn parse_build_gn(base_dir: &std::path::Path, content: &str) -> Option<FidlBuild> {
     let tokens = tokenize(content);
     let mut iter = tokens.iter().peekable();
 
     let mut target_name = String::new();
     let mut sources = Vec::new();
-    let mut public_deps = None;
-    let mut experimental_flags = None;
+    let mut public_deps = Vec::new();
+    let mut experimental_flags = Vec::new();
     let mut in_fidl = false;
 
     while let Some(tok) = iter.next() {
@@ -124,7 +282,7 @@ pub fn parse_build_gn(content: &str) -> Option<FidlBuild> {
                 } else {
                     continue;
                 }
-                public_deps = Some(parse_string_list(&mut iter));
+                public_deps = parse_string_list(&mut iter);
             }
             Token::Ident("experimental_flags") => {
                 if let Some(Token::Punct('=')) = iter.next() {
@@ -135,13 +293,14 @@ pub fn parse_build_gn(content: &str) -> Option<FidlBuild> {
                 } else {
                     continue;
                 }
-                experimental_flags = Some(parse_string_list(&mut iter));
+                experimental_flags = parse_string_list(&mut iter);
             }
             _ => {}
         }
     }
 
     Some(FidlBuild {
+        base_dir: base_dir.to_path_buf(),
         target_name,
         sources,
         public_deps,
@@ -190,14 +349,14 @@ mod tests {
         }
         "#;
 
-        let parsed = parse_build_gn(content).unwrap();
+        let parsed = parse_build_gn(std::path::Path::new(""), content).unwrap();
         assert_eq!(parsed.target_name, "fuchsia.accessibility.scene");
         assert_eq!(parsed.sources, vec!["provider.fidl"]);
         assert_eq!(
             parsed.public_deps,
-            Some(vec!["//sdk/fidl/fuchsia.ui.views".to_string()])
+            vec!["//sdk/fidl/fuchsia.ui.views".to_string()]
         );
-        assert_eq!(parsed.experimental_flags, None);
+        assert!(parsed.experimental_flags.is_empty());
     }
 
     #[test]
@@ -215,7 +374,7 @@ mod tests {
                         let build_gn_path = path.join("BUILD.gn");
                         if build_gn_path.exists() {
                             let content = std::fs::read_to_string(&build_gn_path).unwrap();
-                            let parsed = parse_build_gn(&content);
+                            let parsed = parse_build_gn(&path, &content);
                             assert!(
                                 parsed.is_some(),
                                 "Failed to parse BUILD.gn at {:?}",
@@ -236,26 +395,7 @@ mod tests {
 
     #[test]
     fn test_compile_all_sdk_libraries() {
-        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let sdk_fidl_dir = manifest_dir.join("sdk-fidl");
-
-        let mut all_libs = std::collections::HashMap::new();
-
-        let entries = std::fs::read_dir(&sdk_fidl_dir).unwrap();
-        for entry in entries {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_dir() {
-                let build_gn_path = path.join("BUILD.gn");
-                if build_gn_path.exists() {
-                    let content = std::fs::read_to_string(&build_gn_path).unwrap();
-                    if let Some(parsed) = parse_build_gn(&content) {
-                        let name = path.file_name().unwrap().to_str().unwrap().to_string();
-                        all_libs.insert(name, (parsed, path));
-                    }
-                }
-            }
-        }
+        let sdk_fidl = super::SdkFidl::new();
 
         let compile_denylist = vec![
             "fuchsia.accessibility.scene",
@@ -526,127 +666,31 @@ mod tests {
             "fuchsia.wlan.softmac",
             "fuchsia.wlan.stats",
             "fuchsia.wlan.tap",
+            "zbi",
         ];
 
         let mut failed = Vec::new();
 
-        for (name, (parsed, path)) in &all_libs {
-            if compile_denylist.contains(&name.as_str()) {
-                continue;
-            }
-            // Some libraries don't have sources directly (e.g. aliases or empty)
-            if parsed.sources.is_empty() {
+        for name in &sdk_fidl {
+            if compile_denylist.contains(&name) {
                 continue;
             }
 
-            let vdso1 = manifest_dir
-                .join("vdso-fidl/rights.fidl")
-                .to_string_lossy()
-                .to_string();
-            let vdso2 = manifest_dir
-                .join("vdso-fidl/zx_common.fidl")
-                .to_string_lossy()
-                .to_string();
-            let vdso3 = manifest_dir
-                .join("vdso-fidl/overview.fidl")
-                .to_string_lossy()
-                .to_string();
+            if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
+                println!("Compiling library: {}", name);
+                let res = std::panic::catch_unwind(|| crate::cli::run(&cli, &source_managers));
 
-            let mut dep_filenames = vec![vdso1.clone(), vdso2.clone(), vdso3.clone()];
-
-            let mut visited = std::collections::HashSet::new();
-            let mut all_experimental: std::collections::HashSet<String> =
-                std::collections::HashSet::new();
-
-            if let Some(flags) = &parsed.experimental_flags {
-                for flag in flags {
-                    all_experimental.insert(flag.clone());
-                }
-            }
-
-            fn visit(
-                lib_name: &str,
-                all_libs: &std::collections::HashMap<String, (FidlBuild, PathBuf)>,
-                visited: &mut std::collections::HashSet<String>,
-                dep_filenames: &mut Vec<String>,
-                all_experimental: &mut std::collections::HashSet<String>,
-            ) {
-                if !visited.insert(lib_name.to_string()) {
-                    return;
-                }
-                if let Some((p, path)) = all_libs.get(lib_name) {
-                    if let Some(flags) = &p.experimental_flags {
-                        for flag in flags {
-                            all_experimental.insert(flag.clone());
-                        }
+                match res {
+                    Ok(Err(e)) => {
+                        println!("Failed to compile library {}:\n{}", name, e);
+                        failed.push(name);
                     }
-                    if let Some(public_deps) = &p.public_deps {
-                        for dep in public_deps {
-                            let dep_name = dep.trim_start_matches("//sdk/fidl/").to_string();
-                            if dep_name == "//zircon/vdso/zx" {
-                                continue;
-                            }
-                            visit(
-                                &dep_name,
-                                all_libs,
-                                visited,
-                                dep_filenames,
-                                all_experimental,
-                            );
-                        }
+                    Err(_) => {
+                        println!("Panicked while compiling library {}", name);
+                        failed.push(name);
                     }
-                    for src in &p.sources {
-                        dep_filenames.push(path.join(src).to_string_lossy().to_string());
-                    }
+                    _ => {}
                 }
-            }
-
-            if let Some(public_deps) = &parsed.public_deps {
-                for dep in public_deps {
-                    let dep_name = dep.trim_start_matches("//sdk/fidl/").to_string();
-                    if dep_name == "//zircon/vdso/zx" {
-                        continue;
-                    }
-                    visit(
-                        &dep_name,
-                        &all_libs,
-                        &mut visited,
-                        &mut dep_filenames,
-                        &mut all_experimental,
-                    );
-                }
-            }
-
-            let mut main_filenames = Vec::new();
-            for src in &parsed.sources {
-                main_filenames.push(path.join(src).to_string_lossy().to_string());
-            }
-
-            // TODO: get versions from //sdk/version_history.json
-            let cli = crate::cli::Cli {
-                json: None,
-                available: vec!["fuchsia:28,29,30,NEXT,HEAD".to_string()],
-                experimental: all_experimental.into_iter().collect(),
-                files: vec![],
-                format: "text".to_string(),
-                ..Default::default()
-            };
-
-            let source_managers = vec![dep_filenames, main_filenames];
-
-            println!("Compiling library: {}", name);
-            let res = std::panic::catch_unwind(|| crate::cli::run(&cli, &source_managers));
-
-            match res {
-                Ok(Err(e)) => {
-                    println!("Failed to compile library {}:\n{}", name, e);
-                    failed.push(name.clone());
-                }
-                Err(_) => {
-                    println!("Panicked while compiling library {}", name);
-                    failed.push(name.clone());
-                }
-                _ => {}
             }
         }
 

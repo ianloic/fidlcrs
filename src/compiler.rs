@@ -5875,13 +5875,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         }
 
-                        println!(
-                            "DEBUG: processing identifier: name={}, full_name={}, decl_info.is_some()={}, c_layout_str={:?}",
-                            name,
-                            full_name,
-                            decl_info.is_some(),
-                            c_layout_str
-                        );
                         if let Some(c_layout) = c_layout_str {
                             let left_is_bool = subtype == "bool";
                             let right_is_bool = c_layout == "bool";

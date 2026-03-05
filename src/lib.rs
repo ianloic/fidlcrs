@@ -12,12 +12,11 @@ pub mod source_span;
 pub mod token;
 pub mod versioning_types;
 
-
-#[cfg(test)]
-pub mod tests;
 pub mod availability_step;
 pub mod compile_step;
 pub mod consume_step;
 pub mod replacement_step;
 pub mod resolve_step;
 pub mod step;
+#[cfg(test)]
+pub mod tests;

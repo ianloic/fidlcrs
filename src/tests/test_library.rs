@@ -208,16 +208,15 @@ impl LookupHelpers for JsonRoot {
     }
 }
 
-    #[test]
-    fn test_test_library() {
-        let source = SourceFile::new(
-            "example.fidl".to_string(),
-            "library example; struct Foo { x uint32; };".to_string(),
-        );
-        let mut lib = TestLibrary::new();
-        lib.add_source(&source);
-        let root = lib.compile().expect("compilation failed");
-        assert_eq!(root.name, "example");
-        assert!(root.lookup_struct("example/Foo").is_some());
-    }
-
+#[test]
+fn test_test_library() {
+    let source = SourceFile::new(
+        "example.fidl".to_string(),
+        "library example; struct Foo { x uint32; };".to_string(),
+    );
+    let mut lib = TestLibrary::new();
+    lib.add_source(&source);
+    let root = lib.compile().expect("compilation failed");
+    assert_eq!(root.name, "example");
+    assert!(root.lookup_struct("example/Foo").is_some());
+}

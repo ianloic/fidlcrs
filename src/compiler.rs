@@ -5752,7 +5752,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let r = val_str.parse::<f64>().map_or(false, |v| {
                         !v.is_infinite() && v >= f32::MIN as f64 && v <= f32::MAX as f64
                     });
-                    println!("DEBUG: parsing f32 from {}, valid: {}", val_str, r);
                     r
                 }
                 "float64" => val_str.parse::<f64>().map_or(false, |v| !v.is_infinite()),
@@ -5784,10 +5783,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         constant: &raw_ast::Constant<'src>,
         expected_type: &crate::json_generator::Type,
     ) {
-        println!(
-            "DEBUG: validate_constant expected={:?}, constant={:?}",
-            expected_type, constant
-        );
         match expected_type {
             crate::json_generator::Type::Primitive(p) => {
                 let Some(subtype) = &p.subtype else {

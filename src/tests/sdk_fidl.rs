@@ -622,9 +622,10 @@ mod tests {
                 main_filenames.push(path.join(src).to_string_lossy().to_string());
             }
 
+            // TODO: get versions from //sdk/version_history.json
             let cli = crate::cli::Cli {
                 json: None,
-                available: vec!["fuchsia:42,NEXT,HEAD".to_string()],
+                available: vec!["fuchsia:28,29,30,NEXT,HEAD".to_string()],
                 experimental: all_experimental.into_iter().collect(),
                 files: vec![],
                 format: "text".to_string(),

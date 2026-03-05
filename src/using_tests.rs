@@ -17,6 +17,17 @@ mod tests {
             "good/fi-0178.test.fidl".to_string(),
             get_file_content("good/fi-0178.test.fidl"),
         );
+        let dep_source = SourceFile::new(
+            "dependent.fidl".to_string(),
+            r#"
+library dependent;
+type Bar = struct {
+    s int8;
+};
+"#
+            .to_string(),
+        );
+        lib.add_source(&dep_source);
         lib.add_source(&source);
         lib.compile().expect("compilation failed");
     }

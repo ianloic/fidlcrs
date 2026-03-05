@@ -24,7 +24,6 @@ mod tests {
             filename: &'static str,
             experimental_flags: Vec<&'static str>,
             available: Option<&'static str>,
-            public_deps: Vec<&'static str>,
             contains_drivers: bool,
         }
 
@@ -34,7 +33,6 @@ mod tests {
                     filename,
                     experimental_flags: vec![],
                     available: None,
-                    public_deps: vec![],
                     contains_drivers: false,
                 }
             }
@@ -44,10 +42,6 @@ mod tests {
             }
             fn available(mut self, avail: &'static str) -> Self {
                 self.available = Some(avail);
-                self
-            }
-            fn public_dep(mut self, dep: &'static str) -> Self {
-                self.public_deps.push(dep);
                 self
             }
             fn contains_drivers(mut self) -> Self {
@@ -95,9 +89,6 @@ mod tests {
             TestCase::new("experimental_maybe_from_alias.test.fidl"),
             TestCase::new("experimental_zx_c_types.test.fidl").experimental("zx_c_types"),
             TestCase::new("handles_in_types.test.fidl"),
-            TestCase::new("handles.test.fidl")
-                .public_dep("//sdk/fidl/fdf")
-                .contains_drivers(),
             TestCase::new("new_type.test.fidl").experimental("allow_new_types"),
             TestCase::new("overlay.test.fidl").experimental("zx_c_types"),
             TestCase::new("string_arrays.test.fidl").experimental("zx_c_types"),

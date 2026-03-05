@@ -236,6 +236,7 @@ type NewUnionOfThings = UnionOfThings;
         );
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
+        lib.enable_flag("allow_new_types");
         let root = lib.compile().expect("compilation failed");
         let new_bool_and_u32_struct = root
             .lookup_alias("example/NewBoolAndU32")

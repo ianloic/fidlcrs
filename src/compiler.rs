@@ -1122,7 +1122,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let raw_ast::LayoutParameter::Identifier(id) = &tc.layout {
                         existing_type_name = id.to_string();
                     }
-                    self.reporter.fail(crate::diagnostics::Error::ErrNewTypesNotAllowed, t.name.element.span().clone(), &[&t.name.data(), &existing_type_name]);
+                    if !self
+                        .experimental_flags
+                        .iter()
+                        .any(|f| f == "allow_new_types")
+                    {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrNewTypesNotAllowed,
+                            t.name.element.span().clone(),
+                            &[&t.name.data(), &existing_type_name],
+                        );
+                    }
                     let compiled = AliasDeclaration {
                         name: format!("{}/{}", library_name, t.name.data()),
                         location: self.get_location(&t.name.element),
@@ -2582,7 +2592,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             raw_ast::LayoutParameter::Literal(_) => {
-                self.reporter.fail(crate::diagnostics::Error::ErrExpectedType, type_ctor.element.span(), &[]);
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrExpectedType,
+                    type_ctor.element.span(),
+                    &[],
+                );
                 return Type {
                     resource: false,
                     experimental_maybe_from_alias: None,
@@ -2684,9 +2698,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     None
                 };
-                
+
                 if !type_ctor.parameters.is_empty() {
-                    self.reporter.fail(crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters, type_ctor.element.start_token.span.clone(), &[&generated_name.as_deref().unwrap_or(default_name), &0_usize, &type_ctor.parameters.len()]);
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters,
+                        type_ctor.element.start_token.span.clone(),
+                        &[
+                            &generated_name.as_deref().unwrap_or(default_name),
+                            &0_usize,
+                            &type_ctor.parameters.len(),
+                        ],
+                    );
                 }
 
                 let _decl_context = naming_context
@@ -2783,7 +2805,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut actual_constraints = type_ctor.constraints.clone();
         let mut nullable = type_ctor.nullable;
-        
+
         if let Some(c) = actual_constraints.last() {
             if let raw_ast::Constant::Identifier(id) = c {
                 if id.identifier.to_string() == "optional" {
@@ -2803,10 +2825,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut resolved_name = name.clone();
         if resolved_name.starts_with("fidl/") {
             let bare = &resolved_name["fidl/".len()..];
-            if matches!(bare, "bool" | "int8" | "int16" | "int32" | "int64" 
-                | "uint8" | "uint16" | "uint32" | "uint64" | "float32" | "float64"
-                | "uchar" | "usize64" | "uintptr64" | "string" | "vector" | "bytes" | "string_array")
-            {
+            if matches!(
+                bare,
+                "bool"
+                    | "int8"
+                    | "int16"
+                    | "int32"
+                    | "int64"
+                    | "uint8"
+                    | "uint16"
+                    | "uint32"
+                    | "uint64"
+                    | "float32"
+                    | "float64"
+                    | "uchar"
+                    | "usize64"
+                    | "uintptr64"
+                    | "string"
+                    | "vector"
+                    | "bytes"
+                    | "string_array"
+            ) {
                 resolved_name = bare.to_string();
             }
         }
@@ -2818,9 +2857,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32"
             | "uint64" | "float32" | "float64" | "uchar" | "usize64" | "uintptr64" => {
                 if !type_ctor.parameters.is_empty() {
-                    self.reporter.fail(crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters, type_ctor.element.start_token.span.clone(), &[&resolved_name, &0_usize, &type_ctor.parameters.len()]);
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters,
+                        type_ctor.element.start_token.span.clone(),
+                        &[&resolved_name, &0_usize, &type_ctor.parameters.len()],
+                    );
                 }
-                
+
                 if nullable {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrCannotBeOptional,
@@ -2828,10 +2871,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[&resolved_name],
                     );
                 }
-                
+
                 if matches!(resolved_name.as_str(), "uchar" | "usize64" | "uintptr64") {
                     if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
-                        self.reporter.fail(crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed, type_ctor.element.start_token.span.clone(), &[&resolved_name]);
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed,
+                            type_ctor.element.start_token.span.clone(),
+                            &[&resolved_name],
+                        );
                     }
                 }
 
@@ -2876,15 +2923,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             "experimental_pointer" => {
                 if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
-                    self.reporter.fail(crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed, type_ctor.element.start_token.span.clone(), &[&resolved_name]);
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed,
+                        type_ctor.element.start_token.span.clone(),
+                        &[&resolved_name],
+                    );
                 }
-                
+
                 let inner = if type_ctor.parameters.is_empty() {
                     None
                 } else {
                     Some(&type_ctor.parameters[0])
                 };
-                
+
                 let inner_type_opt = if let Some(i) = inner {
                     Some(Box::new(self.resolve_type(i, library_name, naming_context)))
                 } else {
@@ -2925,15 +2976,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             "string" => {
                 if actual_constraints.len() > 1 {
-                    self.reporter.fail(crate::diagnostics::Error::ErrTooManyConstraints, type_ctor.element.start_token.span.clone(), &[&resolved_name, &1_usize, &actual_constraints.len()]);
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrTooManyConstraints,
+                        type_ctor.element.start_token.span.clone(),
+                        &[&resolved_name, &1_usize, &actual_constraints.len()],
+                    );
                 }
                 let mut max_len = u32::MAX;
                 if let Some(c) = actual_constraints.first() {
                     if let Some(val) = self.eval_constant_usize(c) {
                         max_len = val as u32;
                     } else {
-                        self.reporter.fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, c.element().span(), &[]);
-                        self.reporter.fail(crate::diagnostics::Error::ErrCouldNotResolveSizeBound, c.element().span(), &[]);
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                            c.element().span(),
+                            &[],
+                        );
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrCouldNotResolveSizeBound,
+                            c.element().span(),
+                            &[],
+                        );
                     }
                 }
                 Type {
@@ -3029,7 +3092,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "vector" | "bytes" => {
                 let is_bytes = resolved_name == "bytes";
                 if actual_constraints.len() > 1 {
-                    self.reporter.fail(crate::diagnostics::Error::ErrUnexpectedConstraint, actual_constraints[1].element().span(), &[&resolved_name]);
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrUnexpectedConstraint,
+                        actual_constraints[1].element().span(),
+                        &[&resolved_name],
+                    );
                 }
                 let inner = if is_bytes {
                     None
@@ -3115,8 +3182,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(val) = self.eval_constant_usize(c) {
                         max_count = val as u32;
                     } else {
-                        self.reporter.fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, c.element().span(), &[]);
-                        self.reporter.fail(crate::diagnostics::Error::ErrCouldNotResolveSizeBound, c.element().span(), &[]);
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                            c.element().span(),
+                            &[],
+                        );
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrCouldNotResolveSizeBound,
+                            c.element().span(),
+                            &[],
+                        );
                     }
                 }
 
@@ -3232,37 +3307,83 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 // Check count
                 let mut count: u32 = 0;
-                
+
                 if let Some(val) = self.eval_type_constant_usize(count_param) {
                     if val == 0 {
-                        self.reporter.fail(crate::diagnostics::Error::ErrMustHaveNonZeroSize, count_param.element.start_token.span.clone(), &[&"array"]);
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrMustHaveNonZeroSize,
+                            count_param.element.start_token.span.clone(),
+                            &[&"array"],
+                        );
                     }
                     count = val as u32;
                 } else {
                     let is_type = match &count_param.layout {
                         raw_ast::LayoutParameter::Identifier(id) => {
-                            let mut inner_name = if id.components.len() > 1 {
+                            let inner_name = if id.components.len() > 1 {
                                 let mut parts = vec![];
                                 for c in &id.components[..id.components.len() - 1] {
                                     parts.push(c.data());
                                 }
-                                format!("{}/{}", parts.join("."), id.components.last().unwrap().data())
+                                format!(
+                                    "{}/{}",
+                                    parts.join("."),
+                                    id.components.last().unwrap().data()
+                                )
                             } else {
                                 id.to_string()
                             };
-                            let bare = if inner_name.starts_with("fidl/") { &inner_name["fidl/".len()..] } else { &inner_name };
-                            matches!(bare, "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32" | "uint64" | "float32" | "float64" | "string" | "vector" | "bytes" | "array" | "handle" | "request" | "client_end" | "server_end") || self.raw_decls.contains_key(&inner_name) || self.raw_decls.contains_key(&format!("{}/{}", library_name, inner_name))
+                            let bare = if inner_name.starts_with("fidl/") {
+                                &inner_name["fidl/".len()..]
+                            } else {
+                                &inner_name
+                            };
+                            matches!(
+                                bare,
+                                "bool"
+                                    | "int8"
+                                    | "int16"
+                                    | "int32"
+                                    | "int64"
+                                    | "uint8"
+                                    | "uint16"
+                                    | "uint32"
+                                    | "uint64"
+                                    | "float32"
+                                    | "float64"
+                                    | "string"
+                                    | "vector"
+                                    | "bytes"
+                                    | "array"
+                                    | "handle"
+                                    | "request"
+                                    | "client_end"
+                                    | "server_end"
+                            ) || self.raw_decls.contains_key(&inner_name)
+                                || self
+                                    .raw_decls
+                                    .contains_key(&format!("{}/{}", library_name, inner_name))
                         }
                         _ => false,
                     };
                     if is_type {
                         let name_str = match &count_param.layout {
-                            raw_ast::LayoutParameter::Identifier(id) => id.components.last().unwrap().data().to_string(),
+                            raw_ast::LayoutParameter::Identifier(id) => {
+                                id.components.last().unwrap().data().to_string()
+                            }
                             _ => "unknown".to_string(),
                         };
-                        self.reporter.fail(crate::diagnostics::Error::ErrExpectedValueButGotType, count_param.element.span(), &[&name_str]);
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrExpectedValueButGotType,
+                            count_param.element.span(),
+                            &[&name_str],
+                        );
                     } else {
-                        self.reporter.fail(crate::diagnostics::Error::ErrNameNotFound, count_param.element.span(), &[&"unknown", &library_name]); // To fix argument count
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrNameNotFound,
+                            count_param.element.span(),
+                            &[&"unknown", &library_name],
+                        ); // To fix argument count
                     }
                 }
 
@@ -3905,12 +4026,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     if !type_ctor.parameters.is_empty() {
-                        self.reporter.fail(crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters, type_ctor.element.start_token.span.clone(), &[&name, &0_usize, &type_ctor.parameters.len()]);
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters,
+                            type_ctor.element.start_token.span.clone(),
+                            &[&name, &0_usize, &type_ctor.parameters.len()],
+                        );
                     }
                     if let RawDecl::Alias(a) = decl {
                         let mut has_err = false;
                         if !actual_constraints.is_empty() && !a.type_ctor.constraints.is_empty() {
-                            self.reporter.fail(crate::diagnostics::Error::ErrCannotConstrainTwice, type_ctor.element.start_token.span.clone(), &[&name]);
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrCannotConstrainTwice,
+                                type_ctor.element.start_token.span.clone(),
+                                &[&name],
+                            );
                             has_err = true;
                         }
                         let mut resolved_type =
@@ -4067,7 +4196,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 _ => None,
             },
             raw_ast::Constant::Identifier(id) => {
-                let name = id.identifier.to_string();
+                let name = if id.identifier.components.len() > 1 {
+                    let mut parts = vec![];
+                    for c in &id.identifier.components[..id.identifier.components.len() - 1] {
+                        parts.push(c.data());
+                    }
+                    format!(
+                        "{}/{}",
+                        parts.join("."),
+                        id.identifier.components.last().unwrap().data()
+                    )
+                } else {
+                    id.identifier.to_string()
+                };
                 if name == "MAX" {
                     return Some(u32::MAX as u64); // Approximation
                 }
@@ -4125,13 +4266,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 raw_ast::LiteralKind::Numeric => lit.literal.value.parse::<usize>().ok(),
                 _ => None,
             },
-            // Handle Identifier if it's a const?
             raw_ast::LayoutParameter::Identifier(id) => {
                 let name = id.to_string();
                 if name == "MAX" {
                     Some(u32::MAX as usize)
                 } else {
-                    None
+                    let const_id = raw_ast::Constant::Identifier(raw_ast::IdentifierConstant {
+                        element: id.element.clone(),
+                        identifier: id.clone(),
+                    });
+                    self.eval_constant_value(&const_id).map(|v| v as usize)
                 }
             }
             _ => None,

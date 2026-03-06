@@ -53,7 +53,7 @@ type Fruit = enum {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_with_non_unique_values() {
     let file_content = get_file_content("bad/fi-0107.test.fidl");
     let source = SourceFile::new("bad/fi-0107.test.fidl".to_string(), file_content);
@@ -63,7 +63,7 @@ fn bad_enum_test_with_non_unique_values() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_with_non_unique_values_out_of_line() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -85,7 +85,7 @@ const TWO_SQUARED uint32 = 4;
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_unsigned_with_negative_member() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -104,7 +104,7 @@ type Fruit = enum : uint64 {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_inferred_unsigned_with_negative_member() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -123,7 +123,7 @@ type Fruit = enum {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_member_overflow() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -142,7 +142,7 @@ type Fruit = enum : uint8 {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_float_type() {
     let file_content = get_file_content("bad/fi-0070.test.fidl");
     let source = SourceFile::new("bad/fi-0070.test.fidl".to_string(), file_content);
@@ -152,7 +152,7 @@ fn bad_enum_test_float_type() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_duplicate_member() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -205,7 +205,7 @@ fn good_enum_test_strict_with_members() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_test_no_members_when_strict() {
     let file_content = get_file_content("bad/fi-0019.test.fidl");
     let source = SourceFile::new("bad/fi-0019.test.fidl".to_string(), file_content);
@@ -234,7 +234,7 @@ type Fruit = enum : uint64 {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_shant_be_nullable() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -256,7 +256,7 @@ type Struct = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_enum_multiple_constraints() {
     let source = SourceFile::new(
         "example.fidl".to_string(),

@@ -1768,12 +1768,115 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "uint32".to_string()
         };
 
+        let valid_subtypes = ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"];
+        
+        let mut resolved_subtype = "uint32".to_string();
+        if let Some(ref sc) = decl.subtype {
+            if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
+                let mut current = id.to_string();
+                loop {
+                    if matches!(
+                        current.as_str(),
+                        "uint8"
+                            | "uint16"
+                            | "uint32"
+                            | "uint64"
+                            | "int8"
+                            | "int16"
+                            | "int32"
+                            | "int64"
+                    ) {
+                        resolved_subtype = current;
+                        break;
+                    }
+                    let mut full_name = current.clone();
+                    if !full_name.contains('/') {
+                        let fqn = format!("{}/{}", library_name, current);
+                        if self.raw_decls.contains_key(&fqn) {
+                            full_name = fqn;
+                        } else if let Some((lib, name)) = current.rsplit_once('.') {
+                            let dep_fqn = format!("{}/{}", lib, name);
+                            if self.raw_decls.contains_key(&dep_fqn) {
+                                full_name = dep_fqn;
+                            } else {
+                                full_name = fqn;
+                            }
+                        } else {
+                            full_name = fqn;
+                        }
+                    }
+                    if let Some(crate::compiler::RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
+                        if let raw_ast::LayoutParameter::Identifier(ref inner_id) =
+                            alias.type_ctor.layout
+                        {
+                            current = inner_id.to_string();
+                            continue;
+                        }
+                    }
+                    resolved_subtype = current;
+                    break;
+                }
+            }
+        }
+        
+        if !valid_subtypes.contains(&resolved_subtype.as_str()) {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrEnumTypeMustBeIntegralPrimitive,
+                if let Some(sc) = &decl.subtype { sc.element.start_token.span.clone() } else { decl.name.as_ref().unwrap().element.span().clone() },
+                &[&subtype_name],
+            );
+        }
+
+        let expected_type = crate::json_generator::Type::Primitive(crate::json_generator::PrimitiveType {
+            common: crate::json_generator::TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: false,
+                deprecated: None,
+                type_shape: crate::json_generator::TypeShape {
+                    inline_size: 0,
+                    alignment: 0,
+                    depth: 0,
+                    max_handles: 0,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            subtype: Some(subtype_name.clone()),
+        });
+
         let mut members = vec![];
         let mut maybe_unknown_value = None;
+        let mut member_names = std::collections::HashSet::new();
+        let mut member_values = std::collections::HashMap::new();
 
         for member in &decl.members {
             let attributes = self.compile_attribute_list(&member.attributes);
+            self.validate_constant(&member.value, &expected_type);
             let compiled_value = self.compile_constant(&member.value);
+            
+            let name_str = member.name.data().to_string();
+            if !member_names.insert(name_str.clone()) {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrNameCollision,
+                    member.name.element.span(),
+                    &[&"member", &name_str, &"member", &name_str],
+                );
+            }
+            
+            if let Some(eval_val) = self.eval_constant_value(&member.value) {
+                if let Some(prev_name) = member_values.insert(eval_val, name_str.clone()) {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrDuplicateMemberValue,
+                        member.name.element.span(),
+                        &[&"enum", &name_str, &prev_name, &prev_name],
+                    );
+                }
+            }
 
             // Check for unknown attribute
             if attributes.iter().any(|a| a.name == "unknown") {
@@ -1820,6 +1923,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let strict = decl.modifiers.iter().any(|m| {
             m.subkind == crate::token::TokenSubkind::Strict && self.is_active(m.attributes.as_ref())
         });
+
+        if strict && members.is_empty() {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrMustHaveOneMember,
+                if let Some(n) = &decl.name { n.element.span().clone() } else { decl.element.span().clone() },
+                &[],
+            );
+        }
 
         if !strict && maybe_unknown_value.is_none() {
             maybe_unknown_value = match subtype_name.as_str() {
@@ -1903,11 +2014,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         subtype_name = current;
                         break;
                     }
-                    let full_name = if current.contains('/') || self.shapes.contains_key(&current) {
-                        current.clone()
-                    } else {
-                        format!("{}/{}", library_name, current)
-                    };
+                    let mut full_name = current.clone();
+                    if !full_name.contains('/') && !self.shapes.contains_key(&current) {
+                        let fqn = format!("{}/{}", library_name, current);
+                        if self.raw_decls.contains_key(&fqn) {
+                            full_name = fqn;
+                        } else if let Some((lib, name)) = current.rsplit_once('.') {
+                            let dep_fqn = format!("{}/{}", lib, name);
+                            if self.raw_decls.contains_key(&dep_fqn) {
+                                full_name = dep_fqn;
+                            } else {
+                                full_name = fqn;
+                            }
+                        } else {
+                            full_name = fqn;
+                        }
+                    }
                     if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
                         if let raw_ast::LayoutParameter::Identifier(ref inner_id) =
                             alias.type_ctor.layout

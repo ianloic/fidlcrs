@@ -12,6 +12,7 @@ pub mod source_file;
 pub mod source_span;
 pub mod token;
 pub mod versioning_types;
+pub mod experimental_flags;
 
 pub mod availability_step;
 pub mod compile_step;

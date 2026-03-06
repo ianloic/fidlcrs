@@ -150,7 +150,15 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
 
     let mut compiler = Compiler::new(&reporter);
     compiler.version_selection = version_selection;
-    compiler.experimental_flags = cli.experimental.clone();
+    let mut flags = crate::experimental_flags::ExperimentalFlags::new();
+    for f in &cli.experimental {
+        if let Ok(flag) = f.parse() {
+            flags.enable_flag(flag);
+        } else {
+            return Err(format!("Unknown experimental flag: {}", f));
+        }
+    }
+    compiler.experimental_flags = flags;
     let source_refs: Vec<&SourceFile> = source_files.iter().collect();
     let (dep_files, main_files) = files.split_at(dep_filenames.len());
     let json_root = match compiler.compile(main_files, dep_files, &source_refs) {

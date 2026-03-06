@@ -107,7 +107,13 @@ resource_definition handle : uint32 {
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {
         let mut compiler = Compiler::new(&self.reporter);
-        compiler.experimental_flags = self.experimental_flags.clone();
+        let mut flags = crate::experimental_flags::ExperimentalFlags::new();
+        for f in &self.experimental_flags {
+            if let Ok(flag) = f.parse() {
+                flags.enable_flag(flag);
+            }
+        }
+        compiler.experimental_flags = flags;
         let mut asts = Vec::new();
 
         for file in &self.source_files {

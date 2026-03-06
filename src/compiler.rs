@@ -132,7 +132,7 @@ pub struct Compiler<'node, 'src> {
     pub generated_source_file: VirtualSourceFile,
     pub skip_eager_compile: bool,
     pub anonymous_structs: HashSet<String>,
-    pub experimental_flags: Vec<String>,
+    pub experimental_flags: crate::experimental_flags::ExperimentalFlags,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -170,7 +170,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
-            experimental_flags: Vec::new(),
+            experimental_flags: crate::experimental_flags::ExperimentalFlags::new(),
         }
     }
 
@@ -609,7 +609,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
             experiments: {
                 let mut exps = vec![];
-                exps.extend(self.experimental_flags.clone());
+                exps.extend(self.experimental_flags.clone().into_vec());
                 exps
             },
             library_dependencies,
@@ -623,7 +623,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             external_struct_declarations: self.external_struct_declarations.clone(),
             table_declarations: self.table_declarations.clone(),
             union_declarations: self.union_declarations.clone(),
-            overlay_declarations: if self.experimental_flags.iter().any(|f| f == "zx_c_types") {
+            overlay_declarations: if self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
                 Some(vec![])
             } else {
                 None
@@ -1503,11 +1503,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let raw_ast::LayoutParameter::Identifier(id) = &tc.layout {
                         existing_type_name = id.to_string();
                     }
-                    if !self
-                        .experimental_flags
-                        .iter()
-                        .any(|f| f == "allow_new_types")
-                    {
+                    if !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::AllowNewTypes) {
                         self.reporter.fail(
                             crate::diagnostics::Error::ErrNewTypesNotAllowed,
                             t.name.element.span().clone(),
@@ -3231,7 +3227,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 if matches!(resolved_name.as_str(), "uchar" | "usize64" | "uintptr64") {
-                    if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
+                    if !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
                         self.reporter.fail(
                             crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed,
                             type_ctor.element.start_token.span.clone(),
@@ -3270,7 +3266,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
             }
             "experimental_pointer" => {
-                if !self.experimental_flags.iter().any(|f| f == "zx_c_types") {
+                if !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed,
                         type_ctor.element.start_token.span.clone(),

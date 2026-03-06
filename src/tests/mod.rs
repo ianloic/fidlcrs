@@ -16,6 +16,7 @@ pub mod flat_ast_tests;
 pub mod flexible_tests;
 pub mod generated_name_tests;
 pub mod handle_tests;
+pub mod library_tests;
 pub mod method_tests;
 pub mod parsing_tests;
 pub mod protocol_tests;

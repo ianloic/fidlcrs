@@ -1228,7 +1228,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     );
                     let _ = self.consume_token(TokenKind::DocComment);
                 }
-                
+
                 // For simplicity in JSON IR, if there's an identifier, treat parameter as payload type.
                 if self.last_token.subkind == TokenSubkind::Struct {
                     if let Some(s) = self.parse_struct_declaration(None, vec![]) {
@@ -1278,7 +1278,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     );
                     let _ = self.consume_token(TokenKind::DocComment);
                 }
-                
+
                 if self.last_token.subkind == TokenSubkind::Struct {
                     if let Some(s) = self.parse_struct_declaration(None, vec![]) {
                         response_payload = Some(Layout::Struct(s));

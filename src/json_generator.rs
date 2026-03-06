@@ -118,8 +118,71 @@ pub enum Type {
 pub struct PrimitiveType {
     #[serde(flatten)]
     pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subtype: Option<String>,
+    pub subtype: PrimitiveSubtype,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum PrimitiveSubtype {
+    Bool,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Uint8,
+    Uint16,
+    Uint32,
+    Uint64,
+    Float32,
+    Float64,
+    Uchar,
+    Usize64,
+    Uintptr64,
+}
+
+impl std::str::FromStr for PrimitiveSubtype {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "bool" => Ok(Self::Bool),
+            "int8" => Ok(Self::Int8),
+            "int16" => Ok(Self::Int16),
+            "int32" => Ok(Self::Int32),
+            "int64" => Ok(Self::Int64),
+            "uint8" => Ok(Self::Uint8),
+            "uint16" => Ok(Self::Uint16),
+            "uint32" => Ok(Self::Uint32),
+            "uint64" => Ok(Self::Uint64),
+            "float32" => Ok(Self::Float32),
+            "float64" => Ok(Self::Float64),
+            "uchar" => Ok(Self::Uchar),
+            "usize64" => Ok(Self::Usize64),
+            "uintptr64" => Ok(Self::Uintptr64),
+            _ => Err(format!("Invalid primitive subtype: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for PrimitiveSubtype {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Bool => "bool",
+            Self::Int8 => "int8",
+            Self::Int16 => "int16",
+            Self::Int32 => "int32",
+            Self::Int64 => "int64",
+            Self::Uint8 => "uint8",
+            Self::Uint16 => "uint16",
+            Self::Uint32 => "uint32",
+            Self::Uint64 => "uint64",
+            Self::Float32 => "float32",
+            Self::Float64 => "float64",
+            Self::Uchar => "uchar",
+            Self::Usize64 => "usize64",
+            Self::Uintptr64 => "uintptr64",
+        };
+        write!(f, "{}", s)
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -294,15 +357,6 @@ impl Type {
             Type::Struct(_) => TypeKind::Struct,
             Type::Request(_) => TypeKind::Request,
             Type::ExperimentalPointer(_) => TypeKind::ExperimentalPointer,
-        }
-    }
-
-    pub fn subtype(&self) -> Option<String> {
-        match self {
-            Type::Primitive(t) => t.subtype.clone(),
-            Type::Handle(t) => t.subtype.clone(),
-            Type::Request(t) => t.subtype.clone(),
-            _ => None,
         }
     }
 
@@ -791,7 +845,12 @@ impl serde::Serialize for Type {
                 Type::Handle(t) => t.obj_type,
                 _ => None,
             },
-            subtype: self.subtype(),
+            subtype: match self {
+                Type::Primitive(t) => Some(t.subtype.to_string()),
+                Type::Handle(t) => t.subtype.clone(),
+                Type::Request(t) => t.subtype.clone(),
+                _ => None,
+            },
             identifier: self.identifier(),
             element_type: if self.kind() != crate::json_generator::TypeKind::ExperimentalPointer {
                 self.element_type()

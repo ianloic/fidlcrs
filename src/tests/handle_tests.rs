@@ -27,7 +27,13 @@ type MyStruct = resource struct {
     let h_type = &type_decl.members[0].type_;
 
     assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(h_type.subtype().as_deref(), Some("thread"));
+    assert_eq!(
+        match h_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("thread")
+    );
     assert_eq!(h_type.rights(), Some(3));
 }
 
@@ -57,7 +63,13 @@ type MyStruct = resource struct {
     let h_type = &type_decl.members[0].type_;
 
     assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(h_type.subtype().as_deref(), Some("vmo"));
+    assert_eq!(
+        match h_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("vmo")
+    );
     assert_eq!(h_type.rights(), Some(2147483648));
 }
 
@@ -108,7 +120,13 @@ type MyStruct = resource struct {
     let h_type = &type_decl.members[0].type_;
 
     assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(h_type.subtype().as_deref(), Some("handle"));
+    assert_eq!(
+        match h_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("handle")
+    );
     assert_eq!(h_type.rights(), Some(2147483648)); // kHandleSameRights
 }
 
@@ -140,17 +158,35 @@ type MyStruct = resource struct {
 
     let a_type = &type_decl.members[0].type_;
     assert_eq!(a_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(a_type.subtype().as_deref(), Some("thread"));
+    assert_eq!(
+        match a_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("thread")
+    );
     assert_eq!(a_type.rights(), Some(2147483648));
 
     let b_type = &type_decl.members[1].type_;
     assert_eq!(b_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(b_type.subtype().as_deref(), Some("process"));
+    assert_eq!(
+        match b_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("process")
+    );
     assert_eq!(b_type.rights(), Some(2147483648));
 
     let c_type = &type_decl.members[2].type_;
     assert_eq!(c_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(c_type.subtype().as_deref(), Some("vmo"));
+    assert_eq!(
+        match c_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("vmo")
+    );
     assert_eq!(c_type.rights(), Some(2));
 }
 
@@ -230,7 +266,13 @@ type MyStruct = resource struct {
     let h_type = &type_decl.members[0].type_;
 
     assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(h_type.subtype().as_deref(), Some("vmo"));
+    assert_eq!(
+        match h_type {
+            crate::json_generator::Type::Handle(t) => t.subtype.as_deref(),
+            _ => None,
+        },
+        Some("vmo")
+    );
     assert_eq!(h_type.rights(), Some(2147483648));
 }
 

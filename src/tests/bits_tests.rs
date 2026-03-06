@@ -23,7 +23,14 @@ fn good_simple() {
         type_decl.type_.kind(),
         crate::json_generator::TypeKind::Primitive
     );
-    assert_eq!(type_decl.type_.subtype().as_deref(), Some("uint64"));
+    assert_eq!(
+        match &type_decl.type_ {
+            crate::json_generator::Type::Primitive(t) => Some(t.subtype.to_string()),
+            _ => None,
+        }
+        .as_deref(),
+        Some("uint64")
+    );
 }
 
 #[test]
@@ -49,7 +56,14 @@ type Fruit = bits {
         type_decl.type_.kind(),
         crate::json_generator::TypeKind::Primitive
     );
-    assert_eq!(type_decl.type_.subtype().as_deref(), Some("uint32"));
+    assert_eq!(
+        match &type_decl.type_ {
+            crate::json_generator::Type::Primitive(t) => Some(t.subtype.to_string()),
+            _ => None,
+        }
+        .as_deref(),
+        Some("uint32")
+    );
 }
 
 #[test]

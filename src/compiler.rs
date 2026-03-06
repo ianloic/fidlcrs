@@ -1322,9 +1322,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 {
                     let resolved = self.resolve_type(&a.type_ctor, library_name, None);
                     if let crate::json_generator::Type::Primitive(p) = &resolved {
-                        if let Some(subtype) = &p.subtype {
-                            n = subtype.clone();
-                        }
+                        n = p.subtype.to_string();
                     }
                 }
             }
@@ -1773,8 +1771,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "uint32".to_string()
         };
 
-        let valid_subtypes = ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64"];
-        
+        let valid_subtypes = [
+            "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64",
+        ];
+
         let mut resolved_subtype = "uint32".to_string();
         if let Some(ref sc) = decl.subtype {
             if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
@@ -1810,7 +1810,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             full_name = fqn;
                         }
                     }
-                    if let Some(crate::compiler::RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
+                    if let Some(crate::compiler::RawDecl::Alias(alias)) =
+                        self.raw_decls.get(&full_name)
+                    {
                         if let raw_ast::LayoutParameter::Identifier(ref inner_id) =
                             alias.type_ctor.layout
                         {
@@ -1823,36 +1825,43 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        
+
         if !valid_subtypes.contains(&resolved_subtype.as_str()) {
             self.reporter.fail(
                 crate::diagnostics::Error::ErrEnumTypeMustBeIntegralPrimitive,
-                if let Some(sc) = &decl.subtype { sc.element.start_token.span.clone() } else { decl.name.as_ref().unwrap().element.span().clone() },
+                if let Some(sc) = &decl.subtype {
+                    sc.element.start_token.span.clone()
+                } else {
+                    decl.name.as_ref().unwrap().element.span().clone()
+                },
                 &[&subtype_name],
             );
         }
 
-        let expected_type = crate::json_generator::Type::Primitive(crate::json_generator::PrimitiveType {
-            common: crate::json_generator::TypeCommon {
-                experimental_maybe_from_alias: None,
-                outer_alias: None,
-                maybe_attributes: vec![],
-                field_shape: None,
-                maybe_size_constant_name: None,
-                resource: false,
-                deprecated: None,
-                type_shape: crate::json_generator::TypeShape {
-                    inline_size: 0,
-                    alignment: 0,
-                    depth: 0,
-                    max_handles: 0,
-                    max_out_of_line: 0,
-                    has_padding: false,
-                    has_flexible_envelope: false,
+        let expected_type =
+            crate::json_generator::Type::Primitive(crate::json_generator::PrimitiveType {
+                common: crate::json_generator::TypeCommon {
+                    experimental_maybe_from_alias: None,
+                    outer_alias: None,
+                    maybe_attributes: vec![],
+                    field_shape: None,
+                    maybe_size_constant_name: None,
+                    resource: false,
+                    deprecated: None,
+                    type_shape: crate::json_generator::TypeShape {
+                        inline_size: 0,
+                        alignment: 0,
+                        depth: 0,
+                        max_handles: 0,
+                        max_out_of_line: 0,
+                        has_padding: false,
+                        has_flexible_envelope: false,
+                    },
                 },
-            },
-            subtype: Some(subtype_name.clone()),
-        });
+                subtype: subtype_name
+                    .parse()
+                    .unwrap_or(crate::json_generator::PrimitiveSubtype::Uint32),
+            });
 
         let mut members = vec![];
         let mut maybe_unknown_value = None;
@@ -1863,7 +1872,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let attributes = self.compile_attribute_list(&member.attributes);
             self.validate_constant(&member.value, &expected_type);
             let compiled_value = self.compile_constant(&member.value);
-            
+
             let name_str = member.name.data().to_string();
             if !member_names.insert(name_str.clone()) {
                 self.reporter.fail(
@@ -1872,7 +1881,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     &[&"member", &name_str, &"member", &name_str],
                 );
             }
-            
+
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
                 if let Some(prev_name) = member_values.insert(eval_val, name_str.clone()) {
                     self.reporter.fail(
@@ -1932,7 +1941,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if strict && members.is_empty() {
             self.reporter.fail(
                 crate::diagnostics::Error::ErrMustHaveOneMember,
-                if let Some(n) = &decl.name { n.element.span().clone() } else { decl.element.span().clone() },
+                if let Some(n) = &decl.name {
+                    n.element.span().clone()
+                } else {
+                    decl.element.span().clone()
+                },
                 &[],
             );
         }
@@ -2263,7 +2276,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     deprecated: None,
                     type_shape: type_shape,
                 },
-                subtype: Some(subtype_name),
+                subtype: subtype_name
+                    .parse()
+                    .unwrap_or(crate::json_generator::PrimitiveSubtype::Uint32),
             }),
             mask: mask.to_string(),
             members,
@@ -3472,7 +3487,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: false,
                         },
                     },
-                    subtype: Some(resolved_name),
+                    subtype: resolved_name
+                        .parse()
+                        .unwrap_or(crate::json_generator::PrimitiveSubtype::Uint32),
                 })
             }
             "experimental_pointer" => {
@@ -3687,7 +3704,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 has_flexible_envelope: false,
                             },
                         },
-                        subtype: Some("uint8".to_string()),
+                        subtype: crate::json_generator::PrimitiveSubtype::Uint8,
                     })
                 } else {
                     self.resolve_type(inner.unwrap(), library_name, naming_context)
@@ -5696,8 +5713,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
 
         // C++ checks if type resolves to a uint32 primitive
-        let mut is_uint32 = type_obj.kind() == crate::json_generator::TypeKind::Primitive
-            && type_obj.subtype().as_deref() == Some("uint32");
+        let mut is_uint32 = if let crate::json_generator::Type::Primitive(p) = &type_obj {
+            p.subtype == crate::json_generator::PrimitiveSubtype::Uint32
+        } else {
+            false
+        };
         if !is_uint32 {
             if let Some(id) = type_obj.identifier().as_ref() {
                 let mut curr = id.clone();
@@ -5800,9 +5820,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     false
                 };
-                let mut is_uint32_prop = prop_type.kind()
-                    == crate::json_generator::TypeKind::Primitive
-                    && prop_type.subtype().as_deref() == Some("uint32");
+                let mut is_uint32_prop =
+                    if let crate::json_generator::Type::Primitive(p) = &prop_type {
+                        p.subtype == crate::json_generator::PrimitiveSubtype::Uint32
+                    } else {
+                        false
+                    };
                 if !is_uint32_prop {
                     if let Some(id) = prop_type.identifier().as_ref() {
                         let mut curr = id.clone();
@@ -5997,9 +6020,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     ) {
         match expected_type {
             crate::json_generator::Type::Primitive(p) => {
-                let Some(subtype) = &p.subtype else {
-                    return;
-                };
+                let subtype = &p.subtype.to_string();
                 match constant {
                     raw_ast::Constant::Literal(lit) => {
                         let span = lit.literal.element.start_token.span.clone();
@@ -7050,9 +7071,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let err_type_resolved = self.resolve_type(tc, library_name, Some(ctx));
 
                         let mut is_valid_error_type = false;
-                        if err_type_resolved.kind() == crate::json_generator::TypeKind::Primitive {
-                            if err_type_resolved.subtype().as_deref() == Some("int32")
-                                || err_type_resolved.subtype().as_deref() == Some("uint32")
+                        if let crate::json_generator::Type::Primitive(p) = &err_type_resolved {
+                            if p.subtype == crate::json_generator::PrimitiveSubtype::Int32
+                                || p.subtype == crate::json_generator::PrimitiveSubtype::Uint32
                             {
                                 is_valid_error_type = true;
                             }

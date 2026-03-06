@@ -150,7 +150,8 @@ impl<'a> Lexer<'a> {
 
                 _ => {
                     let mut end = self.current;
-                    while end <= self.end_of_file && !self.source_file.data().is_char_boundary(end) {
+                    while end <= self.end_of_file && !self.source_file.data().is_char_boundary(end)
+                    {
                         end += 1;
                     }
                     self.current = end;
@@ -191,7 +192,7 @@ impl<'a> Lexer<'a> {
             self.consume();
         }
         let (newlines, data) = self.reset(TokenKind::Identifier);
-        
+
         if data.ends_with('_') {
             self.reporter.fail(
                 Error::ErrInvalidIdentifier, // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
@@ -199,7 +200,7 @@ impl<'a> Lexer<'a> {
                 &[&data],
             );
         }
-        
+
         let subkind = lookup_subkind(data);
         Token::new(
             SourceSpan::new(data, self.source_file),

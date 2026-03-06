@@ -5,9 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::diagnostics::{Error, ErrorKind, ALL_ERRORS};
 
 fn test_file_path(filename: &str) -> PathBuf {
-    // In a real environment, this would resolve paths relative to FUCHSIA_DIR.
-    // For now, these are dummy paths that ensure the tests fail if run, as expected.
-    let fuchsia_dir = std::env::var("FUCHSIA_DIR").unwrap_or_else(|_| "/home/ianloic/fuchsia".to_string());
+    let fuchsia_dir = std::env::var("FUCHSIA_DIR").expect("FUCHSIA_DIR must be set");
     if filename.starts_with("error-catalog/") || filename == "errcat.md" {
         PathBuf::from(fuchsia_dir).join("docs/reference/fidl/language").join(filename)
     } else if filename == "_redirects.yaml" {

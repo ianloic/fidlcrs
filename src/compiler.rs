@@ -120,6 +120,7 @@ pub struct Compiler<'node, 'src> {
     pub external_struct_declarations: Vec<StructDeclaration>,
     pub external_enum_declarations: Vec<EnumDeclaration>,
     pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
+    pub overlay_declarations: Vec<UnionDeclaration>,
 
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
@@ -167,6 +168,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             inline_names: HashMap::new(),
             compiled_decls: HashSet::new(),
             experimental_resource_declarations: Vec::new(),
+            overlay_declarations: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
@@ -268,6 +270,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
         for decl in &self.union_declarations {
             all_decls.push((decl.name.clone(), "union".to_string()));
+        }
+        for decl in &self.overlay_declarations {
+            all_decls.push((decl.name.clone(), "overlay".to_string()));
         }
         for decl in &self.alias_declarations {
             all_decls.push((decl.name.clone(), "alias".to_string()));
@@ -624,7 +629,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             table_declarations: self.table_declarations.clone(),
             union_declarations: self.union_declarations.clone(),
             overlay_declarations: if self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
-                Some(vec![])
+                Some(self.overlay_declarations.clone())
             } else {
                 None
             },
@@ -1495,7 +1500,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
+                    if u.is_overlay {
+                        self.overlay_declarations.push(compiled);
+                    } else {
                         self.union_declarations.push(compiled);
                     }
                 } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
@@ -1582,7 +1589,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         u.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
+                    if u.is_overlay {
+                        self.overlay_declarations.push(compiled);
+                    } else {
                         self.union_declarations.push(compiled);
                     }
                 }
@@ -2635,19 +2644,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     (8 - (shape.inline_size % 8)) % 8
                 };
 
-                let env_has_padding = shape.has_padding || padding != 0;
+                let env_has_padding = if decl.is_overlay { shape.has_padding } else { shape.has_padding || padding != 0 };
                 has_padding = has_padding || env_has_padding;
 
-                let env_max_out_of_line = shape.max_out_of_line.saturating_add(if inlined {
-                    0
+                let env_max_out_of_line = if decl.is_overlay {
+                    shape.max_out_of_line
                 } else {
-                    shape.inline_size.saturating_add(padding)
-                });
+                    shape.max_out_of_line.saturating_add(if inlined {
+                        0
+                    } else {
+                        shape.inline_size.saturating_add(padding)
+                    })
+                };
                 if env_max_out_of_line > max_out_of_line {
                     max_out_of_line = env_max_out_of_line;
                 }
 
-                let env_depth = shape.depth.saturating_add(1);
+                let env_depth = if decl.is_overlay {
+                    shape.depth
+                } else {
+                    shape.depth.saturating_add(1)
+                };
                 if env_depth > depth {
                     depth = env_depth;
                 }
@@ -2657,13 +2674,45 @@ impl<'node, 'src> Compiler<'node, 'src> {
         // Union depth is 1 + max(member depth).
         // Zero fields or reserved fields = 0 depth.
 
+        let mut alignment = 8;
+        let mut max_member_inline_size = 0;
+        for member in &members {
+            if let Some(type_obj) = &member.type_ {
+               alignment = alignment.max(type_obj.type_shape.alignment);
+               max_member_inline_size = max_member_inline_size.max(type_obj.type_shape.inline_size);
+            }
+        }
+        
+        let inline_size = if decl.is_overlay {
+            let size = 8u32.saturating_add(max_member_inline_size);
+            let padding = (alignment - (size % alignment)) % alignment;
+            size.saturating_add(padding)
+        } else {
+            16
+        };
+        
+        // For overlays, depth is just max(member depth).
+        let final_depth = depth;
+        // For padding in overlays, if the inline_size is strictly greater than 8 + a member's inline size,
+        // it means there's padding in the overlay struct when that member is active.
+        let mut overlay_has_padding = false;
+        if decl.is_overlay {
+            for member in &members {
+                if let Some(type_obj) = &member.type_ {
+                    if inline_size > 8u32.saturating_add(type_obj.type_shape.inline_size) {
+                        overlay_has_padding = true;
+                    }
+                }
+            }
+        }
+
         let mut type_shape = TypeShape {
-            inline_size: 16,
-            alignment: 8,
-            depth,
+            inline_size,
+            alignment: if decl.is_overlay { alignment } else { 8 },
+            depth: final_depth,
             max_handles,
             max_out_of_line,
-            has_padding,
+            has_padding: if decl.is_overlay { has_padding || overlay_has_padding } else { has_padding },
             has_flexible_envelope: !strict
                 || members.iter().any(|m| {
                     m.type_
@@ -2692,7 +2741,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .modifiers
                 .iter()
                 .any(|m| m.subkind == crate::token::TokenSubkind::Resource),
-            is_result: false, // TODO: detect result unions
+            is_result: if decl.is_overlay { None } else { Some(false) }, // TODO: detect result unions
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -3125,7 +3174,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 naming_context.clone(),
                             );
-                            self.union_declarations.push(compiled);
+                            if u.is_overlay {
+                                self.overlay_declarations.push(compiled);
+                            } else {
+                                self.union_declarations.push(compiled);
+                            }
                             self.raw_decls.insert(full_name.clone(), RawDecl::Union(u));
                         }
                         raw_ast::Layout::Table(t) => {
@@ -3404,6 +3457,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: false,
                         },
                     },
+                    element_count: if max_len == u32::MAX { None } else { Some(max_len) },
                 })
             }
             "vector" | "bytes" => {
@@ -6404,7 +6458,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                             );
                             if library_name == self.library_name {
+                                if u.is_overlay {
+                                self.overlay_declarations.push(compiled);
+                            } else {
                                 self.union_declarations.push(compiled);
+                            }
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }
@@ -6668,7 +6726,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 Some(ctx.clone()),
                             );
-                            self.union_declarations.push(compiled);
+                            if u.is_overlay {
+                                self.overlay_declarations.push(compiled);
+                            } else {
+                                self.union_declarations.push(compiled);
+                            }
                             if library_name == self.library_name {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
@@ -6978,7 +7040,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     members: union_members,
                     strict: true,
                     resource: union_handles > 0,
-                    is_result: true,
+                    is_result: Some(true),
                     type_shape: union_shape.clone(),
                     maybe_attributes: vec![],
                 };

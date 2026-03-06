@@ -1963,6 +1963,7 @@ type BoolOverlayAndUint8Struct = struct {
         .to_string(),
     );
     let mut lib = TestLibrary::new();
+    lib.enable_flag("zx_c_types");
     lib.add_source(&source);
     let root = lib.compile().expect("compilation failed");
     let _bool_or_string_or_u64 = root

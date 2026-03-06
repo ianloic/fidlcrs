@@ -982,10 +982,12 @@ impl<'a, 'b> Parser<'a, 'b> {
             .map(|m| m.element.start_token.clone())
             .unwrap_or_else(|| self.last_token.clone());
 
+        let mut is_overlay = false;
         if self.last_token.subkind == TokenSubkind::Union {
             self.consume_token_with_subkind(TokenSubkind::Union)?;
         } else if self.last_token.subkind == TokenSubkind::Overlay {
             self.consume_token_with_subkind(TokenSubkind::Overlay)?;
+            is_overlay = true;
         } else {
             return None;
         }
@@ -1019,6 +1021,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             name,
             modifiers,
             members,
+            is_overlay,
         })
     }
 

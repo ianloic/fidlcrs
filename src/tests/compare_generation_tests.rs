@@ -72,6 +72,8 @@ fn test_compare_generation() {
         TestCase::new("constants.test.fidl"),
         TestCase::new("types_in_protocols.test.fidl"),
         TestCase::new("experimental_zx_c_types.test.fidl").experimental("zx_c_types"),
+        TestCase::new("string_arrays.test.fidl").experimental("zx_c_types"),
+        TestCase::new("overlay.test.fidl").experimental("zx_c_types"),
     ];
 
     let disabled_tests = vec![
@@ -84,8 +86,6 @@ fn test_compare_generation() {
         //     .public_dep("//sdk/fidl/fdf")
         //     .contains_drivers(),
         TestCase::new("new_type.test.fidl").experimental("allow_new_types"),
-        TestCase::new("overlay.test.fidl").experimental("zx_c_types"),
-        TestCase::new("string_arrays.test.fidl").experimental("zx_c_types"),
         TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
         TestCase::new("versions.test.fidl").available("test:HEAD"),
     ];

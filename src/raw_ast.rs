@@ -315,6 +315,7 @@ pub struct UnionDeclaration<'a> {
     pub modifiers: Vec<Modifier<'a>>,
     pub name: Option<Identifier<'a>>, // Changed to Option
     pub members: Vec<UnionMember<'a>>,
+    pub is_overlay: bool,
 }
 
 #[derive(Debug, Clone)]

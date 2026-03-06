@@ -22,7 +22,7 @@ pub struct JsonRoot {
     pub table_declarations: Vec<TableDeclaration>,
     pub union_declarations: Vec<UnionDeclaration>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub overlay_declarations: Option<Vec<serde_json::Value>>,
+    pub overlay_declarations: Option<Vec<UnionDeclaration>>,
     pub alias_declarations: Vec<AliasDeclaration>,
     pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub declaration_order: Vec<String>,
@@ -136,6 +136,8 @@ pub struct StringType {
 pub struct StringArrayType {
     #[serde(flatten)]
     pub common: TypeCommon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_count: Option<u32>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -384,6 +386,7 @@ impl Type {
     pub fn element_count(&self) -> Option<u32> {
         match self {
             Type::Array(t) => t.element_count,
+            Type::StringArray(t) => t.element_count,
             _ => None,
         }
     }
@@ -685,7 +688,8 @@ pub struct UnionDeclaration {
     pub members: Vec<UnionMember>,
     pub strict: bool,
     pub resource: bool,
-    pub is_result: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_result: Option<bool>,
     #[serde(rename = "type_shape_v2")]
     pub type_shape: TypeShape,
 }

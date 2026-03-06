@@ -1903,10 +1903,29 @@ impl<'node, 'src> Compiler<'node, 'src> {
             subtype: subtype_name.parse().unwrap_or(PrimitiveSubtype::Uint32),
         });
 
+        let strict = decl
+            .modifiers
+            .iter()
+            .any(|m| m.subkind == TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
+
+        let max_val_u64: u64 = match subtype_name.as_str() {
+            "uint8" => u8::MAX as u64,
+            "uint16" => u16::MAX as u64,
+            "uint32" => u32::MAX as u64,
+            "uint64" => u64::MAX as u64,
+            "int8" => i8::MAX as u64,
+            "int16" => i16::MAX as u64,
+            "int32" => i32::MAX as u64,
+            "int64" => i64::MAX as u64,
+            _ => u32::MAX as u64,
+        };
+
         let mut members = vec![];
         let mut maybe_unknown_value = None;
         let mut member_names = std::collections::HashSet::new();
         let mut member_values = std::collections::HashMap::new();
+        let mut unknown_member_span: Option<crate::source_span::SourceSpan<'src>> = None;
+        let mut max_val_spans = vec![];
 
         for member in &decl.members {
             let attributes = self.compile_attribute_list(&member.attributes);
@@ -1923,6 +1942,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
 
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
+                if eval_val == max_val_u64 {
+                    let span = member.name.element.span().clone();
+                    let transmuted_span: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(span) };
+                    max_val_spans.push(transmuted_span);
+                }
+                
                 if let Some(prev_name) = member_values.insert(eval_val, name_str.clone()) {
                     self.reporter.fail(
                         Error::ErrDuplicateMemberValue,
@@ -1934,6 +1959,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             // Check for unknown attribute
             if attributes.iter().any(|a| a.name == "unknown") {
+                if let Some(ref _prev_span) = unknown_member_span {
+                    let dup_span = member.name.element.span().clone();
+                    let transmuted_dup: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(dup_span) };
+                    self.reporter.fail(
+                        Error::ErrUnknownAttributeOnMultipleEnumMembers,
+                        transmuted_dup,
+                        &[],
+                    );
+                } else {
+                    let first_span = member.name.element.span().clone();
+                    let transmuted_first: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(first_span) };
+                    unknown_member_span = Some(transmuted_first);
+                }
+
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
                 if let Some(literal) = &compiled_value.literal
@@ -1941,6 +1980,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 {
                     maybe_unknown_value = Some(val);
                 }
+            } else if !strict && !max_val_spans.is_empty() && unknown_member_span.is_none() {
+                // We will check at the end if unknown_member_span remains None
             }
 
             members.push(EnumMember {
@@ -1950,6 +1991,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 value: compiled_value,
                 maybe_attributes: attributes,
             });
+        }
+
+        if !strict && unknown_member_span.is_none() {
+            for span in &max_val_spans {
+                self.reporter.fail(
+                    Error::ErrFlexibleEnumMemberWithMaxValue,
+                    span.clone(),
+                    &[&max_val_u64.to_string()],
+                );
+            }
         }
 
         let (inline_size, alignment) = match subtype_name.as_str() {
@@ -1973,11 +2024,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             },
         );
 
-        // Strictness default: Flexible?
-        let strict = decl
-            .modifiers
-            .iter()
-            .any(|m| m.subkind == TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
+        // Strictness has been extracted earlier
 
         if strict && members.is_empty() {
             self.reporter.fail(

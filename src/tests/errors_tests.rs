@@ -246,7 +246,6 @@ fn bad_error_empty_file() {
 }
 
 #[test]
-#[ignore]
 fn experimental_allow_arbitrary_error_types() {
     let mut library = TestLibrary::new();
     library.enable_flag("allow_arbitrary_error_types");

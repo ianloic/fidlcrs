@@ -22,6 +22,7 @@ pub mod ordinals_tests;
 pub mod parsing_tests;
 pub mod protocol_tests;
 pub mod recoverable_compilation_tests;
+pub mod recoverable_parsing_tests;
 pub mod resource_tests;
 pub mod resourceness_tests;
 pub mod sdk_fidl;

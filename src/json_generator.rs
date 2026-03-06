@@ -21,6 +21,8 @@ pub struct JsonRoot {
     pub external_struct_declarations: Vec<StructDeclaration>,
     pub table_declarations: Vec<TableDeclaration>,
     pub union_declarations: Vec<UnionDeclaration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub overlay_declarations: Option<Vec<serde_json::Value>>,
     pub alias_declarations: Vec<AliasDeclaration>,
     pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub declaration_order: Vec<String>,
@@ -329,7 +331,7 @@ impl Type {
             Type::Identifier(t) => t.nullable,
             Type::Struct(t) => t.nullable,
             Type::Request(t) => t.nullable,
-            Type::ExperimentalPointer(t) => t.nullable,
+            Type::ExperimentalPointer(_) => None,
             _ => None,
         }
     }
@@ -748,6 +750,8 @@ impl serde::Serialize for Type {
             #[serde(skip_serializing_if = "Option::is_none")]
             element_type: Option<&'a crate::json_generator::Type>,
             #[serde(skip_serializing_if = "Option::is_none")]
+            pointee_type: Option<&'a crate::json_generator::Type>,
+            #[serde(skip_serializing_if = "Option::is_none")]
             experimental_maybe_from_alias:
                 Option<&'a crate::json_generator::ExperimentalMaybeFromAlias>,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -785,7 +789,16 @@ impl serde::Serialize for Type {
             },
             subtype: self.subtype(),
             identifier: self.identifier(),
-            element_type: self.element_type(),
+            element_type: if self.kind() != crate::json_generator::TypeKind::ExperimentalPointer {
+                self.element_type()
+            } else {
+                None
+            },
+            pointee_type: if self.kind() == crate::json_generator::TypeKind::ExperimentalPointer {
+                self.element_type()
+            } else {
+                None
+            },
             experimental_maybe_from_alias: self.experimental_maybe_from_alias.as_ref(),
             deprecated: self.deprecated,
             role: match self {

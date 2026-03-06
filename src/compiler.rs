@@ -623,6 +623,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             external_struct_declarations: self.external_struct_declarations.clone(),
             table_declarations: self.table_declarations.clone(),
             union_declarations: self.union_declarations.clone(),
+            overlay_declarations: if self.experimental_flags.iter().any(|f| f == "zx_c_types") {
+                Some(vec![])
+            } else {
+                None
+            },
             alias_declarations: self.alias_declarations.clone(),
             new_type_declarations: vec![],
             declaration_order: {
@@ -3298,7 +3303,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             type_shape: TypeShape {
                                 inline_size: 8,
                                 alignment: 8,
-                                depth: 1, // approximate
+                                depth: 0,
                                 max_handles: 0,
                                 max_out_of_line: 0,
                                 has_padding: false,

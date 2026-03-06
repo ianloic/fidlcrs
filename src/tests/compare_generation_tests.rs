@@ -71,13 +71,13 @@ fn test_compare_generation() {
         TestCase::new("bits_constants.test.fidl"),
         TestCase::new("constants.test.fidl"),
         TestCase::new("types_in_protocols.test.fidl"),
+        TestCase::new("experimental_zx_c_types.test.fidl").experimental("zx_c_types"),
     ];
 
     let disabled_tests = vec![
         // TestCase::new("consts.test.fidl"),
         TestCase::new("driver_handle.test.fidl").contains_drivers(),
         TestCase::new("driver_service.test.fidl").contains_drivers(),
-        TestCase::new("experimental_zx_c_types.test.fidl").experimental("zx_c_types"),
         TestCase::new("handles_in_types.test.fidl"),
         // TODO(ianloic): Add this back when we support public deps
         // TestCase::new("handles.test.fidl")

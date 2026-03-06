@@ -143,6 +143,7 @@ pub struct Compiler<'node, 'src> {
 
     // Outputs
     pub alias_declarations: Vec<AliasDeclaration>,
+    pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub bits_declarations: Vec<BitsDeclaration>,
     pub const_declarations: Vec<ConstDeclaration>,
     pub enum_declarations: Vec<EnumDeclaration>,
@@ -183,6 +184,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             decl_kinds: HashMap::new(),
             sorted_names: Vec::new(),
             alias_declarations: Vec::new(),
+            new_type_declarations: Vec::new(),
             bits_declarations: Vec::new(),
             const_declarations: Vec::new(),
             enum_declarations: Vec::new(),
@@ -270,6 +272,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         // Sort declarations by name to match fidlc output order (alphabetical)
         self.alias_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.new_type_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
@@ -316,6 +319,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
         for decl in &self.alias_declarations {
             all_decls.push((decl.name.clone(), "alias".to_string()));
+        }
+        for decl in &self.new_type_declarations {
+            all_decls.push((decl.name.clone(), "new_type".to_string()));
         }
 
         all_decls.sort_by(|a, b| a.0.cmp(&b.0));
@@ -677,7 +683,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 None
             },
             alias_declarations: self.alias_declarations.clone(),
-            new_type_declarations: vec![],
+            new_type_declarations: self.new_type_declarations.clone(),
             declaration_order: {
                 let mut order = self.declaration_order.clone();
                 if let Some(pos) = order.iter().position(|x| x == "test.anonymous/BitsMember") {
@@ -931,6 +937,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
         for decl in &mut self.alias_declarations {
+            Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
+        }
+        for decl in &mut self.new_type_declarations {
             Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
         }
         for decl in &mut self.const_declarations {
@@ -1222,6 +1231,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             } else if let Some(obj) = self.alias_declarations.iter().find(|x| &x.name == name) {
                 d.push(obj.partial_type_ctor.name.clone());
+            } else if let Some(obj) = self.new_type_declarations.iter().find(|x| &x.name == name) {
+                if let Some(alias) = &obj.type_.experimental_maybe_from_alias {
+                    d.push(alias.name.clone());
+                } else if let Some(id) = obj.type_.identifier() {
+                    d.push(id.clone());
+                }
             } else if let Some(obj) = self.service_declarations.iter().find(|x| &x.name == name) {
                 for m in &obj.members {
                     d.extend(get_type_dependencies(&m.type_));
@@ -1557,16 +1572,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             &[&t.name.data(), &existing_type_name],
                         );
                     }
-                    let compiled = AliasDeclaration {
+                    let mut typ = self.resolve_type(tc, &library_name, None);
+                    let alias = typ.outer_alias.take().or_else(|| typ.experimental_maybe_from_alias.take());
+                    let compiled = NewTypeDeclaration {
                         name: format!("{}/{}", library_name, t.name.data()),
                         location: self.get_location(&t.name.element),
                         deprecated: self.is_deprecated(t.attributes.as_deref()),
                         maybe_attributes: self.compile_attribute_list(&t.attributes),
-                        partial_type_ctor: self.compile_partial_type_ctor(tc, &library_name),
-                        type_: self.resolve_type(tc, &library_name, None),
+                        type_: typ,
+                        experimental_maybe_from_alias: alias,
                     };
                     if is_main_library {
-                        self.alias_declarations.push(compiled);
+                        self.new_type_declarations.push(compiled);
                     }
                 }
             }

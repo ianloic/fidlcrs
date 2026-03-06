@@ -788,7 +788,17 @@ pub struct AliasDeclaration {
     pub type_: Type,
 }
 #[derive(Serialize, Clone, Debug)]
-pub struct NewTypeDeclaration {}
+pub struct NewTypeDeclaration {
+    pub name: String,
+    pub location: Location,
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    #[serde(rename = "type")]
+    pub type_: Type,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
+}
 
 impl serde::Serialize for Type {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

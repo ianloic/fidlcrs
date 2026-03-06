@@ -185,6 +185,7 @@ pub trait LookupHelpers {
     fn lookup_bits(&self, name: &str) -> Option<&BitsDeclaration>;
     fn lookup_table(&self, name: &str) -> Option<&TableDeclaration>;
     fn lookup_alias(&self, name: &str) -> Option<&AliasDeclaration>;
+    fn lookup_new_type(&self, name: &str) -> Option<&NewTypeDeclaration>;
     fn lookup_service(&self, name: &str) -> Option<&ServiceDeclaration>;
 }
 
@@ -216,6 +217,9 @@ impl LookupHelpers for JsonRoot {
     }
     fn lookup_alias(&self, name: &str) -> Option<&AliasDeclaration> {
         self.alias_declarations.iter().find(|d| d.name == name)
+    }
+    fn lookup_new_type(&self, name: &str) -> Option<&NewTypeDeclaration> {
+        self.new_type_declarations.iter().find(|d| d.name == name)
     }
     fn lookup_service(&self, name: &str) -> Option<&ServiceDeclaration> {
         self.service_declarations.iter().find(|d| d.name == name)

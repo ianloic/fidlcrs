@@ -237,16 +237,16 @@ type NewUnionOfThings = UnionOfThings;
     lib.enable_flag("allow_new_types");
     let root = lib.compile().expect("compilation failed");
     let new_bool_and_u32_struct = root
-        .lookup_alias("example/NewBoolAndU32")
+        .lookup_new_type("example/NewBoolAndU32")
         .expect("NewBoolAndU32 not found");
     let new_bits_implicit = root
-        .lookup_alias("example/NewBitsImplicit")
+        .lookup_new_type("example/NewBitsImplicit")
         .expect("NewBitsImplicit not found");
     let new_bool_and_u32_table = root
-        .lookup_alias("example/NewTableWithBoolAndU32")
+        .lookup_new_type("example/NewTableWithBoolAndU32")
         .expect("NewTableWithBoolAndU32 not found");
     let new_union = root
-        .lookup_alias("example/NewUnionOfThings")
+        .lookup_new_type("example/NewUnionOfThings")
         .expect("NewUnionOfThings not found");
     assert_eq!(
         new_bool_and_u32_struct.type_.type_shape.inline_size, 8,

@@ -1762,6 +1762,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
                 id.to_string()
             } else {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrInvalidWrappedType,
+                    sc.element.span().clone(),
+                    &[],
+                );
                 "uint32".to_string()
             }
         } else {
@@ -2041,6 +2046,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     subtype_name = current;
                     break;
                 }
+            } else {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrInvalidWrappedType,
+                    sc.element.span().clone(),
+                    &[],
+                );
             }
         }
 

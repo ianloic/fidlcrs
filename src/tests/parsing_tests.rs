@@ -8,7 +8,7 @@ fn get_file_content(path: &str) -> String {
 }
 
 #[test]
-#[ignore]
+
 fn bad_compound_identifier_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -20,7 +20,7 @@ fn bad_compound_identifier_test() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_library_name_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -502,7 +502,7 @@ protocol InProtocol {
 }
 
 #[test]
-#[ignore]
+
 fn bad_char_pound_sign_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -521,7 +521,7 @@ type Test = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_char_slash_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -540,7 +540,7 @@ type Test = struct / {
 }
 
 #[test]
-#[ignore]
+
 fn bad_identifier_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -552,7 +552,7 @@ fn bad_identifier_test() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_invalid_character_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -580,7 +580,7 @@ type Empty = struct {};
 }
 
 #[test]
-#[ignore]
+
 fn bad_error_on_alias_before_imports() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -617,7 +617,7 @@ fn good_attribute_value_has_correct_contents() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_attribute_with_dotted_identifier() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -677,7 +677,7 @@ fn good_multiline_doc_comment_has_correct_contents() {
 }
 
 #[test]
-#[ignore]
+
 fn warn_doc_comment_blank_line_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -688,7 +688,7 @@ fn warn_doc_comment_blank_line_test() {
 }
 
 #[test]
-#[ignore]
+
 fn warn_comment_inside_doc_comment_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -699,7 +699,7 @@ fn warn_comment_inside_doc_comment_test() {
 }
 
 #[test]
-#[ignore]
+
 fn warn_doc_comment_with_comment_blank_line_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -719,7 +719,7 @@ type Empty = struct {};
 }
 
 #[test]
-#[ignore]
+
 fn bad_doc_comment_not_allowed_on_params() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -774,7 +774,7 @@ type Empty = struct {};
 }
 
 #[test]
-#[ignore]
+
 fn warn_trailing_doc_comment_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -785,7 +785,7 @@ fn warn_trailing_doc_comment_test() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_trailing_doc_comment_in_decl_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -805,7 +805,7 @@ type Empty = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_final_member_missing_semicolon() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -825,7 +825,7 @@ type Struct = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_final_member_missing_type_and_semicolon() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -846,7 +846,7 @@ type Struct = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_missing_constraint_brackets() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -865,7 +865,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_multiple_constraint_definition_double_colon() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -877,7 +877,7 @@ fn bad_multiple_constraint_definition_double_colon() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_multiple_constraint_definitions() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -918,7 +918,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_subtype_constructor() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -930,7 +930,7 @@ fn bad_subtype_constructor() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_layout_class() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -942,7 +942,7 @@ fn bad_layout_class() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_identifier_modifiers() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -961,7 +961,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_identifier_with_constraints_modifiers() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -982,7 +982,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_type_declaration_with_constraints_modifiers() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -1000,7 +1000,7 @@ type t2 = strict t1;
 }
 
 #[test]
-#[ignore]
+
 fn bad_identifier_attributes() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -1012,7 +1012,7 @@ fn bad_identifier_attributes() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_identifier_with_constraints_attributes() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -1033,7 +1033,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_type_declaration_of_enum_layout_with_invalid_subtype() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -1045,7 +1045,7 @@ fn bad_type_declaration_of_enum_layout_with_invalid_subtype() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_missing_comma() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -1064,7 +1064,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_missing_equals_value_enum() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -1076,7 +1076,7 @@ fn bad_missing_equals_value_enum() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_reserved_field_not_allowed() {
     let source = SourceFile::new(
         "example.fidl".to_string(),

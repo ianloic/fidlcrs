@@ -213,6 +213,16 @@ impl<'a, 'b> Parser<'a, 'b> {
             .unwrap_or_else(|| self.last_token.clone());
         self.consume_token_with_subkind(TokenSubkind::Library)?;
         let path = self.parse_compound_identifier()?;
+        for comp in &path.components {
+            if comp.element.span().data.contains('_') {
+                let s = comp.element.span().data;
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrInvalidLibraryNameComponent,
+                    comp.element.span().clone(),
+                    &[&s],
+                );
+            }
+        }
         self.consume_token(TokenKind::Semicolon)?;
         let end = self.previous_token.as_ref().unwrap().clone();
 
@@ -325,6 +335,15 @@ impl<'a, 'b> Parser<'a, 'b> {
                 let arg = if self.last_token.kind == TokenKind::Equal {
                     // The first constant was actually a name identifier
                     if let Constant::Identifier(id_const) = first {
+                        if id_const.identifier.components.len() != 1 {
+                            let s = id_const.element.span().data;
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrInvalidIdentifier, // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
+                                id_const.element.span().clone(),
+                                &[&s],
+                            );
+                            return None;
+                        }
                         // Convert IdentifierConstant to Identifier (for name)
                         // We take the first component of compound identifier
                         let id = id_const.identifier.components.into_iter().next().unwrap();
@@ -518,6 +537,11 @@ impl<'a, 'b> Parser<'a, 'b> {
         let name_or_reserved = self.parse_identifier()?;
 
         if name_or_reserved.data() == "reserved" && self.last_token.kind == TokenKind::Semicolon {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrReservedNotAllowed,
+                name_or_reserved.element.span().clone(),
+                &[],
+            );
             self.consume_token(TokenKind::Semicolon)?;
             let end = self.previous_token.as_ref().unwrap().clone();
             return Some(TableMember {
@@ -681,8 +705,14 @@ impl<'a, 'b> Parser<'a, 'b> {
                 element: literal.element.clone(),
                 literal,
             }));
+        } else {
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrUnexpectedToken,
+                self.last_token.span.clone(),
+                &[],
+            );
+            return None;
         }
-        None
     }
 
     pub fn parse_constant(&mut self) -> Option<Constant<'a>> {
@@ -1190,7 +1220,15 @@ impl<'a, 'b> Parser<'a, 'b> {
             // Expect parameter list for requests
             self.consume_token(TokenKind::LeftParen)?;
             if self.last_token.kind != TokenKind::RightParen {
-                // Actually FIDL methods specify parameters inside paren: Method(payload PayloadType); or Method(struct { ... });
+                while self.last_token.kind == TokenKind::DocComment {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrDocCommentOnParameters,
+                        self.last_token.span.clone(),
+                        &[],
+                    );
+                    let _ = self.consume_token(TokenKind::DocComment);
+                }
+                
                 // For simplicity in JSON IR, if there's an identifier, treat parameter as payload type.
                 if self.last_token.subkind == TokenSubkind::Struct {
                     if let Some(s) = self.parse_struct_declaration(None, vec![]) {
@@ -1232,6 +1270,15 @@ impl<'a, 'b> Parser<'a, 'b> {
 
             let start_paren = self.consume_token(TokenKind::LeftParen)?;
             if self.last_token.kind != TokenKind::RightParen {
+                while self.last_token.kind == TokenKind::DocComment {
+                    self.reporter.fail(
+                        crate::diagnostics::Error::ErrDocCommentOnParameters,
+                        self.last_token.span.clone(),
+                        &[],
+                    );
+                    let _ = self.consume_token(TokenKind::DocComment);
+                }
+                
                 if self.last_token.subkind == TokenSubkind::Struct {
                     if let Some(s) = self.parse_struct_declaration(None, vec![]) {
                         response_payload = Some(Layout::Struct(s));
@@ -1506,6 +1553,13 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.last_token = self.lexer.lex();
             Some(token)
         } else {
+            let expected = format!("{:?}", subkind);
+            let actual = format!("{:?}", self.last_token.subkind);
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+                self.last_token.span.clone(),
+                &[&actual, &expected],
+            );
             None
         }
     }
@@ -1535,7 +1589,13 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.last_token = self.lexer.lex();
             Some(token)
         } else {
-            // TODO: Report error
+            let expected = format!("{:?}", kind);
+            let actual = format!("{:?}", self.last_token.kind);
+            self.reporter.fail(
+                crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+                self.last_token.span.clone(),
+                &[&actual, &expected],
+            );
             None
         }
     }

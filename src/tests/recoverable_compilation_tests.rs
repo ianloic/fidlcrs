@@ -5,7 +5,9 @@ use crate::source_file::SourceFile;
 #[ignore]
 fn bad_recover_in_library_consume() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 protocol P {};
@@ -13,7 +15,9 @@ protocol P {};              // Error: name collision
 
 type foo = struct {};
 type Foo = struct {};       // Error: canonical name collision
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -23,7 +27,9 @@ type Foo = struct {};       // Error: canonical name collision
 #[ignore]
 fn bad_recover_in_library_compile() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 type Union = union {
@@ -47,7 +53,9 @@ type OtherEnum = enum {
 type NonDenseTable = table {
     65: s string;                 // Error: too many ordinals
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -57,7 +65,9 @@ type NonDenseTable = table {
 #[ignore]
 fn bad_recover_in_library_verify_attribute_placement() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 @unknown            // Error: invalid placement
@@ -68,7 +78,9 @@ type Table = table {
 type Struct = struct {
     foo uint16;
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -78,7 +90,9 @@ type Struct = struct {
 #[ignore]
 fn bad_recover_in_attribute_compile() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 @foo(first="a", first="b")   // Error: duplicate args
@@ -88,7 +102,9 @@ type Enum = enum {
     FOO                      // Error: cannot resolve enum member
         = "not a number";    // Error: cannot be interpreted as uint32
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -98,12 +114,16 @@ type Enum = enum {
 #[ignore]
 fn bad_recover_in_const() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 @attr(1)
 const FOO string = 2;
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -113,7 +133,9 @@ const FOO string = 2;
 #[ignore]
 fn bad_recover_in_bits() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 type Foo = bits {
@@ -124,7 +146,9 @@ type Foo = bits {
     BAZ = 2;               // Error: duplicate value 2
     XYZ = 3;               // Error: not a power of two
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -134,7 +158,9 @@ type Foo = bits {
 #[ignore]
 fn bad_recover_in_enum() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 type Foo = flexible enum : uint8 {
@@ -145,7 +171,9 @@ type Foo = flexible enum : uint8 {
     BAZ = 2;               // Error: duplicate value 2
     XYZ = 255;             // Error: max value on flexible enum
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -155,7 +183,9 @@ type Foo = flexible enum : uint8 {
 #[ignore]
 fn bad_recover_in_struct() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 type Foo = struct {
@@ -165,7 +195,9 @@ type Foo = struct {
     baz bool           // Error: cannot resolve default value
         = "not bool";  // Error: cannot interpret as bool
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -175,7 +207,9 @@ type Foo = struct {
 #[ignore]
 fn bad_recover_in_table() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 type Foo = table {
@@ -184,7 +218,9 @@ type Foo = table {
        vector;               // Error: expected 1 layout parameter
     65: s string;            // Error: too many ordinals
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -194,7 +230,9 @@ type Foo = table {
 #[ignore]
 fn bad_recover_in_union() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 type Foo = union {
@@ -202,7 +240,9 @@ type Foo = union {
     1: qux                   // Error: duplicate ordinal
         vector;              // Error: expected 1 layout parameter
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -212,7 +252,9 @@ type Foo = union {
 #[ignore]
 fn bad_recover_in_protocol() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 protocol Foo {
@@ -222,7 +264,9 @@ protocol Foo {
         b bool:optional;         // Error: bool cannot be optional
     }) error vector;             // Error: expected 1 layout parameter
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -232,7 +276,9 @@ protocol Foo {
 #[ignore]
 fn bad_recover_in_service() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new("example.fidl".to_string(), r#"
+    let source0 = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
 library example;
 
 protocol P {};
@@ -242,9 +288,10 @@ service Foo {
     qux server_end:P;             // Error: must be client_end
     opt client_end:<P,optional>;  // Error: cannot be optional
 };
-"#.to_string());
+"#
+        .to_string(),
+    );
     library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
-

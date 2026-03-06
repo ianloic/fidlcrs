@@ -1,44 +1,109 @@
 // Dummy implementations to allow test compilation
-fn split_identifier_words(_s: &str) -> Vec<String> { unimplemented!() }
-fn is_upper_camel_case(_s: &str) -> bool { unimplemented!() }
-fn to_upper_camel_case(_s: &str) -> String { unimplemented!() }
-fn is_lower_camel_case(_s: &str) -> bool { unimplemented!() }
-fn to_lower_camel_case(_s: &str) -> String { unimplemented!() }
-fn is_upper_snake_case(_s: &str) -> bool { unimplemented!() }
-fn to_upper_snake_case(_s: &str) -> String { unimplemented!() }
-fn is_lower_snake_case(_s: &str) -> bool { unimplemented!() }
-fn to_lower_snake_case(_s: &str) -> String { unimplemented!() }
-fn is_valid_library_component(_s: &str) -> bool { unimplemented!() }
-fn is_valid_identifier_component(_s: &str) -> bool { unimplemented!() }
-fn is_valid_fully_qualified_method_identifier(_s: &str) -> bool { unimplemented!() }
-fn remove_whitespace(_s: &str) -> String { unimplemented!() }
-fn canonicalize(_s: &str) -> String { unimplemented!() }
-fn strip_string_literal_quotes(_s: &str) -> String { unimplemented!() }
-fn strip_doc_comment_slashes(_s: &str) -> String { unimplemented!() }
-fn decode_unicode_hex(_s: &str) -> u32 { unimplemented!() }
-fn string_literal_length(_s: &str) -> usize { unimplemented!() }
-
+fn split_identifier_words(_s: &str) -> Vec<String> {
+    unimplemented!()
+}
+fn is_upper_camel_case(_s: &str) -> bool {
+    unimplemented!()
+}
+fn to_upper_camel_case(_s: &str) -> String {
+    unimplemented!()
+}
+fn is_lower_camel_case(_s: &str) -> bool {
+    unimplemented!()
+}
+fn to_lower_camel_case(_s: &str) -> String {
+    unimplemented!()
+}
+fn is_upper_snake_case(_s: &str) -> bool {
+    unimplemented!()
+}
+fn to_upper_snake_case(_s: &str) -> String {
+    unimplemented!()
+}
+fn is_lower_snake_case(_s: &str) -> bool {
+    unimplemented!()
+}
+fn to_lower_snake_case(_s: &str) -> String {
+    unimplemented!()
+}
+fn is_valid_library_component(_s: &str) -> bool {
+    unimplemented!()
+}
+fn is_valid_identifier_component(_s: &str) -> bool {
+    unimplemented!()
+}
+fn is_valid_fully_qualified_method_identifier(_s: &str) -> bool {
+    unimplemented!()
+}
+fn remove_whitespace(_s: &str) -> String {
+    unimplemented!()
+}
+fn canonicalize(_s: &str) -> String {
+    unimplemented!()
+}
+fn strip_string_literal_quotes(_s: &str) -> String {
+    unimplemented!()
+}
+fn strip_doc_comment_slashes(_s: &str) -> String {
+    unimplemented!()
+}
+fn decode_unicode_hex(_s: &str) -> u32 {
+    unimplemented!()
+}
+fn string_literal_length(_s: &str) -> usize {
+    unimplemented!()
+}
 
 #[test]
 #[ignore]
 fn test_id_to_words() {
-    assert_eq!(split_identifier_words("agent_request_count").join(" "), "agent request count");
+    assert_eq!(
+        split_identifier_words("agent_request_count").join(" "),
+        "agent request count"
+    );
     assert_eq!(split_identifier_words("common").join(" "), "common");
     assert_eq!(split_identifier_words("Service").join(" "), "service");
     assert_eq!(split_identifier_words("Blink32").join(" "), "blink32");
-    assert_eq!(split_identifier_words("the21jumpStreet").join(" "), "the21jump street");
-    assert_eq!(split_identifier_words("the21JumpStreet").join(" "), "the21 jump street");
-    assert_eq!(split_identifier_words("onOntologyUpdate").join(" "), "on ontology update");
+    assert_eq!(
+        split_identifier_words("the21jumpStreet").join(" "),
+        "the21jump street"
+    );
+    assert_eq!(
+        split_identifier_words("the21JumpStreet").join(" "),
+        "the21 jump street"
+    );
+    assert_eq!(
+        split_identifier_words("onOntologyUpdate").join(" "),
+        "on ontology update"
+    );
     assert_eq!(split_identifier_words("urlLoader").join(" "), "url loader");
-    assert_eq!(split_identifier_words("onUrlLoader").join(" "), "on url loader");
-    assert_eq!(split_identifier_words("OnOntologyUpdate").join(" "), "on ontology update");
+    assert_eq!(
+        split_identifier_words("onUrlLoader").join(" "),
+        "on url loader"
+    );
+    assert_eq!(
+        split_identifier_words("OnOntologyUpdate").join(" "),
+        "on ontology update"
+    );
     assert_eq!(split_identifier_words("UrlLoader").join(" "), "url loader");
-    assert_eq!(split_identifier_words("OnUrlLoader").join(" "), "on url loader");
+    assert_eq!(
+        split_identifier_words("OnUrlLoader").join(" "),
+        "on url loader"
+    );
     assert_eq!(split_identifier_words("kUrlLoader").join(" "), "url loader");
-    assert_eq!(split_identifier_words("kOnUrlLoader").join(" "), "on url loader");
-    assert_eq!(split_identifier_words("WhatIfSomeoneDoes_This").join(" "), "what if someone does this");
+    assert_eq!(
+        split_identifier_words("kOnUrlLoader").join(" "),
+        "on url loader"
+    );
+    assert_eq!(
+        split_identifier_words("WhatIfSomeoneDoes_This").join(" "),
+        "what if someone does this"
+    );
     assert_eq!(split_identifier_words("SOME_CONST").join(" "), "some const");
-    assert_eq!(split_identifier_words("NAME_MIN_LEN").join(" "), "name min len");
+    assert_eq!(
+        split_identifier_words("NAME_MIN_LEN").join(" "),
+        "name min len"
+    );
     assert_eq!(split_identifier_words("OnPress").join(" "), "on press");
     assert_eq!(split_identifier_words("URLLoader").join(" "), "url loader");
     assert_eq!(split_identifier_words("PPPOE").join(" "), "pppoe");
@@ -534,12 +599,27 @@ fn test_is_valid_identifier_component() {
 #[test]
 #[ignore]
 fn test_is_valid_fully_qualified_method_identifier() {
-    assert_eq!(is_valid_fully_qualified_method_identifier("lib/Protocol.Method"), true);
-    assert_eq!(is_valid_fully_qualified_method_identifier("long.lib/Protocol.Method"), true);
+    assert_eq!(
+        is_valid_fully_qualified_method_identifier("lib/Protocol.Method"),
+        true
+    );
+    assert_eq!(
+        is_valid_fully_qualified_method_identifier("long.lib/Protocol.Method"),
+        true
+    );
     assert_eq!(is_valid_fully_qualified_method_identifier("Method"), false);
-    assert_eq!(is_valid_fully_qualified_method_identifier("lib/Protocol"), false);
-    assert_eq!(is_valid_fully_qualified_method_identifier("lonG.lib/Protocol.Method"), false);
-    assert_eq!(is_valid_fully_qualified_method_identifier("long.liB/Protocol.Method"), false);
+    assert_eq!(
+        is_valid_fully_qualified_method_identifier("lib/Protocol"),
+        false
+    );
+    assert_eq!(
+        is_valid_fully_qualified_method_identifier("lonG.lib/Protocol.Method"),
+        false
+    );
+    assert_eq!(
+        is_valid_fully_qualified_method_identifier("long.liB/Protocol.Method"),
+        false
+    );
 }
 
 #[test]
@@ -698,8 +778,14 @@ fn test_canonicalize() {
     assert_eq!(canonicalize("UpperCamelCase"), "upper_camel_case");
     assert_eq!(canonicalize("lower_snake_case"), "lower_snake_case");
     assert_eq!(canonicalize("UpperSnake_CASE"), "upper_snake_case");
-    assert_eq!(canonicalize("Camel_With_Underscores"), "camel_with_underscores");
-    assert_eq!(canonicalize("camelWithAOneLetterWord"), "camel_with_a_one_letter_word");
+    assert_eq!(
+        canonicalize("Camel_With_Underscores"),
+        "camel_with_underscores"
+    );
+    assert_eq!(
+        canonicalize("camelWithAOneLetterWord"),
+        "camel_with_a_one_letter_word"
+    );
     assert_eq!(canonicalize("1_2__3___underscores"), "1_2_3_underscores");
     assert_eq!(canonicalize("HTTPServer"), "http_server");
     assert_eq!(canonicalize("HttpServer"), "http_server");
@@ -749,12 +835,19 @@ fn test_strip_string_literal_quotes() {
 #[test]
 #[ignore]
 fn test_strip_doc_comment_slashes() {
-    assert_eq!(strip_doc_comment_slashes(r#"
+    assert_eq!(
+        strip_doc_comment_slashes(
+            r#"
   /// A
   /// multiline
   /// comment!
-"#), "\n A\n multiline\n comment!\n");
-    assert_eq!(strip_doc_comment_slashes(r#"
+"#
+        ),
+        "\n A\n multiline\n comment!\n"
+    );
+    assert_eq!(
+        strip_doc_comment_slashes(
+            r#"
   ///
   /// With
   ///
@@ -762,30 +855,48 @@ fn test_strip_doc_comment_slashes() {
   ///
   /// lines
   ///
-"#), "\n\n With\n\n empty\n\n lines\n\n");
-    assert_eq!(strip_doc_comment_slashes(r#"
+"#
+        ),
+        "\n\n With\n\n empty\n\n lines\n\n"
+    );
+    assert_eq!(
+        strip_doc_comment_slashes(
+            r#"
   /// With
 
   /// blank
 
 
   /// lines
-"#), "\n With\n\n blank\n\n\n lines\n");
-    assert_eq!(strip_doc_comment_slashes(r#"
+"#
+        ),
+        "\n With\n\n blank\n\n\n lines\n"
+    );
+    assert_eq!(
+        strip_doc_comment_slashes(
+            r#"
 	/// With
 		/// tabs
 	 /// in
  	/// addition
  	 /// to
 	 	/// spaces
-"#), "\n With\n tabs\n in\n addition\n to\n spaces\n");
-    assert_eq!(strip_doc_comment_slashes(r#"
+"#
+        ),
+        "\n With\n tabs\n in\n addition\n to\n spaces\n"
+    );
+    assert_eq!(
+        strip_doc_comment_slashes(
+            r#"
   /// Weird
 /// Offsets
   /// Slash///
   ///Placement ///
        /// And
-  ///   Spacing   "#), "\n Weird\n Offsets\n Slash///\nPlacement ///\n And\n   Spacing   \n");
+  ///   Spacing   "#
+        ),
+        "\n Weird\n Offsets\n Slash///\nPlacement ///\n And\n   Spacing   \n"
+    );
 }
 
 #[test]

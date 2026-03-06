@@ -8,6 +8,7 @@ pub mod consts_tests;
 pub mod declaration_order_tests;
 pub mod direct_dependencies_tests;
 pub mod enums_tests;
+pub mod errcat_docs_tests;
 pub mod handle_tests;
 pub mod method_tests;
 pub mod parsing_tests;

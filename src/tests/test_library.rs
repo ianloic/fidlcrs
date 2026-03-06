@@ -46,7 +46,8 @@ impl<'a> TestLibrary<'a> {
     }
 
     pub fn select_version(&mut self, platform: &str, version: &str) {
-        self.select_versions.push((platform.to_string(), version.to_string()));
+        self.select_versions
+            .push((platform.to_string(), version.to_string()));
     }
 
     pub fn add_source(&mut self, source_file: &'a SourceFile) {
@@ -55,8 +56,8 @@ impl<'a> TestLibrary<'a> {
 
     pub fn add_errcat_file(&mut self, path: &str) {
         use crate::tests::errcat::Errcat;
-        let content =
-            Errcat::get_fidl(path).unwrap_or_else(|| panic!("failed to read errcat FIDL: {}", path));
+        let content = Errcat::get_fidl(path)
+            .unwrap_or_else(|| panic!("failed to read errcat FIDL: {}", path));
         let dummy = Box::new(SourceFile::new(path.to_string(), content));
         let ptr: *const SourceFile = &*dummy;
         self.shared_sources.push(dummy);

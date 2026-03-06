@@ -2,17 +2,21 @@ use regex::Regex;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::diagnostics::{Error, ErrorKind, ALL_ERRORS};
+use crate::diagnostics::{ALL_ERRORS, Error, ErrorKind};
 
 fn test_file_path(filename: &str) -> PathBuf {
     let fuchsia_dir = std::env::var("FUCHSIA_DIR").expect("FUCHSIA_DIR must be set");
     if filename.starts_with("error-catalog/") || filename == "errcat.md" {
-        PathBuf::from(fuchsia_dir).join("docs/reference/fidl/language").join(filename)
+        PathBuf::from(fuchsia_dir)
+            .join("docs/reference/fidl/language")
+            .join(filename)
     } else if filename == "_redirects.yaml" {
         PathBuf::from(fuchsia_dir).join("docs/_redirects.yaml")
     } else {
         // Defaults to fidlc/tests/
-        PathBuf::from(fuchsia_dir).join("tools/fidl/fidlc/tests").join(filename)
+        PathBuf::from(fuchsia_dir)
+            .join("tools/fidl/fidlc/tests")
+            .join(filename)
     }
 }
 
@@ -25,7 +29,10 @@ fn good_fidl_paths(def: &Error) -> Option<Vec<String>> {
     let path = test_file_path(&format!("error-catalog/_{}.md", id));
     let content = read_file(&path)?;
 
-    let pattern = Regex::new(r#"gerrit_path="tools/fidl/fidlc/tests/fidl/(good/fi-(\d+)(?:-[a-z])?\.test\.fidl)""#).unwrap();
+    let pattern = Regex::new(
+        r#"gerrit_path="tools/fidl/fidlc/tests/fidl/(good/fi-(\d+)(?:-[a-z])?\.test\.fidl)""#,
+    )
+    .unwrap();
     let mut result = Vec::new();
 
     for cap in pattern.captures_iter(&content) {
@@ -70,13 +77,18 @@ fn index_is_complete() {
                 line,
                 format!("<<error-catalog/_{}.md>>", id),
                 "unexpected entry in {:?}; either {} was not next in sequence, or it is marked documented=false",
-                path, id
+                path,
+                id
             );
         }
     }
 
     if let Some(missing) = errors_iter.next() {
-        panic!("{:?} did not contain all diagnostics; missing {}", path, missing.format_id());
+        panic!(
+            "{:?} did not contain all diagnostics; missing {}",
+            path,
+            missing.format_id()
+        );
     }
 }
 
@@ -226,21 +238,12 @@ fn errors_are_tested_iff_documented_and_not_retired() {
             assert!(
                 tested,
                 "{} (documented=true, retired=false) is missing a test in {:?}",
-                id,
-                path
+                id, path
             );
         } else if !def.documented() {
-            assert!(
-                !tested,
-                "{} (documented=false) unexpectedly has a test",
-                id
-            );
+            assert!(!tested, "{} (documented=false) unexpectedly has a test", id);
         } else {
-            assert!(
-                !tested,
-                "{} (retired=true) unexpectedly has a test",
-                id
-            );
+            assert!(!tested, "{} (retired=true) unexpectedly has a test", id);
         }
     }
 }

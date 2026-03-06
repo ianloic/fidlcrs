@@ -63,20 +63,22 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         if lib_avail.state() == crate::versioning_types::AvailabilityState::Inherited {
             // Wait, if it's Inherited, let's see if added == NEG_INF (from unbounded)
             // Actually, we can't easily check added. So we just assume it's good unless we didn't specify `@available`.
-            // Wait, `AvailabilityStep` in fidlc handles this during library compilation. 
+            // Wait, `AvailabilityStep` in fidlc handles this during library compilation.
             // For now let's just use `Availability::unbounded()` as the parent for `lib_avail` to make it Inherited.
         }
-        
+
         let mut final_lib_avail = Availability::new();
         let _ = final_lib_avail.init(InitArgs {
-             added: Some(Version::HEAD),
-             deprecated: None, removed: None, replaced: false,
+            added: Some(Version::HEAD),
+            deprecated: None,
+            removed: None,
+            replaced: false,
         });
         let _ = final_lib_avail.inherit(&Availability::unbounded());
         if lib_avail.state() == crate::versioning_types::AvailabilityState::Inherited {
-             // Use lib_avail if it comes from an attribute 
-             final_lib_avail = lib_avail.clone();
-             // but actually, we need 
+            // Use lib_avail if it comes from an attribute
+            final_lib_avail = lib_avail.clone();
+            // but actually, we need
         }
 
         for (name, decl) in &compiler.raw_decls {
@@ -113,7 +115,8 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             replaced: false,
                         });
                         let _ = initial.inherit(&final_lib_avail);
-                        if initial.state() == crate::versioning_types::AvailabilityState::Inherited {
+                        if initial.state() == crate::versioning_types::AvailabilityState::Inherited
+                        {
                             initial.narrow(VersionRange::new(selected_version, Version::POS_INF));
                         }
                         avail = initial;

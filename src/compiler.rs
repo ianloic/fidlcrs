@@ -272,7 +272,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         // Sort declarations by name to match fidlc output order (alphabetical)
         self.alias_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.new_type_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.new_type_declarations
+            .sort_by(|a, b| a.name.cmp(&b.name));
         self.bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
@@ -1573,7 +1574,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                     let mut typ = self.resolve_type(tc, &library_name, None);
-                    let alias = typ.outer_alias.take().or_else(|| typ.experimental_maybe_from_alias.take());
+                    let alias = typ
+                        .outer_alias
+                        .take()
+                        .or_else(|| typ.experimental_maybe_from_alias.take());
                     let compiled = NewTypeDeclaration {
                         name: format!("{}/{}", library_name, t.name.data()),
                         location: self.get_location(&t.name.element),
@@ -1944,10 +1948,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
                 if eval_val == max_val_u64 {
                     let span = member.name.element.span().clone();
-                    let transmuted_span: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(span) };
+                    let transmuted_span: crate::source_span::SourceSpan<'src> =
+                        unsafe { std::mem::transmute(span) };
                     max_val_spans.push(transmuted_span);
                 }
-                
+
                 if let Some(prev_name) = member_values.insert(eval_val, name_str.clone()) {
                     self.reporter.fail(
                         Error::ErrDuplicateMemberValue,
@@ -1961,7 +1966,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if attributes.iter().any(|a| a.name == "unknown") {
                 if let Some(ref _prev_span) = unknown_member_span {
                     let dup_span = member.name.element.span().clone();
-                    let transmuted_dup: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(dup_span) };
+                    let transmuted_dup: crate::source_span::SourceSpan<'src> =
+                        unsafe { std::mem::transmute(dup_span) };
                     self.reporter.fail(
                         Error::ErrUnknownAttributeOnMultipleEnumMembers,
                         transmuted_dup,
@@ -1969,7 +1975,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 } else {
                     let first_span = member.name.element.span().clone();
-                    let transmuted_first: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(first_span) };
+                    let transmuted_first: crate::source_span::SourceSpan<'src> =
+                        unsafe { std::mem::transmute(first_span) };
                     unknown_member_span = Some(transmuted_first);
                 }
 
@@ -4892,7 +4899,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if attr.name.element.start_token.span.data == "transitional" {
                     let span = attr.name.element.span().clone();
                     // Bypass the '_ lifetime issue by recreating the span with 'src
-                    let transmuted_span: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(span) };
+                    let transmuted_span: crate::source_span::SourceSpan<'src> =
+                        unsafe { std::mem::transmute(span) };
                     self.reporter.fail(
                         Error::ErrDeprecatedAttribute,
                         transmuted_span,
@@ -6287,7 +6295,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some(c) = s.maybe_element_count.as_ref() {
                             let max_len = *c as usize;
                             let mut len = 0;
-                            let mut chars = lit.literal.value[1..lit.literal.value.len() - 1].chars().peekable();
+                            let mut chars = lit.literal.value[1..lit.literal.value.len() - 1]
+                                .chars()
+                                .peekable();
                             while let Some(ch) = chars.next() {
                                 if ch == '\\' {
                                     if let Some(&next) = chars.peek() {
@@ -7181,173 +7191,65 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let maybe_response_payload = if m.has_error {
                 if let Some(err_type) = maybe_response_err_type.clone() {
-                let success_type = if let Some(ref succ) = maybe_response_success_type {
-                    succ.clone()
-                } else {
-                    let p_ctx = NamingContext::create(decl.name.element.span());
-                    let mut ctx = p_ctx.enter_response(m.name.element.span());
-                    ctx = ctx.enter_member("response");
-                    ctx.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
-
-                    let synth_name = ctx.flattened_name().to_string();
-                    let full_synth = format!("{}/{}", library_name, synth_name);
-
-                    let shape = if self.compiled_decls.contains(&full_synth) {
-                        self.shapes.get(&full_synth).cloned().unwrap()
+                    let success_type = if let Some(ref succ) = maybe_response_success_type {
+                        succ.clone()
                     } else {
-                        let shape = TypeShape {
-                            inline_size: 1,
-                            alignment: 1,
-                            depth: 0,
-                            max_handles: 0,
-                            max_out_of_line: 0,
-                            has_padding: false,
-                            has_flexible_envelope: false,
-                        };
+                        let p_ctx = NamingContext::create(decl.name.element.span());
+                        let mut ctx = p_ctx.enter_response(m.name.element.span());
+                        ctx = ctx.enter_member("response");
+                        ctx.set_name_override(format!("{}_{}_Response", short_name, m.name.data()));
 
-                        let loc = if let Some(elem) = &m.response_param_element {
-                            self.get_location(elem)
-                        } else if let Some(tok) = &m.error_token {
-                            self.get_location(&raw_ast::SourceElement::new(
-                                tok.clone(),
-                                tok.clone(),
-                            ))
+                        let synth_name = ctx.flattened_name().to_string();
+                        let full_synth = format!("{}/{}", library_name, synth_name);
+
+                        let shape = if self.compiled_decls.contains(&full_synth) {
+                            self.shapes.get(&full_synth).cloned().unwrap()
                         } else {
-                            self.get_location(&m.name.element)
+                            let shape = TypeShape {
+                                inline_size: 1,
+                                alignment: 1,
+                                depth: 0,
+                                max_handles: 0,
+                                max_out_of_line: 0,
+                                has_padding: false,
+                                has_flexible_envelope: false,
+                            };
+
+                            let loc = if let Some(elem) = &m.response_param_element {
+                                self.get_location(elem)
+                            } else if let Some(tok) = &m.error_token {
+                                self.get_location(&raw_ast::SourceElement::new(
+                                    tok.clone(),
+                                    tok.clone(),
+                                ))
+                            } else {
+                                self.get_location(&m.name.element)
+                            };
+                            let decl = StructDeclaration {
+                                name: full_synth.clone(),
+                                naming_context: vec![
+                                    short_name.to_string(),
+                                    m.name.data().to_string(),
+                                    "Response".to_string(),
+                                    "response".to_string(),
+                                ],
+                                location: loc,
+                                deprecated: false,
+                                members: vec![],
+                                resource: false,
+                                is_empty_success_struct: true,
+                                type_shape: shape.clone(),
+                                maybe_attributes: vec![],
+                            };
+                            self.struct_declarations.push(decl);
+                            if library_name == self.library_name {
+                                self.declaration_order.push(full_synth.clone());
+                                self.compiled_decls.insert(full_synth.clone());
+                            }
+                            self.shapes.insert(full_synth.clone(), shape.clone());
+                            shape
                         };
-                        let decl = StructDeclaration {
-                            name: full_synth.clone(),
-                            naming_context: vec![
-                                short_name.to_string(),
-                                m.name.data().to_string(),
-                                "Response".to_string(),
-                                "response".to_string(),
-                            ],
-                            location: loc,
-                            deprecated: false,
-                            members: vec![],
-                            resource: false,
-                            is_empty_success_struct: true,
-                            type_shape: shape.clone(),
-                            maybe_attributes: vec![],
-                        };
-                        self.struct_declarations.push(decl);
-                        if library_name == self.library_name {
-                            self.declaration_order.push(full_synth.clone());
-                            self.compiled_decls.insert(full_synth.clone());
-                        }
-                        self.shapes.insert(full_synth.clone(), shape.clone());
-                        shape
-                    };
-                    let typ = Type::Identifier(IdentifierType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: shape,
-                        },
-                        identifier: Some(full_synth.clone()),
-                        nullable: Some(false),
-                    });
-                    maybe_response_success_type = Some(typ.clone());
-                    typ
-                };
-
-                // Synthesize Union
-                let synth_union_name = format!("{}_{}_Result", short_name, m.name.data());
-                let full_synth_union = format!("{}/{}", library_name, synth_union_name);
-
-                let mut union_out_of_line = 0;
-                let mut union_has_padding = false;
-                let mut union_handles = 0;
-                let mut union_depth = 0;
-                let mut union_has_flexible_envelope = is_method_flexible;
-                for t in [&success_type, &err_type] {
-                    let shape = &t.type_shape;
-                    let inlined = shape.inline_size <= 4;
-                    let padding = if inlined {
-                        (4 - (shape.inline_size % 4)) % 4
-                    } else {
-                        (8 - (shape.inline_size % 8)) % 8
-                    };
-                    union_has_padding = union_has_padding || shape.has_padding || padding != 0;
-
-                    let env_max_out_of_line = shape.max_out_of_line.saturating_add(if inlined {
-                        0
-                    } else {
-                        shape.inline_size.saturating_add(padding)
-                    });
-                    if env_max_out_of_line > union_out_of_line {
-                        union_out_of_line = env_max_out_of_line;
-                    }
-                    if shape.max_handles > union_handles {
-                        union_handles = shape.max_handles;
-                    }
-                    if shape.depth > union_depth {
-                        union_depth = shape.depth;
-                    }
-                    if shape.has_flexible_envelope {
-                        union_has_flexible_envelope = true;
-                    }
-                }
-
-                let union_shape = TypeShape {
-                    inline_size: 16,
-                    alignment: 8,
-                    depth: union_depth.saturating_add(1),
-                    max_handles: union_handles,
-                    max_out_of_line: union_out_of_line,
-                    has_padding: union_has_padding,
-                    has_flexible_envelope: union_has_flexible_envelope,
-                };
-
-                let union_loc = if let Some(elem) = &m.response_param_element {
-                    self.get_location(elem)
-                } else if let Some(tok) = &m.error_token {
-                    self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
-                } else {
-                    self.get_location(&m.name.element)
-                };
-
-                let response_loc = self.generated_location("response");
-                let err_loc = self.generated_location("err");
-                let _framework_err_loc = self.generated_location("framework_err");
-                let _strict_loc = self.generated_location("strict");
-
-                let mut union_members = vec![
-                    UnionMember {
-                        ordinal: 1,
-                        reserved: None,
-                        name: Some("response".to_string()),
-                        type_: Some(success_type.clone()),
-                        experimental_maybe_from_alias: None,
-                        location: Some(response_loc),
-                        deprecated: Some(false),
-                        maybe_attributes: vec![],
-                    },
-                    UnionMember {
-                        ordinal: 2,
-                        reserved: None,
-                        name: Some("err".to_string()),
-                        type_: Some(err_type.clone()),
-                        experimental_maybe_from_alias: None,
-                        location: Some(err_loc),
-                        deprecated: Some(false),
-                        maybe_attributes: vec![],
-                    },
-                ];
-
-                if is_method_flexible {
-                    union_members.push(UnionMember {
-                        experimental_maybe_from_alias: None,
-                        ordinal: 3,
-                        reserved: None,
-                        name: Some("framework_err".to_string()),
-                        type_: Some(Type::Identifier(IdentifierType {
+                        let typ = Type::Identifier(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -7356,61 +7258,170 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 maybe_size_constant_name: None,
                                 resource: false,
                                 deprecated: None,
-                                type_shape: TypeShape {
-                                    inline_size: 4,
-                                    alignment: 4,
-                                    depth: 0,
-                                    max_handles: 0,
-                                    max_out_of_line: 0,
-                                    has_padding: false,
-                                    has_flexible_envelope: false,
-                                },
+                                type_shape: shape,
                             },
-                            identifier: Some("fidl/internal/FrameworkErr".to_string()),
+                            identifier: Some(full_synth.clone()),
                             nullable: Some(false),
-                        })),
-                        location: Some(_framework_err_loc),
-                        deprecated: Some(false),
-                        maybe_attributes: vec![],
-                    });
-                }
+                        });
+                        maybe_response_success_type = Some(typ.clone());
+                        typ
+                    };
 
-                let union_decl = UnionDeclaration {
-                    name: full_synth_union.clone(),
-                    naming_context: vec![
-                        short_name.to_string(),
-                        m.name.data().to_string(),
-                        "Response".to_string(),
-                    ],
-                    location: union_loc,
-                    deprecated: false,
-                    members: union_members,
-                    strict: true,
-                    resource: union_handles > 0,
-                    is_result: Some(true),
-                    type_shape: union_shape.clone(),
-                    maybe_attributes: vec![],
-                };
-                self.union_declarations.push(union_decl);
-                if library_name == self.library_name {
-                    self.declaration_order.push(full_synth_union.clone());
-                    self.compiled_decls.insert(full_synth_union.clone());
-                }
+                    // Synthesize Union
+                    let synth_union_name = format!("{}_{}_Result", short_name, m.name.data());
+                    let full_synth_union = format!("{}/{}", library_name, synth_union_name);
 
-                Some(Type::Identifier(IdentifierType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
+                    let mut union_out_of_line = 0;
+                    let mut union_has_padding = false;
+                    let mut union_handles = 0;
+                    let mut union_depth = 0;
+                    let mut union_has_flexible_envelope = is_method_flexible;
+                    for t in [&success_type, &err_type] {
+                        let shape = &t.type_shape;
+                        let inlined = shape.inline_size <= 4;
+                        let padding = if inlined {
+                            (4 - (shape.inline_size % 4)) % 4
+                        } else {
+                            (8 - (shape.inline_size % 8)) % 8
+                        };
+                        union_has_padding = union_has_padding || shape.has_padding || padding != 0;
+
+                        let env_max_out_of_line =
+                            shape.max_out_of_line.saturating_add(if inlined {
+                                0
+                            } else {
+                                shape.inline_size.saturating_add(padding)
+                            });
+                        if env_max_out_of_line > union_out_of_line {
+                            union_out_of_line = env_max_out_of_line;
+                        }
+                        if shape.max_handles > union_handles {
+                            union_handles = shape.max_handles;
+                        }
+                        if shape.depth > union_depth {
+                            union_depth = shape.depth;
+                        }
+                        if shape.has_flexible_envelope {
+                            union_has_flexible_envelope = true;
+                        }
+                    }
+
+                    let union_shape = TypeShape {
+                        inline_size: 16,
+                        alignment: 8,
+                        depth: union_depth.saturating_add(1),
+                        max_handles: union_handles,
+                        max_out_of_line: union_out_of_line,
+                        has_padding: union_has_padding,
+                        has_flexible_envelope: union_has_flexible_envelope,
+                    };
+
+                    let union_loc = if let Some(elem) = &m.response_param_element {
+                        self.get_location(elem)
+                    } else if let Some(tok) = &m.error_token {
+                        self.get_location(&raw_ast::SourceElement::new(tok.clone(), tok.clone()))
+                    } else {
+                        self.get_location(&m.name.element)
+                    };
+
+                    let response_loc = self.generated_location("response");
+                    let err_loc = self.generated_location("err");
+                    let _framework_err_loc = self.generated_location("framework_err");
+                    let _strict_loc = self.generated_location("strict");
+
+                    let mut union_members = vec![
+                        UnionMember {
+                            ordinal: 1,
+                            reserved: None,
+                            name: Some("response".to_string()),
+                            type_: Some(success_type.clone()),
+                            experimental_maybe_from_alias: None,
+                            location: Some(response_loc),
+                            deprecated: Some(false),
+                            maybe_attributes: vec![],
+                        },
+                        UnionMember {
+                            ordinal: 2,
+                            reserved: None,
+                            name: Some("err".to_string()),
+                            type_: Some(err_type.clone()),
+                            experimental_maybe_from_alias: None,
+                            location: Some(err_loc),
+                            deprecated: Some(false),
+                            maybe_attributes: vec![],
+                        },
+                    ];
+
+                    if is_method_flexible {
+                        union_members.push(UnionMember {
+                            experimental_maybe_from_alias: None,
+                            ordinal: 3,
+                            reserved: None,
+                            name: Some("framework_err".to_string()),
+                            type_: Some(Type::Identifier(IdentifierType {
+                                common: TypeCommon {
+                                    experimental_maybe_from_alias: None,
+                                    outer_alias: None,
+                                    maybe_attributes: vec![],
+                                    field_shape: None,
+                                    maybe_size_constant_name: None,
+                                    resource: false,
+                                    deprecated: None,
+                                    type_shape: TypeShape {
+                                        inline_size: 4,
+                                        alignment: 4,
+                                        depth: 0,
+                                        max_handles: 0,
+                                        max_out_of_line: 0,
+                                        has_padding: false,
+                                        has_flexible_envelope: false,
+                                    },
+                                },
+                                identifier: Some("fidl/internal/FrameworkErr".to_string()),
+                                nullable: Some(false),
+                            })),
+                            location: Some(_framework_err_loc),
+                            deprecated: Some(false),
+                            maybe_attributes: vec![],
+                        });
+                    }
+
+                    let union_decl = UnionDeclaration {
+                        name: full_synth_union.clone(),
+                        naming_context: vec![
+                            short_name.to_string(),
+                            m.name.data().to_string(),
+                            "Response".to_string(),
+                        ],
+                        location: union_loc,
+                        deprecated: false,
+                        members: union_members,
+                        strict: true,
+                        resource: union_handles > 0,
+                        is_result: Some(true),
+                        type_shape: union_shape.clone(),
                         maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        resource: false,
-                        deprecated: None,
-                        type_shape: union_shape,
-                    },
-                    identifier: Some(full_synth_union.clone()),
-                    nullable: Some(false),
-                }))
+                    };
+                    self.union_declarations.push(union_decl);
+                    if library_name == self.library_name {
+                        self.declaration_order.push(full_synth_union.clone());
+                        self.compiled_decls.insert(full_synth_union.clone());
+                    }
+
+                    Some(Type::Identifier(IdentifierType {
+                        common: TypeCommon {
+                            experimental_maybe_from_alias: None,
+                            outer_alias: None,
+                            maybe_attributes: vec![],
+                            field_shape: None,
+                            maybe_size_constant_name: None,
+                            resource: false,
+                            deprecated: None,
+                            type_shape: union_shape,
+                        },
+                        identifier: Some(full_synth_union.clone()),
+                        nullable: Some(false),
+                    }))
                 } else {
                     None
                 }

@@ -260,13 +260,21 @@ protocol Example {
     );
     library.add_source(&source0);
     let root = library.compile().expect("compilation failed");
-    
-    let decl = root.lookup_protocol("example/Example").expect("protocol not found");
+
+    let decl = root
+        .lookup_protocol("example/Example")
+        .expect("protocol not found");
     assert_eq!(decl.methods.len(), 1);
     let method = &decl.methods[0];
     assert!(method.has_error);
-    let err_type = method.maybe_response_err_type.as_ref().expect("error type not found");
-    assert!(matches!(err_type, crate::json_generator::Type::Identifier(_)));
+    let err_type = method
+        .maybe_response_err_type
+        .as_ref()
+        .expect("error type not found");
+    assert!(matches!(
+        err_type,
+        crate::json_generator::Type::Identifier(_)
+    ));
 }
 
 #[test]

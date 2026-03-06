@@ -38,4 +38,5 @@ pub mod typeshape_tests;
 pub mod union_tests;
 pub mod using_tests;
 pub mod utils_tests;
+pub mod versioning_attribute_tests;
 pub mod virtual_source_tests;

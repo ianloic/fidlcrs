@@ -11,11 +11,7 @@ fn get_file_content(path: &str) -> String {
 #[ignore]
 fn bad_collision() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0035.test.fidl".to_string(),
-        get_file_content("bad/fi-0035.test.fidl"),
-    );
-    library.add_source(&source);
+    library.add_errcat_file("bad/fi-0035.test.fidl");
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -23,11 +19,7 @@ fn bad_collision() {
 #[test]
 fn good_collision_fix_rename() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
-        "good/fi-0035.test.fidl".to_string(),
-        get_file_content("good/fi-0035.test.fidl"),
-    );
-    library.add_source(&source);
+    library.add_errcat_file("good/fi-0035.test.fidl");
     library.compile().expect("compilation failed");
 }
 
@@ -614,11 +606,7 @@ fn bad_resource_properties() {
 #[ignore]
 fn bad_member_values() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0054.test.fidl".to_string(),
-        get_file_content("bad/fi-0054.test.fidl"),
-    );
-    library.add_source(&source);
+    library.add_errcat_file("bad/fi-0054.test.fidl");
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }

@@ -338,11 +338,7 @@ closed protocol Closed {
 
 fn bad_invalid_strictness_flexible_one_way_method_in_closed() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0116.test.fidl".to_string(),
-        get_file_content("bad/fi-0116.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0116.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -369,11 +365,7 @@ closed protocol Closed {
 
 fn bad_invalid_strictness_flexible_two_way_method_in_ajar() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0115.test.fidl".to_string(),
-        get_file_content("bad/fi-0115.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0115.test.fidl");
     assert!(lib.compile().is_err());
 }
 

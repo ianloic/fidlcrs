@@ -28,11 +28,8 @@ type Three = strict strict strict union { 1: b bool; };
 
 #[test]
 fn bad_duplicate_modifier_non_consecutive() {
-    let content =
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0032.noformat.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0032.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0032.noformat.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -41,11 +38,8 @@ fn bad_duplicate_modifier_non_consecutive() {
 
 #[test]
 fn bad_conflicting_modifiers() {
-    let content =
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0033.noformat.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0033.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0033.noformat.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 2);
@@ -143,11 +137,8 @@ type Foo = flexible bits {
 
 #[test]
 fn bad_strictness_struct() {
-    let content =
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0030.noformat.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0030.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0030.noformat.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -175,10 +166,8 @@ type StrictFoo = strict table {};
 
 #[test]
 fn good_union_strictness() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/good/fi-0033.test.fidl").unwrap();
-    let source = SourceFile::new("good/fi-0033.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("good/fi-0033.test.fidl");
     lib.compile().unwrap();
 }
 

@@ -109,10 +109,8 @@ type TypeDecl = struct {
 
 #[test]
 fn bad_type_decl_of_new_type_errors() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0062.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0062.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0062.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -266,10 +264,8 @@ type TypeDecl = resource struct {
 
 #[test]
 fn bad_too_many_layout_parameters() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0162-b.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0162-b.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0162-b.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -299,10 +295,8 @@ type Foo = struct {
 
 #[test]
 fn bad_not_enough_parameters() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0162-a.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0162-a.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0162-a.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -311,10 +305,8 @@ fn bad_not_enough_parameters() {
 
 #[test]
 fn bad_too_many_constraints() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0164.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0164.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0164.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -393,10 +385,8 @@ type Foo = resource struct {
 
 #[test]
 fn bad_want_type_layout_parameter() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0165.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0165.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0165.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -426,10 +416,8 @@ type Foo = struct {
 
 #[test]
 fn bad_unresolvable_constraint() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0166.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0166.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0166.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -525,10 +513,8 @@ type Foo = struct {
 
 #[test]
 fn bad_usize64_without_flag() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0180.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0180.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0180.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);

@@ -14,6 +14,7 @@ pub struct TestLibrary<'a> {
     #[allow(dead_code)]
     generated_source_file: VirtualSourceFile,
     pub experimental_flags: Vec<String>,
+    pub select_versions: Vec<(String, String)>,
 }
 
 impl<'a> Default for TestLibrary<'a> {
@@ -30,6 +31,7 @@ impl<'a> TestLibrary<'a> {
             shared_sources: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             experimental_flags: Vec::new(),
+            select_versions: Vec::new(),
         }
     }
 
@@ -43,8 +45,23 @@ impl<'a> TestLibrary<'a> {
         self.experimental_flags.push(flag.to_string());
     }
 
+    pub fn select_version(&mut self, platform: &str, version: &str) {
+        self.select_versions.push((platform.to_string(), version.to_string()));
+    }
+
     pub fn add_source(&mut self, source_file: &'a SourceFile) {
         self.source_files.push(source_file);
+    }
+
+    pub fn add_errcat_file(&mut self, path: &str) {
+        use crate::tests::errcat::Errcat;
+        let content =
+            Errcat::get_fidl(path).unwrap_or_else(|| panic!("failed to read errcat FIDL: {}", path));
+        let dummy = Box::new(SourceFile::new(path.to_string(), content));
+        let ptr: *const SourceFile = &*dummy;
+        self.shared_sources.push(dummy);
+        // Safety: the Box lives until the TestLibrary is dropped so this reference is valid.
+        self.source_files.push(unsafe { &*ptr });
     }
 
     pub fn use_library_zx(&mut self) {
@@ -115,6 +132,16 @@ resource_definition handle : uint32 {
             }
         }
         compiler.experimental_flags = flags;
+        for (platform, version) in &self.select_versions {
+            use crate::versioning_types::{Platform, Version};
+            if let Some(p) = Platform::parse(platform) {
+                if let Some(v) = Version::parse(version) {
+                    let mut versions = std::collections::BTreeSet::new();
+                    versions.insert(v);
+                    compiler.version_selection.insert(p, versions);
+                }
+            }
+        }
         let mut asts = Vec::new();
 
         for file in &self.source_files {

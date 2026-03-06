@@ -86,16 +86,8 @@ service ExampleService {
 #[ignore]
 fn bad_no_attribute_on_using_not_event_doc() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0045-a.test.fidl".to_string(),
-        get_file_content("bad/fi-0045-a.test.fidl"),
-    );
-    lib.add_source(&source);
-    let source = SourceFile::new(
-        "bad/fi-0045-b.test.fidl".to_string(),
-        get_file_content("bad/fi-0045-b.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0045-a.test.fidl");
+    lib.add_errcat_file("bad/fi-0045-b.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -124,22 +116,14 @@ protocol A {
 #[ignore]
 fn bad_no_two_same_attribute_canonical() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0123.test.fidl".to_string(),
-        get_file_content("bad/fi-0123.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0123.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_doc_attribute() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "good/fi-0028-b.test.fidl".to_string(),
-        get_file_content("good/fi-0028-b.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("good/fi-0028-b.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -193,11 +177,7 @@ library fidl.test.dupattributes;
 #[ignore]
 fn warn_on_close_to_official_attribute() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0145.test.fidl".to_string(),
-        get_file_content("bad/fi-0145.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0145.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -205,11 +185,7 @@ fn warn_on_close_to_official_attribute() {
 #[ignore]
 fn good_not_too_close_unofficial_attribute() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "good/fi-0145.test.fidl".to_string(),
-        get_file_content("good/fi-0145.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("good/fi-0145.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -259,11 +235,7 @@ protocol A {
 #[ignore]
 fn bad_unknown_argument() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0129.test.fidl".to_string(),
-        get_file_content("bad/fi-0129.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0129.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -271,11 +243,7 @@ fn bad_unknown_argument() {
 #[ignore]
 fn bad_empty_transport() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0128.test.fidl".to_string(),
-        get_file_content("bad/fi-0128.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0128.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -283,11 +251,7 @@ fn bad_empty_transport() {
 #[ignore]
 fn bad_unrecognized_transport() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0142.test.fidl".to_string(),
-        get_file_content("bad/fi-0142.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0142.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -411,11 +375,7 @@ type B = flexible bits : uint32 {
 #[ignore]
 fn bad_unknown_invalid_on_strict_enum_member() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0071.test.fidl".to_string(),
-        get_file_content("bad/fi-0071.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0071.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -472,11 +432,7 @@ protocol MyProtocol {
 #[ignore]
 fn bad_single_deprecated_attribute() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0121.test.fidl".to_string(),
-        get_file_content("bad/fi-0121.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0121.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -575,11 +531,7 @@ protocol MyProtocol {
 #[ignore]
 fn bad_attribute_value() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0132.test.fidl".to_string(),
-        get_file_content("bad/fi-0132.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0132.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -587,11 +539,7 @@ fn bad_attribute_value() {
 #[ignore]
 fn bad_selector_incorrect_placement() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0120-a.test.fidl".to_string(),
-        get_file_content("bad/fi-0120-a.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0120-a.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -618,11 +566,7 @@ protocol ExampleProtocol {
 #[ignore]
 fn bad_attribute_on_top_level_layout() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0023.noformat.test.fidl".to_string(),
-        get_file_content("bad/fi-0023.noformat.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0023.noformat.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -653,11 +597,7 @@ protocol MyProtocol {
 #[ignore]
 fn bad_no_arguments_empty_parens() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0014.noformat.test.fidl".to_string(),
-        get_file_content("bad/fi-0014.noformat.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0014.noformat.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -683,11 +623,7 @@ type MyStruct = struct {};
 #[ignore]
 fn bad_multiple_arguments_with_no_names() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0015.noformat.test.fidl".to_string(),
-        get_file_content("bad/fi-0015.noformat.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0015.noformat.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -767,11 +703,7 @@ type MyStruct = struct {};
 #[ignore]
 fn bad_multiple_arguments_duplicate_names() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0130.test.fidl".to_string(),
-        get_file_content("bad/fi-0130.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0130.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -779,11 +711,7 @@ fn bad_multiple_arguments_duplicate_names() {
 #[ignore]
 fn bad_multiple_arguments_duplicate_canonical_names() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0131.test.fidl".to_string(),
-        get_file_content("bad/fi-0131.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0131.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -880,11 +808,7 @@ type MyOtherStruct = struct {};
 #[ignore]
 fn bad_single_schema_argument_is_named() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0125.test.fidl".to_string(),
-        get_file_content("bad/fi-0125.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0125.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -892,11 +816,7 @@ fn bad_single_schema_argument_is_named() {
 #[ignore]
 fn bad_single_schema_argument_is_not_named() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0126.test.fidl".to_string(),
-        get_file_content("bad/fi-0126.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0126.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -981,11 +901,7 @@ type MyStruct3 = struct {};
 #[ignore]
 fn bad_multiple_schema_arguments_required_missing() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0127.test.fidl".to_string(),
-        get_file_content("bad/fi-0127.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0127.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -1011,11 +927,7 @@ type MyStruct = struct {};
 #[ignore]
 fn bad_literal_numeric_types_without_schema() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0124.test.fidl".to_string(),
-        get_file_content("bad/fi-0124.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0124.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -1153,11 +1065,7 @@ type MyStruct = struct {};
 #[ignore]
 fn bad_invalid_literal_with_real_schema() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0065-c.test.fidl".to_string(),
-        get_file_content("bad/fi-0065-c.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0065-c.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -1682,11 +1590,7 @@ protocol Foo {};
 #[ignore]
 fn bad_discoverable_invalid_name_errcat() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0135.test.fidl".to_string(),
-        get_file_content("bad/fi-0135.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0135.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -1694,11 +1598,7 @@ fn bad_discoverable_invalid_name_errcat() {
 #[ignore]
 fn bad_discoverable_location_errcat() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0210.test.fidl".to_string(),
-        get_file_content("bad/fi-0210.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0210.test.fidl");
     assert!(lib.compile().is_err());
 }
 

@@ -60,11 +60,8 @@ type Foo = table {};
 
 #[test]
 fn bad_missing_ordinals() {
-    let content =
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0016-a.noformat.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0016-a.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0016-a.noformat.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -73,11 +70,8 @@ fn bad_missing_ordinals() {
 
 #[test]
 fn bad_ordinal_out_of_bounds_negative() {
-    let content =
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0017-a.noformat.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0017-a.noformat.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0017-a.noformat.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -129,10 +123,8 @@ type MyTable = table {
 
 #[test]
 fn bad_duplicate_ordinals() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0094.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0094.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0094.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -327,10 +319,8 @@ type OptionalTableContainer = flexible union {
 
 #[test]
 fn bad_optional_table_member() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0048.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0048.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0048.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -420,19 +410,15 @@ type MyTable = table {
 
 #[test]
 fn good64_ordinals_max_is_table() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/good/fi-0093.test.fidl").unwrap();
-    let source = SourceFile::new("good/fi-0093.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("good/fi-0093.test.fidl");
     lib.compile().unwrap();
 }
 
 #[test]
 fn bad_max_ordinal_not_table() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0093.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0093.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0093.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -527,10 +513,8 @@ type Example = table {
 
 #[test]
 fn bad_too_many_ordinals() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0092.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0092.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0092.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -539,10 +523,8 @@ fn bad_too_many_ordinals() {
 
 #[test]
 fn bad_recursion_disallowed() {
-    let content = std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0057-d.test.fidl").unwrap();
-    let source = SourceFile::new("bad/fi-0057-d.test.fidl".to_string(), content);
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0057-d.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);

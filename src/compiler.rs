@@ -6228,11 +6228,40 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         if let Some(c) = s.maybe_element_count.as_ref() {
                             let max_len = *c as usize;
-                            let mut len = lit.literal.value.len();
-                            if len >= 2 {
-                                len -= 2;
+                            let mut len = 0;
+                            let mut chars = lit.literal.value[1..lit.literal.value.len() - 1].chars().peekable();
+                            while let Some(ch) = chars.next() {
+                                if ch == '\\' {
+                                    if let Some(&next) = chars.peek() {
+                                        if next == 'u' {
+                                            chars.next(); // 'u'
+                                            if chars.peek() == Some(&'{') {
+                                                chars.next(); // '{'
+                                                let mut hex = String::new();
+                                                while let Some(&c) = chars.peek() {
+                                                    if c == '}' {
+                                                        chars.next(); // '}'
+                                                        break;
+                                                    }
+                                                    hex.push(c);
+                                                    chars.next();
+                                                }
+                                                if let Ok(val) = u32::from_str_radix(&hex, 16) {
+                                                    if let Some(c) = std::char::from_u32(val) {
+                                                        len += c.len_utf8();
+                                                        continue;
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            chars.next(); // consume escaped char
+                                            len += next.len_utf8();
+                                            continue;
+                                        }
+                                    }
+                                }
+                                len += ch.len_utf8();
                             }
-                            len -= lit.literal.value.matches('\\').count();
                             if len > max_len {
                                 self.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType,

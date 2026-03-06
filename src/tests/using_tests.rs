@@ -92,11 +92,7 @@ fn bad_using_alias_ref_through_fqn() {
 #[ignore]
 fn bad_duplicate_using_no_alias() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0042-b.test.fidl".to_string(),
-        get_file_content("bad/fi-0042-b.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0042-b.test.fidl");
     lib.compile().expect("compilation failed");
     assert!(lib.compile().is_err());
 }
@@ -145,11 +141,7 @@ fn bad_conflicting_using_library_and_alias() {
 #[ignore]
 fn bad_conflicting_using_alias_and_library() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0043-c.test.fidl".to_string(),
-        get_file_content("bad/fi-0043-c.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0043-c.test.fidl");
     lib.compile().expect("compilation failed");
     assert!(lib.compile().is_err());
 }
@@ -158,11 +150,7 @@ fn bad_conflicting_using_alias_and_library() {
 #[ignore]
 fn bad_conflicting_using_alias_and_alias() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0044-c.test.fidl".to_string(),
-        get_file_content("bad/fi-0044-c.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0044-c.test.fidl");
     lib.compile().expect("compilation failed");
     assert!(lib.compile().is_err());
 }
@@ -171,11 +159,7 @@ fn bad_conflicting_using_alias_and_alias() {
 #[ignore]
 fn bad_unused_using() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0178.test.fidl".to_string(),
-        get_file_content("bad/fi-0178.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0178.test.fidl");
     lib.compile().expect("compilation failed");
     assert!(lib.compile().is_err());
 }
@@ -203,11 +187,7 @@ fn bad_too_many_provided_libraries() {
 #[ignore]
 fn bad_library_declaration_name_collision() {
     let mut lib = TestLibrary::new();
-    let source = SourceFile::new(
-        "bad/fi-0038-b.test.fidl".to_string(),
-        get_file_content("bad/fi-0038-b.test.fidl"),
-    );
-    lib.add_source(&source);
+    lib.add_errcat_file("bad/fi-0038-b.test.fidl");
     lib.compile().expect("compilation failed");
     assert!(lib.compile().is_err());
 }

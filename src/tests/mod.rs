@@ -18,6 +18,7 @@ pub mod generated_name_tests;
 pub mod handle_tests;
 pub mod library_tests;
 pub mod method_tests;
+pub mod ordinals_tests;
 pub mod parsing_tests;
 pub mod protocol_tests;
 pub mod resource_tests;

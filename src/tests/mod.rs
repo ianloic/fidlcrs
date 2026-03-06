@@ -27,6 +27,7 @@ pub mod reporter_tests;
 pub mod resource_tests;
 pub mod resourceness_tests;
 pub mod sdk_fidl;
+pub mod span_tests;
 pub mod service_tests;
 pub mod strictness_tests;
 pub mod structs_tests;

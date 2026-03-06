@@ -137,23 +137,22 @@ type ErrorType = enum : int32 {
 }
 
 #[test]
-#[ignore]
 fn bad_error_unknown_identifier() {
     let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0052.test.fidl");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
 
 #[test]
-#[ignore]
 fn bad_error_wrong_primitive() {
     let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0141.test.fidl");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
 
 #[test]
-#[ignore]
 fn bad_error_missing_type() {
     let mut library = TestLibrary::new();
     let source0 = SourceFile::new(
@@ -231,6 +230,7 @@ type ForgotTheSemicolon = table {}
 #[ignore]
 fn bad_incorrect_identifier() {
     let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0009.noformat.test.fidl");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
@@ -239,6 +239,8 @@ fn bad_incorrect_identifier() {
 #[ignore]
 fn bad_error_empty_file() {
     let mut library = TestLibrary::new();
+    let source0 = SourceFile::new("example0.fidl".to_string(), "".to_string());
+    library.add_source(&source0);
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
@@ -247,6 +249,7 @@ fn bad_error_empty_file() {
 #[ignore]
 fn experimental_allow_arbitrary_error_types() {
     let mut library = TestLibrary::new();
+    library.enable_flag("allow_arbitrary_error_types");
     let source0 = SourceFile::new(
         "example0.fidl".to_string(),
         r#"
@@ -259,7 +262,14 @@ protocol Example {
         .to_string(),
     );
     library.add_source(&source0);
-    library.compile().expect("compilation failed");
+    let root = library.compile().expect("compilation failed");
+    
+    let decl = root.lookup_protocol("example/Example").expect("protocol not found");
+    assert_eq!(decl.methods.len(), 1);
+    let method = &decl.methods[0];
+    assert!(method.has_error);
+    let err_type = method.maybe_response_err_type.as_ref().expect("error type not found");
+    assert!(matches!(err_type, crate::json_generator::Type::Identifier(_)));
 }
 
 #[test]

@@ -7108,7 +7108,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         }
 
-                        if !is_valid_error_type {
+                        if !is_valid_error_type && !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::AllowArbitraryErrorTypes) {
                             self.reporter
                                 .fail(Error::ErrInvalidErrorType, tc.element.span(), &[]);
                         }
@@ -7122,7 +7122,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             };
 
             let maybe_response_payload = if m.has_error {
-                let err_type = maybe_response_err_type.clone().unwrap();
+                if let Some(err_type) = maybe_response_err_type.clone() {
                 let success_type = if let Some(ref succ) = maybe_response_success_type {
                     succ.clone()
                 } else {
@@ -7353,6 +7353,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     identifier: Some(full_synth_union.clone()),
                     nullable: Some(false),
                 }))
+                } else {
+                    None
+                }
             } else {
                 maybe_response_payload.clone()
             };

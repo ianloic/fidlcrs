@@ -227,7 +227,6 @@ type ForgotTheSemicolon = table {}
 }
 
 #[test]
-#[ignore]
 fn bad_incorrect_identifier() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0009.noformat.test.fidl");
@@ -236,7 +235,6 @@ fn bad_incorrect_identifier() {
 }
 
 #[test]
-#[ignore]
 fn bad_error_empty_file() {
     let mut library = TestLibrary::new();
     let source0 = SourceFile::new("example0.fidl".to_string(), "".to_string());
@@ -272,7 +270,6 @@ protocol Example {
 }
 
 #[test]
-#[ignore]
 fn transitional_removed() {
     let mut library = TestLibrary::new();
     let source0 = SourceFile::new(

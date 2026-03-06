@@ -4842,6 +4842,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     doc_comment_buffer.clear();
                 }
 
+                if attr.name.element.start_token.span.data == "transitional" {
+                    let span = attr.name.element.span().clone();
+                    // Bypass the '_ lifetime issue by recreating the span with 'src
+                    let transmuted_span: crate::source_span::SourceSpan<'src> = unsafe { std::mem::transmute(span) };
+                    self.reporter.fail(
+                        Error::ErrDeprecatedAttribute,
+                        transmuted_span,
+                        &[&"transitional".to_string()],
+                    );
+                }
+
                 // Compile regular attribute
                 let args = attr
                     .args

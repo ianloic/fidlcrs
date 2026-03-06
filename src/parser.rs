@@ -34,6 +34,18 @@ impl<'a, 'b> Parser<'a, 'b> {
         let mut library_decl = if self.last_token.subkind == TokenSubkind::Library {
             self.parse_library_declaration(attributes.take())
         } else {
+            let got_str = if self.last_token.kind == TokenKind::EndOfFile {
+                "end of file".to_string()
+            } else if !self.last_token.span.data.is_empty() {
+                self.last_token.span.data.to_string()
+            } else {
+                format!("{:?}", self.last_token.kind)
+            };
+            self.reporter.fail(
+                Error::ErrUnexpectedIdentifier,
+                self.last_token.span.clone(),
+                &[&got_str, &"library".to_string()],
+            );
             None
         };
 

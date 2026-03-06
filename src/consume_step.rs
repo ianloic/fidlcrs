@@ -1,4 +1,5 @@
 use crate::compiler::{Compiler, RawDecl};
+use crate::name::NamingContext;
 use crate::raw_ast;
 use crate::step::Step;
 
@@ -77,7 +78,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     .raw_decls
                     .insert(full_name, RawDecl::Protocol(decl));
 
-                let protocol_context = crate::name::NamingContext::create(decl.name.element.span());
+                let protocol_context = NamingContext::create(decl.name.element.span());
 
                 for method in &decl.methods {
                     let req_s = match &method.request_payload {

@@ -1,3 +1,4 @@
+use crate::diagnostics::Error;
 use crate::lexer::Lexer;
 use crate::raw_ast::*;
 use crate::reporter::Reporter;
@@ -62,7 +63,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             {
                 for m in &mods {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                        Error::ErrCannotSpecifyModifier,
                         m.element.span(),
                         &[
                             &m.element.span().data.to_string(),
@@ -77,7 +78,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 for m in &mods {
                     if m.subkind == TokenSubkind::Resource {
                         self.reporter.fail(
-                            crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                            Error::ErrCannotSpecifyModifier,
                             m.element.span(),
                             &[
                                 &"resource".to_string(),
@@ -175,7 +176,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
             } else {
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrExpectedDeclaration,
+                    Error::ErrExpectedDeclaration,
                     self.last_token.span.clone(),
                     &[],
                 );
@@ -217,7 +218,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             if comp.element.span().data.contains('_') {
                 let s = comp.element.span().data;
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrInvalidLibraryNameComponent,
+                    Error::ErrInvalidLibraryNameComponent,
                     comp.element.span().clone(),
                     &[&s],
                 );
@@ -338,7 +339,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                         if id_const.identifier.components.len() != 1 {
                             let s = id_const.element.span().data;
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrInvalidIdentifier, // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
+                                Error::ErrInvalidIdentifier, // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
                                 id_const.element.span().clone(),
                                 &[&s],
                             );
@@ -538,7 +539,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         if name_or_reserved.data() == "reserved" && self.last_token.kind == TokenKind::Semicolon {
             self.reporter.fail(
-                crate::diagnostics::Error::ErrReservedNotAllowed,
+                Error::ErrReservedNotAllowed,
                 name_or_reserved.element.span().clone(),
                 &[],
             );
@@ -558,12 +559,12 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         if self.last_token.kind == TokenKind::Equal {
             self.reporter.fail(
-                crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+                Error::ErrUnexpectedTokenOfKind,
                 self.last_token.span.clone(),
                 &[&"=".to_string(), &";".to_string()],
             );
             self.reporter.fail(
-                crate::diagnostics::Error::ErrMissingOrdinalBeforeMember,
+                Error::ErrMissingOrdinalBeforeMember,
                 self.last_token.span.clone(),
                 &[],
             );
@@ -706,11 +707,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                 literal,
             }));
         } else {
-            self.reporter.fail(
-                crate::diagnostics::Error::ErrUnexpectedToken,
-                self.last_token.span.clone(),
-                &[],
-            );
+            self.reporter
+                .fail(Error::ErrUnexpectedToken, self.last_token.span.clone(), &[]);
             return None;
         }
     }
@@ -1141,7 +1139,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     .unwrap_or_else(|| self.last_token.clone());
                 if !mods.is_empty() {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrCannotSpecifyModifier,
+                        Error::ErrCannotSpecifyModifier,
                         mods[0].element.span(),
                         &[&"strict", &"compose"],
                     );
@@ -1165,7 +1163,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 if self.last_token.kind == TokenKind::Semicolon {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidProtocolMember,
+                        Error::ErrInvalidProtocolMember,
                         self.last_token.span.clone(),
                         &[],
                     );
@@ -1222,7 +1220,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             if self.last_token.kind != TokenKind::RightParen {
                 while self.last_token.kind == TokenKind::DocComment {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrDocCommentOnParameters,
+                        Error::ErrDocCommentOnParameters,
                         self.last_token.span.clone(),
                         &[],
                     );
@@ -1272,7 +1270,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             if self.last_token.kind != TokenKind::RightParen {
                 while self.last_token.kind == TokenKind::DocComment {
                     self.reporter.fail(
-                        crate::diagnostics::Error::ErrDocCommentOnParameters,
+                        Error::ErrDocCommentOnParameters,
                         self.last_token.span.clone(),
                         &[],
                     );
@@ -1389,7 +1387,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                         m.subkind == subkind && m.attributes.is_none() && modifier_attrs.is_none()
                     }) {
                         self.reporter.fail(
-                            crate::diagnostics::Error::ErrDuplicateModifier,
+                            Error::ErrDuplicateModifier,
                             start_tok.span.clone(),
                             &[&start_tok.span.data.to_string()],
                         );
@@ -1401,7 +1399,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                                 && modifier_attrs.is_none()
                         }) {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrConflictingModifier,
+                                Error::ErrConflictingModifier,
                                 start_tok.span.clone(),
                                 &[
                                     &start_tok.span.data.to_string(),
@@ -1421,7 +1419,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                                 && modifier_attrs.is_none()
                         }) {
                             self.reporter.fail(
-                                crate::diagnostics::Error::ErrConflictingModifier,
+                                Error::ErrConflictingModifier,
                                 start_tok.span.clone(),
                                 &[
                                     &start_tok.span.data.to_string(),
@@ -1556,7 +1554,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             let expected = format!("{:?}", subkind);
             let actual = format!("{:?}", self.last_token.subkind);
             self.reporter.fail(
-                crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+                Error::ErrUnexpectedTokenOfKind,
                 self.last_token.span.clone(),
                 &[&actual, &expected],
             );
@@ -1592,7 +1590,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             let expected = format!("{:?}", kind);
             let actual = format!("{:?}", self.last_token.kind);
             self.reporter.fail(
-                crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+                Error::ErrUnexpectedTokenOfKind,
                 self.last_token.span.clone(),
                 &[&actual, &expected],
             );

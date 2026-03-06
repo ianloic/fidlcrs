@@ -1,3 +1,5 @@
+use crate::cli::Cli;
+use crate::cli::run;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -116,7 +118,7 @@ fn test_compare_generation() {
         let vdso3 = "vdso-fidl/overview.fidl".to_string();
         let main_file = format!("fidlc/testdata/{}", file);
 
-        let cli = crate::cli::Cli {
+        let cli = Cli {
             json: Some(output_json.to_string_lossy().to_string()),
             available: available_args,
             experimental,
@@ -132,7 +134,7 @@ fn test_compare_generation() {
 
         let source_managers = vec![vec![vdso1, vdso2, vdso3], vec![main_file]];
 
-        if let Err(e) = crate::cli::run(&cli, &source_managers) {
+        if let Err(e) = run(&cli, &source_managers) {
             println!("fidlcrs failed for {}:", file);
             println!("{}", e);
             return false;

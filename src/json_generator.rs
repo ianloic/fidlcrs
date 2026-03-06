@@ -80,18 +80,18 @@ pub enum TypeKind {
 #[derive(Clone, Debug, Serialize)]
 pub struct TypeCommon {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub experimental_maybe_from_alias: Option<crate::json_generator::ExperimentalMaybeFromAlias>,
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
     #[serde(skip)]
-    pub outer_alias: Option<crate::json_generator::ExperimentalMaybeFromAlias>,
+    pub outer_alias: Option<ExperimentalMaybeFromAlias>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deprecated: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub maybe_attributes: Vec<crate::json_generator::Attribute>,
+    pub maybe_attributes: Vec<Attribute>,
     #[serde(rename = "field_shape_v2")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub field_shape: Option<crate::json_generator::FieldShape>,
+    pub field_shape: Option<FieldShape>,
     #[serde(rename = "type_shape_v2")]
-    pub type_shape: crate::json_generator::TypeShape,
+    pub type_shape: TypeShape,
     #[serde(skip)]
     pub maybe_size_constant_name: Option<String>,
     #[serde(skip)]
@@ -798,7 +798,7 @@ impl serde::Serialize for Type {
         #[derive(serde::Serialize)]
         struct TypeOldFormat<'a> {
             #[serde(rename = "kind_v2")]
-            kind: crate::json_generator::TypeKind,
+            kind: TypeKind,
             #[serde(skip_serializing_if = "Option::is_none")]
             obj_type: Option<u32>,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -806,12 +806,11 @@ impl serde::Serialize for Type {
             #[serde(skip_serializing_if = "Option::is_none")]
             identifier: Option<String>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            element_type: Option<&'a crate::json_generator::Type>,
+            element_type: Option<&'a Type>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            pointee_type: Option<&'a crate::json_generator::Type>,
+            pointee_type: Option<&'a Type>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            experimental_maybe_from_alias:
-                Option<&'a crate::json_generator::ExperimentalMaybeFromAlias>,
+            experimental_maybe_from_alias: Option<&'a ExperimentalMaybeFromAlias>,
             #[serde(skip_serializing_if = "Option::is_none")]
             deprecated: Option<bool>,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -831,12 +830,12 @@ impl serde::Serialize for Type {
             #[serde(skip_serializing_if = "Option::is_none")]
             resource_identifier: Option<String>,
             #[serde(skip_serializing_if = "Vec::is_empty")]
-            maybe_attributes: &'a Vec<crate::json_generator::Attribute>,
+            maybe_attributes: &'a Vec<Attribute>,
             #[serde(rename = "field_shape_v2")]
             #[serde(skip_serializing_if = "Option::is_none")]
-            field_shape: Option<&'a crate::json_generator::FieldShape>,
+            field_shape: Option<&'a FieldShape>,
             #[serde(rename = "type_shape_v2")]
-            type_shape: &'a crate::json_generator::TypeShape,
+            type_shape: &'a TypeShape,
         }
 
         let old = TypeOldFormat {
@@ -852,12 +851,12 @@ impl serde::Serialize for Type {
                 _ => None,
             },
             identifier: self.identifier(),
-            element_type: if self.kind() != crate::json_generator::TypeKind::ExperimentalPointer {
+            element_type: if self.kind() != TypeKind::ExperimentalPointer {
                 self.element_type()
             } else {
                 None
             },
-            pointee_type: if self.kind() == crate::json_generator::TypeKind::ExperimentalPointer {
+            pointee_type: if self.kind() == TypeKind::ExperimentalPointer {
                 self.element_type()
             } else {
                 None

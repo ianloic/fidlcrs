@@ -1,3 +1,4 @@
+use crate::diagnostics::ErrorKind;
 use crate::diagnostics::{Diagnostic, Error};
 use crate::source_span::SourceSpan;
 use std::cell::RefCell;
@@ -52,7 +53,7 @@ impl<'a> Reporter<'a> {
     pub fn print_reports(&self) {
         for diag in self.diagnostics.borrow().iter() {
             let prefix = match diag.def.kind() {
-                crate::diagnostics::ErrorKind::Warning => "warning",
+                ErrorKind::Warning => "warning",
                 _ => "error",
             };
             if let Some(span) = &diag.span {

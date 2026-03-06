@@ -1,3 +1,5 @@
+use crate::cli::Cli;
+use crate::cli::run;
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
@@ -47,7 +49,7 @@ impl SdkFidl {
         Self { libs }
     }
 
-    pub fn cli_for_library(&self, name: &str) -> Option<(crate::cli::Cli, Vec<Vec<String>>)> {
+    pub fn cli_for_library(&self, name: &str) -> Option<(Cli, Vec<Vec<String>>)> {
         let parsed = self.libs.get(name)?;
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -127,7 +129,7 @@ impl SdkFidl {
         }
 
         // TODO: get versions from //sdk/version_history.json
-        let cli = crate::cli::Cli {
+        let cli = Cli {
             json: None,
             available: vec!["fuchsia:27,28,29,30,NEXT,HEAD".to_string()],
             experimental: all_experimental.into_iter().collect(),
@@ -883,7 +885,7 @@ mod tests {
                 let out_json_path = temp_dir.join(format!("{}_out.fidl.json", name));
                 cli.json = Some(out_json_path.to_string_lossy().to_string());
 
-                let res = std::panic::catch_unwind(|| crate::cli::run(&cli, &source_managers));
+                let res = std::panic::catch_unwind(|| run(&cli, &source_managers));
 
                 match res {
                     Ok(Err(_e)) => {

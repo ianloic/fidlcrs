@@ -1,5 +1,6 @@
 use crate::source_span::SourceSpan;
 use crate::token::Token;
+use crate::token::TokenSubkind;
 
 #[derive(Debug, Clone)]
 pub struct SourceElement<'a> {
@@ -97,7 +98,7 @@ pub enum AttributeProvenance {
 #[derive(Debug, Clone)]
 pub struct Modifier<'a> {
     pub element: SourceElement<'a>,
-    pub subkind: crate::token::TokenSubkind,
+    pub subkind: TokenSubkind,
     pub attributes: Option<AttributeList<'a>>,
 }
 

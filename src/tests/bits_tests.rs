@@ -1,3 +1,5 @@
+use crate::json_generator::Type;
+use crate::json_generator::TypeKind;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 use std::fs;
@@ -19,13 +21,10 @@ fn good_simple() {
         .lookup_bits("test.good.fi0067a/Fruit")
         .expect("Fruit bits not found");
     assert_eq!(type_decl.members.len(), 3);
-    assert_eq!(
-        type_decl.type_.kind(),
-        crate::json_generator::TypeKind::Primitive
-    );
+    assert_eq!(type_decl.type_.kind(), TypeKind::Primitive);
     assert_eq!(
         match &type_decl.type_ {
-            crate::json_generator::Type::Primitive(t) => Some(t.subtype.to_string()),
+            Type::Primitive(t) => Some(t.subtype.to_string()),
             _ => None,
         }
         .as_deref(),
@@ -52,13 +51,10 @@ type Fruit = bits {
     let type_decl = root
         .lookup_bits("example/Fruit")
         .expect("Fruit bits not found");
-    assert_eq!(
-        type_decl.type_.kind(),
-        crate::json_generator::TypeKind::Primitive
-    );
+    assert_eq!(type_decl.type_.kind(), TypeKind::Primitive);
     assert_eq!(
         match &type_decl.type_ {
-            crate::json_generator::Type::Primitive(t) => Some(t.subtype.to_string()),
+            Type::Primitive(t) => Some(t.subtype.to_string()),
             _ => None,
         }
         .as_deref(),

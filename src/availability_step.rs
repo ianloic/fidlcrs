@@ -1,4 +1,5 @@
 use crate::compiler::Compiler;
+use crate::raw_ast;
 use crate::step::Step;
 use crate::versioning_types::{Availability, InitArgs, Version, VersionRange};
 
@@ -20,10 +21,8 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         for arg in &attr.args {
                             let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
                             let val_str = match &arg.value {
-                                crate::raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
-                                crate::raw_ast::Constant::Identifier(id) => {
-                                    id.identifier.to_string()
-                                }
+                                raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                                raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
                                 _ => "".to_string(),
                             };
                             if arg_name == "added" {

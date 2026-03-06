@@ -1,4 +1,5 @@
 use crate::compiler::Compiler;
+use crate::experimental_flags::ExperimentalFlags;
 use crate::json_generator::*;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
@@ -107,7 +108,7 @@ resource_definition handle : uint32 {
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {
         let mut compiler = Compiler::new(&self.reporter);
-        let mut flags = crate::experimental_flags::ExperimentalFlags::new();
+        let mut flags = ExperimentalFlags::new();
         for f in &self.experimental_flags {
             if let Ok(flag) = f.parse() {
                 flags.enable_flag(flag);

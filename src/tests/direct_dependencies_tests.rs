@@ -1,7 +1,8 @@
+use crate::json_generator::JsonRoot;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
-fn direct_and_composed_dependencies(root: &crate::json_generator::JsonRoot) -> Vec<String> {
+fn direct_and_composed_dependencies(root: &JsonRoot) -> Vec<String> {
     let mut names: Vec<String> = root
         .library_dependencies
         .iter()

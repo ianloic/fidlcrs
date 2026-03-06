@@ -1,5 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 
+use crate::diagnostics::Error;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
@@ -20,10 +21,7 @@ type Foo = resource bits {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]
@@ -43,10 +41,7 @@ type Foo = resource enum {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]
@@ -65,10 +60,7 @@ resource const BAR uint32 = 1;
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]
@@ -87,10 +79,7 @@ resource protocol Foo {};
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]
@@ -109,10 +98,7 @@ resource alias B = bool;
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]
@@ -133,18 +119,9 @@ type Three = resource resource resource struct {};
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 3);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
-    assert_eq!(
-        errors[1].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
-    assert_eq!(
-        errors[2].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrDuplicateModifier);
+    assert_eq!(errors[1].def, Error::ErrDuplicateModifier);
+    assert_eq!(errors[2].def, Error::ErrDuplicateModifier);
 }
 
 #[test]
@@ -166,10 +143,7 @@ fn bad_resource_modifier_missing() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 #[test]
 fn good_resource_struct() {
@@ -242,10 +216,7 @@ fn bad_handles_in_value_struct() {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(
-            errors[0].def,
-            crate::diagnostics::Error::ErrTypeMustBeResource
-        );
+        assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
     }
 }
 #[test]
@@ -265,10 +236,7 @@ fn bad_handles_in_value_table() {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(
-            errors[0].def,
-            crate::diagnostics::Error::ErrTypeMustBeResource
-        );
+        assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
     }
 }
 #[test]
@@ -288,10 +256,7 @@ fn bad_handles_in_value_union() {
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
-        assert_eq!(
-            errors[0].def,
-            crate::diagnostics::Error::ErrTypeMustBeResource
-        );
+        assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
     }
 }
 #[test]
@@ -315,10 +280,7 @@ type Foo = struct { bad_member client_end:Protocol; };
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]
@@ -343,10 +305,7 @@ type Foo = struct { bad_member ResourceStruct; };
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]
@@ -379,10 +338,7 @@ type Foo = struct { bad_member HandleAlias; };
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]
@@ -409,10 +365,7 @@ type Foo = struct { bad_member vector<vector<zx.Handle>>; };
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]
@@ -439,18 +392,9 @@ type ResourceStruct = resource struct {};
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 3);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
-    assert_eq!(
-        errors[1].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
-    assert_eq!(
-        errors[2].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    assert_eq!(errors[1].def, Error::ErrTypeMustBeResource);
+    assert_eq!(errors[2].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]
@@ -497,10 +441,7 @@ type Bottom = resource struct {};
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]
@@ -569,10 +510,7 @@ type Boros = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeMustBeResource
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
 }
 
 #[test]

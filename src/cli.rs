@@ -5,8 +5,10 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::compiler::Compiler;
+use crate::experimental_flags::ExperimentalFlags;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
+use crate::raw_ast;
 use crate::reporter::Reporter;
 use crate::source_file::SourceFile;
 use crate::token::TokenKind;
@@ -150,7 +152,7 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
 
     let mut compiler = Compiler::new(&reporter);
     compiler.version_selection = version_selection;
-    let mut flags = crate::experimental_flags::ExperimentalFlags::new();
+    let mut flags = ExperimentalFlags::new();
     for f in &cli.experimental {
         if let Ok(flag) = f.parse() {
             flags.enable_flag(flag);
@@ -211,10 +213,10 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
                                     arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
                                 if arg_name == "added" || arg_name == "value" {
                                     let val_str = match &arg.value {
-                                        crate::raw_ast::Constant::Literal(lit) => {
+                                        raw_ast::Constant::Literal(lit) => {
                                             lit.literal.value.clone()
                                         }
-                                        crate::raw_ast::Constant::Identifier(id) => {
+                                        raw_ast::Constant::Identifier(id) => {
                                             id.identifier.to_string()
                                         }
                                         _ => "".to_string(),

@@ -1,5 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 
+use crate::diagnostics::Error;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
@@ -67,10 +68,7 @@ fn bad_missing_ordinals() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrMissingOrdinalBeforeMember
-    );
+    assert_eq!(errors[0].def, Error::ErrMissingOrdinalBeforeMember);
 }
 
 #[test]
@@ -83,10 +81,7 @@ fn bad_ordinal_out_of_bounds_negative() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrOrdinalOutOfBound
-    );
+    assert_eq!(errors[0].def, Error::ErrOrdinalOutOfBound);
 }
 
 #[test]
@@ -107,10 +102,7 @@ type Foo = union {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrOrdinalOutOfBound
-    );
+    assert_eq!(errors[0].def, Error::ErrOrdinalOutOfBound);
 }
 
 #[test]
@@ -132,7 +124,7 @@ type MyTable = table {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, crate::diagnostics::Error::ErrNameCollision);
+    assert_eq!(errors[0].def, Error::ErrNameCollision);
 }
 
 #[test]
@@ -144,10 +136,7 @@ fn bad_duplicate_ordinals() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrDuplicateTableFieldOrdinal
-    );
+    assert_eq!(errors[0].def, Error::ErrDuplicateTableFieldOrdinal);
 }
 
 #[test]
@@ -239,10 +228,7 @@ type OptionalTableContainer = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotBeOptional
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotBeOptional);
 }
 
 #[test]
@@ -267,10 +253,7 @@ type OptionalTableContainer = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTooManyConstraints
-    );
+    assert_eq!(errors[0].def, Error::ErrTooManyConstraints);
 }
 
 #[test]
@@ -295,10 +278,7 @@ type OptionalTableContainer = union {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotBeOptional
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotBeOptional);
 }
 
 #[test]
@@ -354,10 +334,7 @@ fn bad_optional_table_member() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrOptionalTableMember
-    );
+    assert_eq!(errors[0].def, Error::ErrOptionalTableMember);
 }
 
 #[test]
@@ -379,10 +356,7 @@ type Foo = table {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotBeOptional
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotBeOptional);
 }
 
 #[test]
@@ -403,14 +377,8 @@ type Foo = table {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 2);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrUnexpectedTokenOfKind
-    );
-    assert_eq!(
-        errors[1].def,
-        crate::diagnostics::Error::ErrMissingOrdinalBeforeMember
-    );
+    assert_eq!(errors[0].def, Error::ErrUnexpectedTokenOfKind);
+    assert_eq!(errors[1].def, Error::ErrMissingOrdinalBeforeMember);
 }
 
 #[test]
@@ -468,10 +436,7 @@ fn bad_max_ordinal_not_table() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrMaxOrdinalNotTable
-    );
+    assert_eq!(errors[0].def, Error::ErrMaxOrdinalNotTable);
 }
 
 #[test]
@@ -557,10 +522,7 @@ type Example = table {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrMaxOrdinalNotTable
-    );
+    assert_eq!(errors[0].def, Error::ErrMaxOrdinalNotTable);
 }
 
 #[test]
@@ -572,10 +534,7 @@ fn bad_too_many_ordinals() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTableOrdinalTooLarge
-    );
+    assert_eq!(errors[0].def, Error::ErrTableOrdinalTooLarge);
 }
 
 #[test]
@@ -587,5 +546,5 @@ fn bad_recursion_disallowed() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, crate::diagnostics::Error::ErrIncludeCycle);
+    assert_eq!(errors[0].def, Error::ErrIncludeCycle);
 }

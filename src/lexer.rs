@@ -310,7 +310,7 @@ mod tests {
     use crate::source_file::SourceFile; // Needed? yes
     // Use crate::... if integration test, but this is unit test in module.
     // super imports Lexer, etc.
-    // SourceFile is in crate::source_file
+    // SourceFile is in source_file
 
     #[test]
     fn test_lexer_basic() {

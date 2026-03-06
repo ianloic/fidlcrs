@@ -1,4 +1,5 @@
 #![allow(unused_mut, unused_variables)]
+use crate::diagnostics::Error;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
@@ -20,18 +21,9 @@ type Three = strict strict strict union { 1: b bool; };
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 3);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
-    assert_eq!(
-        errors[1].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
-    assert_eq!(
-        errors[2].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrDuplicateModifier);
+    assert_eq!(errors[1].def, Error::ErrDuplicateModifier);
+    assert_eq!(errors[2].def, Error::ErrDuplicateModifier);
 }
 
 #[test]
@@ -44,10 +36,7 @@ fn bad_duplicate_modifier_non_consecutive() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrDuplicateModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrDuplicateModifier);
 }
 
 #[test]
@@ -60,14 +49,8 @@ fn bad_conflicting_modifiers() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 2);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrConflictingModifier
-    );
-    assert_eq!(
-        errors[1].def,
-        crate::diagnostics::Error::ErrConflictingModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrConflictingModifier);
+    assert_eq!(errors[1].def, Error::ErrConflictingModifier);
 }
 
 #[test]
@@ -168,10 +151,7 @@ fn bad_strictness_struct() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]
@@ -190,10 +170,7 @@ type StrictFoo = strict table {};
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotSpecifyModifier
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
 }
 
 #[test]

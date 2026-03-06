@@ -1,5 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 
+use crate::diagnostics::Error;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
@@ -115,10 +116,7 @@ fn bad_type_decl_of_new_type_errors() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrNewTypesNotAllowed
-    );
+    assert_eq!(errors[0].def, Error::ErrNewTypesNotAllowed);
 }
 
 #[test]
@@ -275,10 +273,7 @@ fn bad_too_many_layout_parameters() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters
-    );
+    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
 }
 
 #[test]
@@ -299,10 +294,7 @@ type Foo = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters
-    );
+    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
 }
 
 #[test]
@@ -314,10 +306,7 @@ fn bad_not_enough_parameters() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters
-    );
+    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
 }
 
 #[test]
@@ -329,10 +318,7 @@ fn bad_too_many_constraints() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTooManyConstraints
-    );
+    assert_eq!(errors[0].def, Error::ErrTooManyConstraints);
 }
 
 #[test]
@@ -353,10 +339,7 @@ type Foo = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters
-    );
+    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
 }
 
 #[test]
@@ -382,10 +365,7 @@ type Foo = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrCannotConstrainTwice
-    );
+    assert_eq!(errors[0].def, Error::ErrCannotConstrainTwice);
 }
 
 #[test]
@@ -420,7 +400,7 @@ fn bad_want_type_layout_parameter() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, crate::diagnostics::Error::ErrExpectedType);
+    assert_eq!(errors[0].def, Error::ErrExpectedType);
 }
 
 #[test]
@@ -441,10 +421,7 @@ type Foo = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrExpectedValueButGotType
-    );
+    assert_eq!(errors[0].def, Error::ErrExpectedValueButGotType);
 }
 
 #[test]
@@ -456,10 +433,7 @@ fn bad_unresolvable_constraint() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrUnexpectedConstraint
-    );
+    assert_eq!(errors[0].def, Error::ErrUnexpectedConstraint);
 }
 
 #[test]
@@ -482,10 +456,7 @@ type Foo = resource struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrUnexpectedConstraint
-    );
+    assert_eq!(errors[0].def, Error::ErrUnexpectedConstraint);
 }
 
 #[test]
@@ -506,14 +477,8 @@ type Foo = resource struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 2);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType
-    );
-    assert_eq!(
-        errors[1].def,
-        crate::diagnostics::Error::ErrCouldNotResolveSizeBound
-    );
+    assert_eq!(errors[0].def, Error::ErrTypeCannotBeConvertedToType);
+    assert_eq!(errors[1].def, Error::ErrCouldNotResolveSizeBound);
 }
 
 #[test]
@@ -534,7 +499,7 @@ type Foo = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, crate::diagnostics::Error::ErrNameNotFound);
+    assert_eq!(errors[0].def, Error::ErrNameNotFound);
 }
 
 #[test]
@@ -555,7 +520,7 @@ type Foo = struct {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, crate::diagnostics::Error::ErrNameNotFound);
+    assert_eq!(errors[0].def, Error::ErrNameNotFound);
 }
 
 #[test]
@@ -567,10 +532,7 @@ fn bad_usize64_without_flag() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed
-    );
+    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
 }
 
 #[test]
@@ -584,10 +546,7 @@ fn bad_uintptr64_without_flag() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed
-    );
+    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
 }
 
 #[test]
@@ -601,10 +560,7 @@ fn bad_uchar_without_flag() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed
-    );
+    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
 }
 
 #[test]
@@ -618,10 +574,7 @@ fn bad_experimental_pointer_without_flag() {
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
-    assert_eq!(
-        errors[0].def,
-        crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed
-    );
+    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
 }
 
 #[test]

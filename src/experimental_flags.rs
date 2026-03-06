@@ -75,6 +75,9 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        assert_eq!(ExperimentalFlag::from_str("zx_c_types").unwrap(), ExperimentalFlag::ZxCTypes);
+        assert_eq!(
+            ExperimentalFlag::from_str("zx_c_types").unwrap(),
+            ExperimentalFlag::ZxCTypes
+        );
     }
 }

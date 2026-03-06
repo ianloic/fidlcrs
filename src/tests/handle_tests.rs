@@ -230,7 +230,7 @@ type MyStruct = resource struct {
     let h_type = &type_decl.members[0].type_;
 
     assert_eq!(h_type.kind(), crate::json_generator::TypeKind::Handle);
-    assert_eq!(h_type.subtype().as_deref(), Some("VMO"));
+    assert_eq!(h_type.subtype().as_deref(), Some("vmo"));
     assert_eq!(h_type.rights(), Some(2147483648));
 }
 

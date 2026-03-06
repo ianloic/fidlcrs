@@ -558,11 +558,11 @@ pub struct Attribute {
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct ResourceProperty {
-    #[serde(rename = "type")]
-    pub type_: Type,
     pub name: String,
     pub location: Location,
     pub deprecated: bool,
+    #[serde(rename = "type")]
+    pub type_: Type,
 }
 
 #[derive(Serialize, Clone, Debug)]

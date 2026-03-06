@@ -2,6 +2,7 @@
 pub mod cli;
 pub mod compiler;
 pub mod diagnostics;
+pub mod experimental_flags;
 pub mod json_generator;
 pub mod lexer;
 pub mod name;
@@ -12,7 +13,6 @@ pub mod source_file;
 pub mod source_span;
 pub mod token;
 pub mod versioning_types;
-pub mod experimental_flags;
 
 pub mod availability_step;
 pub mod compile_step;

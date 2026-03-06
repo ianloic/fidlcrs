@@ -198,8 +198,14 @@ impl LookupHelpers for JsonRoot {
         self.enum_declarations.iter().find(|d| d.name == name)
     }
     fn lookup_union(&self, name: &str) -> Option<&UnionDeclaration> {
-        self.union_declarations.iter().find(|d| d.name == name)
-            .or_else(|| self.overlay_declarations.as_ref().and_then(|overlays| overlays.iter().find(|d| d.name == name)))
+        self.union_declarations
+            .iter()
+            .find(|d| d.name == name)
+            .or_else(|| {
+                self.overlay_declarations
+                    .as_ref()
+                    .and_then(|overlays| overlays.iter().find(|d| d.name == name))
+            })
     }
     fn lookup_bits(&self, name: &str) -> Option<&BitsDeclaration> {
         self.bits_declarations.iter().find(|d| d.name == name)

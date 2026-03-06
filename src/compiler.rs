@@ -245,8 +245,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
+        self.experimental_resource_declarations
+            .sort_by(|a, b| a.name.cmp(&b.name));
 
         let mut all_decls = Vec::new();
+        for decl in &self.experimental_resource_declarations {
+            all_decls.push((decl.name.clone(), "experimental_resource".to_string()));
+        }
         for decl in &self.bits_declarations {
             all_decls.push((decl.name.clone(), "bits".to_string()));
         }
@@ -621,14 +626,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
             bits_declarations: self.bits_declarations.clone(),
             const_declarations: self.const_declarations.clone(),
             enum_declarations: self.enum_declarations.clone(),
-            experimental_resource_declarations: vec![],
+            experimental_resource_declarations: self.experimental_resource_declarations.clone(),
             protocol_declarations: self.protocol_declarations.clone(),
             service_declarations: self.service_declarations.clone(),
             struct_declarations: self.struct_declarations.clone(),
             external_struct_declarations: self.external_struct_declarations.clone(),
             table_declarations: self.table_declarations.clone(),
             union_declarations: self.union_declarations.clone(),
-            overlay_declarations: if self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
+            overlay_declarations: if self
+                .experimental_flags
+                .is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes)
+            {
                 Some(self.overlay_declarations.clone())
             } else {
                 None
@@ -1510,7 +1518,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let raw_ast::LayoutParameter::Identifier(id) = &tc.layout {
                         existing_type_name = id.to_string();
                     }
-                    if !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::AllowNewTypes) {
+                    if !self
+                        .experimental_flags
+                        .is_enabled(crate::experimental_flags::ExperimentalFlag::AllowNewTypes)
+                    {
                         self.reporter.fail(
                             crate::diagnostics::Error::ErrNewTypesNotAllowed,
                             t.name.element.span().clone(),
@@ -2644,7 +2655,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     (8 - (shape.inline_size % 8)) % 8
                 };
 
-                let env_has_padding = if decl.is_overlay { shape.has_padding } else { shape.has_padding || padding != 0 };
+                let env_has_padding = if decl.is_overlay {
+                    shape.has_padding
+                } else {
+                    shape.has_padding || padding != 0
+                };
                 has_padding = has_padding || env_has_padding;
 
                 let env_max_out_of_line = if decl.is_overlay {
@@ -2678,11 +2693,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut max_member_inline_size = 0;
         for member in &members {
             if let Some(type_obj) = &member.type_ {
-               alignment = alignment.max(type_obj.type_shape.alignment);
-               max_member_inline_size = max_member_inline_size.max(type_obj.type_shape.inline_size);
+                alignment = alignment.max(type_obj.type_shape.alignment);
+                max_member_inline_size =
+                    max_member_inline_size.max(type_obj.type_shape.inline_size);
             }
         }
-        
+
         let inline_size = if decl.is_overlay {
             let size = 8u32.saturating_add(max_member_inline_size);
             let padding = (alignment - (size % alignment)) % alignment;
@@ -2690,7 +2706,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         } else {
             16
         };
-        
+
         // For overlays, depth is just max(member depth).
         let final_depth = depth;
         // For padding in overlays, if the inline_size is strictly greater than 8 + a member's inline size,
@@ -2712,7 +2728,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             depth: final_depth,
             max_handles,
             max_out_of_line,
-            has_padding: if decl.is_overlay { has_padding || overlay_has_padding } else { has_padding },
+            has_padding: if decl.is_overlay {
+                has_padding || overlay_has_padding
+            } else {
+                has_padding
+            },
             has_flexible_envelope: !strict
                 || members.iter().any(|m| {
                     m.type_
@@ -3280,7 +3300,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 if matches!(resolved_name.as_str(), "uchar" | "usize64" | "uintptr64") {
-                    if !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
+                    if !self
+                        .experimental_flags
+                        .is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes)
+                    {
                         self.reporter.fail(
                             crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed,
                             type_ctor.element.start_token.span.clone(),
@@ -3319,7 +3342,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
             }
             "experimental_pointer" => {
-                if !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes) {
+                if !self
+                    .experimental_flags
+                    .is_enabled(crate::experimental_flags::ExperimentalFlag::ZxCTypes)
+                {
                     self.reporter.fail(
                         crate::diagnostics::Error::ErrExperimentalZxCTypesDisallowed,
                         type_ctor.element.start_token.span.clone(),
@@ -3457,7 +3483,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: false,
                         },
                     },
-                    element_count: if max_len == u32::MAX { None } else { Some(max_len) },
+                    element_count: if max_len == u32::MAX {
+                        None
+                    } else {
+                        Some(max_len)
+                    },
                 })
             }
             "vector" | "bytes" => {
@@ -4061,11 +4091,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         for mem in &e.members {
                                             if mem.name.data() == ident_str {
                                                 found = true;
-                                                if full_name == "zx/Handle" {
-                                                    handle_subtype = ident_str.to_lowercase();
-                                                } else {
-                                                    handle_subtype = ident_str.to_string();
-                                                }
+                                                handle_subtype = ident_str.to_lowercase();
                                                 if let raw_ast::Constant::Literal(lit) = &mem.value
                                                 {
                                                     if let Ok(v) = lit.literal.value.parse::<u32>()
@@ -6459,10 +6485,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             );
                             if library_name == self.library_name {
                                 if u.is_overlay {
-                                self.overlay_declarations.push(compiled);
-                            } else {
-                                self.union_declarations.push(compiled);
-                            }
+                                    self.overlay_declarations.push(compiled);
+                                } else {
+                                    self.union_declarations.push(compiled);
+                                }
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }

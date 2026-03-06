@@ -11,6 +11,7 @@ pub mod enums_tests;
 pub mod errcat;
 pub mod errcat_docs_tests;
 pub mod errcat_good_tests;
+pub mod errors_tests;
 pub mod handle_tests;
 pub mod method_tests;
 pub mod parsing_tests;

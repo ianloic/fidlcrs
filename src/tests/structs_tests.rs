@@ -71,7 +71,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_missing_default_value_reference_target() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -137,7 +136,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_default_value_enum_type() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -160,7 +158,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_default_value_primitive_in_enum() {
     let source = SourceFile::new(
         "bad/fi-0103.test.fidl".to_string(),
@@ -218,7 +215,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_default_value_bits_type() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -241,7 +237,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_default_value_primitive_in_bits() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -263,7 +258,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_legacy_enum_member_reference() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -285,7 +279,6 @@ type MyStruct = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_default_value_nullable_string() {
     let source = SourceFile::new(
         "bad/fi-0091.test.fidl".to_string(),
@@ -547,7 +540,6 @@ fn bad_cannot_box_primitive() {
 }
 
 #[test]
-#[ignore]
 fn bad_default_value_references_invalid_const() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -569,7 +561,6 @@ const BAR bool = "not a bool";
 }
 
 #[test]
-#[ignore]
 fn cannot_refer_to_int_member() {
     let source = SourceFile::new(
         "bad/fi-0053-a.test.fidl".to_string(),
@@ -581,7 +572,6 @@ fn cannot_refer_to_int_member() {
 }
 
 #[test]
-#[ignore]
 fn cannot_refer_to_struct_member() {
     let source = SourceFile::new(
         "bad/fi-0053-b.test.fidl".to_string(),

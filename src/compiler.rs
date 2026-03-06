@@ -2895,6 +2895,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let mut maybe_default_value = None;
             if let Some(def_val) = &member.default_value {
+                self.validate_constant(def_val, &type_obj);
                 maybe_default_value = Some(self.compile_constant(def_val));
             }
 
@@ -5921,7 +5922,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         let mut full_name = name.clone();
                         if !full_name.contains('/') {
-                            full_name = format!("{}/{}", self.library_name, name);
+                            if let Some((type_name, member_name)) = name.rsplit_once('.') {
+                                let imp = format!("{}/{}", type_name, member_name);
+                                if self.raw_decls.contains_key(&imp) {
+                                    full_name = imp;
+                                } else {
+                                    full_name = format!("{}/{}", self.library_name, name);
+                                }
+                            } else {
+                                full_name = format!("{}/{}", self.library_name, name);
+                            }
                         }
 
                         let decl_info = self
@@ -5937,17 +5947,69 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 }
                                 crate::compiler::RawDecl::Bits(_)
                                 | crate::compiler::RawDecl::Enum(_) => is_other = true,
+                                crate::compiler::RawDecl::Type(t) => match &t.layout {
+                                    crate::raw_ast::Layout::Bits(_)
+                                    | crate::raw_ast::Layout::Enum(_) => is_other = true,
+                                    _ => {}
+                                },
                                 _ => {}
                             }
-                        } else if let Some((type_name, _member_name)) = name.rsplit_once('.') {
+                        } else if let Some((type_name, member_name)) = name.rsplit_once('.') {
                             let mut type_full_name = type_name.to_string();
                             if !type_full_name.contains('/') {
                                 type_full_name = format!("{}/{}", self.library_name, type_name);
                             }
                             if let Some(decl) = self.raw_decls.get(&type_full_name) {
                                 match decl {
-                                    crate::compiler::RawDecl::Bits(_)
-                                    | crate::compiler::RawDecl::Enum(_) => is_other = true,
+                                    crate::compiler::RawDecl::Bits(b) => {
+                                        if b.members.iter().any(|m| m.name.data() == member_name) {
+                                            c_layout_str = b
+                                                .subtype
+                                                .as_ref()
+                                                .map(|s| s.element.start_token.span.data);
+                                        } else {
+                                            is_other = true;
+                                        }
+                                    }
+                                    crate::compiler::RawDecl::Enum(e) => {
+                                        if e.members.iter().any(|m| m.name.data() == member_name) {
+                                            c_layout_str = e
+                                                .subtype
+                                                .as_ref()
+                                                .map(|s| s.element.start_token.span.data);
+                                        } else {
+                                            is_other = true;
+                                        }
+                                    }
+                                    crate::compiler::RawDecl::Type(t) => match &t.layout {
+                                        crate::raw_ast::Layout::Bits(b) => {
+                                            if b.members
+                                                .iter()
+                                                .any(|m| m.name.data() == member_name)
+                                            {
+                                                c_layout_str = b
+                                                    .subtype
+                                                    .as_ref()
+                                                    .map(|s| s.element.start_token.span.data);
+                                            } else {
+                                                is_other = true;
+                                            }
+                                        }
+                                        crate::raw_ast::Layout::Enum(e) => {
+                                            if e.members
+                                                .iter()
+                                                .any(|m| m.name.data() == member_name)
+                                            {
+                                                c_layout_str = e
+                                                    .subtype
+                                                    .as_ref()
+                                                    .map(|s| s.element.start_token.span.data);
+                                            } else {
+                                                is_other = true;
+                                            }
+                                        }
+                                        _ => {}
+                                    },
                                     _ => {}
                                 }
                             }
@@ -5986,6 +6048,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 span,
                                 &[&full_name, &"identifier", subtype],
                             );
+                        } else {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrCannotResolveConstantValue,
+                                span,
+                                &[],
+                            );
                         }
                     }
                     _ => {}
@@ -6020,6 +6088,45 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 );
                             }
                         }
+                        if s.nullable.unwrap_or(false) {
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                                span,
+                                &[&lit.literal.value, &"string", &"string:optional"],
+                            );
+                        }
+                    }
+                }
+                raw_ast::Constant::Identifier(id) => {
+                    let span = id.element.start_token.span.clone();
+                    let name = id.identifier.to_string();
+                    let mut full_name = name.clone();
+                    if !full_name.contains('/') {
+                        if let Some((type_name, member_name)) = name.rsplit_once('.') {
+                            let imp = format!("{}/{}", type_name, member_name);
+                            if self.raw_decls.contains_key(&imp) {
+                                full_name = imp;
+                            } else {
+                                full_name = format!("{}/{}", self.library_name, name);
+                            }
+                        } else {
+                            full_name = format!("{}/{}", self.library_name, name);
+                        }
+                    }
+
+                    let mut valid = false;
+                    if let Some(crate::compiler::RawDecl::Const(c)) = self.raw_decls.get(&full_name)
+                    {
+                        if c.type_ctor.element.start_token.span.data == "string" {
+                            valid = true;
+                        }
+                    }
+                    if !valid {
+                        self.reporter.fail(
+                            crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+                            span,
+                            &[&name, &"identifier", &"string"],
+                        );
                     }
                 }
                 _ => {}

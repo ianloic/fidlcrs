@@ -13,6 +13,7 @@ pub mod errcat_docs_tests;
 pub mod errcat_good_tests;
 pub mod errors_tests;
 pub mod flat_ast_tests;
+pub mod flexible_tests;
 pub mod handle_tests;
 pub mod method_tests;
 pub mod parsing_tests;

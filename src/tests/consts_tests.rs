@@ -761,7 +761,7 @@ const SMALL_SIZE uint32 = 4;
 }
 
 #[test]
-#[ignore]
+
 fn bad_unknown_enum_member_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -783,7 +783,7 @@ const dee EnumType = EnumType.D;
 }
 
 #[test]
-#[ignore]
+
 fn bad_unknown_bits_member_test() {
     let source = SourceFile::new(
         "example.fidl".to_string(),

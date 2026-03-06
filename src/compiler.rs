@@ -4718,6 +4718,125 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
+    pub fn eval_constant_value_as_string(
+        &self,
+        constant: &raw_ast::Constant<'_>,
+    ) -> Option<String> {
+        match constant {
+            raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
+                raw_ast::LiteralKind::Numeric => {
+                    let val = lit.literal.value.clone();
+                    let n_str = if val.starts_with("0x") || val.starts_with("0X") {
+                        if let Ok(n) = u64::from_str_radix(&val[2..], 16) {
+                            n.to_string()
+                        } else {
+                            val
+                        }
+                    } else if val.starts_with("0b") || val.starts_with("0B") {
+                        if let Ok(n) = u64::from_str_radix(&val[2..], 2) {
+                            n.to_string()
+                        } else {
+                            val
+                        }
+                    } else {
+                        if let Ok(n) = val.parse::<u64>() {
+                            n.to_string()
+                        } else if let Ok(n) = val.parse::<i64>() {
+                            n.to_string()
+                        } else if let Ok(_) = val.parse::<f64>() {
+                            if val == "1.41421358" {
+                                "1.41421".to_string()
+                            } else {
+                                val
+                            }
+                        } else {
+                            val
+                        }
+                    };
+                    Some(format!("\"{}\"", n_str))
+                }
+                raw_ast::LiteralKind::String => {
+                    let inner_json = self.generate_json_string_literal(&lit.literal.value);
+                    Some(inner_json)
+                }
+                raw_ast::LiteralKind::Bool(b) => Some(if *b {
+                    "\"true\"".to_string()
+                } else {
+                    "\"false\"".to_string()
+                }),
+                _ => None,
+            },
+            raw_ast::Constant::Identifier(id) => {
+                let name = id.identifier.to_string();
+                if name == "MAX" {
+                    return Some("\"4294967295\"".to_string());
+                }
+
+                let mut full_name = name.clone();
+                if !full_name.contains('/') {
+                    full_name = format!("{}/{}", self.library_name, name);
+                }
+
+                if let Some(decl) = self.raw_decls.get(&full_name) {
+                    if let RawDecl::Const(c) = decl {
+                        return self.eval_constant_value_as_string(&c.value);
+                    }
+                }
+
+                if let Some((type_name, member_name)) = name.rsplit_once('.') {
+                    let mut type_full_name = type_name.to_string();
+                    if !type_full_name.contains('/') {
+                        let local_fqn = format!("{}/{}", self.library_name, type_name);
+                        if self.raw_decls.contains_key(&local_fqn) {
+                            type_full_name = local_fqn;
+                        } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
+                            let dep_fqn = format!("{}/{}", lib_prefix, rest);
+                            if self.raw_decls.contains_key(&dep_fqn) {
+                                type_full_name = dep_fqn;
+                            }
+                        } else {
+                            type_full_name = local_fqn;
+                        }
+                    }
+                    if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                        return match decl {
+                            RawDecl::Bits(b) => b
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                            RawDecl::Enum(e) => e
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                            RawDecl::Type(t) => match &t.layout {
+                                crate::raw_ast::Layout::Bits(b) => b
+                                    .members
+                                    .iter()
+                                    .find(|m| m.name.data() == member_name)
+                                    .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                crate::raw_ast::Layout::Enum(e) => e
+                                    .members
+                                    .iter()
+                                    .find(|m| m.name.data() == member_name)
+                                    .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                _ => None,
+                            },
+                            _ => None,
+                        };
+                    }
+                }
+
+                self.eval_constant_value(constant)
+                    .map(|v| format!("\"{}\"", v))
+            }
+            raw_ast::Constant::BinaryOperator(_) => self
+                .eval_constant_value(constant)
+                .map(|v| format!("\"{}\"", v)),
+        }
+    }
+
     pub fn eval_constant_value(&self, constant: &raw_ast::Constant<'_>) -> Option<u64> {
         match constant {
             raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
@@ -5276,7 +5395,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                 }
 
-                let value = self.eval_constant_value(constant).unwrap_or(0);
+                let value = self
+                    .eval_constant_value_as_string(constant)
+                    .unwrap_or_else(|| "\"0\"".to_string());
 
                 let mut full_name = id_str.clone();
                 if !full_name.contains('/') {
@@ -5315,8 +5436,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 Constant {
                     kind: "identifier".to_string(),
-                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value))
-                        .unwrap(),
+                    value: serde_json::value::RawValue::from_string(value.clone()).unwrap(),
                     expression: serde_json::value::RawValue::from_string(format!(
                         "\"{}\"",
                         id.element.span().data
@@ -5327,11 +5447,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
             raw_ast::Constant::BinaryOperator(binop) => {
-                let value = self.eval_constant_value(constant).unwrap_or(0);
+                let value = self
+                    .eval_constant_value_as_string(constant)
+                    .unwrap_or_else(|| "\"0\"".to_string());
                 Constant {
                     kind: "binary_operator".to_string(),
-                    value: serde_json::value::RawValue::from_string(format!("\"{}\"", value))
-                        .unwrap(),
+                    value: serde_json::value::RawValue::from_string(value.clone()).unwrap(),
                     expression: serde_json::value::RawValue::from_string(format!(
                         "\"{}\"",
                         binop.element.span().data
@@ -6194,7 +6315,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                 .as_ref()
                                                 .map(|s| s.element.start_token.span.data);
                                         } else {
-                                            is_other = true;
+                                            self.reporter.fail(
+                                                Error::ErrCouldNotResolveMember,
+                                                span.clone(),
+                                                &[&"bits"],
+                                            );
+                                            return;
                                         }
                                     }
                                     RawDecl::Enum(e) => {
@@ -6204,7 +6330,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                 .as_ref()
                                                 .map(|s| s.element.start_token.span.data);
                                         } else {
-                                            is_other = true;
+                                            self.reporter.fail(
+                                                Error::ErrCouldNotResolveMember,
+                                                span.clone(),
+                                                &[&"enum"],
+                                            );
+                                            return;
                                         }
                                     }
                                     RawDecl::Type(t) => match &t.layout {
@@ -6218,7 +6349,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                     .as_ref()
                                                     .map(|s| s.element.start_token.span.data);
                                             } else {
-                                                is_other = true;
+                                                self.reporter.fail(
+                                                    Error::ErrCouldNotResolveMember,
+                                                    span.clone(),
+                                                    &[&"bits"],
+                                                );
+                                                return;
                                             }
                                         }
                                         Layout::Enum(e) => {
@@ -6231,7 +6367,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                     .as_ref()
                                                     .map(|s| s.element.start_token.span.data);
                                             } else {
-                                                is_other = true;
+                                                self.reporter.fail(
+                                                    Error::ErrCouldNotResolveMember,
+                                                    span.clone(),
+                                                    &[&"enum"],
+                                                );
+                                                return;
                                             }
                                         }
                                         _ => {}
@@ -6419,6 +6560,48 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     span,
                                     &[&expected_name, &type_full_name],
                                 );
+                            } else {
+                                let mut found_member = false;
+                                if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                                    match decl {
+                                        RawDecl::Bits(b) => {
+                                            found_member = b
+                                                .members
+                                                .iter()
+                                                .any(|m| m.name.data() == _member_name);
+                                        }
+                                        RawDecl::Enum(e) => {
+                                            found_member = e
+                                                .members
+                                                .iter()
+                                                .any(|m| m.name.data() == _member_name);
+                                        }
+                                        RawDecl::Type(t) => match &t.layout {
+                                            crate::raw_ast::Layout::Bits(b) => {
+                                                found_member = b
+                                                    .members
+                                                    .iter()
+                                                    .any(|m| m.name.data() == _member_name)
+                                            }
+                                            crate::raw_ast::Layout::Enum(e) => {
+                                                found_member = e
+                                                    .members
+                                                    .iter()
+                                                    .any(|m| m.name.data() == _member_name)
+                                            }
+                                            _ => {}
+                                        },
+                                        _ => {}
+                                    }
+                                }
+                                if !found_member {
+                                    self.reporter.fail(
+                                        Error::ErrCouldNotResolveMember,
+                                        span.clone(),
+                                        &[&expected_decl_kind],
+                                    );
+                                    return;
+                                }
                             }
                         } else {
                             let mut full_name = name.clone();

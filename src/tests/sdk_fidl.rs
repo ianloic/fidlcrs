@@ -699,9 +699,9 @@ mod tests {
         "fuchsia.accessibility.gesture",
         "fuchsia.accessibility.tts",
         "fuchsia.acpi.tables",
+        "fuchsia.bluetooth",
         "fuchsia.bluetooth.deviceid",
         "fuchsia.bluetooth.pandora",
-        "fuchsia.bluetooth",
         "fuchsia.buildinfo",
         "fuchsia.castconfig",
         "fuchsia.castremotecontrol",
@@ -732,37 +732,33 @@ mod tests {
         "fuchsia.hardware.amlogic.metadata",
         "fuchsia.hardware.audio.signalprocessing",
         "fuchsia.hardware.backlight",
+        "fuchsia.hardware.block",
         "fuchsia.hardware.block.driver",
         "fuchsia.hardware.block.encrypted",
-        "fuchsia.hardware.block",
-        "fuchsia.hardware.clock.measure",
         "fuchsia.hardware.clock",
+        "fuchsia.hardware.clock.measure",
         "fuchsia.hardware.clockimpl",
         "fuchsia.hardware.cpu.ctrl",
         "fuchsia.hardware.display.types",
         "fuchsia.hardware.dsp",
         "fuchsia.hardware.fastboot",
-        "fuchsia.hardware.ftdi",
         "fuchsia.hardware.gnss",
-        "fuchsia.hardware.goldfish.pipe",
         "fuchsia.hardware.goldfish",
+        "fuchsia.hardware.goldfish.pipe",
         "fuchsia.hardware.haptics",
         "fuchsia.hardware.hidbus",
         "fuchsia.hardware.i2c",
         "fuchsia.hardware.inlineencryption",
-        "fuchsia.hardware.intel.hda",
         "fuchsia.hardware.interconnect",
         "fuchsia.hardware.interrupt",
         "fuchsia.hardware.light",
         "fuchsia.hardware.mailbox",
         "fuchsia.hardware.midi",
         "fuchsia.hardware.nand",
-        "fuchsia.hardware.overnet",
         "fuchsia.hardware.pci",
+        "fuchsia.hardware.power",
         "fuchsia.hardware.power.sensor",
         "fuchsia.hardware.power.suspend",
-        "fuchsia.hardware.power",
-        "fuchsia.hardware.powersource",
         "fuchsia.hardware.pwm",
         "fuchsia.hardware.qualcomm.fastrpc",
         "fuchsia.hardware.qualcomm.router",
@@ -776,9 +772,7 @@ mod tests {
         "fuchsia.hardware.serial",
         "fuchsia.hardware.serialimpl",
         "fuchsia.hardware.sharedmemory",
-        "fuchsia.hardware.skipblock",
         "fuchsia.hardware.sockettunnel",
-        "fuchsia.hardware.spi.businfo",
         "fuchsia.hardware.spiimpl",
         "fuchsia.hardware.tpmimpl",
         "fuchsia.hardware.trippoint",
@@ -786,64 +780,41 @@ mod tests {
         "fuchsia.hardware.usb.device",
         "fuchsia.hardware.usb.peripheral",
         "fuchsia.hardware.usb.request",
-        "fuchsia.hardware.usb.virtual.bus",
         "fuchsia.hardware.uwb",
         "fuchsia.hardware.virtio.pmem",
         "fuchsia.hardware.vreg",
         "fuchsia.hardware.vsock",
         "fuchsia.hwinfo",
         "fuchsia.images2",
-        "fuchsia.input.interaction",
         "fuchsia.input",
-        "fuchsia.inspect.deprecated",
         "fuchsia.intl",
         "fuchsia.kernel",
-        "fuchsia.ldsvc",
         "fuchsia.legacymetrics",
-        "fuchsia.location.gnss.types",
         "fuchsia.location.gnss",
         "fuchsia.location.namedplace",
         "fuchsia.location.position",
-        "fuchsia.location",
-        "fuchsia.lowpan.spinel",
         "fuchsia.lowpan",
+        "fuchsia.lowpan.spinel",
         "fuchsia.media.audio",
-        "fuchsia.media.tuning",
-        "fuchsia.media2",
         "fuchsia.mem",
         "fuchsia.memory.debug",
         "fuchsia.memory.heapdump.client",
         "fuchsia.memory.inspection",
         "fuchsia.memory.sampler",
-        "fuchsia.memorypressure",
-        "fuchsia.net.reachability",
-        "fuchsia.net.stackmigrationdeprecated",
-        "fuchsia.net.tcp",
-        "fuchsia.net.udp",
         "fuchsia.net",
+        "fuchsia.net.stackmigrationdeprecated",
         "fuchsia.paver",
         "fuchsia.pkg.garbagecollector",
         "fuchsia.pkg.rewrite",
-        "fuchsia.posix",
+        "fuchsia.power",
         "fuchsia.power.broker",
-        "fuchsia.power.button",
-        "fuchsia.power.clientlevel",
-        "fuchsia.power.cpu.manager",
         "fuchsia.power.cpu",
-        "fuchsia.power.internal",
+        "fuchsia.power.cpu.manager",
         "fuchsia.power.manager.debug",
         "fuchsia.power.metrics",
-        "fuchsia.power.observability",
-        "fuchsia.power.profile",
-        "fuchsia.power.suspend",
         "fuchsia.power.systemmode",
-        "fuchsia.power",
         "fuchsia.process.explorer",
-        "fuchsia.recovery.policy",
         "fuchsia.recovery.ui",
-        "fuchsia.recovery",
-        "fuchsia.scenic.scheduling",
-        "fuchsia.scheduler.deprecated",
         "fuchsia.scheduler",
         "fuchsia.security.keymint",
         "fuchsia.session.power",
@@ -860,27 +831,18 @@ mod tests {
         "fuchsia.system.state",
         "fuchsia.tee",
         "fuchsia.test",
-        "fuchsia.testing.sl4f",
         "fuchsia.time.external",
         "fuchsia.time.test",
-        "fuchsia.time",
         "fuchsia.tpm",
         "fuchsia.tracing",
         "fuchsia.ui.brightness",
         "fuchsia.ui.compression.internal",
-        "fuchsia.ui.display.color",
         "fuchsia.ui.display.singleton",
-        "fuchsia.ui.types",
         "fuchsia.unknown",
-        "fuchsia.update.channel",
-        "fuchsia.update.config",
         "fuchsia.update",
-        "fuchsia.url",
-        "fuchsia.version",
+        "fuchsia.update.config",
         "fuchsia.vsock",
         "fuchsia.vulkan.loader",
-        "fuchsia.wlan.common.security",
-        "fuchsia.wlan.internal",
     ];
 
     fn strip_filename(value: &mut serde_json::Value) {
@@ -907,6 +869,7 @@ mod tests {
         let mut failed = Vec::new();
         let mut mismatched = Vec::new();
         let mut missing = Vec::new();
+        let mut matched = Vec::new();
 
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let temp_dir = std::env::temp_dir();
@@ -975,7 +938,7 @@ mod tests {
 
                                         mismatched.push(name);
                                     } else {
-                                        println!("Passed library: {}", name);
+                                        matched.push(name);
                                     }
                                 } else {
                                     mismatched.push(name);
@@ -992,11 +955,11 @@ mod tests {
         }
 
         if !mismatched.is_empty() {
-            println!("Mismatched JSON for libraries: {:?}", mismatched);
+            println!("Mismatched JSON for libraries:");
             let mut m = mismatched.clone();
             m.sort();
             for name in m {
-                println!("  {}", name);
+                println!("  {:?},", name);
             }
         }
         if !missing.is_empty() {

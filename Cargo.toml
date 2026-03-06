@@ -9,3 +9,6 @@ indexmap = { version = "2.13.0", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.149", features = ["raw_value", "preserve_order"] }
 sha2 = "0.10.9"
+
+[dev-dependencies]
+regex = "1.12.3"

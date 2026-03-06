@@ -29,7 +29,7 @@ macro_rules! __kind_to_enum {
 macro_rules! define_diagnostics {
     (
         $(
-            $kind:ident $camel_name:ident = $id:literal $(, $msg:literal)? ;
+            $kind:ident $camel_name:ident = $id:literal $(, $msg:literal)? $(, documented = $doc:literal)? ;
         )*
     ) => {
         #[allow(dead_code, non_camel_case_types)]
@@ -62,7 +62,26 @@ macro_rules! define_diagnostics {
                     )*
                 }
             }
+
+            pub const fn documented(&self) -> bool {
+                match self {
+                    $(
+                        $(Error::$camel_name => $doc,)?
+                    )*
+                    _ => true,
+                }
+            }
+
+            pub fn format_id(&self) -> String {
+                format!("fi-{:04}", self.id())
+            }
         }
+
+        pub const ALL_ERRORS: &'static [Error] = &[
+            $(
+                Error::$camel_name,
+            )*
+        ];
 
 
     }
@@ -264,9 +283,9 @@ define_diagnostics! {
     RetiredDef ErrEmptyPayloadStructsWhenResultUnion = 194 ;
     RetiredDef ErrExperimentalOverflowingAttributeMissingExperimentalFlag = 195 ;
     RetiredDef ErrExperimentalOverflowingIncorrectUsage = 196 ;
-    ErrorDef ErrOverlayMustBeStrict = 197, r#"overlays must be strict"# ;
-    ErrorDef ErrOverlayMustBeValue = 198, r#"overlays must be value (not resource) types"# ;
-    ErrorDef ErrOverlayMemberMustBeValue = 199, r#"overlays may not contain resource members"# ;
+    ErrorDef ErrOverlayMustBeStrict = 197, r#"overlays must be strict"#, documented = false ;
+    ErrorDef ErrOverlayMustBeValue = 198, r#"overlays must be value (not resource) types"#, documented = false ;
+    ErrorDef ErrOverlayMemberMustBeValue = 199, r#"overlays may not contain resource members"#, documented = false ;
     RetiredDef ErrOverlayMustNotContainReserved = 200 ;
     ErrorDef ErrPlatformVersionNotSelected = 201, r#"{} belongs to platform '{}', but no version was selected for it; please choose a version N by passing `--available {}:N`"# ;
     RetiredDef ErrTransitionalNotAllowed = 202 ;

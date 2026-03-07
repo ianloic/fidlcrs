@@ -1053,8 +1053,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-
-
     pub fn compile_partial_type_ctor(
         &mut self,
         type_ctor: &raw_ast::TypeConstructor<'src>,
@@ -1713,7 +1711,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let transmuted_first: crate::source_span::SourceSpan<'src> =
                         unsafe { std::mem::transmute(first_span) };
                     unknown_member_span = Some(transmuted_first.clone());
-                    
+
                     if strict {
                         self.reporter.fail(
                             Error::ErrUnknownAttributeOnStrictEnumMember,
@@ -4464,18 +4462,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     fn generate_json_string_literal(&self, s: &str) -> String {
         let mut out = String::new();
         out.push('"');
@@ -4551,18 +4537,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         out.push('"');
         out
     }
-
 }
-
-
-
-
-
-
-
-
-
-
 
 impl<'node, 'src> Compiler<'node, 'src> {
     fn get_underlying_decl(&self, id: &str) -> Option<&RawDecl<'node, 'src>> {
@@ -4840,10 +4815,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             type_: self.resolve_type(&decl.type_ctor, library_name, None),
         }
     }
-
-
-
-
 
     pub fn compile_protocol(
         &mut self,
@@ -5843,5 +5814,4 @@ impl<'node, 'src> Compiler<'node, 'src> {
             implementation_locations,
         }
     }
-
 }

@@ -401,11 +401,13 @@ impl<'a, 'b> Parser<'a, 'b> {
 
             while self.last_token.kind == TokenKind::Comma {
                 self.consume_token(TokenKind::Comma)?;
-                
+
                 let start_arg = self.last_token.clone();
                 let name = self.parse_identifier()?;
 
-                if self.last_token.kind == TokenKind::Comma || self.last_token.kind == TokenKind::RightParen {
+                if self.last_token.kind == TokenKind::Comma
+                    || self.last_token.kind == TokenKind::RightParen
+                {
                     self.reporter.fail(
                         Error::ErrAttributeArgsMustAllBeNamed,
                         start_arg.span.clone(),
@@ -416,7 +418,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
                 self.consume_token(TokenKind::Equal)?;
                 let val = self.parse_constant()?;
-                
+
                 args.push(AttributeArg {
                     element: SourceElement::new(
                         start_arg.clone(),

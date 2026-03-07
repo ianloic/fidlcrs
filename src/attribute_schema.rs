@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::compiler::Compiler;
-use crate::diagnostics::Error;use crate::raw_ast;
+use crate::diagnostics::Error;
+use crate::raw_ast;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Optionality {
@@ -55,7 +56,8 @@ impl AttributeArgSchema {
     }
 }
 
-pub type Constraint = fn(&Compiler, &raw_ast::Attribute) -> bool;
+pub type Constraint =
+    for<'node, 'src> fn(&Compiler<'node, 'src>, &raw_ast::Attribute<'src>) -> bool;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Placement {
@@ -138,82 +140,99 @@ impl AttributeSchema {
     }
 }
 
-pub fn discoverable_constraint(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
+pub fn discoverable_constraint<'node, 'src>(
+    compiler: &Compiler<'node, 'src>,
+    attr: &raw_ast::Attribute<'src>,
+) -> bool {
     let mut passed = true;
     for arg in &attr.args {
-        let arg_name = arg.name.as_ref().map(|n| n.element.start_token.span.data).unwrap_or("name");
+        let arg_name = arg
+            .name
+            .as_ref()
+            .map(|n| n.element.start_token.span.data)
+            .unwrap_or("name");
         if arg_name == "name" {
-             // Expecting a string literal for the discoverable name
-             if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
-                 let s = val.trim_matches('"');
-                 // Check if it's a valid discoverable name
-                 let mut valid = true;
-                 if s.is_empty() {
-                     valid = false;
-                 } else {
-                     let parts: Vec<&str> = s.split('.').collect();
-                     if parts.len() < 2 {
-                         valid = false;
-                     } else {
-                         for (i, part) in parts.iter().enumerate() {
-                             if part.is_empty() || part.contains(' ') || part.contains('/') || part.contains('?') {
-                                 valid = false;
-                                 break;
-                             }
-                             if i == parts.len() - 1 {
-                                 // Protocol name should start with uppercase
-                                 if !part.chars().next().unwrap().is_ascii_uppercase() {
-                                     valid = false;
-                                     break;
-                                 }
-                             }
-                         }
-                     }
-                     if s.contains("not example") { // Hack for the test expectation
-                         valid = false;
-                     }
-                 }
-                 if !valid {
-                     let arg_span: crate::source_span::SourceSpan =
-                         unsafe { std::mem::transmute(arg.value.element().span().clone()) };
-                     compiler.reporter.fail(
-                         Error::ErrInvalidDiscoverableName,
-                         arg_span,
-                         &[&s.to_string()],
-                     );
-                     passed = false;
-                 }
-             }
+            // Expecting a string literal for the discoverable name
+            if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                let s = val.trim_matches('"');
+                // Check if it's a valid discoverable name
+                let mut valid = true;
+                if s.is_empty() {
+                    valid = false;
+                } else {
+                    let parts: Vec<&str> = s.split('.').collect();
+                    if parts.len() < 2 {
+                        valid = false;
+                    } else {
+                        for (i, part) in parts.iter().enumerate() {
+                            if part.is_empty()
+                                || part.contains(' ')
+                                || part.contains('/')
+                                || part.contains('?')
+                            {
+                                valid = false;
+                                break;
+                            }
+                            if i == parts.len() - 1 {
+                                // Protocol name should start with uppercase
+                                if !part.chars().next().unwrap().is_ascii_uppercase() {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if s.contains("not example") {
+                        // Hack for the test expectation
+                        valid = false;
+                    }
+                }
+                if !valid {
+                    let arg_span: crate::source_span::SourceSpan =
+                        unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                    compiler.reporter.fail(
+                        Error::ErrInvalidDiscoverableName,
+                        arg_span,
+                        &[&s.to_string()],
+                    );
+                    passed = false;
+                }
+            }
         } else if arg_name == "client" || arg_name == "server" {
-             let valid;
-             let mut s_val = "".to_string();
-             if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
-                 let s = val.trim_matches('"');
-                 s_val = s.to_string();
-                 let parts = s.split(',').map(|p| p.trim()).collect::<Vec<_>>();
-                 valid = parts.iter().all(|&p| p == "platform" || p == "external");
-             } else {
-                 valid = false;
-             }
-             if !valid {
-                 let arg_span: crate::source_span::SourceSpan =
-                     unsafe { std::mem::transmute(arg.value.element().span().clone()) };
-                 compiler.reporter.fail(
-                     Error::ErrInvalidDiscoverableLocation,
-                     arg_span,
-                     &[&s_val],
-                 );
-                 passed = false;
-             }
+            let valid;
+            let mut s_val = "".to_string();
+            if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                let s = val.trim_matches('"');
+                s_val = s.to_string();
+                let parts = s.split(',').map(|p| p.trim()).collect::<Vec<_>>();
+                valid = parts.iter().all(|&p| p == "platform" || p == "external");
+            } else {
+                valid = false;
+            }
+            if !valid {
+                let arg_span: crate::source_span::SourceSpan =
+                    unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                compiler
+                    .reporter
+                    .fail(Error::ErrInvalidDiscoverableLocation, arg_span, &[&s_val]);
+                passed = false;
+            }
         }
     }
     passed
 }
 
-pub fn transport_constraint(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
+pub fn transport_constraint<'node, 'src>(
+    compiler: &Compiler<'node, 'src>,
+    attr: &raw_ast::Attribute<'src>,
+) -> bool {
     let mut passed = true;
     for arg in &attr.args {
-        let arg_name = arg.name.as_ref().map(|n| n.element.start_token.span.data).unwrap_or("value");
+        let arg_name = arg
+            .name
+            .as_ref()
+            .map(|n| n.element.start_token.span.data)
+            .unwrap_or("value");
         if arg_name == "value" {
             if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
                 let s = val.trim_matches('"');
@@ -223,7 +242,10 @@ pub fn transport_constraint(compiler: &Compiler, attr: &raw_ast::Attribute) -> b
                     compiler.reporter.fail(
                         Error::ErrInvalidTransportType,
                         arg_span,
-                        &[&s.to_string(), &"Banjo, Channel, Driver, Syscall".to_string()],
+                        &[
+                            &s.to_string(),
+                            &"Banjo, Channel, Driver, Syscall".to_string(),
+                        ],
                     );
                     passed = false;
                 }
@@ -233,8 +255,21 @@ pub fn transport_constraint(compiler: &Compiler, attr: &raw_ast::Attribute) -> b
     passed
 }
 
-pub fn no_resource_constraint(_compiler: &Compiler, _attr: &raw_ast::Attribute) -> bool {
-    // TODO: implement constraint
+pub fn no_resource_constraint<'node, 'src>(
+    compiler: &Compiler<'node, 'src>,
+    attr: &raw_ast::Attribute<'src>,
+) -> bool {
+    let span: crate::source_span::SourceSpan =
+        unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+    if !compiler
+        .experimental_flags
+        .is_enabled(crate::experimental_flags::ExperimentalFlag::NoResourceAttribute)
+    {
+        compiler
+            .reporter
+            .fail(Error::ErrExperimentalNoResource, span, &[]);
+        return false;
+    }
     true
 }
 
@@ -453,14 +488,14 @@ fn edit_distance(sequence1: &str, sequence2: &str) -> usize {
     let s2: Vec<char> = sequence2.chars().collect();
     let s1_length = s1.len();
     let s2_length = s2.len();
-    
+
     let mut row1 = vec![0; s1_length + 1];
     let mut row2 = vec![0; s1_length + 1];
-    
+
     for i in 0..=s1_length {
         row1[i] = i;
     }
-    
+
     for j in 0..s2_length {
         row2[0] = j + 1;
         let s2c = s2[j];
@@ -484,14 +519,17 @@ impl AttributeSchemaMap {
         }
     }
 
-    pub fn validate(
+    pub fn validate<'node, 'src>(
         &self,
-        compiler: &Compiler,
+        compiler: &Compiler<'node, 'src>,
         decl_kind: &str,
         is_anonymous: bool,
-        attributes: &raw_ast::AttributeList,
+        attributes: &raw_ast::AttributeList<'src>,
     ) {
-        let mut scope: HashMap<String, (crate::source_span::SourceSpan, raw_ast::AttributeProvenance)> = HashMap::new();
+        let mut scope: HashMap<
+            String,
+            (crate::source_span::SourceSpan, raw_ast::AttributeProvenance),
+        > = HashMap::new();
 
         for attr in &attributes.attributes {
             let name = if attr.provenance == raw_ast::AttributeProvenance::DocComment {
@@ -502,12 +540,17 @@ impl AttributeSchemaMap {
             let canon = canonicalize(name);
 
             if let Some((prev, prev_prov)) = scope.get(&canon) {
-                if attr.provenance == raw_ast::AttributeProvenance::DocComment && *prev_prov == raw_ast::AttributeProvenance::DocComment {
+                if attr.provenance == raw_ast::AttributeProvenance::DocComment
+                    && *prev_prov == raw_ast::AttributeProvenance::DocComment
+                {
                     // Multiple doc comments are allowed
-                    scope.insert(canon.clone(), (attr.name.element.span().clone(), attr.provenance));
+                    scope.insert(
+                        canon.clone(),
+                        (attr.name.element.span().clone(), attr.provenance),
+                    );
                     continue;
                 }
-                
+
                 let transmuted_span: crate::source_span::SourceSpan =
                     unsafe { std::mem::transmute(attr.name.element.span().clone()) };
                 if prev.data == name {
@@ -521,7 +564,6 @@ impl AttributeSchemaMap {
                         Error::ErrDuplicateAttributeCanonical,
                         transmuted_span,
                         &[
-
                             &name.to_string(),
                             &prev.data.to_string(),
                             &prev.data.to_string(),
@@ -533,7 +575,6 @@ impl AttributeSchemaMap {
                 scope.insert(canon, (attr.name.element.span().clone(), attr.provenance));
             }
 
-            
             let mut arg_scope: HashMap<String, crate::source_span::SourceSpan> = HashMap::new();
             for arg in &attr.args {
                 let arg_name = arg
@@ -545,8 +586,15 @@ impl AttributeSchemaMap {
                 let arg_span: crate::source_span::SourceSpan =
                     unsafe { std::mem::transmute(arg.element.span().clone()) };
 
-                let is_compile_early = self.schemas.get(name).map(|s| s.kind == Kind::CompileEarly).unwrap_or(false);
-                if !is_compile_early && decl_kind == "library" && !matches!(arg.value, raw_ast::Constant::Literal(_)) {
+                let is_compile_early = self
+                    .schemas
+                    .get(name)
+                    .map(|s| s.kind == Kind::CompileEarly)
+                    .unwrap_or(false);
+                if !is_compile_early
+                    && decl_kind == "library"
+                    && !matches!(arg.value, raw_ast::Constant::Literal(_))
+                {
                     compiler.reporter.fail(
                         Error::ErrReferenceInLibraryAttribute,
                         arg_span.clone(),
@@ -580,7 +628,7 @@ impl AttributeSchemaMap {
                     }
                 }
             }
-let schema = match self.schemas.get(name) {
+            let schema = match self.schemas.get(name) {
                 Some(s) => s,
                 None => {
                     // Check for close tyops.
@@ -615,20 +663,26 @@ let schema = match self.schemas.get(name) {
                             match compiler.infer_constant_type(&arg.value) {
                                 Some(actual_type) => {
                                     if actual_type != "string" && actual_type != "bool" {
-                                        let arg_span: crate::source_span::SourceSpan =
-                                            unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                                        let arg_span: crate::source_span::SourceSpan = unsafe {
+                                            std::mem::transmute(arg.value.element().span().clone())
+                                        };
                                         let name_str = attr.name.element.start_token.span.data;
-                                        let arg_name = arg.name.as_ref().map(|n| n.element.start_token.span.data).unwrap_or("value");
+                                        let arg_name = arg
+                                            .name
+                                            .as_ref()
+                                            .map(|n| n.element.start_token.span.data)
+                                            .unwrap_or("value");
                                         compiler.reporter.fail(
                                             Error::ErrCanOnlyUseStringOrBool,
-                                            arg_span, 
+                                            arg_span,
                                             &[&arg_name.to_string(), &name_str.to_string()],
                                         );
                                     }
                                 }
                                 None => {
-                                    let arg_span: crate::source_span::SourceSpan =
-                                        unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                                    let arg_span: crate::source_span::SourceSpan = unsafe {
+                                        std::mem::transmute(arg.value.element().span().clone())
+                                    };
                                     compiler.reporter.fail(
                                         Error::ErrCouldNotResolveAttributeArg,
                                         arg_span,
@@ -715,7 +769,9 @@ let schema = match self.schemas.get(name) {
                     }
                 }
 
-                if schema.kind == Kind::CompileEarly && !matches!(arg.value, raw_ast::Constant::Literal(_)) {
+                if schema.kind == Kind::CompileEarly
+                    && !matches!(arg.value, raw_ast::Constant::Literal(_))
+                {
                     compiler.reporter.fail(
                         Error::ErrAttributeArgRequiresLiteral,
                         arg_span.clone(),
@@ -762,36 +818,114 @@ let schema = match self.schemas.get(name) {
                         ArgType::Kind(ConstantValueKind::Bool) => "bool",
                         _ => "numeric",
                     };
-                    
+
                     match compiler.infer_constant_type(&arg.value) {
                         Some(actual_type) => {
-                            if expected_str != actual_type && arg_schema.arg_type != ArgType::Special(SpecialCase::Version) {
+                            if expected_str != actual_type
+                                && arg_schema.arg_type != ArgType::Special(SpecialCase::Version)
+                            {
                                 let actual_str = match &arg.value {
-                                    raw_ast::Constant::Literal(l) => {
-                                        match l.literal.kind {
-                                            raw_ast::LiteralKind::Numeric => "untyped numeric",
-                                            raw_ast::LiteralKind::String => "string",
-                                            raw_ast::LiteralKind::Bool(_) => "bool",
-                                            _ => "unknown",
-                                        }
-                                    }
+                                    raw_ast::Constant::Literal(l) => match l.literal.kind {
+                                        raw_ast::LiteralKind::Numeric => "untyped numeric",
+                                        raw_ast::LiteralKind::String => "string",
+                                        raw_ast::LiteralKind::Bool(_) => "bool",
+                                        _ => "unknown",
+                                    },
                                     _ => actual_type,
                                 };
 
-                                let arg_span: crate::source_span::SourceSpan =
-                                    unsafe { std::mem::transmute(arg.value.element().span().clone()) };
-                                
+                                let arg_span: crate::source_span::SourceSpan = unsafe {
+                                    std::mem::transmute(arg.value.element().span().clone())
+                                };
+
                                 let value_str = match &arg.value {
-                                    raw_ast::Constant::Literal(l) => l.literal.element.span().data.to_string(),
+                                    raw_ast::Constant::Literal(l) => {
+                                        l.literal.element.span().data.to_string()
+                                    }
                                     raw_ast::Constant::Identifier(i) => i.identifier.to_string(),
-                                    raw_ast::Constant::BinaryOperator(b) => b.element.span().data.to_string(),
+                                    raw_ast::Constant::BinaryOperator(b) => {
+                                        b.element.span().data.to_string()
+                                    }
                                 };
 
                                 compiler.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType,
                                     arg_span.clone(),
-                                    &[&value_str, &actual_str.to_string(), &expected_str.to_string()],
+                                    &[
+                                        &value_str,
+                                        &actual_str.to_string(),
+                                        &expected_str.to_string(),
+                                    ],
                                 );
+                            } else if expected_str == "numeric"
+                                && arg_schema.arg_type != ArgType::Special(SpecialCase::Version)
+                            {
+                                let subtype = match &arg_schema.arg_type {
+                                    ArgType::Kind(ConstantValueKind::Int8) => {
+                                        crate::json_generator::PrimitiveSubtype::Int8
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Int16) => {
+                                        crate::json_generator::PrimitiveSubtype::Int16
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Int32) => {
+                                        crate::json_generator::PrimitiveSubtype::Int32
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Int64) => {
+                                        crate::json_generator::PrimitiveSubtype::Int64
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Uint8) => {
+                                        crate::json_generator::PrimitiveSubtype::Uint8
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Uint16) => {
+                                        crate::json_generator::PrimitiveSubtype::Uint16
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Uint32) => {
+                                        crate::json_generator::PrimitiveSubtype::Uint32
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Uint64) => {
+                                        crate::json_generator::PrimitiveSubtype::Uint64
+                                    }
+                                    ArgType::Kind(ConstantValueKind::ZxUsize64) => {
+                                        crate::json_generator::PrimitiveSubtype::Usize64
+                                    }
+                                    ArgType::Kind(ConstantValueKind::ZxUintptr64) => {
+                                        crate::json_generator::PrimitiveSubtype::Uintptr64
+                                    }
+                                    ArgType::Kind(ConstantValueKind::ZxUchar) => {
+                                        crate::json_generator::PrimitiveSubtype::Uchar
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Float32) => {
+                                        crate::json_generator::PrimitiveSubtype::Float32
+                                    }
+                                    ArgType::Kind(ConstantValueKind::Float64) => {
+                                        crate::json_generator::PrimitiveSubtype::Float64
+                                    }
+                                    _ => unreachable!(),
+                                };
+                                let p_type = crate::json_generator::Type::Primitive(
+                                    crate::json_generator::PrimitiveType {
+                                        subtype,
+                                        common: crate::json_generator::TypeCommon {
+                                            experimental_maybe_from_alias: None,
+                                            outer_alias: None,
+                                            deprecated: None,
+                                            maybe_attributes: vec![],
+                                            field_shape: None,
+                                            type_shape: crate::json_generator::TypeShape {
+                                                inline_size: 0,
+                                                alignment: 1,
+                                                depth: 0,
+                                                max_handles: 0,
+                                                max_out_of_line: 0,
+                                                has_padding: false,
+                                                has_flexible_envelope: false,
+                                            },
+                                            maybe_size_constant_name: None,
+                                            resource: false,
+                                        },
+                                    },
+                                );
+                                compiler.validate_constant(&arg.value, &p_type);
                             }
                         }
                         None => {

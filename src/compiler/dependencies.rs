@@ -1,9 +1,9 @@
 use super::RawDecl;
-use crate::reporter::Reporter;
-use crate::json_generator::*;
-use crate::json_generator;
 use crate::diagnostics::Error;
+use crate::json_generator;
+use crate::json_generator::*;
 use crate::raw_ast;
+use crate::reporter::Reporter;
 use std::collections::{HashMap, HashSet};
 pub(crate) fn collect_deps_from_constant(
     constant: &raw_ast::Constant<'_>,
@@ -53,7 +53,7 @@ pub(crate) fn get_dependencies<'node, 'src>(
     inline_names: &HashMap<usize, String>,
 ) -> Vec<String> {
     let mut deps = vec![];
-    
+
     collect_deps_from_attributes(decl.attributes(), library_name, &mut deps);
 
     match decl {

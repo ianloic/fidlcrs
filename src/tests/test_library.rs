@@ -56,7 +56,11 @@ impl<'a> TestLibrary<'a> {
         self.source_files.push(source_file);
     }
 
-    pub fn add_attribute_schema(&mut self, name: &str, schema: crate::attribute_schema::AttributeSchema) {
+    pub fn add_attribute_schema(
+        &mut self,
+        name: &str,
+        schema: crate::attribute_schema::AttributeSchema,
+    ) {
         self.custom_schemas.insert(name.to_string(), schema);
     }
 
@@ -149,7 +153,10 @@ resource_definition handle : uint32 {
                 }
             }
         }
-        compiler.attribute_schemas.schemas.extend(self.custom_schemas.clone());
+        compiler
+            .attribute_schemas
+            .schemas
+            .extend(self.custom_schemas.clone());
         let mut asts = Vec::new();
 
         for file in &self.source_files {

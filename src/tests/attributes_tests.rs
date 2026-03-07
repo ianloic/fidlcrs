@@ -1,7 +1,6 @@
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
-
 #[test]
 fn good_placement_of_attributes() {
     let source = SourceFile::new(
@@ -456,15 +455,24 @@ type MyStruct = struct {
 "#
         .to_string(),
     );
-    fn must_have_three_members(compiler: &crate::compiler::Compiler, attr: &crate::raw_ast::Attribute) -> bool {
-        let span: crate::source_span::SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
-        compiler.reporter.fail(crate::diagnostics::Error::ErrInvalidAttributePlacement, span, &[&"must_have_three_members".to_string()]);
+    fn must_have_three_members(
+        compiler: &crate::compiler::Compiler,
+        attr: &crate::raw_ast::Attribute,
+    ) -> bool {
+        let span: crate::source_span::SourceSpan =
+            unsafe { std::mem::transmute(attr.element.span().clone()) };
+        compiler.reporter.fail(
+            crate::diagnostics::Error::ErrInvalidAttributePlacement,
+            span,
+            &[&"must_have_three_members".to_string()],
+        );
         false
     }
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let s_must = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly)
-        .constrain(must_have_three_members);
+    let s_must =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly)
+            .constrain(must_have_three_members);
     lib.add_attribute_schema("must_have_three_members", s_must);
     assert!(lib.compile().is_err());
 }
@@ -482,15 +490,24 @@ protocol MyProtocol {
 "#
         .to_string(),
     );
-    fn must_have_three_members(compiler: &crate::compiler::Compiler, attr: &crate::raw_ast::Attribute) -> bool {
-        let span: crate::source_span::SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
-        compiler.reporter.fail(crate::diagnostics::Error::ErrInvalidAttributePlacement, span, &[&"must_have_three_members".to_string()]);
+    fn must_have_three_members(
+        compiler: &crate::compiler::Compiler,
+        attr: &crate::raw_ast::Attribute,
+    ) -> bool {
+        let span: crate::source_span::SourceSpan =
+            unsafe { std::mem::transmute(attr.element.span().clone()) };
+        compiler.reporter.fail(
+            crate::diagnostics::Error::ErrInvalidAttributePlacement,
+            span,
+            &[&"must_have_three_members".to_string()],
+        );
         false
     }
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let s_must = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly)
-        .constrain(must_have_three_members);
+    let s_must =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly)
+            .constrain(must_have_three_members);
     lib.add_attribute_schema("must_have_three_members", s_must);
     assert!(lib.compile().is_err());
 }
@@ -510,15 +527,24 @@ protocol MyProtocol {
 "#
         .to_string(),
     );
-    fn must_have_three_members(compiler: &crate::compiler::Compiler, attr: &crate::raw_ast::Attribute) -> bool {
-        let span: crate::source_span::SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
-        compiler.reporter.fail(crate::diagnostics::Error::ErrInvalidAttributePlacement, span, &[&"must_have_three_members".to_string()]);
+    fn must_have_three_members(
+        compiler: &crate::compiler::Compiler,
+        attr: &crate::raw_ast::Attribute,
+    ) -> bool {
+        let span: crate::source_span::SourceSpan =
+            unsafe { std::mem::transmute(attr.element.span().clone()) };
+        compiler.reporter.fail(
+            crate::diagnostics::Error::ErrInvalidAttributePlacement,
+            span,
+            &[&"must_have_three_members".to_string()],
+        );
         false
     }
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let s_must = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly)
-        .constrain(must_have_three_members);
+    let s_must =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly)
+            .constrain(must_have_three_members);
     lib.add_attribute_schema("must_have_three_members", s_must);
     assert!(lib.compile().is_err());
 }
@@ -746,11 +772,17 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("value", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "value",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     lib.compile().expect("compilation failed");
 }
@@ -769,11 +801,17 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("inferrable", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "inferrable",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     lib.compile().expect("compilation failed");
 }
@@ -795,11 +833,17 @@ type MyOtherStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("value", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Optional
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "value",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Optional,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     lib.compile().expect("compilation failed");
 }
@@ -808,11 +852,17 @@ type MyOtherStruct = struct {};
 fn bad_single_schema_argument_is_named() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0125.test.fidl");
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("value", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "value",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     assert!(lib.compile().is_err());
 }
@@ -821,11 +871,17 @@ fn bad_single_schema_argument_is_named() {
 fn bad_single_schema_argument_is_not_named() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0126.test.fidl");
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("value", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "value",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     assert!(lib.compile().is_err());
 }
@@ -848,15 +904,26 @@ type MyOtherStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_multi = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_multi = s_multi.add_arg("first", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
-    s_multi = s_multi.add_arg("second", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_multi =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_multi = s_multi.add_arg(
+        "first",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
+    s_multi = s_multi.add_arg(
+        "second",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("multiple_args", s_multi);
     lib.compile().expect("compilation failed");
 }
@@ -889,15 +956,26 @@ type MyStruct5 = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_multi = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_multi = s_multi.add_arg("first", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Optional
-    ));
-    s_multi = s_multi.add_arg("second", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Optional
-    ));
+    let mut s_multi =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_multi = s_multi.add_arg(
+        "first",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Optional,
+        ),
+    );
+    s_multi = s_multi.add_arg(
+        "second",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Optional,
+        ),
+    );
     lib.add_attribute_schema("multiple_args", s_multi);
     lib.compile().expect("compilation failed");
 }
@@ -924,15 +1002,26 @@ type MyStruct3 = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_multi = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_multi = s_multi.add_arg("first", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
-    s_multi = s_multi.add_arg("second", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Optional
-    ));
+    let mut s_multi =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_multi = s_multi.add_arg(
+        "first",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
+    s_multi = s_multi.add_arg(
+        "second",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Optional,
+        ),
+    );
     lib.add_attribute_schema("multiple_args", s_multi);
     lib.compile().expect("compilation failed");
 }
@@ -941,15 +1030,26 @@ type MyStruct3 = struct {};
 fn bad_multiple_schema_arguments_required_missing() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0127.test.fidl");
-    let mut s_req = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_req = s_req.add_arg("required", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
-    s_req = s_req.add_arg("optional", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Optional
-    ));
+    let mut s_req =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_req = s_req.add_arg(
+        "required",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
+    s_req = s_req.add_arg(
+        "optional",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Optional,
+        ),
+    );
     lib.add_attribute_schema("has_required_arg", s_req);
     assert!(lib.compile().is_err());
 }
@@ -1048,8 +1148,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1068,10 +1185,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     lib.compile().expect("compilation failed");
@@ -1091,8 +1211,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1111,10 +1248,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     assert!(lib.compile().is_err());
@@ -1134,8 +1274,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1154,10 +1311,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     assert!(lib.compile().is_err());
@@ -1177,8 +1337,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1197,10 +1374,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     assert!(lib.compile().is_err());
@@ -1263,8 +1443,25 @@ type MyStruct = struct {};
     let mut lib = TestLibrary::new();
     lib.enable_flag("zx_c_types");
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1283,10 +1480,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     lib.compile().expect("compilation failed");
@@ -1308,8 +1508,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1328,10 +1545,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     assert!(lib.compile().is_err());
@@ -1353,8 +1573,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1373,10 +1610,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     assert!(lib.compile().is_err());
@@ -1398,8 +1638,25 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    for k in ["string", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "usize64", "uintptr64", "uchar", "float32", "float64"] {
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    for k in [
+        "string",
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "usize64",
+        "uintptr64",
+        "uchar",
+        "float32",
+        "float64",
+    ] {
         let kind = match k {
             "string" => crate::attribute_schema::ConstantValueKind::String,
             "bool" => crate::attribute_schema::ConstantValueKind::Bool,
@@ -1418,10 +1675,13 @@ type MyStruct = struct {};
             "float64" => crate::attribute_schema::ConstantValueKind::Float64,
             _ => unreachable!(),
         };
-        s_attr = s_attr.add_arg(k, crate::attribute_schema::AttributeArgSchema::new(
-            crate::attribute_schema::ArgType::Kind(kind),
-            crate::attribute_schema::Optionality::Optional
-        ));
+        s_attr = s_attr.add_arg(
+            k,
+            crate::attribute_schema::AttributeArgSchema::new(
+                crate::attribute_schema::ArgType::Kind(kind),
+                crate::attribute_schema::Optionality::Optional,
+            ),
+        );
     }
     lib.add_attribute_schema("attr", s_attr);
     assert!(lib.compile().is_err());
@@ -1441,10 +1701,11 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
     s_attr = s_attr.add_anonymous_arg(crate::attribute_schema::AttributeArgSchema::new(
         crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::Uint8),
-        crate::attribute_schema::Optionality::Required
+        crate::attribute_schema::Optionality::Required,
     ));
     s_attr = s_attr.compile_early();
     lib.add_attribute_schema("attr", s_attr);
@@ -1467,10 +1728,11 @@ const BAD uint8 = 1;
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_attr = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    let mut s_attr =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
     s_attr = s_attr.add_anonymous_arg(crate::attribute_schema::AttributeArgSchema::new(
         crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::Uint8),
-        crate::attribute_schema::Optionality::Required
+        crate::attribute_schema::Optionality::Required,
     ));
     s_attr = s_attr.compile_early();
     lib.add_attribute_schema("attr", s_attr);
@@ -1542,11 +1804,17 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("value", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "value",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     assert!(lib.compile().is_err());
 }
@@ -1565,11 +1833,17 @@ type MyStruct = struct {};
     );
     let mut lib = TestLibrary::new();
     lib.add_source(&source);
-    let mut s_foo = crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
-    s_foo = s_foo.add_arg("value", crate::attribute_schema::AttributeArgSchema::new(
-        crate::attribute_schema::ArgType::Kind(crate::attribute_schema::ConstantValueKind::String),
-        crate::attribute_schema::Optionality::Required
-    ));
+    let mut s_foo =
+        crate::attribute_schema::AttributeSchema::new(crate::attribute_schema::Kind::ValidateOnly);
+    s_foo = s_foo.add_arg(
+        "value",
+        crate::attribute_schema::AttributeArgSchema::new(
+            crate::attribute_schema::ArgType::Kind(
+                crate::attribute_schema::ConstantValueKind::String,
+            ),
+            crate::attribute_schema::Optionality::Required,
+        ),
+    );
     lib.add_attribute_schema("foo", s_foo);
     assert!(lib.compile().is_err());
 }
@@ -1826,7 +2100,8 @@ protocol Foo {};
         let source = SourceFile::new("example.fidl".to_string(), source_text);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        lib.compile().expect(&format!("compilation failed for {}", name));
+        lib.compile()
+            .expect(&format!("compilation failed for {}", name));
     }
 }
 
@@ -1843,7 +2118,11 @@ protocol Foo {};
         let source = SourceFile::new("example.fidl".to_string(), source_text);
         let mut lib = TestLibrary::new();
         lib.add_source(&source);
-        assert!(lib.compile().is_err(), "expected compilation to fail for {}", name);
+        assert!(
+            lib.compile().is_err(),
+            "expected compilation to fail for {}",
+            name
+        );
     }
 }
 

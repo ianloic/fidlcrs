@@ -1,7 +1,6 @@
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
-
 #[test]
 #[ignore]
 fn bad_collision() {

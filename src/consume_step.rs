@@ -17,7 +17,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             .unwrap_or_else(|| "unknown".to_string());
 
         compiler.library_name = main_library_name.clone();
-        
+
         let mut all_library_attributes = Vec::new();
         let mut main_library_decl: Option<raw_ast::LibraryDeclaration> = None;
         for file in self.main_files {
@@ -49,7 +49,11 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             if !all_library_attributes.is_empty() {
                 decl.attributes = Some(Box::new(crate::raw_ast::AttributeList {
                     attributes: all_library_attributes,
-                    element: decl.attributes.as_ref().map(|a| a.element.clone()).unwrap_or_else(|| decl.element.clone()),
+                    element: decl
+                        .attributes
+                        .as_ref()
+                        .map(|a| a.element.clone())
+                        .unwrap_or_else(|| decl.element.clone()),
                 }));
             }
             compiler.library_decl = Some(decl);

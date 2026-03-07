@@ -1,9 +1,9 @@
-use crate::json_generator::*;
-use crate::raw_ast;
 use crate::compiler::RawDecl;
-use crate::raw_ast::{Layout, LiteralKind};
 use crate::diagnostics::Error;
+use crate::json_generator::*;
 use crate::name::NamingContext;
+use crate::raw_ast;
+use crate::raw_ast::{Layout, LiteralKind};
 impl<'node, 'src> super::Compiler<'node, 'src> {
     pub fn eval_constant_value_as_string(
         &self,
@@ -124,10 +124,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
     }
 
-    pub fn infer_constant_type(
-        &self,
-        constant: &raw_ast::Constant<'_>,
-    ) -> Option<&'static str> {
+    pub fn infer_constant_type(&self, constant: &raw_ast::Constant<'_>) -> Option<&'static str> {
         match constant {
             raw_ast::Constant::Literal(lit) => match lit.literal.kind {
                 raw_ast::LiteralKind::String => Some("string"),
@@ -148,7 +145,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
                     if let RawDecl::Const(c) = decl {
-                        if let crate::raw_ast::LayoutParameter::Identifier(id) = &c.type_ctor.layout {
+                        if let crate::raw_ast::LayoutParameter::Identifier(id) = &c.type_ctor.layout
+                        {
                             let mut type_name = id.to_string();
                             if type_name.starts_with("fidl.") {
                                 type_name = type_name[5..].to_string();
@@ -156,7 +154,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             return match type_name.as_str() {
                                 "string" => Some("string"),
                                 "bool" => Some("bool"),
-                                "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16" | "int32" | "int64" | "float32" | "float64" | "uchar" | "usize64" | "uintptr64" => Some("numeric"),
+                                "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16"
+                                | "int32" | "int64" | "float32" | "float64" | "uchar"
+                                | "usize64" | "uintptr64" => Some("numeric"),
                                 _ => None,
                             };
                         }
@@ -175,11 +175,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         return match decl {
                             RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
                             RawDecl::Type(t) => match &t.layout {
-                                crate::raw_ast::Layout::Enum(_) | crate::raw_ast::Layout::Bits(_) => Some("numeric"),
+                                crate::raw_ast::Layout::Enum(_)
+                                | crate::raw_ast::Layout::Bits(_) => Some("numeric"),
                                 _ => None,
                             },
                             _ => None,
-                        }
+                        };
                     }
                 }
                 None
@@ -297,7 +298,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         self.eval_constant_value(constant).map(|v| v as usize)
     }
 
-    pub(crate) fn eval_type_constant_usize(&self, ty: &raw_ast::TypeConstructor<'_>) -> Option<usize> {
+    pub(crate) fn eval_type_constant_usize(
+        &self,
+        ty: &raw_ast::TypeConstructor<'_>,
+    ) -> Option<usize> {
         match &ty.layout {
             raw_ast::LayoutParameter::Literal(lit) => match &lit.literal.kind {
                 raw_ast::LiteralKind::Numeric => lit.literal.value.parse::<usize>().ok(),
@@ -548,7 +552,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
     }
 
-    pub fn validate_constant(&mut self, constant: &raw_ast::Constant<'src>, expected_type: &Type) {
+    pub fn validate_constant(&self, constant: &raw_ast::Constant<'src>, expected_type: &Type) {
         match expected_type {
             Type::Primitive(p) => {
                 let subtype = &p.subtype.to_string();
@@ -627,9 +631,16 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         let mut is_other = false;
                         if let Some(decl) = decl_info {
                             match decl {
-                                RawDecl::Const(c) => {
-                                    c_layout_str = Some(c.type_ctor.element.start_token.span.data)
-                                }
+                                RawDecl::Const(c) => match &c.type_ctor.layout {
+                                    crate::raw_ast::LayoutParameter::Identifier(id) => {
+                                        c_layout_str =
+                                            id.components.last().map(|c| c.element.span().data);
+                                    }
+                                    _ => {
+                                        c_layout_str =
+                                            Some(c.type_ctor.element.start_token.span.data);
+                                    }
+                                },
                                 RawDecl::Bits(_) | RawDecl::Enum(_) => is_other = true,
                                 RawDecl::Type(t) => match &t.layout {
                                     Layout::Bits(_) | Layout::Enum(_) => is_other = true,

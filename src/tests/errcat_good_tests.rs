@@ -1718,7 +1718,7 @@ fn good0220() {
 #[test]
 fn good0221() {
     let mut library = TestLibrary::new();
-    // library.experimental_flags().Enable(ExperimentalFlag::kNoResourceAttribute);
+    library.enable_flag("no_resource_attribute");
     library.add_errcat_file("good/fi-0221.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -1733,7 +1733,7 @@ fn good0222() {
 #[test]
 fn good0223() {
     let mut library = TestLibrary::new();
-    // library.experimental_flags().Enable(ExperimentalFlag::kNoResourceAttribute);
+    library.enable_flag("no_resource_attribute");
     library.add_errcat_file("good/fi-0223.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }

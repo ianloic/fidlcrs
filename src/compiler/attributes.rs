@@ -1,7 +1,7 @@
-use crate::json_generator::*;
-use crate::raw_ast;
 use crate::compiler::RawDecl;
 use crate::diagnostics::Error;
+use crate::json_generator::*;
+use crate::raw_ast;
 use crate::versioning_types::Version;
 impl<'node, 'src> super::Compiler<'node, 'src> {
     pub(crate) fn get_location(&self, element: &raw_ast::SourceElement<'_>) -> Location {
@@ -282,16 +282,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 RawDecl::Resource(_) => "resource",
                 RawDecl::Const(_) => "const",
                 RawDecl::Alias(_) => "alias",
-                RawDecl::Type(d) => {
-                    match &d.layout {
-                        crate::raw_ast::Layout::Struct(_) => "struct",
-                        crate::raw_ast::Layout::Enum(_) => "enum",
-                        crate::raw_ast::Layout::Bits(_) => "bits",
-                        crate::raw_ast::Layout::Union(_) => "union",
-                        crate::raw_ast::Layout::Table(_) => "table",
-                        crate::raw_ast::Layout::TypeConstructor(_) => "type",
-                    }
-                }
+                RawDecl::Type(d) => match &d.layout {
+                    crate::raw_ast::Layout::Struct(_) => "struct",
+                    crate::raw_ast::Layout::Enum(_) => "enum",
+                    crate::raw_ast::Layout::Bits(_) => "bits",
+                    crate::raw_ast::Layout::Union(_) => "union",
+                    crate::raw_ast::Layout::Table(_) => "table",
+                    crate::raw_ast::Layout::TypeConstructor(_) => "type",
+                },
             };
             // is_anon is determined by checking if the RawDecl has an optional name set.
             let is_anon = match raw_decl {

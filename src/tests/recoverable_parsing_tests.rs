@@ -179,7 +179,7 @@ type Enum = enum {
 #[test]
 #[ignore]
 fn bad_recover_to_next_protocol_member() {
-    let mut library = TestLibrary::new();
+    let library = TestLibrary::new();
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -343,7 +343,7 @@ extra_token // Second error
 #[test]
 #[ignore]
 fn bad_recover_final_member_missing_name_and_semicolon() {
-    let mut library = TestLibrary::new();
+    let library = TestLibrary::new();
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }

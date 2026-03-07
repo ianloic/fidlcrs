@@ -229,6 +229,7 @@ define_diagnostics! {
     RetiredDef ErrTooManyBytes = 139 ;
     RetiredDef ErrTooManyHandles = 140 ;
     ErrorDef ErrInvalidErrorType = 141, r#"invalid error type: must be int32, uint32 or an enum thereof"# ;
+    ErrorDef ErrInvalidTransportType = 142, r#"invalid transport type: got {} expected one of {}"# ;
     RetiredDef ErrBoundIsTooBig = 143 ;
     RetiredDef ErrUnableToParseBound = 144 ;
     WarningDef WarnAttributeTypo = 145, r#"suspect attribute with name '{}'; did you mean '{}'?"# ;

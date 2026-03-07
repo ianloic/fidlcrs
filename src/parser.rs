@@ -337,61 +337,96 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         if self.last_token.kind == TokenKind::LeftParen {
             self.consume_token(TokenKind::LeftParen)?;
-            // check for closing paren immediately
-            while self.last_token.kind != TokenKind::RightParen
-                && self.last_token.kind != TokenKind::EndOfFile
-            {
-                // Parse arg
-                let start_arg = self.last_token.clone();
-                let first = self.parse_constant()?;
+            if self.last_token.kind == TokenKind::RightParen {
+                self.reporter.fail(
+                    Error::ErrAttributeWithEmptyParens,
+                    self.last_token.span.clone(),
+                    &[],
+                );
+                return None;
+            }
 
-                let arg = if self.last_token.kind == TokenKind::Equal {
-                    // The first constant was actually a name identifier
-                    if let Constant::Identifier(id_const) = first {
-                        if id_const.identifier.components.len() != 1 {
-                            let s = id_const.element.span().data;
-                            self.reporter.fail(
-                                Error::ErrInvalidIdentifier, // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
-                                id_const.element.span().clone(),
-                                &[&s],
-                            );
-                            return None;
-                        }
-                        // Convert IdentifierConstant to Identifier (for name)
-                        // We take the first component of compound identifier
-                        let id = id_const.identifier.components.into_iter().next().unwrap();
-                        self.consume_token(TokenKind::Equal)?;
-                        let val = self.parse_constant()?;
-                        AttributeArg {
-                            element: SourceElement::new(
-                                start_arg.clone(),
-                                self.previous_token.as_ref().unwrap().clone(),
-                            ),
-                            name: Some(id),
-                            value: val,
-                        }
-                    } else {
+            let start_arg = self.last_token.clone();
+            let first = self.parse_constant()?;
+
+            let first_arg = if self.last_token.kind == TokenKind::Equal {
+                // Named argument
+                if let Constant::Identifier(id_const) = first {
+                    if id_const.identifier.components.len() != 1 {
+                        let s = id_const.element.span().data;
+                        self.reporter.fail(
+                            Error::ErrInvalidIdentifier,
+                            id_const.element.span().clone(),
+                            &[&s],
+                        );
                         return None;
                     }
-                } else {
-                    // Positional arg
+                    let id = id_const.identifier.components.into_iter().next().unwrap();
+                    self.consume_token(TokenKind::Equal)?;
+                    let val = self.parse_constant()?;
                     AttributeArg {
                         element: SourceElement::new(
                             start_arg.clone(),
                             self.previous_token.as_ref().unwrap().clone(),
                         ),
-                        name: None,
-                        value: first,
+                        name: Some(id),
+                        value: val,
                     }
-                };
-                args.push(arg);
-
-                if self.last_token.kind == TokenKind::Comma {
-                    self.consume_token(TokenKind::Comma)?;
                 } else {
-                    break;
+                    return None;
                 }
+            } else if self.last_token.kind == TokenKind::RightParen {
+                // Single unnamed argument
+                AttributeArg {
+                    element: SourceElement::new(
+                        start_arg.clone(),
+                        self.previous_token.as_ref().unwrap().clone(),
+                    ),
+                    name: None,
+                    value: first,
+                }
+            } else if self.last_token.kind == TokenKind::Comma {
+                // Multiple arguments, but the first one is unnamed
+                self.reporter.fail(
+                    Error::ErrAttributeArgsMustAllBeNamed,
+                    start_arg.span.clone(),
+                    &[],
+                );
+                return None;
+            } else {
+                return None;
+            };
+
+            args.push(first_arg);
+
+            while self.last_token.kind == TokenKind::Comma {
+                self.consume_token(TokenKind::Comma)?;
+                
+                let start_arg = self.last_token.clone();
+                let name = self.parse_identifier()?;
+
+                if self.last_token.kind == TokenKind::Comma || self.last_token.kind == TokenKind::RightParen {
+                    self.reporter.fail(
+                        Error::ErrAttributeArgsMustAllBeNamed,
+                        start_arg.span.clone(),
+                        &[],
+                    );
+                    return None;
+                }
+
+                self.consume_token(TokenKind::Equal)?;
+                let val = self.parse_constant()?;
+                
+                args.push(AttributeArg {
+                    element: SourceElement::new(
+                        start_arg.clone(),
+                        self.previous_token.as_ref().unwrap().clone(),
+                    ),
+                    name: Some(name),
+                    value: val,
+                });
             }
+
             self.consume_token(TokenKind::RightParen)?;
         }
         Some(args)

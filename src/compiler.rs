@@ -170,6 +170,7 @@ pub struct Compiler<'node, 'src> {
     pub skip_eager_compile: bool,
     pub anonymous_structs: HashSet<String>,
     pub experimental_flags: ExperimentalFlags,
+    pub attribute_schemas: crate::attribute_schema::AttributeSchemaMap,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -210,6 +211,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
             experimental_flags: ExperimentalFlags::new(),
+            attribute_schemas: crate::attribute_schema::AttributeSchemaMap::new(),
         }
     }
 
@@ -646,7 +648,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
-
+        self.verify_attributes();
         let json_root = JsonRoot {
             name: self.library_name.clone(),
             platform,
@@ -1829,6 +1831,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
                 let mut current = id.to_string();
                 loop {
+                    if current.starts_with("fidl.") {
+                        current = current[5..].to_string();
+                    }
                     if matches!(
                         current.as_str(),
                         "uint8"
@@ -1904,7 +1909,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     has_flexible_envelope: false,
                 },
             },
-            subtype: subtype_name.parse().unwrap_or(PrimitiveSubtype::Uint32),
+            subtype: resolved_subtype.parse().unwrap_or(PrimitiveSubtype::Uint32),
         });
 
         let strict = decl
@@ -1912,7 +1917,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .iter()
             .any(|m| m.subkind == TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
 
-        let max_val_u64: u64 = match subtype_name.as_str() {
+        let max_val_u64: u64 = match resolved_subtype.as_str() {
             "uint8" => u8::MAX as u64,
             "uint16" => u16::MAX as u64,
             "uint32" => u32::MAX as u64,
@@ -1977,7 +1982,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let first_span = member.name.element.span().clone();
                     let transmuted_first: crate::source_span::SourceSpan<'src> =
                         unsafe { std::mem::transmute(first_span) };
-                    unknown_member_span = Some(transmuted_first);
+                    unknown_member_span = Some(transmuted_first.clone());
+                    
+                    if strict {
+                        self.reporter.fail(
+                            Error::ErrUnknownAttributeOnStrictEnumMember,
+                            transmuted_first,
+                            &[],
+                        );
+                    }
                 }
 
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
@@ -2010,7 +2023,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-        let (inline_size, alignment) = match subtype_name.as_str() {
+        let (inline_size, alignment) = match resolved_subtype.as_str() {
             "uint8" | "int8" => (1, 1),
             "uint16" | "int16" => (2, 2),
             "uint32" | "int32" => (4, 4),
@@ -2113,6 +2126,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
                 let mut current = id.to_string();
                 loop {
+                    if current.starts_with("fidl.") {
+                        current = current[5..].to_string();
+                    }
                     if matches!(
                         current.as_str(),
                         "uint8"
@@ -4837,6 +4853,70 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
+    pub fn infer_constant_type(
+        &self,
+        constant: &raw_ast::Constant<'_>,
+    ) -> Option<&'static str> {
+        match constant {
+            raw_ast::Constant::Literal(lit) => match lit.literal.kind {
+                raw_ast::LiteralKind::String => Some("string"),
+                raw_ast::LiteralKind::DocComment => Some("string"),
+                raw_ast::LiteralKind::Numeric => Some("numeric"),
+                raw_ast::LiteralKind::Bool(_) => Some("bool"),
+            },
+            raw_ast::Constant::Identifier(id) => {
+                let name = id.identifier.to_string();
+                if name == "MAX" {
+                    return Some("numeric");
+                }
+
+                let mut full_name = name.clone();
+                if !full_name.contains('/') {
+                    full_name = format!("{}/{}", self.library_name, name);
+                }
+
+                if let Some(decl) = self.raw_decls.get(&full_name) {
+                    if let RawDecl::Const(c) = decl {
+                        if let crate::raw_ast::LayoutParameter::Identifier(id) = &c.type_ctor.layout {
+                            let mut type_name = id.to_string();
+                            if type_name.starts_with("fidl.") {
+                                type_name = type_name[5..].to_string();
+                            }
+                            return match type_name.as_str() {
+                                "string" => Some("string"),
+                                "bool" => Some("bool"),
+                                "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16" | "int32" | "int64" | "float32" | "float64" | "uchar" | "usize64" | "uintptr64" => Some("numeric"),
+                                _ => None,
+                            };
+                        }
+                    }
+                }
+
+                if let Some((type_name, _member_name)) = name.rsplit_once('.') {
+                    let mut type_full_name = type_name.to_string();
+                    if !type_full_name.contains('/') {
+                        let local_fqn = format!("{}/{}", self.library_name, type_name);
+                        if self.raw_decls.contains_key(&local_fqn) {
+                            type_full_name = local_fqn;
+                        }
+                    }
+                    if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                        return match decl {
+                            RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
+                            RawDecl::Type(t) => match &t.layout {
+                                crate::raw_ast::Layout::Enum(_) | crate::raw_ast::Layout::Bits(_) => Some("numeric"),
+                                _ => None,
+                            },
+                            _ => None,
+                        }
+                    }
+                }
+                None
+            }
+            raw_ast::Constant::BinaryOperator(_) => Some("numeric"),
+        }
+    }
+
     pub fn eval_constant_value(&self, constant: &raw_ast::Constant<'_>) -> Option<u64> {
         match constant {
             raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
@@ -5492,6 +5572,20 @@ fn collect_deps_from_constant(
     }
 }
 
+fn collect_deps_from_attributes(
+    attributes: Option<&raw_ast::AttributeList<'_>>,
+    library_name: &str,
+    deps: &mut Vec<String>,
+) {
+    if let Some(attrs) = attributes {
+        for attr in &attrs.attributes {
+            for arg in &attr.args {
+                collect_deps_from_constant(&arg.value, library_name, deps);
+            }
+        }
+    }
+}
+
 fn get_dependencies<'node, 'src>(
     decl: &RawDecl<'node, 'src>,
     library_name: &str,
@@ -5500,6 +5594,9 @@ fn get_dependencies<'node, 'src>(
     inline_names: &HashMap<usize, String>,
 ) -> Vec<String> {
     let mut deps = vec![];
+    
+    collect_deps_from_attributes(decl.attributes(), library_name, &mut deps);
+
     match decl {
         RawDecl::Struct(s) => {
             for member in &s.members {
@@ -7705,6 +7802,154 @@ impl<'node, 'src> Compiler<'node, 'src> {
             composed_protocols: compiled_composed,
             methods,
             implementation_locations,
+        }
+    }
+
+    pub fn verify_attributes(&self) {
+        let schemas = &self.attribute_schemas;
+
+        // 1. Validate library attributes
+        if let Some(libr) = &self.library_decl {
+            if let Some(attrs) = &libr.attributes {
+                schemas.validate(self, "library", false, attrs);
+            }
+        }
+
+        // 2. Validate all declarations and their members
+        for (_name, raw_decl) in &self.raw_decls {
+            let kind = match raw_decl {
+                RawDecl::Struct(_) => "struct",
+                RawDecl::Enum(_) => "enum",
+                RawDecl::Bits(_) => "bits",
+                RawDecl::Union(_) => "union",
+                RawDecl::Table(_) => "table",
+                RawDecl::Protocol(_) => "protocol",
+                RawDecl::Service(_) => "service",
+                RawDecl::Resource(_) => "resource",
+                RawDecl::Const(_) => "const",
+                RawDecl::Alias(_) => "alias",
+                RawDecl::Type(d) => {
+                    match &d.layout {
+                        crate::raw_ast::Layout::Struct(_) => "struct",
+                        crate::raw_ast::Layout::Enum(_) => "enum",
+                        crate::raw_ast::Layout::Bits(_) => "bits",
+                        crate::raw_ast::Layout::Union(_) => "union",
+                        crate::raw_ast::Layout::Table(_) => "table",
+                        crate::raw_ast::Layout::TypeConstructor(_) => "type",
+                    }
+                }
+            };
+            // is_anon is determined by checking if the RawDecl has an optional name set.
+            let is_anon = match raw_decl {
+                RawDecl::Struct(d) => d.name.is_none(),
+                RawDecl::Enum(d) => d.name.is_none(),
+                RawDecl::Bits(d) => d.name.is_none(),
+                RawDecl::Union(d) => d.name.is_none(),
+                RawDecl::Table(d) => d.name.is_none(),
+                _ => false,
+            };
+            if let Some(attrs) = raw_decl.attributes() {
+                schemas.validate(self, kind, is_anon, attrs);
+            }
+
+            // 3. Verify members recursively
+            match raw_decl {
+                RawDecl::Struct(d) => {
+                    for member in &d.members {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "struct_member", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Protocol(d) => {
+                    for method in &d.methods {
+                        if let Some(attrs) = &method.attributes {
+                            schemas.validate(self, "protocol_method", is_anon, attrs);
+                        }
+                    }
+                }
+                RawDecl::Enum(d) => {
+                    for member in &d.members {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "enum_member", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Bits(d) => {
+                    for member in &d.members {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "bits_member", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Union(d) => {
+                    for member in &d.members {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "union_member", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Table(d) => {
+                    for member in &d.members {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "table_member", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Service(d) => {
+                    for member in &d.members {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "service_member", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Resource(d) => {
+                    for member in &d.properties {
+                        if let Some(attrs) = &member.attributes {
+                            schemas.validate(self, "resource_property", false, attrs);
+                        }
+                    }
+                }
+                RawDecl::Type(d) => match &d.layout {
+                    raw_ast::Layout::Struct(s) => {
+                        for member in &s.members {
+                            if let Some(attrs) = &member.attributes {
+                                schemas.validate(self, "struct_member", is_anon, attrs);
+                            }
+                        }
+                    }
+                    raw_ast::Layout::Enum(e) => {
+                        for member in &e.members {
+                            if let Some(attrs) = &member.attributes {
+                                schemas.validate(self, "enum_member", is_anon, attrs);
+                            }
+                        }
+                    }
+                    raw_ast::Layout::Bits(b) => {
+                        for member in &b.members {
+                            if let Some(attrs) = &member.attributes {
+                                schemas.validate(self, "bits_member", is_anon, attrs);
+                            }
+                        }
+                    }
+                    raw_ast::Layout::Table(t) => {
+                        for member in &t.members {
+                            if let Some(attrs) = &member.attributes {
+                                schemas.validate(self, "table_member", is_anon, attrs);
+                            }
+                        }
+                    }
+                    raw_ast::Layout::Union(u) => {
+                        for member in &u.members {
+                            if let Some(attrs) = &member.attributes {
+                                schemas.validate(self, "union_member", is_anon, attrs);
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
         }
     }
 }

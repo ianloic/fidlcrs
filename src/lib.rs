@@ -14,6 +14,7 @@ pub mod source_span;
 pub mod token;
 pub mod versioning_types;
 
+pub mod attribute_schema;
 pub mod availability_step;
 pub mod compile_step;
 pub mod consume_step;

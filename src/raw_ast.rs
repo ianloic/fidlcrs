@@ -88,7 +88,7 @@ pub struct Attribute<'a> {
     pub provenance: AttributeProvenance,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum AttributeProvenance {
     Default,
     DocComment,

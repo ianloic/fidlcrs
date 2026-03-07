@@ -15,6 +15,7 @@ pub struct TestLibrary<'a> {
     generated_source_file: VirtualSourceFile,
     pub experimental_flags: Vec<String>,
     pub select_versions: Vec<(String, String)>,
+    pub custom_schemas: std::collections::HashMap<String, crate::attribute_schema::AttributeSchema>,
 }
 
 impl<'a> Default for TestLibrary<'a> {
@@ -32,6 +33,7 @@ impl<'a> TestLibrary<'a> {
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             experimental_flags: Vec::new(),
             select_versions: Vec::new(),
+            custom_schemas: std::collections::HashMap::new(),
         }
     }
 
@@ -52,6 +54,10 @@ impl<'a> TestLibrary<'a> {
 
     pub fn add_source(&mut self, source_file: &'a SourceFile) {
         self.source_files.push(source_file);
+    }
+
+    pub fn add_attribute_schema(&mut self, name: &str, schema: crate::attribute_schema::AttributeSchema) {
+        self.custom_schemas.insert(name.to_string(), schema);
     }
 
     pub fn add_errcat_file(&mut self, path: &str) {
@@ -143,6 +149,7 @@ resource_definition handle : uint32 {
                 }
             }
         }
+        compiler.attribute_schemas.schemas.extend(self.custom_schemas.clone());
         let mut asts = Vec::new();
 
         for file in &self.source_files {

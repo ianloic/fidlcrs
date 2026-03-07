@@ -17,10 +17,45 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             .unwrap_or_else(|| "unknown".to_string());
 
         compiler.library_name = main_library_name.clone();
-        compiler.library_decl = self
-            .main_files
-            .first()
-            .and_then(|f| f.library_decl.as_ref().map(|l| *l.clone()));
+        
+        let mut all_library_attributes = Vec::new();
+        let mut main_library_decl: Option<raw_ast::LibraryDeclaration> = None;
+        for file in self.main_files {
+            for using_decl in &file.using_decls {
+                if using_decl.attributes.is_some() {
+                    let span = unsafe {
+                        std::mem::transmute::<
+                            crate::source_span::SourceSpan,
+                            crate::source_span::SourceSpan,
+                        >(using_decl.element.span().clone())
+                    };
+                    compiler.reporter.fail(
+                        crate::diagnostics::Error::ErrAttributesNotAllowedOnLibraryImport,
+                        span,
+                        &[],
+                    );
+                }
+            }
+            if let Some(decl) = &file.library_decl {
+                if main_library_decl.is_none() {
+                    main_library_decl = Some(*decl.clone());
+                }
+                if let Some(attrs) = &decl.attributes {
+                    all_library_attributes.extend(attrs.attributes.clone());
+                }
+            }
+        }
+        if let Some(mut decl) = main_library_decl {
+            if !all_library_attributes.is_empty() {
+                decl.attributes = Some(Box::new(crate::raw_ast::AttributeList {
+                    attributes: all_library_attributes,
+                    element: decl.attributes.as_ref().map(|a| a.element.clone()).unwrap_or_else(|| decl.element.clone()),
+                }));
+            }
+            compiler.library_decl = Some(decl);
+        } else {
+            compiler.library_decl = None;
+        }
 
         let all_files = self.dependency_files.iter().chain(self.main_files.iter());
 

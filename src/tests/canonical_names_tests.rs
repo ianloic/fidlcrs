@@ -1,11 +1,6 @@
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
-use std::fs;
 
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 #[ignore]

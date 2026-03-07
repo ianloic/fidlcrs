@@ -108,7 +108,7 @@ protocol Special {
         .to_string(),
     );
     library.add_source(&source0);
-    let root = library.compile().expect("compilation failed");
+    let _root = library.compile().expect("compilation failed");
 }
 
 #[test]
@@ -157,7 +157,7 @@ protocol at {
     library.add_source(&source0);
     let root = library.compile().expect("compilation failed");
 
-    let proto = root
+    let _proto = root
         .lookup_protocol("not.important/at")
         .expect("Protocol not found");
     // TODO: Need actual expected ordinal hash check here, just compiling for now!
@@ -218,7 +218,7 @@ const SEL string = "a.b.c/protocol.selector";
         .to_string(),
     );
     library.add_source(&source0);
-    let root = library.compile().expect("compilation failed");
+    let _root = library.compile().expect("compilation failed");
 }
 
 #[test]
@@ -358,7 +358,7 @@ protocol SomeProtocol {
         .to_string(),
     );
     library.add_source(&source0);
-    let root = library.compile().expect("compilation failed");
+    let _root = library.compile().expect("compilation failed");
 }
 
 #[test]

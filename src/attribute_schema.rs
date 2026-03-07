@@ -204,8 +204,12 @@ pub fn discoverable_constraint<'node, 'src>(
             if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
                 let s = val.trim_matches('"');
                 s_val = s.to_string();
-                let parts = s.split(',').map(|p| p.trim()).collect::<Vec<_>>();
-                valid = parts.iter().all(|&p| p == "platform" || p == "external");
+                if s.is_empty() {
+                    valid = true;
+                } else {
+                    let parts = s.split(',').map(|p| p.trim()).collect::<Vec<_>>();
+                    valid = parts.iter().all(|&p| p == "platform" || p == "external");
+                }
             } else {
                 valid = false;
             }

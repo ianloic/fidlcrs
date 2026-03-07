@@ -2158,3 +2158,125 @@ type Foo = union {
     lib.add_source(&source);
     lib.compile().expect("compilation failed");
 }
+
+#[test]
+fn good_discoverable_location() {
+    let source = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
+library example;
+
+@discoverable(client="")
+protocol P{};
+
+@discoverable(client="platform", server="external")
+protocol Q{};
+
+@discoverable(client="platform,external", server="external,platform")
+protocol R{};
+
+@discoverable(client="platform, external", server="external, platform")
+protocol S{};
+"#
+        .to_string(),
+    );
+    let mut lib = TestLibrary::new();
+    lib.add_source(&source);
+    lib.compile().expect("compilation failed");
+}
+
+#[test]
+fn good_no_resource() {
+    let source = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
+library example;
+
+@no_resource
+protocol P{
+  compose Q;
+  Method(struct { i int32; }) -> ();
+};
+
+@no_resource
+protocol Q{};
+"#
+        .to_string(),
+    );
+    let mut lib = TestLibrary::new();
+    lib.enable_flag("no_resource_attribute");
+    lib.add_source(&source);
+    lib.compile().expect("compilation failed");
+}
+
+#[test]
+#[ignore]
+fn bad_no_resource_uses_resource() {
+    let source = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
+library example;
+
+@no_resource
+protocol P{
+  compose Q;
+  Method(resource struct { i int32; }) -> ();
+};
+
+@no_resource
+protocol Q{};
+"#
+        .to_string(),
+    );
+    let mut lib = TestLibrary::new();
+    lib.enable_flag("no_resource_attribute");
+    lib.add_source(&source);
+    assert!(lib.compile().is_err(), "expected compilation to fail");
+}
+
+#[test]
+#[ignore]
+fn bad_no_resource_composition() {
+    let source = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
+library example;
+
+@no_resource
+protocol P{
+  compose Q;
+  Method( struct { i int32; }) -> ();
+};
+
+protocol Q{};
+"#
+        .to_string(),
+    );
+    let mut lib = TestLibrary::new();
+    lib.enable_flag("no_resource_attribute");
+    lib.add_source(&source);
+    assert!(lib.compile().is_err(), "expected compilation to fail");
+}
+
+#[test]
+fn bad_no_resource_is_experimental() {
+    let source = SourceFile::new(
+        "example.fidl".to_string(),
+        r#"
+library example;
+
+@no_resource
+protocol P{
+  compose Q;
+  Method(struct { i int32; }) -> ();
+};
+
+@no_resource
+protocol Q{};
+"#
+        .to_string(),
+    );
+    let mut lib = TestLibrary::new();
+    lib.add_source(&source);
+    assert!(lib.compile().is_err(), "expected compilation to fail");
+}

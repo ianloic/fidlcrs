@@ -2210,7 +2210,6 @@ protocol Q{};
 }
 
 #[test]
-#[ignore]
 fn bad_no_resource_uses_resource() {
     let source = SourceFile::new(
         "example.fidl".to_string(),
@@ -2235,7 +2234,6 @@ protocol Q{};
 }
 
 #[test]
-#[ignore]
 fn bad_no_resource_composition() {
     let source = SourceFile::new(
         "example.fidl".to_string(),

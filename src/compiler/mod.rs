@@ -4843,7 +4843,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut methods = vec![];
         let mut method_names = std::collections::HashSet::new();
-        let has_no_resource = decl.attributes.as_ref().map_or(false, |attrs| attrs.attributes.iter().any(|a| a.name.data() == "no_resource"));
+        let has_no_resource = decl.attributes.as_ref().map_or(false, |attrs| {
+            attrs
+                .attributes
+                .iter()
+                .any(|a| a.name.data() == "no_resource")
+        });
         let openness = if decl
             .modifiers
             .iter()
@@ -4877,14 +4882,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if has_no_resource {
                 let mut composed_has_no_resource = false;
-                if let Some(p) = self.protocol_declarations.iter().find(|p| p.name == full_composed_name) {
-                    composed_has_no_resource = p.maybe_attributes.iter().any(|a| a.name == "no_resource");
+                if let Some(p) = self
+                    .protocol_declarations
+                    .iter()
+                    .find(|p| p.name == full_composed_name)
+                {
+                    composed_has_no_resource =
+                        p.maybe_attributes.iter().any(|a| a.name == "no_resource");
                 } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
                     if let Some(attrs) = p.attributes.as_ref() {
-                        composed_has_no_resource = attrs.attributes.iter().any(|a| a.name.data() == "no_resource");
+                        composed_has_no_resource = attrs
+                            .attributes
+                            .iter()
+                            .any(|a| a.name.data() == "no_resource");
                     }
-                } else if let Some(p) = self.external_protocol_declarations.iter().find(|p| p.name == full_composed_name) {
-                    composed_has_no_resource = p.maybe_attributes.iter().any(|a| a.name == "no_resource");
+                } else if let Some(p) = self
+                    .external_protocol_declarations
+                    .iter()
+                    .find(|p| p.name == full_composed_name)
+                {
+                    composed_has_no_resource =
+                        p.maybe_attributes.iter().any(|a| a.name == "no_resource");
                 }
                 if !composed_has_no_resource {
                     self.reporter.fail(
@@ -4956,9 +4974,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let mut modifiers = None;
                         while let Some(cl) = current_layout {
                             match cl {
-                                raw_ast::Layout::Struct(s) => { modifiers = Some(&s.modifiers); break; }
-                                raw_ast::Layout::Table(t) => { modifiers = Some(&t.modifiers); break; }
-                                raw_ast::Layout::Union(u) => { modifiers = Some(&u.modifiers); break; }
+                                raw_ast::Layout::Struct(s) => {
+                                    modifiers = Some(&s.modifiers);
+                                    break;
+                                }
+                                raw_ast::Layout::Table(t) => {
+                                    modifiers = Some(&t.modifiers);
+                                    break;
+                                }
+                                raw_ast::Layout::Union(u) => {
+                                    modifiers = Some(&u.modifiers);
+                                    break;
+                                }
                                 raw_ast::Layout::TypeConstructor(tc) => {
                                     if let raw_ast::LayoutParameter::Inline(inline) = &tc.layout {
                                         current_layout = Some(&**inline);
@@ -4970,7 +4997,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         }
                         if let Some(mods) = modifiers {
-                            if let Some(res_mod) = mods.iter().find(|mo| mo.subkind == TokenSubkind::Resource) {
+                            if let Some(res_mod) =
+                                mods.iter().find(|mo| mo.subkind == TokenSubkind::Resource)
+                            {
                                 self.reporter.fail(
                                     Error::ErrResourceForbiddenHere,
                                     res_mod.element.span(),

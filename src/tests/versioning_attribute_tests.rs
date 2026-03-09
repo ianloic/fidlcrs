@@ -1,7 +1,7 @@
 use super::test_library::TestLibrary;
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_multiple_library_declarations_agree() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -29,7 +29,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_multiple_library_declarations_disagree() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -57,7 +57,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_multiple_library_declarations_head() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -85,7 +85,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_all_arguments_on_library() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -102,7 +102,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_all_arguments_on_decl() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -122,13 +122,13 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_all_arguments_on_member() {
     let _library = TestLibrary::new();
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_all_arguments_on_decl_modifier() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -147,19 +147,19 @@ type Foo = resource(added=1, removed=2) struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_all_arguments_on_member_modifier() {
     let _library = TestLibrary::new();
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_attribute_on_everything() {
     let _library = TestLibrary::new();
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_anonymous_layout_top_level() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -179,13 +179,13 @@ type Foo = @available(added=2) struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_anonymous_layout_in_member() {
     let _library = TestLibrary::new();
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_zero() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -204,7 +204,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_version_min_normal() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -221,7 +221,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_version_max_normal() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -238,7 +238,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_above_max_normal() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -257,7 +257,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_unknown_reserved() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -276,7 +276,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_version_next_name() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -293,7 +293,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_version_next_number() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -310,7 +310,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_version_head_name() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -327,7 +327,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_version_head_number() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -344,7 +344,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_legacy_name() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -363,7 +363,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_legacy_number() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -382,7 +382,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_negative() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -402,7 +402,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_version_overflow_uint32() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -422,12 +422,12 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_no_arguments() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0147.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0147.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0147.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -437,12 +437,12 @@ fn bad_no_arguments() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_library_missing_added_only_removed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0150-a.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0150-a.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-a.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -452,12 +452,12 @@ fn bad_library_missing_added_only_removed() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_library_missing_added_only_platform() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0150-b.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0150-b.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-b.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("foo", "HEAD");
@@ -467,12 +467,12 @@ fn bad_library_missing_added_only_platform() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_library_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0204.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0204.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0204.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -482,7 +482,7 @@ fn bad_library_replaced() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_library_renamed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -501,12 +501,12 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_decl_renamed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0211.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0211.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0211.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -516,13 +516,13 @@ fn bad_decl_renamed() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_compose_renamed() {
     let _library = TestLibrary::new();
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_note_with_removed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -542,7 +542,7 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_note_with_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -565,12 +565,12 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_note_without_deprecation_removed_or_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0148.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0148.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0148.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -580,12 +580,12 @@ fn bad_note_without_deprecation_removed_or_replaced() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_renamed_without_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0212.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0212.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0212.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -595,12 +595,12 @@ fn bad_renamed_without_replaced() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_renamed_to_same_name() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0213.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0213.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0213.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -610,12 +610,12 @@ fn bad_renamed_to_same_name() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_removed_and_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0203.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0203.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0203.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -625,7 +625,7 @@ fn bad_removed_and_replaced() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_platform_not_on_library() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -647,12 +647,12 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_invalid_argument_on_modifier() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0218.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0218.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0218.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -662,12 +662,12 @@ fn bad_invalid_argument_on_modifier() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_strictness_two_way_method_without_error() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0219.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0219.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0219.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -677,12 +677,12 @@ fn bad_strictness_two_way_method_without_error() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_use_in_unversioned_library() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0151.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0151.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0151.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -692,18 +692,18 @@ fn bad_use_in_unversioned_library() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_use_in_unversioned_library_reported_once_per_attribute() {
     let _library = TestLibrary::new();
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_added_equals_removed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0154-a.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0154-a.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-a.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -713,7 +713,7 @@ fn bad_added_equals_removed() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_added_equals_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -735,7 +735,7 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_added_greater_than_removed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -754,7 +754,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_added_greater_than_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -776,7 +776,7 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn good_added_equals_deprecated() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -793,7 +793,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_added_greater_than_deprecated() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -812,12 +812,12 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_deprecated_equals_removed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
         "bad/fi-0154-b.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/bad/fi-0154-b.test.fidl").unwrap(),
+        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-b.test.fidl").unwrap(),
     );
     library.add_source(&source0);
     library.select_version("test", "HEAD");
@@ -827,7 +827,7 @@ fn bad_deprecated_equals_removed() {
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_deprecated_equals_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -849,7 +849,7 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_deprecated_greater_than_removed() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(
@@ -868,7 +868,7 @@ library example;
 }
 
 #[test]
-#[ignore] // TODO: VersioningAttribute logic is not fully implemented
+
 fn bad_deprecated_greater_than_replaced() {
     let mut library = TestLibrary::new();
     let source0 = crate::source_file::SourceFile::new(

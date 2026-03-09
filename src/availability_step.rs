@@ -36,23 +36,23 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             }
                         }
                         let mut initial = Availability::new();
-                        let _ = initial.init(InitArgs {
+                        if initial.init(InitArgs {
                             added,
                             deprecated,
                             removed,
                             replaced: false,
-                        });
-                        // We cannot mutate unbound.added, but we can init a raw Availability
-                        let mut head_avail = Availability::new();
-                        let _ = head_avail.init(InitArgs {
-                            added: Some(Version::HEAD),
-                            deprecated: None,
-                            removed: None,
-                            replaced: false,
-                        });
-                        let _ = head_avail.inherit(&Availability::unbounded());
-                        let _ = initial.inherit(&head_avail);
-                        lib_avail = initial;
+                        }) {
+                            let mut head_avail = Availability::new();
+                            let _ = head_avail.init(InitArgs {
+                                added: Some(Version::HEAD),
+                                deprecated: None,
+                                removed: None,
+                                replaced: false,
+                            });
+                            let _ = head_avail.inherit(&Availability::unbounded());
+                            let _ = initial.inherit(&head_avail);
+                            lib_avail = initial;
+                        }
                     }
                 }
             }
@@ -108,18 +108,21 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         }
 
                         let mut initial = Availability::new();
-                        let _ = initial.init(InitArgs {
+                        if initial.init(InitArgs {
                             added,
                             deprecated,
                             removed,
                             replaced: false,
-                        });
-                        let _ = initial.inherit(&final_lib_avail);
-                        if initial.state() == crate::versioning_types::AvailabilityState::Inherited
-                        {
-                            initial.narrow(VersionRange::new(selected_version, Version::POS_INF));
+                        }) {
+                            let _ = initial.inherit(&final_lib_avail);
+                            if initial.state()
+                                == crate::versioning_types::AvailabilityState::Inherited
+                            {
+                                initial
+                                    .narrow(VersionRange::new(selected_version, Version::POS_INF));
+                            }
+                            avail = initial;
                         }
-                        avail = initial;
                     }
                 }
             }

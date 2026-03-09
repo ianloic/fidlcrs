@@ -277,6 +277,191 @@ pub fn no_resource_constraint<'node, 'src>(
     true
 }
 
+pub fn available_constraint<'node, 'src>(
+    compiler: &Compiler<'node, 'src>,
+    attr: &raw_ast::Attribute<'src>,
+) -> bool {
+    let mut passed = true;
+    let span: crate::source_span::SourceSpan =
+        unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+
+    let mut added = None;
+    let mut deprecated = None;
+    let mut removed = None;
+    let mut replaced = None;
+    let mut renamed = None;
+    let mut note = None;
+    let mut platform = None;
+
+    for arg in &attr.args {
+        let arg_name = arg
+            .name
+            .as_ref()
+            .map(|n| n.element.start_token.span.data)
+            .unwrap_or("value");
+        let arg_span: crate::source_span::SourceSpan =
+            unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+        let mut version_str = None;
+        if arg_name == "added"
+            || arg_name == "deprecated"
+            || arg_name == "removed"
+            || arg_name == "replaced"
+        {
+            version_str = match &arg.value {
+                raw_ast::Constant::Literal(lit) => Some(lit.literal.value.clone()),
+                raw_ast::Constant::Identifier(id) => Some(id.identifier.to_string()),
+                _ => None,
+            };
+        }
+
+        match arg_name {
+            "added" => {
+                if let Some(val) = version_str {
+                    added = Some((
+                        crate::versioning_types::Version::parse(&val)
+                            .unwrap_or(crate::versioning_types::Version::POS_INF),
+                        arg_span,
+                    ));
+                }
+            }
+            "deprecated" => {
+                if let Some(val) = version_str {
+                    deprecated = Some((
+                        crate::versioning_types::Version::parse(&val)
+                            .unwrap_or(crate::versioning_types::Version::POS_INF),
+                        arg_span,
+                    ));
+                }
+            }
+            "removed" => {
+                if let Some(val) = version_str {
+                    removed = Some((
+                        crate::versioning_types::Version::parse(&val)
+                            .unwrap_or(crate::versioning_types::Version::POS_INF),
+                        arg_span,
+                    ));
+                }
+            }
+            "replaced" => {
+                if let Some(val) = version_str {
+                    replaced = Some((
+                        crate::versioning_types::Version::parse(&val)
+                            .unwrap_or(crate::versioning_types::Version::POS_INF),
+                        arg_span,
+                    ));
+                }
+            }
+            "renamed" => {
+                if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                    renamed = Some((val.trim_matches('"').to_string(), arg_span));
+                }
+            }
+            "note" => {
+                if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                    note = Some((val.trim_matches('"').to_string(), arg_span));
+                }
+            }
+            "platform" => {
+                if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                    platform = Some((val.trim_matches('"').to_string(), arg_span));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if added.is_none()
+        && deprecated.is_none()
+        && removed.is_none()
+        && replaced.is_none()
+        && platform.is_none()
+        && renamed.is_none()
+    {
+        compiler
+            .reporter
+            .fail(Error::ErrAvailableMissingArguments, span.clone(), &[]);
+        passed = false;
+    }
+
+    if let Some((_, _a_span)) = &added {
+        if let Some((_, d_span)) = &deprecated {
+            if added.as_ref().unwrap().0 > deprecated.as_ref().unwrap().0 {
+                compiler
+                    .reporter
+                    .fail(Error::ErrInvalidAvailabilityOrder, d_span.clone(), &[]);
+                passed = false;
+            }
+        }
+        if let Some((_, r_span)) = &removed {
+            if added.as_ref().unwrap().0 >= removed.as_ref().unwrap().0 {
+                compiler
+                    .reporter
+                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
+                passed = false;
+            }
+        }
+        if let Some((_, r_span)) = &replaced {
+            if added.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0 {
+                compiler
+                    .reporter
+                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
+                passed = false;
+            }
+        }
+    }
+
+    if let Some((_, _d_span)) = &deprecated {
+        if let Some((_, r_span)) = &removed {
+            if deprecated.as_ref().unwrap().0 >= removed.as_ref().unwrap().0 {
+                compiler
+                    .reporter
+                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
+                passed = false;
+            }
+        }
+        if let Some((_, r_span)) = &replaced {
+            if deprecated.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0 {
+                compiler
+                    .reporter
+                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
+                passed = false;
+            }
+        }
+    }
+
+    if removed.is_some() && replaced.is_some() {
+        compiler
+            .reporter
+            .fail(Error::ErrRemovedAndReplaced, span.clone(), &[]);
+        passed = false;
+    }
+
+    if let Some((_, n_span)) = &note {
+        if deprecated.is_none() && removed.is_none() && replaced.is_none() {
+            compiler.reporter.fail(
+                Error::ErrNoteWithoutDeprecationOrRemoval,
+                n_span.clone(),
+                &[],
+            );
+            passed = false;
+        }
+    }
+
+    if let Some((_r_name, r_span)) = &renamed {
+        if replaced.is_none() && removed.is_none() {
+            compiler.reporter.fail(
+                Error::ErrRenamedWithoutReplacedOrRemoved,
+                r_span.clone(),
+                &[],
+            );
+            passed = false;
+        }
+        // we'll check renamed to same name in compiler pass or similar since we don't have the element name here
+    }
+
+    passed
+}
+
 pub fn official_attributes() -> HashMap<String, AttributeSchema> {
     let mut map = HashMap::new();
 
@@ -437,6 +622,7 @@ pub fn official_attributes() -> HashMap<String, AttributeSchema> {
                     Optionality::Optional,
                 ),
             )
+            .constrain(available_constraint)
             .compile_early(),
     );
 

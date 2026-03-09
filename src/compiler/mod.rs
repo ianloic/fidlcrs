@@ -239,6 +239,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             dependency_files,
         };
         consume.run(self);
+        self.verify_attributes();
 
         // 2. Resolve
         // 1.5. Availability
@@ -647,7 +648,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
-        self.verify_attributes();
         let json_root = JsonRoot {
             name: self.library_name.clone(),
             platform,

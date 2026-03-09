@@ -1,14 +1,19 @@
 use crate::compiler::Compiler;
 use crate::raw_ast;
 use crate::step::Step;
-use crate::versioning_types::{Availability, InitArgs, Version, VersionRange};
+use crate::versioning_types::{Availability, InitArgs, Version};
 
 pub struct AvailabilityStep;
 
 impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
     fn run(&mut self, compiler: &mut Compiler<'node, 'src>) {
         let mut decl_availability = std::collections::HashMap::new();
-        let selected_version = Version::HEAD;
+
+        let mut platform_name = compiler
+            .library_decl
+            .as_ref()
+            .map(|l| l.path.components[0].data().to_string())
+            .unwrap_or_else(|| "unversioned".to_string());
 
         let mut lib_avail = Availability::unbounded();
         if let Some(lib_decl) = &compiler.library_decl {
@@ -25,6 +30,9 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                                 raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
                                 _ => "".to_string(),
                             };
+                            if arg_name == "platform" {
+                                platform_name = val_str.trim_matches('"').to_string();
+                            }
                             if arg_name == "added" {
                                 added = Version::parse(&val_str);
                             }
@@ -42,44 +50,18 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             removed,
                             replaced: false,
                         }) {
-                            let mut head_avail = Availability::new();
-                            let _ = head_avail.init(InitArgs {
-                                added: Some(Version::HEAD),
-                                deprecated: None,
-                                removed: None,
-                                replaced: false,
-                            });
-                            let _ = head_avail.inherit(&Availability::unbounded());
-                            let _ = initial.inherit(&head_avail);
+                            let _ = initial.inherit(&Availability::unbounded());
                             lib_avail = initial;
                         }
                     }
                 }
             }
         }
-        // Since Availability doesn't expose `added`, we assume lib_avail has an `added` set.
-        // We know that `lib_avail` was initialized. If it wasn't (because no `@available` on library),
-        // we should create one.
-        if lib_avail.state() == crate::versioning_types::AvailabilityState::Inherited {
-            // Wait, if it's Inherited, let's see if added == NEG_INF (from unbounded)
-            // Actually, we can't easily check added. So we just assume it's good unless we didn't specify `@available`.
-            // Wait, `AvailabilityStep` in fidlc handles this during library compilation.
-            // For now let's just use `Availability::unbounded()` as the parent for `lib_avail` to make it Inherited.
-        }
+        let final_lib_avail = lib_avail;
 
-        let mut final_lib_avail = Availability::new();
-        let _ = final_lib_avail.init(InitArgs {
-            added: Some(Version::HEAD),
-            deprecated: None,
-            removed: None,
-            replaced: false,
-        });
-        let _ = final_lib_avail.inherit(&Availability::unbounded());
-        if lib_avail.state() == crate::versioning_types::AvailabilityState::Inherited {
-            // Use lib_avail if it comes from an attribute
-            final_lib_avail = lib_avail.clone();
-            // but actually, we need
-        }
+        let platform = crate::versioning_types::Platform::parse(&platform_name)
+            .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+        let selected_version = compiler.version_selection.lookup(&platform);
 
         for (name, decl) in &compiler.raw_decls {
             let mut avail = final_lib_avail.clone();
@@ -115,12 +97,6 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             replaced: false,
                         }) {
                             let _ = initial.inherit(&final_lib_avail);
-                            if initial.state()
-                                == crate::versioning_types::AvailabilityState::Inherited
-                            {
-                                initial
-                                    .narrow(VersionRange::new(selected_version, Version::POS_INF));
-                            }
                             avail = initial;
                         }
                     }
@@ -129,7 +105,15 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
 
             decl_availability.insert(name.clone(), avail);
         }
+        compiler.decl_availability = decl_availability.clone();
 
-        compiler.decl_availability = decl_availability;
+        compiler.raw_decls.retain(|name, _| {
+            if let Some(avail) = decl_availability.get(name) {
+                if !avail.set().contains(selected_version) {
+                    return false;
+                }
+            }
+            true
+        });
     }
 }

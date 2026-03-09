@@ -347,7 +347,6 @@ impl Availability {
                     && self.ending.is_some()
                     && self.legacy.is_some()
             );
-            assert!(self.added.unwrap() != Version::NEG_INF);
             assert!(self.valid_order());
             self.state = AvailabilityState::Inherited;
         } else {
@@ -466,13 +465,14 @@ impl VersionSelection {
     pub fn lookup(&self, platform: &Platform) -> Version {
         if platform.is_unversioned() {
             Version::HEAD
-        } else {
-            let versions = self.map.get(platform).unwrap();
+        } else if let Some(versions) = self.map.get(platform) {
             if versions.len() == 1 {
                 *versions.iter().next().unwrap()
             } else {
                 Version::LEGACY
             }
+        } else {
+            Version::HEAD
         }
     }
 

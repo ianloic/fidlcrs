@@ -140,6 +140,7 @@ define_diagnostics! {
     ErrorDef ErrDeprecatedStructDefaults = 50, r#"Struct defaults are deprecated and should not be used (see RFC-0160)"# ;
     ErrorDef ErrUnknownDependentLibrary = 51, r#"Unknown dependent library {} or reference to member of library {}. Did you require it with `using`?"# ;
     ErrorDef ErrNameNotFound = 52, r#"cannot find '{}' in {}"# ;
+    ErrorDef ErrNameNotFoundInVersionRange = 10052, r#"cannot find '{}' in {} within the valid version range"# ;
     ErrorDef ErrCannotReferToMember = 53, r#"cannot refer to member of {}"# ;
     ErrorDef ErrMemberNotFound = 54, r#"{} has no member '{}'"# ;
     ErrorDef ErrInvalidReferenceToDeprecated = 55, r#"invalid reference to {}, which is deprecated {} of platform '{}' while {} is not; either remove this reference or mark {} as deprecated"# ;

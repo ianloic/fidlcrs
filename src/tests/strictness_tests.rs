@@ -6,8 +6,8 @@ use crate::tests::test_library::TestLibrary;
 #[test]
 fn bad_duplicate_modifier() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -15,8 +15,8 @@ type One = strict union { 1: b bool; };
 type Two = strict strict union { 1: b bool; };
 type Three = strict strict strict union { 1: b bool; };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 3);
@@ -49,8 +49,8 @@ fn bad_conflicting_modifiers() {
 #[test]
 fn good_bits_strictness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -66,16 +66,16 @@ type FlexibleFoo = flexible bits {
     BAR = 0x1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
 #[test]
 fn good_enum_strictness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -91,16 +91,16 @@ type FlexibleFoo = flexible enum {
     BAR = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
 #[test]
 fn good_flexible_enum() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -108,16 +108,16 @@ type Foo = flexible enum {
     BAR = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
 #[test]
 fn good_flexible_bits_redundant() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -125,8 +125,8 @@ type Foo = flexible bits {
     BAR = 0x1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
@@ -143,15 +143,15 @@ fn bad_strictness_struct() {
 #[test]
 fn bad_strictness_table() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 type StrictFoo = strict table {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -168,8 +168,8 @@ fn good_union_strictness() {
 #[test]
 fn good_strict_union_redundant() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -177,7 +177,7 @@ type Foo = strict union {
     1: i int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }

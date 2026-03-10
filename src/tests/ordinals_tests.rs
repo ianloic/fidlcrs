@@ -6,8 +6,8 @@ use crate::source_file::SourceFile;
 fn bad_ordinal_cannot_be_zero() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -15,8 +15,8 @@ protocol Special {
     ThisOneHashesToZero() -> (struct { i int64; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -28,8 +28,8 @@ protocol Special {
 fn bad_clashing_ordinal_values() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -40,8 +40,8 @@ protocol Special {
     ClashTwo(struct { s string; }) -> (resource struct { r zx.Handle:CHANNEL; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -53,8 +53,8 @@ protocol Special {
 fn bad_clashing_ordinal_values_with_attribute() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -67,8 +67,8 @@ protocol Special {
     bar(struct { s string; }) -> (resource struct { r zx.Handle:CHANNEL; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -93,8 +93,8 @@ fn bad_clashing_ordinal_bad_selector() {
 fn good_attribute_resolves_clashes() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -106,8 +106,8 @@ protocol Special {
     ClashTwo(struct { s string; }) -> (resource struct { r zx.Handle:CHANNEL; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let _root = library.compile().expect("compilation failed");
 }
 
@@ -115,8 +115,8 @@ protocol Special {
 fn good_ordinal_value_is_sha256() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library a.b.c;
 
@@ -129,8 +129,8 @@ protocol protocol {
     });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
 
     let proto = root
@@ -143,8 +143,8 @@ protocol protocol {
 fn good_selector_with_full_path() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library not.important;
 
@@ -153,8 +153,8 @@ protocol at {
     all();
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
 
     let _proto = root
@@ -180,8 +180,8 @@ fn bad_selector_value_wrong_format() {
 fn bad_selector_value_not_string() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library not.important;
 
@@ -191,8 +191,8 @@ protocol at {
     all();
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -204,8 +204,8 @@ protocol at {
 fn good_selector_value_references_const() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library not.important;
 
@@ -216,8 +216,8 @@ protocol at {
 
 const SEL string = "a.b.c/protocol.selector";
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let _root = library.compile().expect("compilation failed");
 }
 
@@ -226,8 +226,8 @@ const SEL string = "a.b.c/protocol.selector";
 fn bad_selector_value_references_nonexistent() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library not.important;
 
@@ -236,8 +236,8 @@ protocol at {
     all();
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -249,8 +249,8 @@ protocol at {
 fn good_ordinal_value_is_first64_bits_of_sha256() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library a.b.c;
 
@@ -289,8 +289,8 @@ protocol protocol {
     s31();
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
 
     let proto = root
@@ -346,8 +346,8 @@ fn good_hack_to_rename_fuchsia_io_to_fuchsia_io_one_no_selector() {
 fn good_hack_to_rename_fuchsia_io_to_fuchsia_io_one_has_selector() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library fuchsia.io;
 
@@ -356,8 +356,8 @@ protocol SomeProtocol {
     SomeMethod();
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let _root = library.compile().expect("compilation failed");
 }
 
@@ -365,8 +365,8 @@ protocol SomeProtocol {
 fn wrong_composed_method_does_not_get_generated_ordinal() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -383,8 +383,8 @@ protocol DirectoryAdmin {
     compose Directory;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),

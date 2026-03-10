@@ -4,15 +4,15 @@ use crate::tests::test_library::{LookupHelpers, TestLibrary};
 #[test]
 fn good_empty_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 type Empty = struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let empty = root
         .lookup_struct("example/Empty")
@@ -47,8 +47,8 @@ type Empty = struct {};
 #[test]
 fn good_empty_struct_within_another_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -85,8 +85,8 @@ type EmptyWithOtherThings = struct {
     h Empty;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let empty_with_other_things = root
         .lookup_struct("example/EmptyWithOtherThings")
@@ -196,8 +196,8 @@ type EmptyWithOtherThings = struct {
 #[test]
 fn good_simple_new_types() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -229,8 +229,8 @@ type UnionOfThings = strict union {
 };
 type NewUnionOfThings = UnionOfThings;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.enable_flag("allow_new_types");
     let root = lib.compile().expect("compilation failed");
     let new_bool_and_u32_struct = root
@@ -370,8 +370,8 @@ type NewUnionOfThings = UnionOfThings;
 #[test]
 fn good_simple_structs() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -394,8 +394,8 @@ type BoolAndU64 = struct {
     u uint64;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
         .lookup_struct("example/OneBool")
@@ -586,8 +586,8 @@ type BoolAndU64 = struct {
 #[test]
 fn good_simple_structs_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -607,8 +607,8 @@ type ThreeHandlesOneOptional = resource struct {
   opt_h3 zx.Handle:<VMO, optional>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -764,8 +764,8 @@ type ThreeHandlesOneOptional = resource struct {
 #[test]
 fn good_bits() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -777,8 +777,8 @@ type BitsImplicit = strict bits {
     VALUE = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let bits16 = root
         .lookup_bits("example/Bits16")
@@ -847,8 +847,8 @@ type BitsImplicit = strict bits {
 #[test]
 fn good_simple_tables() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -873,8 +873,8 @@ type TableWithBoolAndU64 = table {
     2: u uint64;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let no_members = root
         .lookup_table("example/TableWithNoMembers")
@@ -1033,8 +1033,8 @@ type TableWithBoolAndU64 = table {
 #[test]
 fn good_tables_with_ordinal_gaps() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -1047,8 +1047,8 @@ type GapAtStart = table {
     3: b bool;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let some_reserved = root
         .lookup_table("example/GapInMiddle")
@@ -1117,8 +1117,8 @@ type GapAtStart = table {
 #[test]
 fn good_simple_tables_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -1127,8 +1127,8 @@ type TableWithOneHandle = resource table {
   1: h zx.Handle;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -1168,8 +1168,8 @@ type TableWithOneHandle = resource table {
 #[test]
 fn good_optional_structs() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -1208,8 +1208,8 @@ type OptionalBoolAndU64 = struct {
     s box<BoolAndU64>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
         .lookup_struct("example/OptionalOneBool")
@@ -1337,8 +1337,8 @@ type OptionalBoolAndU64 = struct {
 #[test]
 fn good_optional_tables() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -1412,8 +1412,8 @@ type TableWithOptionalTableWithBoolAndU64 = table {
     1: s TableWithBoolAndU64;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
         .lookup_table("example/TableWithOptionalOneBool")
@@ -1665,8 +1665,8 @@ type TableWithOptionalTableWithBoolAndU64 = table {
 #[test]
 fn good_unions() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -1700,8 +1700,8 @@ type TableWithOptionalUnion = table {
     1: u UnionOfThings;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let union_with_out_of_line = root
         .lookup_union("example/UnionWithOutOfLine")
@@ -1829,8 +1829,8 @@ type TableWithOptionalUnion = table {
 #[test]
 fn good_unions_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -1847,8 +1847,8 @@ type ManyHandleUnion = strict resource union {
   3: handle_vector vector<zx.Handle>:8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -1920,8 +1920,8 @@ type ManyHandleUnion = strict resource union {
 fn good_overlays() {
     let mut lib = TestLibrary::new();
     lib.enable_flag("zx_c_types");
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -1949,8 +1949,8 @@ type BoolOverlayAndUint8Struct = struct {
     x uint8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let _bool_or_string_or_u64 = root
         .lookup_union("example/BoolOrStringOrU64")
@@ -2027,8 +2027,8 @@ type BoolOverlayAndUint8Struct = struct {
 #[test]
 fn good_vectors() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -2062,8 +2062,8 @@ type TableWithUnboundedVectors = table {
     2: uv2 vector<int32>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let padded_vector = root
         .lookup_struct("example/PaddedVector")
@@ -2294,8 +2294,8 @@ type TableWithUnboundedVectors = table {
 #[test]
 fn good_vectors_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -2340,8 +2340,8 @@ type TableWithHandleStructVector = resource table {
   1: sv vector<OneHandle>:8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -2579,8 +2579,8 @@ type TableWithHandleStructVector = resource table {
 #[test]
 fn good_strings() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -2600,8 +2600,8 @@ type TableWithUnboundedString = table {
     1: s string;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let short_string = root
         .lookup_struct("example/ShortString")
@@ -2734,8 +2734,8 @@ type TableWithUnboundedString = table {
 #[test]
 fn good_string_arrays() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -2743,8 +2743,8 @@ type StringArray = struct {
     s string_array<5>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let string_array = root
         .lookup_struct("example/StringArray")
@@ -2782,8 +2782,8 @@ type StringArray = struct {
 #[test]
 fn good_arrays() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -2803,8 +2803,8 @@ type TableWithAnInt32ArrayNoPadding = table {
     1: a array<int32, 4>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let an_array = root
         .lookup_struct("example/AnArray")
@@ -2953,8 +2953,8 @@ type TableWithAnInt32ArrayNoPadding = table {
 #[test]
 fn good_arrays_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -2975,8 +2975,8 @@ type TableWithNullableHandleArray = resource table {
   1: ha array<zx.Handle:optional, 8>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -3112,8 +3112,8 @@ type TableWithNullableHandleArray = resource table {
 #[test]
 fn good_flexible_unions() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3156,8 +3156,8 @@ type PaddingCheck = flexible union {
     2: five array<uint8, 5>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
         .lookup_union("example/UnionWithOneBool")
@@ -3336,8 +3336,8 @@ type PaddingCheck = flexible union {
 #[test]
 fn good_envelope_strictness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3371,8 +3371,8 @@ type StrictUnionOfFlexibleTable = strict union {
     1: ft FlexibleLeafTable;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let strict_union = root
         .lookup_union("example/StrictLeafUnion")
@@ -3630,8 +3630,8 @@ type StrictUnionOfFlexibleTable = strict union {
 #[test]
 fn good_protocols_and_request_of_protocols() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3653,8 +3653,8 @@ type UsingOptRequestSomeProtocol = resource struct {
     value server_end:<SomeProtocol, optional>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let using_some_protocol = root
         .lookup_struct("example/UsingSomeProtocol")
@@ -3788,8 +3788,8 @@ type UsingOptRequestSomeProtocol = resource struct {
 #[test]
 fn good_simple_request() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3797,8 +3797,8 @@ protocol Test {
     Method(struct { a int16; b int16; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let _protocol = root
         .lookup_protocol("example/Test")
@@ -3808,8 +3808,8 @@ protocol Test {
 #[test]
 fn good_simple_response() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3817,8 +3817,8 @@ protocol Test {
     strict Method() -> (struct { a int16; b int16; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let _protocol = root
         .lookup_protocol("example/Test")
@@ -3828,8 +3828,8 @@ protocol Test {
 #[test]
 fn good_recursive_request() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3845,8 +3845,8 @@ protocol MessagePort {
     });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
         .lookup_struct("example/WebMessage")
@@ -3896,8 +3896,8 @@ protocol MessagePort {
 #[test]
 fn good_recursive_opt_request() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3913,8 +3913,8 @@ protocol MessagePort {
     });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
         .lookup_struct("example/WebMessage")
@@ -3955,8 +3955,8 @@ protocol MessagePort {
 #[test]
 fn good_recursive_protocol() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -3972,8 +3972,8 @@ protocol MessagePort {
     });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
         .lookup_struct("example/WebMessage")
@@ -4014,8 +4014,8 @@ protocol MessagePort {
 #[test]
 fn good_recursive_opt_protocol() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4031,8 +4031,8 @@ protocol MessagePort {
     });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
         .lookup_struct("example/WebMessage")
@@ -4073,8 +4073,8 @@ protocol MessagePort {
 #[test]
 fn good_recursive_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4082,8 +4082,8 @@ type TheStruct = struct {
     opt_one_more box<TheStruct>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let the_struct = root
         .lookup_struct("example/TheStruct")
@@ -4132,8 +4132,8 @@ type TheStruct = struct {
 #[test]
 fn good_recursive_struct_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -4143,8 +4143,8 @@ type TheStruct = resource struct {
   opt_one_more box<TheStruct>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -4205,8 +4205,8 @@ type TheStruct = resource struct {
 #[test]
 fn good_co_recursive_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4218,8 +4218,8 @@ type B = struct {
     bar box<A>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let struct_a = root.lookup_struct("example/A").expect("A not found");
     let struct_b = root.lookup_struct("example/B").expect("B not found");
@@ -4288,8 +4288,8 @@ type B = struct {
 #[test]
 fn good_co_recursive_struct_with_handles() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -4304,8 +4304,8 @@ type B = resource struct {
     bar box<A>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -4378,8 +4378,8 @@ type B = resource struct {
 #[test]
 fn good_co_recursive_struct2() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4391,8 +4391,8 @@ type Bar = struct {
     f box<Foo>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let struct_foo = root.lookup_struct("example/Foo").expect("Foo not found");
     let struct_bar = root.lookup_struct("example/Bar").expect("Bar not found");
@@ -4461,8 +4461,8 @@ type Bar = struct {
 #[test]
 fn good_recursive_union_and_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4470,8 +4470,8 @@ type Foo = union {
     1: bar struct { f Foo:optional; };
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let union_foo = root.lookup_union("example/Foo").expect("Foo not found");
     let struct_bar = root.lookup_struct("example/Bar").expect("Bar not found");
@@ -4512,8 +4512,8 @@ type Foo = union {
 #[test]
 fn good_recursive_union_and_vector() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4521,8 +4521,8 @@ type Foo = union {
     1: bar vector<Foo:optional>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let union_foo = root.lookup_union("example/Foo").expect("Foo not found");
     assert_eq!(
@@ -4560,8 +4560,8 @@ type Foo = union {
 #[test]
 fn good_recursion_handles_bounded() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -4571,8 +4571,8 @@ type Foo = resource union {
     2: h zx.Handle;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -4613,8 +4613,8 @@ type Foo = resource union {
 #[test]
 fn good_recursion_handles_unbounded_branching() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -4624,8 +4624,8 @@ type Foo = resource union {
     2: h zx.Handle;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -4666,8 +4666,8 @@ type Foo = resource union {
 #[test]
 fn good_recursion_handles_unbounded_in_cycle() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -4679,8 +4679,8 @@ type Foo = resource union {
     };
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -4785,8 +4785,8 @@ type Foo = resource union {
 #[test]
 fn good_struct_two_deep() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -4814,8 +4814,8 @@ type Priority = enum {
     LAZY = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -4911,8 +4911,8 @@ type Priority = enum {
 #[test]
 fn good_union_size8_alignment4_sandwich() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -4926,8 +4926,8 @@ type Sandwich = struct {
     after uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
         .lookup_struct("example/Sandwich")
@@ -4989,8 +4989,8 @@ type Sandwich = struct {
 #[test]
 fn good_union_size12_alignment4_sandwich() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -5004,8 +5004,8 @@ type Sandwich = struct {
     after int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
         .lookup_struct("example/Sandwich")
@@ -5067,8 +5067,8 @@ type Sandwich = struct {
 #[test]
 fn good_union_size24_alignment8_sandwich() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -5087,8 +5087,8 @@ type Sandwich = struct {
     after uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
         .lookup_struct("example/Sandwich")
@@ -5150,8 +5150,8 @@ type Sandwich = struct {
 #[test]
 fn good_union_size36_alignment4_sandwich() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -5165,8 +5165,8 @@ type Sandwich = struct {
     after uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
         .lookup_struct("example/Sandwich")
@@ -5228,8 +5228,8 @@ type Sandwich = struct {
 #[test]
 fn good_zero_size_vector() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -5238,8 +5238,8 @@ type A = resource struct {
     zero_size vector<zx.Handle>:0;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.use_library_zx();
 
     let root = lib.compile().expect("compilation failed");
@@ -5274,8 +5274,8 @@ type A = resource struct {
 #[test]
 fn bad_integer_overflow_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 type Foo = struct {
@@ -5283,23 +5283,23 @@ type Foo = struct {
     f2 array<uint8, 2147483648>; // 2^31
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_inline_size_exceeds_limit() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 type Foo = struct {
     big array<uint8, 65536>; // 2^16
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }

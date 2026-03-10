@@ -5,8 +5,8 @@ use crate::source_file::SourceFile;
 fn good_inside_struct() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -14,8 +14,8 @@ type Foo = struct {
   bar @generated_name("Good") struct {};
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_struct("fidl.test/Foo")
@@ -27,8 +27,8 @@ type Foo = struct {
 fn good_inside_table() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -36,8 +36,8 @@ type Foo = table {
   1: bar @generated_name("Good") struct {};
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_table("fidl.test/Foo")
@@ -52,8 +52,8 @@ type Foo = table {
 fn good_inside_union() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -61,8 +61,8 @@ type Foo = union {
   1: bar @generated_name("Good") struct {};
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_union("fidl.test/Foo")
@@ -77,8 +77,8 @@ type Foo = union {
 fn good_inside_request() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -86,8 +86,8 @@ protocol Foo {
   Bar(@generated_name("Good") struct { x uint32; });
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_protocol("fidl.test/Foo")
@@ -100,8 +100,8 @@ protocol Foo {
 fn good_inside_response() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -109,8 +109,8 @@ protocol Foo {
   strict Bar() -> (@generated_name("Good") struct { x uint32; });
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_protocol("fidl.test/Foo")
@@ -123,8 +123,8 @@ protocol Foo {
 fn good_inside_result_success() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -132,8 +132,8 @@ protocol Foo {
   Bar() -> (@generated_name("Good") struct { x uint32; }) error uint32;
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_protocol("fidl.test/Foo")
@@ -164,8 +164,8 @@ protocol Foo {
 fn good_inside_result_error() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -173,8 +173,8 @@ protocol Foo {
   Bar() -> () error @generated_name("Good") enum { A = 1; };
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_protocol("fidl.test/Foo")
@@ -204,8 +204,8 @@ protocol Foo {
 fn good_on_bits() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -215,8 +215,8 @@ type Foo = struct {
   };
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_struct("fidl.test/Foo")
@@ -228,8 +228,8 @@ type Foo = struct {
 fn good_on_enum() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -239,8 +239,8 @@ type Foo = struct {
   };
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_struct("fidl.test/Foo")
@@ -252,8 +252,8 @@ type Foo = struct {
 fn good_on_struct() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -263,8 +263,8 @@ type Foo = struct {
   };
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_struct("fidl.test/Foo")
@@ -276,8 +276,8 @@ type Foo = struct {
 fn good_on_table() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -287,8 +287,8 @@ type Foo = struct {
   };
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_struct("fidl.test/Foo")
@@ -300,8 +300,8 @@ type Foo = struct {
 fn good_on_union() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -311,8 +311,8 @@ type Foo = struct {
   };
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let foo = root
         .lookup_struct("fidl.test/Foo")
@@ -324,8 +324,8 @@ type Foo = struct {
 fn good_prevents_collision() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -333,8 +333,8 @@ type Foo = struct {
   foo @generated_name("Bar") struct {};
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_ok(), "compilation failed");
 }
@@ -344,16 +344,16 @@ type Foo = struct {
 fn bad_on_type_declaration() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
 @generated_name("Good")
 type Bad = struct {};
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -365,15 +365,15 @@ type Bad = struct {};
 fn bad_on_top_level_struct() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
 type Foo = @generated_name("Bad") struct {};
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -385,8 +385,8 @@ type Foo = @generated_name("Bad") struct {};
 fn bad_on_identifier_type() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -396,8 +396,8 @@ type Foo = struct {
 
 type Bar = struct {};
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -422,8 +422,8 @@ fn bad_on_struct_member() {
 fn bad_on_enum_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -433,8 +433,8 @@ type MetaVars = enum {
   BAR = 2;
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -447,8 +447,8 @@ type MetaVars = enum {
 fn bad_on_service_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -459,8 +459,8 @@ service Bar {
   bar_one client_end:Foo;
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -473,8 +473,8 @@ service Bar {
 fn bad_missing_argument() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -482,8 +482,8 @@ type Foo = struct {
   bad @generated_name struct {};
 };
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -508,8 +508,8 @@ fn bad_invalid_identifier() {
 fn bad_name_collision() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library fidl.test;
 
@@ -519,8 +519,8 @@ type Foo = struct {
 
 type Baz = struct {};
         "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),

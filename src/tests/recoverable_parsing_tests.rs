@@ -14,8 +14,8 @@ fn bad_unexpected_token() {
 fn bad_recover_at_end_of_file() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -27,8 +27,8 @@ type Bits = bits {
     CONSTANT = ;  // Second error
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -37,8 +37,8 @@ type Bits = bits {
 fn bad_recover_at_end_of_decl() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -56,8 +56,8 @@ type Struct = struct {
     value string;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -66,8 +66,8 @@ type Struct = struct {
 fn bad_recover_at_end_of_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -104,8 +104,8 @@ type TimeZone = struct {
     region vector<string>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -114,8 +114,8 @@ type TimeZone = struct {
 fn bad_do_not_compile_after_parsing_fails() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -126,8 +126,8 @@ type NameCollision = struct {};       // This name collision error will not be
                                       // reported, because if parsing fails
                                       // compilation is skipped
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -136,8 +136,8 @@ type NameCollision = struct {};       // This name collision error will not be
 fn bad_recover_to_next_bits_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -148,8 +148,8 @@ type Bits = bits {
     EIGHT = 0x8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -158,8 +158,8 @@ type Bits = bits {
 fn bad_recover_to_next_enum_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -170,8 +170,8 @@ type Enum = enum {
     FOUR = 4;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -188,8 +188,8 @@ fn bad_recover_to_next_protocol_member() {
 fn bad_recoverable_param_list_parsing() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -199,8 +199,8 @@ protocol Example {
       struct { b bool; });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -209,8 +209,8 @@ protocol Example {
 fn bad_recoverable_unmatched_delimiter_in_param_list() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -218,8 +218,8 @@ protocol Example {
   Method() -> (vector<);
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -228,8 +228,8 @@ protocol Example {
 fn bad_recover_to_next_service_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -243,8 +243,8 @@ service Service {
   r R;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -253,8 +253,8 @@ service Service {
 fn bad_recover_to_next_struct_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -265,8 +265,8 @@ type Struct = struct {
     int_value int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -275,8 +275,8 @@ type Struct = struct {
 fn bad_recover_to_next_table_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -287,8 +287,8 @@ type Table = table {
     4: int_value int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -297,8 +297,8 @@ type Table = table {
 fn bad_recover_to_next_union_member() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -309,8 +309,8 @@ type Union = union {
     5: int_value int16;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -319,8 +319,8 @@ type Union = union {
 fn bad_recover_final_member_missing_semicolon() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -334,8 +334,8 @@ type Good = struct {};
 
 extra_token // Second error
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -352,8 +352,8 @@ fn bad_recover_final_member_missing_name_and_semicolon() {
 fn bad_constraints_recoverability() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    library.add_source_file(
+        "example.fidl",
         r#"
 library example;
 type TypeDecl = struct {
@@ -378,8 +378,8 @@ type TypeDecl = struct {
     f9 vector<uint16>:,16,,optional,;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }

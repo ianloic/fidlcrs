@@ -10,8 +10,8 @@ fn get_file_content(path: &str) -> String {
 #[test]
 fn good_enum_test_simple() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum : uint64 {
@@ -20,8 +20,8 @@ type Fruit = enum : uint64 {
     BANANA = 3;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let type_decl = root
         .lookup_enum("example/Fruit")
@@ -33,16 +33,16 @@ type Fruit = enum : uint64 {
 #[test]
 fn good_enum_default_uint32() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum {
     ORANGE = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let type_decl = root
         .lookup_enum("example/Fruit")
@@ -67,8 +67,8 @@ fn bad_enum_test_with_non_unique_values() {
 
 fn bad_enum_test_with_non_unique_values_out_of_line() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum {
@@ -79,8 +79,8 @@ type Fruit = enum {
 const FOUR uint32 = 4;
 const TWO_SQUARED uint32 = 4;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -88,8 +88,8 @@ const TWO_SQUARED uint32 = 4;
 
 fn bad_enum_test_unsigned_with_negative_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum : uint64 {
@@ -97,8 +97,8 @@ type Fruit = enum : uint64 {
     APPLE = -2;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -106,8 +106,8 @@ type Fruit = enum : uint64 {
 
 fn bad_enum_test_inferred_unsigned_with_negative_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum {
@@ -115,8 +115,8 @@ type Fruit = enum {
     APPLE = -2;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -124,8 +124,8 @@ type Fruit = enum {
 
 fn bad_enum_test_member_overflow() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum : uint8 {
@@ -133,8 +133,8 @@ type Fruit = enum : uint8 {
     APPLE = 256;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -155,8 +155,8 @@ fn bad_enum_test_float_type() {
 
 fn bad_enum_test_duplicate_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = flexible enum {
@@ -165,22 +165,22 @@ type Fruit = flexible enum {
     ORANGE = 3;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_enum_test_no_members_allowed_when_defaults_to_flexible() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type E = enum {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -224,8 +224,8 @@ fn bad_enum_test_no_members_when_strict() {
 #[test]
 fn good_enum_test_keyword_names() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Fruit = enum : uint64 {
@@ -234,8 +234,8 @@ type Fruit = enum : uint64 {
     uint64 = 3;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -243,8 +243,8 @@ type Fruit = enum : uint64 {
 
 fn bad_enum_shant_be_nullable() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type NotNullable = enum {
@@ -255,8 +255,8 @@ type Struct = struct {
     not_nullable NotNullable:optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -264,8 +264,8 @@ type Struct = struct {
 
 fn bad_enum_multiple_constraints() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type NotNullable = enum {
@@ -276,8 +276,8 @@ type Struct = struct {
     not_nullable NotNullable:<1, 2, 3>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 

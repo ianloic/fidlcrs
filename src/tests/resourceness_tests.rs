@@ -7,16 +7,16 @@ use crate::tests::test_library::TestLibrary;
 #[test]
 fn bad_bits_resourceness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 type Foo = resource bits {
     BAR = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -26,16 +26,16 @@ type Foo = resource bits {
 #[test]
 fn bad_enum_resourceness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 type Foo = resource enum {
     BAR = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -45,15 +45,15 @@ type Foo = resource enum {
 #[test]
 fn bad_const_resourceness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 resource const BAR uint32 = 1;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -63,15 +63,15 @@ resource const BAR uint32 = 1;
 #[test]
 fn bad_protocol_resourceness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 resource protocol Foo {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -81,15 +81,15 @@ resource protocol Foo {};
 #[test]
 fn bad_alias_resourceness() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 resource alias B = bool;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -99,8 +99,8 @@ resource alias B = bool;
 #[test]
 fn bad_duplicate_modifier() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -108,8 +108,8 @@ type One = resource struct {};
 type Two = resource resource struct {};
 type Three = resource resource resource struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 3);
@@ -263,8 +263,8 @@ fn bad_handles_in_value_union() {
 fn bad_protocols_in_value_type() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -274,8 +274,8 @@ protocol Protocol {};
 type Foo = struct { bad_member client_end:Protocol; };
 
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -286,8 +286,8 @@ type Foo = struct { bad_member client_end:Protocol; };
 fn bad_resource_types_in_value_type() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -298,8 +298,8 @@ type ResourceUnion = resource union { 1: b bool; };
 type Foo = struct { bad_member ResourceStruct; };
 
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -310,8 +310,8 @@ type Foo = struct { bad_member ResourceStruct; };
 fn bad_resource_aliases_in_value_type() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -330,8 +330,8 @@ type ResourceUnion = resource union { 1: b bool; };
 type Foo = struct { bad_member HandleAlias; };
 
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -342,8 +342,8 @@ type Foo = struct { bad_member HandleAlias; };
 fn bad_resources_in_nested_containers() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -356,8 +356,8 @@ type ResourceUnion = resource union { 1: b bool; };
 type Foo = struct { bad_member vector<vector<zx.Handle>>; };
 
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -368,8 +368,8 @@ type Foo = struct { bad_member vector<vector<zx.Handle>>; };
 fn bad_multiple_resource_types_in_value_type() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 using zx;
@@ -382,8 +382,8 @@ type Foo = struct {
 
 type ResourceStruct = resource struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 3);
@@ -395,8 +395,8 @@ type ResourceStruct = resource struct {};
 #[test]
 fn good_transitive_resource_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -408,16 +408,16 @@ type Middle = resource struct {
 };
 type Bottom = resource struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
 #[test]
 fn bad_transitive_resource_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -429,8 +429,8 @@ type Middle = struct {
 };
 type Bottom = resource struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -440,8 +440,8 @@ type Bottom = resource struct {};
 #[test]
 fn good_recursive_value_types() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -453,16 +453,16 @@ type Boros = struct {
     o box<Ouro>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
 #[test]
 fn good_recursive_resource_types() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -474,16 +474,16 @@ type Boros = resource struct {
     o box<Ouro>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }
 
 #[test]
 fn bad_recursive_resource_types() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -495,8 +495,8 @@ type Boros = struct {
   bad_member box<Ouro>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -506,8 +506,8 @@ type Boros = struct {
 #[test]
 fn good_strict_resource_order_independent() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -518,7 +518,7 @@ type RS = strict resource union {
     1: b bool;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().unwrap();
 }

@@ -10,16 +10,16 @@ fn get_file_content(path: &str) -> String {
 #[test]
 fn good_nonzero_size_array() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type S = struct {
     arr array<uint8, 1>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -38,63 +38,63 @@ fn bad_zero_size_array() {
 #[test]
 fn bad_no_size_array() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type S = struct {
     arr array<uint8>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_non_parameterized_array() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type S = struct {
     arr array;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_optional_array() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type S = struct {
     arr array<uint8, 10>:optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_multiple_constraints_on_array() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type S = struct {
     arr array<uint8, 10>:<1, 2, 3>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

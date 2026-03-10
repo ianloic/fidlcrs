@@ -11,10 +11,10 @@ fn get_file_content(path: &str) -> String {
 
 fn bad_compound_identifier_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
-        "library 0fidl.test.badcompoundidentifier;".to_string(),
-    ));
+    lib.add_source_file(
+        "example.fidl",
+        "library 0fidl.test.badcompoundidentifier;",
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -40,8 +40,8 @@ fn good_spaces_around_dots_library_name() {
 #[test]
 fn good_spaces_around_dots_member_name() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -50,8 +50,8 @@ type Fruit = enum : uint64 {
 };
 const VALUE Fruit = Fruit . A;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
     // TODO: assert constant value
 }
@@ -59,21 +59,21 @@ const VALUE Fruit = Fruit . A;
 #[test]
 fn good_spaces_around_dots_import() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependency.fidl".to_string(),
+    lib.add_source_file(
+        "dependency.fidl",
         r#"
 library foo . bar . qux;
 
 type Type = struct {};
 const VALUE uint32 = 42;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed for dependency");
 
     let mut lib2 = TestLibrary::new();
-    lib2.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib2.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -81,8 +81,8 @@ using foo  .  bar  .  qux;
 alias Type = foo. bar. qux. Type;
 const VALUE uint32 = foo .bar .qux .VALUE;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     // Note: Currently TestLibrary doesn't handle dependencies.
     // We might just check if it parses, or we ignore the compile part if dependencies are not supported yet.
     // The instruction says port parsing_tests.cc.
@@ -92,8 +92,8 @@ const VALUE uint32 = foo .bar .qux .VALUE;
 #[test]
 fn good_parsing_reserved_words_in_struct_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -139,16 +139,16 @@ type InStruct = struct {
     reserved bool;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_parsing_reserved_words_in_constraint() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -225,16 +225,16 @@ alias float32_constraint = vector<S>:float32;
 const float64 T = 1;
 alias float64_constraint = vector<S>:float64;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_parsing_handles_in_struct_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -305,16 +305,16 @@ type Handles = resource struct {
     vmo_handle handle:VMO;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_parsing_handle_constraint_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -340,16 +340,16 @@ type Handles = resource struct {
     rights_handle handle:<VMO, Rights.TRANSFER>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_parsing_reserved_words_in_union_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -388,16 +388,16 @@ type InUnion = strict union {
    23: reserved bool;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_parsing_reserved_words_in_protocol_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -484,8 +484,8 @@ protocol InProtocol {
     });
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -493,8 +493,8 @@ protocol InProtocol {
 
 fn bad_char_pound_sign_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library test;
 
@@ -502,8 +502,8 @@ type Test = struct {
     #uint8 uint8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -511,8 +511,8 @@ type Test = struct {
 
 fn bad_char_slash_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library test;
 
@@ -520,8 +520,8 @@ type Test = struct / {
     uint8 uint8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -550,15 +550,15 @@ fn bad_invalid_character_test() {
 #[test]
 fn good_empty_struct_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library fidl.test.emptystruct;
 
 type Empty = struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -576,16 +576,16 @@ fn bad_error_on_alias_before_imports() {
 #[test]
 fn good_attribute_value_has_correct_contents() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
   library example;
 
   @foo("Bar")
   type Empty = struct{};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let asts = lib.parse().expect("parsing failed");
     let attribute = &asts[0].type_decls[0]
         .attributes
@@ -638,8 +638,8 @@ fn good_simple_doc_comment() {
 #[test]
 fn good_multiline_doc_comment_has_correct_contents() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
   library example;
 
@@ -648,8 +648,8 @@ fn good_multiline_doc_comment_has_correct_contents() {
   /// comment!
   type Empty = struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let _asts = lib.parse().expect("parsing failed");
 }
 
@@ -677,8 +677,8 @@ fn warn_comment_inside_doc_comment_test() {
 
 fn warn_doc_comment_with_comment_blank_line_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -688,8 +688,8 @@ library example;
 /// end
 type Empty = struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
 }
 
 #[test]
@@ -726,8 +726,8 @@ fn good_blank_lines_after_doc_comment_test() {
 #[test]
 fn good_blank_lines_after_doc_comment_with_comment_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -738,8 +738,8 @@ library example;
 
 type Empty = struct {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -757,8 +757,8 @@ fn warn_trailing_doc_comment_test() {
 
 fn bad_trailing_doc_comment_in_decl_test() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -767,8 +767,8 @@ type Empty = struct {
    /// bad
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -776,8 +776,8 @@ type Empty = struct {
 
 fn bad_final_member_missing_semicolon() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -786,8 +786,8 @@ type Struct = struct {
     foo string // error: missing semicolon
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -795,8 +795,8 @@ type Struct = struct {
 
 fn bad_final_member_missing_type_and_semicolon() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -806,8 +806,8 @@ type Struct = struct {
 }; // error: want type, got "}"
    // error: want "}", got EOF
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -815,8 +815,8 @@ type Struct = struct {
 
 fn bad_missing_constraint_brackets() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -824,8 +824,8 @@ type Foo = struct {
     bad_no_brackets vector<uint8>:10,optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -844,8 +844,8 @@ fn bad_multiple_constraint_definition_double_colon() {
 
 fn bad_multiple_constraint_definitions() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -856,16 +856,16 @@ type Foo = struct {
   bad_double_colon_bracketed string:LENGTH:<LENGTH,optional>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_single_constraint() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -874,8 +874,8 @@ type Foo = struct {
   without_brackets vector<int32>:10;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -905,8 +905,8 @@ fn bad_layout_class() {
 
 fn bad_identifier_modifiers() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -914,8 +914,8 @@ type Foo = struct {
   data strict uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -923,8 +923,8 @@ type Foo = struct {
 
 fn bad_identifier_with_constraints_modifiers() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -934,8 +934,8 @@ type Foo = struct {
   data strict Bar:optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -943,16 +943,16 @@ type Foo = struct {
 
 fn bad_type_declaration_with_constraints_modifiers() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 type t1 = union { 1: foo uint8; };
 type t2 = strict t1;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -971,8 +971,8 @@ fn bad_identifier_attributes() {
 
 fn bad_identifier_with_constraints_attributes() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -982,8 +982,8 @@ type Foo = struct {
   data @foo Bar:optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -1002,8 +1002,8 @@ fn bad_type_declaration_of_enum_layout_with_invalid_subtype() {
 
 fn bad_missing_comma() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -1011,8 +1011,8 @@ type Foo = struct {
   data array<uint8 5>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 

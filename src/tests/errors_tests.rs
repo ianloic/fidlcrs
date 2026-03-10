@@ -6,8 +6,8 @@ use crate::tests::test_library::{LookupHelpers, TestLibrary};
 fn good_error() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -18,8 +18,8 @@ protocol Example {
     }) error int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let decl = root
         .lookup_protocol("example/Example")
@@ -38,8 +38,8 @@ protocol Example {
 fn good_error_unsigned() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -50,8 +50,8 @@ protocol Example {
     }) error uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     library.compile().expect("compilation failed");
 }
 
@@ -59,8 +59,8 @@ protocol Example {
 fn good_error_empty_struct_as_success() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -69,8 +69,8 @@ protocol MyProtocol {
   strict MyMethod() -> () error uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
     let decl = root
         .lookup_protocol("example/MyProtocol")
@@ -84,8 +84,8 @@ protocol MyProtocol {
 fn good_error_enum() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -102,8 +102,8 @@ protocol Example {
     }) error ErrorType;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     library.compile().expect("compilation failed");
 }
 
@@ -111,8 +111,8 @@ protocol Example {
 fn good_error_enum_after() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -129,8 +129,8 @@ type ErrorType = enum : int32 {
     UGLY = 3;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     library.compile().expect("compilation failed");
 }
 
@@ -154,8 +154,8 @@ fn bad_error_wrong_primitive() {
 fn bad_error_missing_type() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -163,8 +163,8 @@ protocol Example {
     Method() -> (flub int32) error;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
@@ -173,8 +173,8 @@ protocol Example {
 fn bad_error_not_a_type() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -182,8 +182,8 @@ protocol Example {
     Method() -> (flub int32) error "hello";
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
@@ -192,8 +192,8 @@ protocol Example {
 fn bad_error_no_response() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -201,8 +201,8 @@ protocol Example {
     Method() -> error int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
@@ -211,15 +211,15 @@ protocol Example {
 fn bad_error_unexpected_end_of_file() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
 type ForgotTheSemicolon = table {}
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }
@@ -246,8 +246,8 @@ fn experimental_allow_arbitrary_error_types() {
     let mut library = TestLibrary::new();
     library.enable_flag("allow_arbitrary_error_types");
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -255,8 +255,8 @@ protocol Example {
     Method() -> () error table {};
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("compilation failed");
 
     let decl = root
@@ -276,8 +276,8 @@ protocol Example {
 fn transitional_removed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 
 library example;
@@ -286,8 +286,8 @@ protocol Example {
     Method();
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
 }

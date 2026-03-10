@@ -10,15 +10,15 @@ fn get_file_content(path: &str) -> String {
 #[test]
 fn good_empty_service() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
 service SomeService {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let service = root
@@ -30,8 +30,8 @@ service SomeService {};
 #[test]
 fn good_service() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -44,8 +44,8 @@ service SomeService {
     some_protocol_second client_end:SomeProtocol2;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let service = root
@@ -60,8 +60,8 @@ service SomeService {
 #[ignore]
 fn bad_cannot_have_conflicting_members() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -72,8 +72,8 @@ service MyService {
     my_service_member client_end:MyProtocol;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -92,8 +92,8 @@ fn bad_no_nullable_protocol_members() {
 #[ignore]
 fn bad_only_protocol_members() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -103,8 +103,8 @@ service SomeService {
     not_a_protocol NotAProtocol;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -123,8 +123,8 @@ fn bad_no_server_ends() {
 #[ignore]
 fn bad_cannot_use_services_in_decls() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library example;
 
@@ -134,8 +134,8 @@ type CannotUseService = struct {
     svc SomeService;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 

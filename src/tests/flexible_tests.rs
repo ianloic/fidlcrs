@@ -41,8 +41,8 @@ fn bad_enum_max_value_without_unknown_unsigned() {
 fn bad_enum_max_value_without_unknown_signed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library example;
 
@@ -52,8 +52,8 @@ type Foo = flexible enum : int8 {
   MAX = 127;
 };
     "#
-        .to_string(),
-    ));
+        ,
+    );
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -65,8 +65,8 @@ type Foo = flexible enum : int8 {
 fn good_enum_can_use_max_value_if_other_is_unknown_unsigned() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library example;
 
@@ -77,8 +77,8 @@ type Foo = flexible enum : uint8 {
     MAX = 255;
 };
     "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("Expected compilation to succeed");
 
     let foo_enum = root
@@ -92,8 +92,8 @@ type Foo = flexible enum : uint8 {
 fn good_enum_can_use_max_value_if_other_is_unknown_signed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library example;
 
@@ -104,8 +104,8 @@ type Foo = flexible enum : int8 {
     MAX = 127;
 };
     "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("Expected compilation to succeed");
 
     let foo_enum = root
@@ -119,8 +119,8 @@ type Foo = flexible enum : int8 {
 fn good_enum_can_use_zero_as_unknown_value() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "example0.fidl".to_string(),
+    library.add_source_file(
+        "example0.fidl",
         r#"
 library example;
 
@@ -131,8 +131,8 @@ type Foo = flexible enum : int8 {
     MAX = 127;
 };
     "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = library.compile().expect("Expected compilation to succeed");
 
     let foo_enum = root

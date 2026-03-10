@@ -12,8 +12,8 @@ fn get_file_content(path: &str) -> String {
 #[ignore]
 fn bad_duplicate_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -23,16 +23,16 @@ type Message = struct {
 alias alias_of_int16 = int16;
 alias alias_of_int16 = int16;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_alias_of_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 type TypeDecl = struct {
     field1 uint16;
@@ -40,8 +40,8 @@ type TypeDecl = struct {
 };
 alias AliasOfDecl = TypeDecl;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let type_decl = root.lookup_struct("example/TypeDecl").unwrap();
     assert_eq!(type_decl.members.len(), 2);
@@ -52,8 +52,8 @@ alias AliasOfDecl = TypeDecl;
 #[ignore]
 fn good_primitive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -62,8 +62,8 @@ type Message = struct {
 
 alias alias_of_int16 = int16;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let msg = root.lookup_struct("example/Message").unwrap();
     assert_eq!(msg.members.len(), 1);
@@ -78,8 +78,8 @@ alias alias_of_int16 = int16;
 #[ignore]
 fn good_primitive_alias_before_use() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 alias alias_of_int16 = int16;
@@ -88,8 +88,8 @@ type Message = struct {
     f alias_of_int16;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let msg = root.lookup_struct("example/Message").unwrap();
     assert_eq!(msg.members.len(), 1);
@@ -102,8 +102,8 @@ type Message = struct {
 #[ignore]
 fn bad_self_referential_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 alias uint32 = uint32;
@@ -112,8 +112,8 @@ type Message = struct {
     f uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -134,16 +134,16 @@ fn bad_no_optional_on_primitive() {
 #[ignore]
 fn bad_multiple_constraints_on_primitive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test.optionals;
 
 type Bad = struct {
     opt_num int64:<1, 2, 3>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -177,8 +177,8 @@ fn bad_invalid_size_constraint_is_not_value() {
 #[ignore]
 fn bad_no_optional_on_aliased_primitive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test.optionals;
 
 alias alias = int64;
@@ -187,8 +187,8 @@ type Bad = struct {
     opt_num alias:optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -196,8 +196,8 @@ type Bad = struct {
 #[ignore]
 fn good_vector_parameterized_on_decl() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -206,8 +206,8 @@ type Message = struct {
 
 alias alias_of_vector_of_string = vector<string>;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let msg = root.lookup_struct("example/Message").unwrap();
     assert_eq!(msg.members.len(), 1);
@@ -221,8 +221,8 @@ alias alias_of_vector_of_string = vector<string>;
 #[ignore]
 fn bad_vector_parameterized_on_use() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -231,8 +231,8 @@ type Message = struct {
 
 alias alias_of_vector = vector;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -240,8 +240,8 @@ alias alias_of_vector = vector;
 #[ignore]
 fn bad_vector_bounded_on_decl() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -250,8 +250,8 @@ type Message = struct {
 
 alias alias_of_vector_max_8 = vector:8;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -259,8 +259,8 @@ alias alias_of_vector_max_8 = vector:8;
 #[ignore]
 fn good_vector_bounded_on_use() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -269,8 +269,8 @@ type Message = struct {
 
 alias alias_of_vector_of_string = vector<string>;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let msg = root.lookup_struct("example/Message").unwrap();
     assert_eq!(msg.members.len(), 1);
@@ -296,8 +296,8 @@ fn good_unbounded_vector_bound_twice() {
 #[ignore]
 fn good_vector_nullable_on_decl() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -306,8 +306,8 @@ type Message = struct {
 
 alias alias_of_vector_of_string_nullable = vector<string>:optional;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let msg = root.lookup_struct("example/Message").unwrap();
     assert_eq!(msg.members.len(), 1);
@@ -321,8 +321,8 @@ alias alias_of_vector_of_string_nullable = vector<string>:optional;
 #[ignore]
 fn good_vector_nullable_on_use() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -331,8 +331,8 @@ type Message = struct {
 
 alias alias_of_vector_of_string = vector<string>;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     let msg = root.lookup_struct("example/Message").unwrap();
     assert_eq!(msg.members.len(), 1);
@@ -346,8 +346,8 @@ alias alias_of_vector_of_string = vector<string>;
 #[ignore]
 fn bad_cannot_parameterize_twice() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Message = struct {
@@ -356,8 +356,8 @@ type Message = struct {
 
 alias alias_of_vector_of_string = vector<string>;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -390,46 +390,46 @@ fn bad_cannot_null_twice() {
 #[test]
 fn good_multi_file_alias_reference() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "first.fidl".to_string(),
+    lib.add_source_file(
+        "first.fidl",
         r#"library example;
 
 type Protein = struct {
   amino_acids AminoAcids;
 };"#
-        .to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "second.fidl".to_string(),
+        ,
+    );
+    lib.add_source_file(
+        "second.fidl",
         r#"library example;
 
 alias AminoAcids = vector<uint64>:32;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_multi_file_nullable_alias_reference() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "first.fidl".to_string(),
+    lib.add_source_file(
+        "first.fidl",
         r#"library example;
 
 type Protein = struct {
     amino_acids AminoAcids:optional;
 };"#
-        .to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "second.fidl".to_string(),
+        ,
+    );
+    lib.add_source_file(
+        "second.fidl",
         r#"library example;
 
 alias AminoAcids = vector<uint64>:32;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -437,8 +437,8 @@ alias AminoAcids = vector<uint64>:32;
 #[ignore]
 fn bad_recursive_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 alias TheAlias = TheStruct;
@@ -447,8 +447,8 @@ type TheStruct = struct {
     many_mini_me vector<TheAlias>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -456,52 +456,52 @@ type TheStruct = struct {
 fn bad_compound_identifier() {
     // We use TestLibrary::parse because this fails at the parsing stage in C++ implementation as well
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 alias foo.bar.baz = uint8;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_using_library() {
     let mut dependency_lib = TestLibrary::new();
-    dependency_lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
+    dependency_lib.add_source_file(
+        "dependent.fidl",
         r#"library dependent;
 
 type Bar = struct {
     s int8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     dependency_lib.compile().expect("compilation failed");
 
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
         r#"library dependent;
 
 type Bar = struct {
     s int8;
 };
 "#
-        .to_string(),
-    )); // We need to provide the parsed AST of dependencies
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+        ,
+    ); // We need to provide the parsed AST of dependencies
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 using dependent;
 
 alias Bar2 = dependent.Bar;
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }

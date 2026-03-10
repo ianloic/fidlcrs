@@ -10,8 +10,8 @@ fn get_file_content(path: &str) -> String {
 #[test]
 fn good_keywords_as_field_names() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type struct = struct {
@@ -26,8 +26,8 @@ type Foo = strict union {
     5: reserved bool;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
     for decl in &root.declaration_order {
         println!("Decl in order: {}", decl);
@@ -47,8 +47,8 @@ type Foo = strict union {
 #[test]
 fn good_recursive_union() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Value = strict union {
@@ -56,16 +56,16 @@ type Value = strict union {
     2: list_value vector<Value:optional>;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_mutually_recursive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = strict union {
@@ -76,24 +76,24 @@ type Bar = struct {
     foo Foo:optional;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_flexible_union() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = flexible union {
     1: bar string;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -125,8 +125,8 @@ fn bad_must_have_explicit_ordinals() {
 #[test]
 fn good_explicit_ordinals() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = strict union {
@@ -134,8 +134,8 @@ type Foo = strict union {
     2: bar vector<uint32>:10;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let fidl_union = root.lookup_union("test/Foo").expect("Foo union not found");
@@ -147,8 +147,8 @@ type Foo = strict union {
 #[test]
 fn good_ordinal_gaps() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = strict union {
@@ -156,8 +156,8 @@ type Foo = strict union {
     4: bar vector<uint32>:10;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let fidl_union = root.lookup_union("test/Foo").expect("Foo union not found");
@@ -169,8 +169,8 @@ type Foo = strict union {
 #[test]
 fn good_ordinals_out_of_order() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = strict union {
@@ -179,8 +179,8 @@ type Foo = strict union {
     4: baz uint32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let fidl_union = root.lookup_union("test/Foo").expect("Foo union not found");
@@ -207,16 +207,16 @@ fn bad_ordinal_out_of_bounds_negative() {
 
 fn bad_ordinal_out_of_bounds_large() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = union {
   4294967296: foo string;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -237,8 +237,8 @@ fn bad_ordinals_must_be_unique() {
 
 fn bad_member_names_must_be_unique() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type MyUnion = strict union {
@@ -246,8 +246,8 @@ type MyUnion = strict union {
     2: my_variant int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -268,40 +268,40 @@ fn bad_cannot_start_at_zero() {
 
 fn bad_default_not_allowed() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library test;
 
 type Foo = strict union {
     1: t int64 = 1;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_ordinal_gap_start() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Example = strict union {
     2: two int64;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_ordinal_gap_middle() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Example = strict union {
@@ -309,8 +309,8 @@ type Example = strict union {
     3: three int64;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.compile().expect("compilation failed");
 }
 
@@ -331,30 +331,30 @@ fn bad_no_nullable_members() {
 
 fn bad_no_directly_recursive_unions() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Value = strict union {
   1: value Value;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_empty_flexible_union() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Foo = flexible union {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let fidl_union = root
@@ -367,14 +367,14 @@ type Foo = flexible union {};
 
 fn bad_empty_strict_union() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Value = strict union {};
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }
 
@@ -382,15 +382,15 @@ type Value = strict union {};
 
 fn good_error_syntax_explicit_ordinals() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 open protocol Example {
     flexible Method() -> () error int32;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     let root = lib.compile().expect("compilation failed");
 
     let error_union = root
@@ -406,15 +406,15 @@ open protocol Example {
 
 fn bad_no_selector() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         r#"library example;
 
 type Foo = strict union {
   @selector("v2") 1: v string;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     assert!(lib.compile().is_err());
 }

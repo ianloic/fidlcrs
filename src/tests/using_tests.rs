@@ -12,16 +12,16 @@ fn get_file_content(path: &str) -> String {
 fn good_using() {
     let mut lib = TestLibrary::new();
 
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
         r#"
 library dependent;
 type Bar = struct {
     s int8;
 };
 "#
-        .to_string(),
-    ));
+        ,
+    );
     lib.add_source(SourceFile::new(
         "good/fi-0178.test.fidl".to_string(),
         get_file_content("good/fi-0178.test.fidl"),
@@ -50,12 +50,12 @@ fn good_decl_with_same_name_as_aliased_library() {
 #[test]
 fn bad_missing_using() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "example.fidl",
         "library example;
 type Foo = struct { dep dependent.Bar; };"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrNameNotFound);
@@ -73,12 +73,12 @@ fn bad_unknown_using() {
 #[test]
 fn bad_using_alias_ref_through_fqn() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
         "library dependent;
 type Bar = struct { s int8; };"
-            .to_string(),
-    ));
+            ,
+    );
 
     lib.add_source_file(
         "example.fidl",
@@ -104,17 +104,17 @@ fn bad_duplicate_using_no_alias() {
 #[test]
 fn bad_duplicate_using_first_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
-        "library dependent;".to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
+        "library dependent;",
+    );
+    lib.add_source_file(
+        "example.fidl",
         "library example;
 using dependent as alias;
 using dependent;"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrDuplicateLibraryImport);
@@ -123,17 +123,17 @@ using dependent;"
 #[test]
 fn bad_duplicate_using_second_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
-        "library dependent;".to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
+        "library dependent;",
+    );
+    lib.add_source_file(
+        "example.fidl",
         "library example;
 using dependent;
 using dependent as alias;"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrDuplicateLibraryImport);
@@ -142,17 +142,17 @@ using dependent as alias;"
 #[test]
 fn bad_duplicate_using_same_library_same_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
-        "library dependent;".to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
+        "library dependent;",
+    );
+    lib.add_source_file(
+        "example.fidl",
         "library example;
 using dependent as alias;
 using dependent as alias;"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrDuplicateLibraryImport);
@@ -161,17 +161,17 @@ using dependent as alias;"
 #[test]
 fn bad_duplicate_using_same_library_different_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
-        "library dependent;".to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "dependent.fidl",
+        "library dependent;",
+    );
+    lib.add_source_file(
+        "example.fidl",
         "library example;
 using dependent as alias1;
 using dependent as alias2;"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrDuplicateLibraryImport);
@@ -180,21 +180,21 @@ using dependent as alias2;"
 #[test]
 fn bad_conflicting_using_library_and_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dependent1.fidl".to_string(),
-        "library dependent1;".to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "dependent2.fidl".to_string(),
-        "library dependent2;".to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "example.fidl".to_string(),
+    lib.add_source_file(
+        "dependent1.fidl",
+        "library dependent1;",
+    );
+    lib.add_source_file(
+        "dependent2.fidl",
+        "library dependent2;",
+    );
+    lib.add_source_file(
+        "example.fidl",
         "library example;
 using dependent1;
 using dependent2 as dependent1;"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrConflictingLibraryImportAlias);
@@ -226,10 +226,10 @@ fn bad_conflicting_using_alias_and_alias() {
 fn bad_unused_using() {
     let mut lib = TestLibrary::new();
 
-    lib.add_source(SourceFile::new(
-        "dependent.fidl".to_string(),
-        "library dependent;".to_string(),
-    ));
+    lib.add_source_file(
+        "dependent.fidl",
+        "library dependent;",
+    );
     lib.add_errcat_file("bad/fi-0178.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -263,20 +263,20 @@ fn bad_aliased_library_declaration_name_collision() {
     );
 
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "dep.fidl".to_string(),
+    lib.add_source_file(
+        "dep.fidl",
         "library dep;
 type A = struct{};"
-            .to_string(),
-    ));
-    lib.add_source(SourceFile::new(
-        "lib.fidl".to_string(),
+            ,
+    );
+    lib.add_source_file(
+        "lib.fidl",
         "library lib;
 using dep as x;
 type x = struct{};
 type B = struct{a dep.A;};"
-            .to_string(),
-    ));
+            ,
+    );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors[0].def, Error::ErrDeclNameConflictsWithLibraryImport);

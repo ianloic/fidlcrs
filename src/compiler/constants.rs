@@ -401,7 +401,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
     pub fn type_can_be_const(&self, type_obj: &Type) -> bool {
         match type_obj {
-            Type::String(s) => !s.nullable.unwrap_or(false),
+            Type::String(s) => !s.nullable,
             Type::Primitive(_) => true,
             Type::Identifier(i) => {
                 let Some(decl_kind) = self
@@ -734,7 +734,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 );
                             }
                         }
-                        if s.nullable.unwrap_or(false) {
+                        if s.nullable {
                             self.reporter.fail(
                                 Error::ErrTypeCannotBeConvertedToType,
                                 span,

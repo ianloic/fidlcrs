@@ -484,7 +484,16 @@ impl From<&flat_ast::Type> for Type {
             element_count: ast.element_count(),
             maybe_element_count: ast.maybe_element_count(),
             rights: ast.rights(),
-            nullable: ast.nullable(),
+            nullable: match ast {
+                flat_ast::Type::String(t) => Some(t.nullable),
+                flat_ast::Type::Vector(t) => Some(t.nullable),
+                flat_ast::Type::Endpoint(t) => Some(t.nullable),
+                flat_ast::Type::Handle(t) => Some(t.nullable),
+                flat_ast::Type::Identifier(t) => Some(t.nullable),
+                flat_ast::Type::Struct(t) => Some(t.nullable),
+                flat_ast::Type::Request(t) => Some(t.nullable),
+                _ => None,
+            },
             protocol_transport: match ast {
                 flat_ast::Type::Endpoint(t) => t.protocol_transport.clone(),
                 _ => None,

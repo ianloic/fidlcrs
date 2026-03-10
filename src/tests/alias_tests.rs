@@ -275,7 +275,7 @@ alias alias_of_vector_of_string_nullable = vector<string>:optional;
 
     let type_ = &msg.members[0].type_;
     assert_eq!(type_.kind(), TypeKind::Vector);
-    assert_eq!(type_.nullable(), Some(true));
+    assert_eq!(type_.nullable(), true);
 }
 
 #[test]
@@ -299,7 +299,7 @@ alias alias_of_vector_of_string = vector<string>;
 
     let type_ = &msg.members[0].type_;
     assert_eq!(type_.kind(), TypeKind::Vector);
-    assert_eq!(type_.nullable(), Some(true));
+    assert_eq!(type_.nullable(), true);
 }
 
 #[test]

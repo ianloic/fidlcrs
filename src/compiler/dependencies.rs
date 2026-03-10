@@ -526,7 +526,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
     pub(crate) fn recompute_declaration_order(&mut self) {
         pub(crate) fn get_type_dependencies(ty: &Type) -> Vec<String> {
             let mut deps = Vec::new();
-            if ty.nullable() == Some(true) {
+            if ty.nullable() {
                 return deps;
             }
             if let Some(id) = ty.identifier() {

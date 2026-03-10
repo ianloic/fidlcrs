@@ -1111,7 +1111,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             && let Some(ref id) = ty.identifier()
             && let Some(shape) = shapes.get(id)
         {
-            if ty.nullable() == Some(true) && struct_names.contains(id) {
+            if ty.nullable() && struct_names.contains(id) {
                 let inner_inline = shape.inline_size;
                 let padding = (8 - (inner_inline % 8)) % 8;
                 let max_out_of_line = shape
@@ -2338,7 +2338,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     )
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
-                if type_obj.nullable().unwrap_or(false) {
+                if type_obj.nullable() {
                     self.reporter.fail(
                         Error::ErrOptionalTableMember,
                         type_ctor.element.span(),
@@ -2626,7 +2626,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 {
                     alias = type_obj.experimental_maybe_from_alias.take();
                 }
-                if type_obj.nullable().unwrap_or(false) {
+                if type_obj.nullable() {
                     self.reporter.fail(
                         Error::ErrOptionalUnionMember,
                         type_ctor.element.span(),
@@ -3447,7 +3447,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                     },
                     element_type: inner_type_opt,
-                    nullable: Some(nullable),
+                    nullable: nullable,
                 })
             }
             "string" => {
@@ -3511,7 +3511,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         Some(max_len)
                     },
-                    nullable: Some(nullable),
+                    nullable: nullable,
                 })
             }
             "string_array" => {
@@ -3666,7 +3666,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         Some(max_count)
                     },
-                    nullable: Some(nullable),
+                    nullable: nullable,
                 })
             }
             "array" => {
@@ -3953,7 +3953,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     role: Some(role.to_string()),
                     protocol: Some(protocol),
                     protocol_transport: Some("Channel".to_string()),
-                    nullable: Some(nullable),
+                    nullable: nullable,
                 })
             }
             "box" => {
@@ -4246,7 +4246,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         obj_type: Some(handle_obj_type),
                         subtype: Some(handle_subtype),
                         rights: Some(handle_rights),
-                        nullable: Some(nullable),
+                        nullable: nullable,
                         resource_identifier: Some(full_name.clone()),
                     });
                 }
@@ -4394,7 +4394,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             type_shape: shape.clone(),
                         },
                         identifier: Some(full_name.clone()),
-                        nullable: Some(nullable),
+                        nullable: nullable,
                     })
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     if !type_ctor.parameters.is_empty() {
@@ -4484,7 +4484,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             },
                         },
                         identifier: Some(full_name.clone()),
-                        nullable: Some(nullable),
+                        nullable: nullable,
                     })
                 } else {
                     self.reporter.fail(
@@ -5194,7 +5194,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth),
-                            nullable: Some(false),
+                            nullable: false,
                         }))
                     }
                     raw_ast::Layout::Table(t) => {
@@ -5233,7 +5233,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth),
-                            nullable: Some(false),
+                            nullable: false,
                         }))
                     }
                     raw_ast::Layout::Union(u) => {
@@ -5276,7 +5276,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth),
-                            nullable: Some(false),
+                            nullable: false,
                         }))
                     }
                     _ => {
@@ -5417,7 +5417,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth),
-                            nullable: Some(false),
+                            nullable: false,
                         }))
                     }
                     raw_ast::Layout::Table(t) => {
@@ -5475,7 +5475,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth),
-                            nullable: Some(false),
+                            nullable: false,
                         }))
                     }
                     raw_ast::Layout::Union(u) => {
@@ -5537,7 +5537,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth),
-                            nullable: Some(false),
+                            nullable: false,
                         }))
                     }
                     _ => {
@@ -5684,7 +5684,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 type_shape: shape,
                             },
                             identifier: Some(full_synth.clone()),
-                            nullable: Some(false),
+                            nullable: false,
                         });
                         maybe_response_success_type = Some(typ.clone());
                         typ
@@ -5801,7 +5801,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     },
                                 },
                                 identifier: Some("fidl/internal/FrameworkErr".to_string()),
-                                nullable: Some(false),
+                                nullable: false,
                             })),
                             location: Some(_framework_err_loc),
                             deprecated: Some(false),
@@ -5843,7 +5843,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             type_shape: union_shape,
                         },
                         identifier: Some(full_synth_union.clone()),
-                        nullable: Some(false),
+                        nullable: false,
                     }))
                 } else {
                     None

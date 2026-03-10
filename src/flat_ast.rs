@@ -215,7 +215,7 @@ impl std::fmt::Display for PrimitiveSubtype {
 #[derive(Clone, Debug)]
 pub struct StringType {
     pub common: TypeCommon,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
     pub maybe_element_count: Option<u32>,
 }
 
@@ -234,7 +234,7 @@ pub struct UnknownType {
 pub struct VectorType {
     pub common: TypeCommon,
     pub element_type: Option<Box<Type>>,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
     pub maybe_element_count: Option<u32>,
 }
 
@@ -248,7 +248,7 @@ pub struct ArrayType {
 #[derive(Clone, Debug)]
 pub struct EndpointType {
     pub common: TypeCommon,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
     pub protocol: Option<String>,
     pub role: Option<String>,
     pub protocol_transport: Option<String>,
@@ -260,7 +260,7 @@ pub struct HandleType {
     pub subtype: Option<String>,
     pub rights: Option<u32>,
     pub obj_type: Option<u32>,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
     pub resource_identifier: Option<String>,
 }
 
@@ -268,14 +268,14 @@ pub struct HandleType {
 pub struct IdentifierType {
     pub common: TypeCommon,
     pub identifier: Option<String>,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct StructType {
     pub common: TypeCommon,
     pub identifier: Option<String>,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -283,14 +283,14 @@ pub struct RequestType {
     pub common: TypeCommon,
     pub subtype: Option<String>,
     pub identifier: Option<String>,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct ExperimentalPointerType {
     pub common: TypeCommon,
     pub element_type: Option<Box<Type>>,
-    pub nullable: Option<bool>,
+    pub nullable: bool,
 }
 
 impl std::ops::Deref for Type {
@@ -383,7 +383,7 @@ impl Type {
         }
     }
 
-    pub fn nullable(&self) -> Option<bool> {
+    pub fn nullable(&self) -> bool {
         match self {
             Type::String(t) => t.nullable,
             Type::Vector(t) => t.nullable,
@@ -392,20 +392,20 @@ impl Type {
             Type::Identifier(t) => t.nullable,
             Type::Struct(t) => t.nullable,
             Type::Request(t) => t.nullable,
-            Type::ExperimentalPointer(_) => None,
-            _ => None,
+            Type::ExperimentalPointer(t) => t.nullable,
+            _ => false,
         }
     }
     pub fn set_nullable(&mut self, val: bool) {
         match self {
-            Type::String(t) => t.nullable = Some(val),
-            Type::Vector(t) => t.nullable = Some(val),
-            Type::Endpoint(t) => t.nullable = Some(val),
-            Type::Handle(t) => t.nullable = Some(val),
-            Type::Identifier(t) => t.nullable = Some(val),
-            Type::Struct(t) => t.nullable = Some(val),
-            Type::Request(t) => t.nullable = Some(val),
-            Type::ExperimentalPointer(t) => t.nullable = Some(val),
+            Type::String(t) => t.nullable = val,
+            Type::Vector(t) => t.nullable = val,
+            Type::Endpoint(t) => t.nullable = val,
+            Type::Handle(t) => t.nullable = val,
+            Type::Identifier(t) => t.nullable = val,
+            Type::Struct(t) => t.nullable = val,
+            Type::Request(t) => t.nullable = val,
+            Type::ExperimentalPointer(t) => t.nullable = val,
             _ => {}
         }
     }

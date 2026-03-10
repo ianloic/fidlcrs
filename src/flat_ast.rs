@@ -454,7 +454,8 @@ impl Type {
                     depth: new_depth,
                     max_handles,
                     max_out_of_line: max_ool,
-                    has_padding: element_type.type_shape.has_padding || !elem_size.is_multiple_of(8),
+                    has_padding: element_type.type_shape.has_padding
+                        || !elem_size.is_multiple_of(8),
                     has_flexible_envelope: element_type.type_shape.has_flexible_envelope,
                 },
             },

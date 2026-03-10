@@ -3469,7 +3469,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.resolve_type(inner.unwrap(), library_name, naming_context)
                 };
 
-
                 let mut max_count = u32::MAX;
                 if let Some(c) = actual_constraints.first() {
                     if let Some(val) = self.eval_constant_usize(c) {
@@ -3488,19 +3487,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-
-
-                Type::vector(Box::new(inner_type.clone()), if max_count == u32::MAX {
+                Type::vector(
+                    Box::new(inner_type.clone()),
+                    if max_count == u32::MAX {
                         None
                     } else {
                         Some(max_count)
-                    }, nullable, if let Some(raw_ast::Constant::Identifier(id)) =
-                            type_ctor.constraints.first()
-                        {
-                            Some(id.identifier.to_string())
-                        } else {
-                            None
-                        })
+                    },
+                    nullable,
+                    if let Some(raw_ast::Constant::Identifier(id)) = type_ctor.constraints.first() {
+                        Some(id.identifier.to_string())
+                    } else {
+                        None
+                    },
+                )
             }
             "array" => {
                 if type_ctor.parameters.len() < 2 {
@@ -3616,7 +3616,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 let inner_type = self.resolve_type(elt_type, library_name, naming_context);
-
 
                 Type::array(Box::new(inner_type.clone()), count)
             }
@@ -3957,7 +3956,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     }
 
-                    return Type::handle(Some(handle_subtype), Some(handle_rights), Some(handle_obj_type), nullable, Some(full_name.clone()));
+                    return Type::handle(
+                        Some(handle_subtype),
+                        Some(handle_rights),
+                        Some(handle_obj_type),
+                        nullable,
+                        Some(full_name.clone()),
+                    );
                 }
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
@@ -4091,7 +4096,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     false
                 };
                 if let Some(shape) = self.shapes.get(&full_name) {
-                    Type::identifier_type(Some(full_name.clone()), nullable, shape.clone(), is_resource)
+                    Type::identifier_type(
+                        Some(full_name.clone()),
+                        nullable,
+                        shape.clone(),
+                        is_resource,
+                    )
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     if !type_ctor.parameters.is_empty() {
                         self.reporter.fail(
@@ -4160,15 +4170,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         (0, 1, false, false)
                     };
-                    Type::identifier_type(Some(full_name.clone()), nullable, TypeShape {
-                                inline_size: inline,
-                                alignment: align,
-                                depth: u32::MAX,
-                                max_handles: 0,
-                                max_out_of_line: u32::MAX,
-                                has_padding: padding,
-                                has_flexible_envelope: flex,
-                            }, is_resource)
+                    Type::identifier_type(
+                        Some(full_name.clone()),
+                        nullable,
+                        TypeShape {
+                            inline_size: inline,
+                            alignment: align,
+                            depth: u32::MAX,
+                            max_handles: 0,
+                            max_out_of_line: u32::MAX,
+                            has_padding: padding,
+                            has_flexible_envelope: flex,
+                        },
+                        is_resource,
+                    )
                 } else {
                     self.reporter.fail(
                         Error::ErrNameNotFound,
@@ -5258,7 +5273,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.insert(full_synth.clone(), shape.clone());
                             shape
                         };
-                        let typ = Type::identifier_type(Some(full_synth.clone()), false, shape, false);
+                        let typ =
+                            Type::identifier_type(Some(full_synth.clone()), false, shape, false);
                         maybe_response_success_type = Some(typ.clone());
                         typ
                     };
@@ -5354,15 +5370,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             ordinal: 3,
                             reserved: None,
                             name: Some("framework_err".to_string()),
-                            type_: Some(Type::identifier_type(Some("fidl/internal/FrameworkErr".to_string()), false, TypeShape {
-                                        inline_size: 4,
-                                        alignment: 4,
-                                        depth: 0,
-                                        max_handles: 0,
-                                        max_out_of_line: 0,
-                                        has_padding: false,
-                                        has_flexible_envelope: false,
-                                    }, false)),
+                            type_: Some(Type::identifier_type(
+                                Some("fidl/internal/FrameworkErr".to_string()),
+                                false,
+                                TypeShape {
+                                    inline_size: 4,
+                                    alignment: 4,
+                                    depth: 0,
+                                    max_handles: 0,
+                                    max_out_of_line: 0,
+                                    has_padding: false,
+                                    has_flexible_envelope: false,
+                                },
+                                false,
+                            )),
                             location: Some(_framework_err_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
@@ -5391,7 +5412,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.compiled_decls.insert(full_synth_union.clone());
                     }
 
-                    Some(Type::identifier_type(Some(full_synth_union.clone()), false, union_shape, false))
+                    Some(Type::identifier_type(
+                        Some(full_synth_union.clone()),
+                        false,
+                        union_shape,
+                        false,
+                    ))
                 } else {
                     None
                 }

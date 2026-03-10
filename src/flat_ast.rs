@@ -477,7 +477,10 @@ impl Type {
         let total_size = elem_size.saturating_mul(element_count);
         let elem_ool = element_type.type_shape.max_out_of_line;
         let max_ool = elem_ool.saturating_mul(element_count);
-        let max_handles = element_type.type_shape.max_handles.saturating_mul(element_count);
+        let max_handles = element_type
+            .type_shape
+            .max_handles
+            .saturating_mul(element_count);
         Type::Array(ArrayType {
             common: TypeCommon {
                 experimental_maybe_from_alias: inner_alias,
@@ -602,11 +605,7 @@ impl Type {
             nullable,
         })
     }
-    pub fn request(
-        subtype: Option<String>,
-        identifier: Option<String>,
-        nullable: bool,
-    ) -> Self {
+    pub fn request(subtype: Option<String>, identifier: Option<String>, nullable: bool) -> Self {
         Type::Request(RequestType {
             common: TypeCommon {
                 experimental_maybe_from_alias: None,
@@ -631,10 +630,7 @@ impl Type {
             nullable,
         })
     }
-    pub fn experimental_pointer(
-        element_type: Option<Box<Type>>,
-        nullable: bool,
-    ) -> Self {
+    pub fn experimental_pointer(element_type: Option<Box<Type>>, nullable: bool) -> Self {
         Type::ExperimentalPointer(ExperimentalPointerType {
             common: TypeCommon {
                 experimental_maybe_from_alias: None,

@@ -2,6 +2,7 @@ use crate::compiler::RawDecl;
 use crate::diagnostics::Error;
 use crate::flat_ast::*;
 use crate::raw_ast;
+use crate::source_span::SourceSpan;
 use crate::versioning_types::Version;
 impl<'node, 'src> super::Compiler<'node, 'src> {
     pub(crate) fn get_location(&self, element: &raw_ast::SourceElement<'_>) -> Location {
@@ -54,8 +55,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 if attr.name.element.start_token.span.data == "transitional" {
                     let span = attr.name.element.span().clone();
                     // Bypass the '_ lifetime issue by recreating the span with 'src
-                    let transmuted_span: crate::source_span::SourceSpan<'src> =
-                        unsafe { std::mem::transmute(span) };
+                    let transmuted_span: SourceSpan<'src> = unsafe { std::mem::transmute(span) };
                     self.reporter.fail(
                         Error::ErrDeprecatedAttribute,
                         transmuted_span,
@@ -283,12 +283,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 RawDecl::Const(_) => "const",
                 RawDecl::Alias(_) => "alias",
                 RawDecl::Type(d) => match &d.layout {
-                    crate::raw_ast::Layout::Struct(_) => "struct",
-                    crate::raw_ast::Layout::Enum(_) => "enum",
-                    crate::raw_ast::Layout::Bits(_) => "bits",
-                    crate::raw_ast::Layout::Union(_) => "union",
-                    crate::raw_ast::Layout::Table(_) => "table",
-                    crate::raw_ast::Layout::TypeConstructor(_) => "type",
+                    raw_ast::Layout::Struct(_) => "struct",
+                    raw_ast::Layout::Enum(_) => "enum",
+                    raw_ast::Layout::Bits(_) => "bits",
+                    raw_ast::Layout::Union(_) => "union",
+                    raw_ast::Layout::Table(_) => "table",
+                    raw_ast::Layout::TypeConstructor(_) => "type",
                 },
             };
             // is_anon is determined by checking if the RawDecl has an optional name set.

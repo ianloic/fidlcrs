@@ -1,3 +1,4 @@
+use crate::attribute_schema::AttributeSchema;
 use crate::compiler::Compiler;
 use crate::experimental_flags::ExperimentalFlags;
 use crate::flat_ast::*;
@@ -15,7 +16,7 @@ pub struct TestLibrary<'a> {
     generated_source_file: VirtualSourceFile,
     pub experimental_flags: Vec<String>,
     pub select_versions: Vec<(String, String)>,
-    pub custom_schemas: std::collections::HashMap<String, crate::attribute_schema::AttributeSchema>,
+    pub custom_schemas: std::collections::HashMap<String, AttributeSchema>,
 }
 
 impl<'a> Default for TestLibrary<'a> {
@@ -56,11 +57,7 @@ impl<'a> TestLibrary<'a> {
         self.source_files.push(source_file);
     }
 
-    pub fn add_attribute_schema(
-        &mut self,
-        name: &str,
-        schema: crate::attribute_schema::AttributeSchema,
-    ) {
+    pub fn add_attribute_schema(&mut self, name: &str, schema: AttributeSchema) {
         self.custom_schemas.insert(name.to_string(), schema);
     }
 

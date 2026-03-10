@@ -2,7 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use crate::compiler::Compiler;
 use crate::diagnostics::Error;
+use crate::experimental_flags::ExperimentalFlag;
+use crate::flat_ast;
+use crate::flat_ast::TypeCommon;
 use crate::raw_ast;
+use crate::source_span::SourceSpan;
+use crate::versioning_types::Version;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Optionality {
@@ -188,7 +193,7 @@ pub fn discoverable_constraint<'node, 'src>(
                     }
                 }
                 if !valid {
-                    let arg_span: crate::source_span::SourceSpan =
+                    let arg_span: SourceSpan =
                         unsafe { std::mem::transmute(arg.value.element().span().clone()) };
                     compiler.reporter.fail(
                         Error::ErrInvalidDiscoverableName,
@@ -214,7 +219,7 @@ pub fn discoverable_constraint<'node, 'src>(
                 valid = false;
             }
             if !valid {
-                let arg_span: crate::source_span::SourceSpan =
+                let arg_span: SourceSpan =
                     unsafe { std::mem::transmute(arg.value.element().span().clone()) };
                 compiler
                     .reporter
@@ -241,7 +246,7 @@ pub fn transport_constraint<'node, 'src>(
             if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
                 let s = val.trim_matches('"');
                 if s != "Banjo" && s != "Channel" && s != "Driver" && s != "Syscall" {
-                    let arg_span: crate::source_span::SourceSpan =
+                    let arg_span: SourceSpan =
                         unsafe { std::mem::transmute(arg.value.element().span().clone()) };
                     compiler.reporter.fail(
                         Error::ErrInvalidTransportType,
@@ -263,11 +268,10 @@ pub fn no_resource_constraint<'node, 'src>(
     compiler: &Compiler<'node, 'src>,
     attr: &raw_ast::Attribute<'src>,
 ) -> bool {
-    let span: crate::source_span::SourceSpan =
-        unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+    let span: SourceSpan = unsafe { std::mem::transmute(attr.name.element.span().clone()) };
     if !compiler
         .experimental_flags
-        .is_enabled(crate::experimental_flags::ExperimentalFlag::NoResourceAttribute)
+        .is_enabled(ExperimentalFlag::NoResourceAttribute)
     {
         compiler
             .reporter
@@ -282,8 +286,7 @@ pub fn available_constraint<'node, 'src>(
     attr: &raw_ast::Attribute<'src>,
 ) -> bool {
     let mut passed = true;
-    let span: crate::source_span::SourceSpan =
-        unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+    let span: SourceSpan = unsafe { std::mem::transmute(attr.name.element.span().clone()) };
 
     let mut added = None;
     let mut deprecated = None;
@@ -299,7 +302,7 @@ pub fn available_constraint<'node, 'src>(
             .as_ref()
             .map(|n| n.element.start_token.span.data)
             .unwrap_or("value");
-        let arg_span: crate::source_span::SourceSpan =
+        let arg_span: SourceSpan =
             unsafe { std::mem::transmute(arg.value.element().span().clone()) };
         let mut version_str = None;
         if arg_name == "added"
@@ -317,38 +320,22 @@ pub fn available_constraint<'node, 'src>(
         match arg_name {
             "added" => {
                 if let Some(val) = version_str {
-                    added = Some((
-                        crate::versioning_types::Version::parse(&val)
-                            .unwrap_or(crate::versioning_types::Version::POS_INF),
-                        arg_span,
-                    ));
+                    added = Some((Version::parse(&val).unwrap_or(Version::POS_INF), arg_span));
                 }
             }
             "deprecated" => {
                 if let Some(val) = version_str {
-                    deprecated = Some((
-                        crate::versioning_types::Version::parse(&val)
-                            .unwrap_or(crate::versioning_types::Version::POS_INF),
-                        arg_span,
-                    ));
+                    deprecated = Some((Version::parse(&val).unwrap_or(Version::POS_INF), arg_span));
                 }
             }
             "removed" => {
                 if let Some(val) = version_str {
-                    removed = Some((
-                        crate::versioning_types::Version::parse(&val)
-                            .unwrap_or(crate::versioning_types::Version::POS_INF),
-                        arg_span,
-                    ));
+                    removed = Some((Version::parse(&val).unwrap_or(Version::POS_INF), arg_span));
                 }
             }
             "replaced" => {
                 if let Some(val) = version_str {
-                    replaced = Some((
-                        crate::versioning_types::Version::parse(&val)
-                            .unwrap_or(crate::versioning_types::Version::POS_INF),
-                        arg_span,
-                    ));
+                    replaced = Some((Version::parse(&val).unwrap_or(Version::POS_INF), arg_span));
                 }
             }
             "renamed" => {
@@ -716,10 +703,7 @@ impl AttributeSchemaMap {
         is_anonymous: bool,
         attributes: &raw_ast::AttributeList<'src>,
     ) {
-        let mut scope: HashMap<
-            String,
-            (crate::source_span::SourceSpan, raw_ast::AttributeProvenance),
-        > = HashMap::new();
+        let mut scope: HashMap<String, (SourceSpan, raw_ast::AttributeProvenance)> = HashMap::new();
 
         for attr in &attributes.attributes {
             let name = if attr.provenance == raw_ast::AttributeProvenance::DocComment {
@@ -741,7 +725,7 @@ impl AttributeSchemaMap {
                     continue;
                 }
 
-                let transmuted_span: crate::source_span::SourceSpan =
+                let transmuted_span: SourceSpan =
                     unsafe { std::mem::transmute(attr.name.element.span().clone()) };
                 if prev.data == name {
                     compiler.reporter.fail(
@@ -765,7 +749,7 @@ impl AttributeSchemaMap {
                 scope.insert(canon, (attr.name.element.span().clone(), attr.provenance));
             }
 
-            let mut arg_scope: HashMap<String, crate::source_span::SourceSpan> = HashMap::new();
+            let mut arg_scope: HashMap<String, SourceSpan> = HashMap::new();
             for arg in &attr.args {
                 let arg_name = arg
                     .name
@@ -773,7 +757,7 @@ impl AttributeSchemaMap {
                     .map(|n| n.element.start_token.span.data)
                     .unwrap_or("value");
                 let arg_canon = canonicalize(arg_name);
-                let arg_span: crate::source_span::SourceSpan =
+                let arg_span: SourceSpan =
                     unsafe { std::mem::transmute(arg.element.span().clone()) };
 
                 let is_compile_early = self
@@ -826,7 +810,7 @@ impl AttributeSchemaMap {
                     for k in self.schemas.keys() {
                         let dist = edit_distance(name, k);
                         if dist > 0 && dist < 2 {
-                            let transmuted_span: crate::source_span::SourceSpan =
+                            let transmuted_span: SourceSpan =
                                 unsafe { std::mem::transmute(attr.name.element.span().clone()) };
                             compiler.reporter.fail(
                                 Error::WarnAttributeTypo,
@@ -840,7 +824,7 @@ impl AttributeSchemaMap {
                     }
                     if attr.args.is_empty() {
                         if attr.name.element.end_token.span.data.ends_with(')') {
-                            let transmuted_span: crate::source_span::SourceSpan =
+                            let transmuted_span: SourceSpan =
                                 unsafe { std::mem::transmute(attr.name.element.span().clone()) };
                             compiler.reporter.fail(
                                 Error::ErrAttributeWithEmptyParens,
@@ -853,7 +837,7 @@ impl AttributeSchemaMap {
                             match compiler.infer_constant_type(&arg.value) {
                                 Some(actual_type) => {
                                     if actual_type != "string" && actual_type != "bool" {
-                                        let arg_span: crate::source_span::SourceSpan = unsafe {
+                                        let arg_span: SourceSpan = unsafe {
                                             std::mem::transmute(arg.value.element().span().clone())
                                         };
                                         let name_str = attr.name.element.start_token.span.data;
@@ -870,7 +854,7 @@ impl AttributeSchemaMap {
                                     }
                                 }
                                 None => {
-                                    let arg_span: crate::source_span::SourceSpan = unsafe {
+                                    let arg_span: SourceSpan = unsafe {
                                         std::mem::transmute(arg.value.element().span().clone())
                                     };
                                     compiler.reporter.fail(
@@ -886,7 +870,7 @@ impl AttributeSchemaMap {
                 }
             };
 
-            let transmuted_span: crate::source_span::SourceSpan =
+            let transmuted_span: SourceSpan =
                 unsafe { std::mem::transmute(attr.name.element.span().clone()) };
 
             if schema.kind == Kind::Deprecated {
@@ -938,7 +922,7 @@ impl AttributeSchemaMap {
                     .or(single_schema_arg_name)
                     .unwrap_or("value");
                 let _arg_canon = canonicalize(arg_name);
-                let arg_span: crate::source_span::SourceSpan =
+                let arg_span: SourceSpan =
                     unsafe { std::mem::transmute(arg.element.span().clone()) };
 
                 if let Some(arg_schema) = schema.arg_schemas.get(arg_name) {
@@ -1024,7 +1008,7 @@ impl AttributeSchemaMap {
                                     _ => actual_type,
                                 };
 
-                                let arg_span: crate::source_span::SourceSpan = unsafe {
+                                let arg_span: SourceSpan = unsafe {
                                     std::mem::transmute(arg.value.element().span().clone())
                                 };
 
@@ -1052,74 +1036,72 @@ impl AttributeSchemaMap {
                             {
                                 let subtype = match &arg_schema.arg_type {
                                     ArgType::Kind(ConstantValueKind::Int8) => {
-                                        crate::flat_ast::PrimitiveSubtype::Int8
+                                        flat_ast::PrimitiveSubtype::Int8
                                     }
                                     ArgType::Kind(ConstantValueKind::Int16) => {
-                                        crate::flat_ast::PrimitiveSubtype::Int16
+                                        flat_ast::PrimitiveSubtype::Int16
                                     }
                                     ArgType::Kind(ConstantValueKind::Int32) => {
-                                        crate::flat_ast::PrimitiveSubtype::Int32
+                                        flat_ast::PrimitiveSubtype::Int32
                                     }
                                     ArgType::Kind(ConstantValueKind::Int64) => {
-                                        crate::flat_ast::PrimitiveSubtype::Int64
+                                        flat_ast::PrimitiveSubtype::Int64
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint8) => {
-                                        crate::flat_ast::PrimitiveSubtype::Uint8
+                                        flat_ast::PrimitiveSubtype::Uint8
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint16) => {
-                                        crate::flat_ast::PrimitiveSubtype::Uint16
+                                        flat_ast::PrimitiveSubtype::Uint16
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint32) => {
-                                        crate::flat_ast::PrimitiveSubtype::Uint32
+                                        flat_ast::PrimitiveSubtype::Uint32
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint64) => {
-                                        crate::flat_ast::PrimitiveSubtype::Uint64
+                                        flat_ast::PrimitiveSubtype::Uint64
                                     }
                                     ArgType::Kind(ConstantValueKind::ZxUsize64) => {
-                                        crate::flat_ast::PrimitiveSubtype::Usize64
+                                        flat_ast::PrimitiveSubtype::Usize64
                                     }
                                     ArgType::Kind(ConstantValueKind::ZxUintptr64) => {
-                                        crate::flat_ast::PrimitiveSubtype::Uintptr64
+                                        flat_ast::PrimitiveSubtype::Uintptr64
                                     }
                                     ArgType::Kind(ConstantValueKind::ZxUchar) => {
-                                        crate::flat_ast::PrimitiveSubtype::Uchar
+                                        flat_ast::PrimitiveSubtype::Uchar
                                     }
                                     ArgType::Kind(ConstantValueKind::Float32) => {
-                                        crate::flat_ast::PrimitiveSubtype::Float32
+                                        flat_ast::PrimitiveSubtype::Float32
                                     }
                                     ArgType::Kind(ConstantValueKind::Float64) => {
-                                        crate::flat_ast::PrimitiveSubtype::Float64
+                                        flat_ast::PrimitiveSubtype::Float64
                                     }
                                     _ => unreachable!(),
                                 };
-                                let p_type = crate::flat_ast::Type::Primitive(
-                                    crate::flat_ast::PrimitiveType {
-                                        subtype,
-                                        common: crate::flat_ast::TypeCommon {
-                                            experimental_maybe_from_alias: None,
-                                            outer_alias: None,
-                                            deprecated: None,
-                                            maybe_attributes: vec![],
-                                            field_shape: None,
-                                            type_shape: crate::flat_ast::TypeShape {
-                                                inline_size: 0,
-                                                alignment: 1,
-                                                depth: 0,
-                                                max_handles: 0,
-                                                max_out_of_line: 0,
-                                                has_padding: false,
-                                                has_flexible_envelope: false,
-                                            },
-                                            maybe_size_constant_name: None,
-                                            resource: false,
+                                let p_type = flat_ast::Type::Primitive(flat_ast::PrimitiveType {
+                                    subtype,
+                                    common: TypeCommon {
+                                        experimental_maybe_from_alias: None,
+                                        outer_alias: None,
+                                        deprecated: None,
+                                        maybe_attributes: vec![],
+                                        field_shape: None,
+                                        type_shape: flat_ast::TypeShape {
+                                            inline_size: 0,
+                                            alignment: 1,
+                                            depth: 0,
+                                            max_handles: 0,
+                                            max_out_of_line: 0,
+                                            has_padding: false,
+                                            has_flexible_envelope: false,
                                         },
+                                        maybe_size_constant_name: None,
+                                        resource: false,
                                     },
-                                );
+                                });
                                 compiler.validate_constant(&arg.value, &p_type);
                             }
                         }
                         None => {
-                            let arg_span: crate::source_span::SourceSpan =
+                            let arg_span: SourceSpan =
                                 unsafe { std::mem::transmute(arg.value.element().span().clone()) };
                             compiler.reporter.fail(
                                 Error::ErrCouldNotResolveAttributeArg,

@@ -1,3 +1,4 @@
+use crate::flat_ast;
 use serde::Serialize;
 use std::collections::BTreeMap;
 #[derive(Serialize, Debug)]
@@ -424,8 +425,8 @@ pub struct Type {
     pub type_shape: TypeShape,
 }
 
-impl From<&crate::flat_ast::ExperimentalMaybeFromAlias> for ExperimentalMaybeFromAlias {
-    fn from(ast: &crate::flat_ast::ExperimentalMaybeFromAlias) -> Self {
+impl From<&flat_ast::ExperimentalMaybeFromAlias> for ExperimentalMaybeFromAlias {
+    fn from(ast: &flat_ast::ExperimentalMaybeFromAlias) -> Self {
         Self {
             name: ast.name.clone(),
             args: ast.args.clone(),
@@ -434,8 +435,8 @@ impl From<&crate::flat_ast::ExperimentalMaybeFromAlias> for ExperimentalMaybeFro
     }
 }
 
-impl From<&crate::flat_ast::PartialTypeCtor> for PartialTypeCtor {
-    fn from(ast: &crate::flat_ast::PartialTypeCtor) -> Self {
+impl From<&flat_ast::PartialTypeCtor> for PartialTypeCtor {
+    fn from(ast: &flat_ast::PartialTypeCtor) -> Self {
         Self {
             name: ast.name.clone(),
             args: ast.args.iter().map(Into::into).collect(),
@@ -445,35 +446,38 @@ impl From<&crate::flat_ast::PartialTypeCtor> for PartialTypeCtor {
     }
 }
 
-impl From<&crate::flat_ast::Type> for Type {
-    fn from(ast: &crate::flat_ast::Type) -> Self {
+impl From<&flat_ast::Type> for Type {
+    fn from(ast: &flat_ast::Type) -> Self {
         Self {
             kind: (&ast.kind()).into(),
             obj_type: match ast {
-                crate::flat_ast::Type::Handle(t) => t.obj_type,
+                flat_ast::Type::Handle(t) => t.obj_type,
                 _ => None,
             },
             subtype: match ast {
-                crate::flat_ast::Type::Primitive(t) => Some(t.subtype.to_string()),
-                crate::flat_ast::Type::Handle(t) => t.subtype.clone(),
-                crate::flat_ast::Type::Request(t) => t.subtype.clone(),
+                flat_ast::Type::Primitive(t) => Some(t.subtype.to_string()),
+                flat_ast::Type::Handle(t) => t.subtype.clone(),
+                flat_ast::Type::Request(t) => t.subtype.clone(),
                 _ => None,
             },
             identifier: ast.identifier(),
-            element_type: if ast.kind() != crate::flat_ast::TypeKind::ExperimentalPointer {
+            element_type: if ast.kind() != flat_ast::TypeKind::ExperimentalPointer {
                 ast.element_type().map(|t| Box::new(t.into()))
             } else {
                 None
             },
-            pointee_type: if ast.kind() == crate::flat_ast::TypeKind::ExperimentalPointer {
+            pointee_type: if ast.kind() == flat_ast::TypeKind::ExperimentalPointer {
                 ast.element_type().map(|t| Box::new(t.into()))
             } else {
                 None
             },
-            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast
+                .experimental_maybe_from_alias
+                .as_ref()
+                .map(Into::into),
             deprecated: ast.deprecated,
             role: match ast {
-                crate::flat_ast::Type::Endpoint(t) => t.role.clone(),
+                flat_ast::Type::Endpoint(t) => t.role.clone(),
                 _ => None,
             },
             protocol: ast.protocol(),
@@ -482,7 +486,7 @@ impl From<&crate::flat_ast::Type> for Type {
             rights: ast.rights(),
             nullable: ast.nullable(),
             protocol_transport: match ast {
-                crate::flat_ast::Type::Endpoint(t) => t.protocol_transport.clone(),
+                flat_ast::Type::Endpoint(t) => t.protocol_transport.clone(),
                 _ => None,
             },
             resource_identifier: ast.resource_identifier(),
@@ -493,8 +497,8 @@ impl From<&crate::flat_ast::Type> for Type {
     }
 }
 
-impl From<&crate::flat_ast::JsonRoot> for JsonRoot {
-    fn from(ast: &crate::flat_ast::JsonRoot) -> Self {
+impl From<&flat_ast::JsonRoot> for JsonRoot {
+    fn from(ast: &flat_ast::JsonRoot) -> Self {
         Self {
             name: ast.name.clone(),
             platform: ast.platform.clone(),
@@ -505,14 +509,25 @@ impl From<&crate::flat_ast::JsonRoot> for JsonRoot {
             bits_declarations: ast.bits_declarations.iter().map(Into::into).collect(),
             const_declarations: ast.const_declarations.iter().map(Into::into).collect(),
             enum_declarations: ast.enum_declarations.iter().map(Into::into).collect(),
-            experimental_resource_declarations: ast.experimental_resource_declarations.iter().map(Into::into).collect(),
+            experimental_resource_declarations: ast
+                .experimental_resource_declarations
+                .iter()
+                .map(Into::into)
+                .collect(),
             protocol_declarations: ast.protocol_declarations.iter().map(Into::into).collect(),
             service_declarations: ast.service_declarations.iter().map(Into::into).collect(),
             struct_declarations: ast.struct_declarations.iter().map(Into::into).collect(),
-            external_struct_declarations: ast.external_struct_declarations.iter().map(Into::into).collect(),
+            external_struct_declarations: ast
+                .external_struct_declarations
+                .iter()
+                .map(Into::into)
+                .collect(),
             table_declarations: ast.table_declarations.iter().map(Into::into).collect(),
             union_declarations: ast.union_declarations.iter().map(Into::into).collect(),
-            overlay_declarations: ast.overlay_declarations.as_ref().map(|v| v.iter().map(Into::into).collect()),
+            overlay_declarations: ast
+                .overlay_declarations
+                .as_ref()
+                .map(|v| v.iter().map(Into::into).collect()),
             alias_declarations: ast.alias_declarations.iter().map(Into::into).collect(),
             new_type_declarations: ast.new_type_declarations.iter().map(Into::into).collect(),
             declaration_order: ast.declaration_order.clone(),
@@ -521,8 +536,8 @@ impl From<&crate::flat_ast::JsonRoot> for JsonRoot {
     }
 }
 
-impl From<&crate::flat_ast::LibraryDependency> for LibraryDependency {
-    fn from(ast: &crate::flat_ast::LibraryDependency) -> Self {
+impl From<&flat_ast::LibraryDependency> for LibraryDependency {
+    fn from(ast: &flat_ast::LibraryDependency) -> Self {
         Self {
             name: ast.name.clone(),
             declarations: ast.declarations.clone(),
@@ -530,8 +545,8 @@ impl From<&crate::flat_ast::LibraryDependency> for LibraryDependency {
     }
 }
 
-impl From<&crate::flat_ast::Location> for Location {
-    fn from(ast: &crate::flat_ast::Location) -> Self {
+impl From<&flat_ast::Location> for Location {
+    fn from(ast: &flat_ast::Location) -> Self {
         Self {
             filename: ast.filename.clone(),
             line: ast.line.clone(),
@@ -541,8 +556,8 @@ impl From<&crate::flat_ast::Location> for Location {
     }
 }
 
-impl From<&crate::flat_ast::TypeShape> for TypeShape {
-    fn from(ast: &crate::flat_ast::TypeShape) -> Self {
+impl From<&flat_ast::TypeShape> for TypeShape {
+    fn from(ast: &flat_ast::TypeShape) -> Self {
         Self {
             inline_size: ast.inline_size.clone(),
             alignment: ast.alignment.clone(),
@@ -555,8 +570,8 @@ impl From<&crate::flat_ast::TypeShape> for TypeShape {
     }
 }
 
-impl From<&crate::flat_ast::FieldShape> for FieldShape {
-    fn from(ast: &crate::flat_ast::FieldShape) -> Self {
+impl From<&flat_ast::FieldShape> for FieldShape {
+    fn from(ast: &flat_ast::FieldShape) -> Self {
         Self {
             offset: ast.offset.clone(),
             padding: ast.padding.clone(),
@@ -564,30 +579,33 @@ impl From<&crate::flat_ast::FieldShape> for FieldShape {
     }
 }
 
-impl From<&crate::flat_ast::TypeKind> for TypeKind {
-    fn from(ast: &crate::flat_ast::TypeKind) -> Self {
+impl From<&flat_ast::TypeKind> for TypeKind {
+    fn from(ast: &flat_ast::TypeKind) -> Self {
         match ast {
-            crate::flat_ast::TypeKind::Primitive => Self::Primitive,
-            crate::flat_ast::TypeKind::String => Self::String,
-            crate::flat_ast::TypeKind::StringArray => Self::StringArray,
-            crate::flat_ast::TypeKind::Unknown => Self::Unknown,
-            crate::flat_ast::TypeKind::Vector => Self::Vector,
-            crate::flat_ast::TypeKind::Array => Self::Array,
-            crate::flat_ast::TypeKind::Endpoint => Self::Endpoint,
-            crate::flat_ast::TypeKind::Handle => Self::Handle,
-            crate::flat_ast::TypeKind::Identifier => Self::Identifier,
-            crate::flat_ast::TypeKind::Struct => Self::Struct,
-            crate::flat_ast::TypeKind::Request => Self::Request,
-            crate::flat_ast::TypeKind::ExperimentalPointer => Self::ExperimentalPointer,
+            flat_ast::TypeKind::Primitive => Self::Primitive,
+            flat_ast::TypeKind::String => Self::String,
+            flat_ast::TypeKind::StringArray => Self::StringArray,
+            flat_ast::TypeKind::Unknown => Self::Unknown,
+            flat_ast::TypeKind::Vector => Self::Vector,
+            flat_ast::TypeKind::Array => Self::Array,
+            flat_ast::TypeKind::Endpoint => Self::Endpoint,
+            flat_ast::TypeKind::Handle => Self::Handle,
+            flat_ast::TypeKind::Identifier => Self::Identifier,
+            flat_ast::TypeKind::Struct => Self::Struct,
+            flat_ast::TypeKind::Request => Self::Request,
+            flat_ast::TypeKind::ExperimentalPointer => Self::ExperimentalPointer,
         }
     }
 }
 
-impl From<&crate::flat_ast::StructMember> for StructMember {
-    fn from(ast: &crate::flat_ast::StructMember) -> Self {
+impl From<&flat_ast::StructMember> for StructMember {
+    fn from(ast: &flat_ast::StructMember) -> Self {
         Self {
             type_: (&ast.type_).into(),
-            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast
+                .experimental_maybe_from_alias
+                .as_ref()
+                .map(Into::into),
             name: ast.name.clone(),
             location: (&ast.location).into(),
             deprecated: ast.deprecated.clone(),
@@ -598,8 +616,8 @@ impl From<&crate::flat_ast::StructMember> for StructMember {
     }
 }
 
-impl From<&crate::flat_ast::StructDeclaration> for StructDeclaration {
-    fn from(ast: &crate::flat_ast::StructDeclaration) -> Self {
+impl From<&flat_ast::StructDeclaration> for StructDeclaration {
+    fn from(ast: &flat_ast::StructDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
@@ -614,15 +632,14 @@ impl From<&crate::flat_ast::StructDeclaration> for StructDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::BitField> for BitField {
-    fn from(ast: &crate::flat_ast::BitField) -> Self {
-        Self {
-        }
+impl From<&flat_ast::BitField> for BitField {
+    fn from(ast: &flat_ast::BitField) -> Self {
+        Self {}
     }
 }
 
-impl From<&crate::flat_ast::BitsDeclaration> for BitsDeclaration {
-    fn from(ast: &crate::flat_ast::BitsDeclaration) -> Self {
+impl From<&flat_ast::BitsDeclaration> for BitsDeclaration {
+    fn from(ast: &flat_ast::BitsDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
@@ -637,8 +654,8 @@ impl From<&crate::flat_ast::BitsDeclaration> for BitsDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::BitsMember> for BitsMember {
-    fn from(ast: &crate::flat_ast::BitsMember) -> Self {
+impl From<&flat_ast::BitsMember> for BitsMember {
+    fn from(ast: &flat_ast::BitsMember) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -649,8 +666,8 @@ impl From<&crate::flat_ast::BitsMember> for BitsMember {
     }
 }
 
-impl From<&crate::flat_ast::ConstDeclaration> for ConstDeclaration {
-    fn from(ast: &crate::flat_ast::ConstDeclaration) -> Self {
+impl From<&flat_ast::ConstDeclaration> for ConstDeclaration {
+    fn from(ast: &flat_ast::ConstDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -662,8 +679,8 @@ impl From<&crate::flat_ast::ConstDeclaration> for ConstDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::EnumDeclaration> for EnumDeclaration {
-    fn from(ast: &crate::flat_ast::EnumDeclaration) -> Self {
+impl From<&flat_ast::EnumDeclaration> for EnumDeclaration {
+    fn from(ast: &flat_ast::EnumDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
@@ -678,8 +695,8 @@ impl From<&crate::flat_ast::EnumDeclaration> for EnumDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::EnumMember> for EnumMember {
-    fn from(ast: &crate::flat_ast::EnumMember) -> Self {
+impl From<&flat_ast::EnumMember> for EnumMember {
+    fn from(ast: &flat_ast::EnumMember) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -690,30 +707,32 @@ impl From<&crate::flat_ast::EnumMember> for EnumMember {
     }
 }
 
-impl From<&crate::flat_ast::Constant> for Constant {
-    fn from(ast: &crate::flat_ast::Constant) -> Self {
+impl From<&flat_ast::Constant> for Constant {
+    fn from(ast: &flat_ast::Constant) -> Self {
         Self {
             kind: ast.kind.clone(),
             value: serde_json::value::RawValue::from_string(ast.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string())
+                .unwrap(),
             identifier: ast.identifier.clone(),
             literal: ast.literal.as_ref().map(Into::into),
         }
     }
 }
 
-impl From<&crate::flat_ast::Literal> for Literal {
-    fn from(ast: &crate::flat_ast::Literal) -> Self {
+impl From<&flat_ast::Literal> for Literal {
+    fn from(ast: &flat_ast::Literal) -> Self {
         Self {
             kind: ast.kind.clone(),
             value: serde_json::value::RawValue::from_string(ast.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string())
+                .unwrap(),
         }
     }
 }
 
-impl From<&crate::flat_ast::AttributeArg> for AttributeArg {
-    fn from(ast: &crate::flat_ast::AttributeArg) -> Self {
+impl From<&flat_ast::AttributeArg> for AttributeArg {
+    fn from(ast: &flat_ast::AttributeArg) -> Self {
         Self {
             name: ast.name.clone(),
             type_: ast.type_.clone(),
@@ -723,8 +742,8 @@ impl From<&crate::flat_ast::AttributeArg> for AttributeArg {
     }
 }
 
-impl From<&crate::flat_ast::Attribute> for Attribute {
-    fn from(ast: &crate::flat_ast::Attribute) -> Self {
+impl From<&flat_ast::Attribute> for Attribute {
+    fn from(ast: &flat_ast::Attribute) -> Self {
         Self {
             name: ast.name.clone(),
             arguments: ast.arguments.iter().map(Into::into).collect(),
@@ -733,8 +752,8 @@ impl From<&crate::flat_ast::Attribute> for Attribute {
     }
 }
 
-impl From<&crate::flat_ast::ResourceProperty> for ResourceProperty {
-    fn from(ast: &crate::flat_ast::ResourceProperty) -> Self {
+impl From<&flat_ast::ResourceProperty> for ResourceProperty {
+    fn from(ast: &flat_ast::ResourceProperty) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -744,8 +763,8 @@ impl From<&crate::flat_ast::ResourceProperty> for ResourceProperty {
     }
 }
 
-impl From<&crate::flat_ast::ExperimentalResourceDeclaration> for ExperimentalResourceDeclaration {
-    fn from(ast: &crate::flat_ast::ExperimentalResourceDeclaration) -> Self {
+impl From<&flat_ast::ExperimentalResourceDeclaration> for ExperimentalResourceDeclaration {
+    fn from(ast: &flat_ast::ExperimentalResourceDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -757,8 +776,8 @@ impl From<&crate::flat_ast::ExperimentalResourceDeclaration> for ExperimentalRes
     }
 }
 
-impl From<&crate::flat_ast::ProtocolDeclaration> for ProtocolDeclaration {
-    fn from(ast: &crate::flat_ast::ProtocolDeclaration) -> Self {
+impl From<&flat_ast::ProtocolDeclaration> for ProtocolDeclaration {
+    fn from(ast: &flat_ast::ProtocolDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -772,8 +791,8 @@ impl From<&crate::flat_ast::ProtocolDeclaration> for ProtocolDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::ProtocolCompose> for ProtocolCompose {
-    fn from(ast: &crate::flat_ast::ProtocolCompose) -> Self {
+impl From<&flat_ast::ProtocolCompose> for ProtocolCompose {
+    fn from(ast: &flat_ast::ProtocolCompose) -> Self {
         Self {
             name: ast.name.clone(),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
@@ -783,8 +802,8 @@ impl From<&crate::flat_ast::ProtocolCompose> for ProtocolCompose {
     }
 }
 
-impl From<&crate::flat_ast::ProtocolMethod> for ProtocolMethod {
-    fn from(ast: &crate::flat_ast::ProtocolMethod) -> Self {
+impl From<&flat_ast::ProtocolMethod> for ProtocolMethod {
+    fn from(ast: &flat_ast::ProtocolMethod) -> Self {
         Self {
             kind: ast.kind.clone(),
             ordinal: ast.ordinal.clone(),
@@ -805,8 +824,8 @@ impl From<&crate::flat_ast::ProtocolMethod> for ProtocolMethod {
     }
 }
 
-impl From<&crate::flat_ast::ServiceDeclaration> for ServiceDeclaration {
-    fn from(ast: &crate::flat_ast::ServiceDeclaration) -> Self {
+impl From<&flat_ast::ServiceDeclaration> for ServiceDeclaration {
+    fn from(ast: &flat_ast::ServiceDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -817,8 +836,8 @@ impl From<&crate::flat_ast::ServiceDeclaration> for ServiceDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::ServiceMember> for ServiceMember {
-    fn from(ast: &crate::flat_ast::ServiceMember) -> Self {
+impl From<&flat_ast::ServiceMember> for ServiceMember {
+    fn from(ast: &flat_ast::ServiceMember) -> Self {
         Self {
             type_: (&ast.type_).into(),
             name: ast.name.clone(),
@@ -829,8 +848,8 @@ impl From<&crate::flat_ast::ServiceMember> for ServiceMember {
     }
 }
 
-impl From<&crate::flat_ast::TableDeclaration> for TableDeclaration {
-    fn from(ast: &crate::flat_ast::TableDeclaration) -> Self {
+impl From<&flat_ast::TableDeclaration> for TableDeclaration {
+    fn from(ast: &flat_ast::TableDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
@@ -845,13 +864,16 @@ impl From<&crate::flat_ast::TableDeclaration> for TableDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::TableMember> for TableMember {
-    fn from(ast: &crate::flat_ast::TableMember) -> Self {
+impl From<&flat_ast::TableMember> for TableMember {
+    fn from(ast: &flat_ast::TableMember) -> Self {
         Self {
             ordinal: ast.ordinal.clone(),
             reserved: ast.reserved.clone(),
             type_: ast.type_.as_ref().map(Into::into),
-            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast
+                .experimental_maybe_from_alias
+                .as_ref()
+                .map(Into::into),
             name: ast.name.clone(),
             location: ast.location.as_ref().map(Into::into),
             deprecated: ast.deprecated.clone(),
@@ -860,8 +882,8 @@ impl From<&crate::flat_ast::TableMember> for TableMember {
     }
 }
 
-impl From<&crate::flat_ast::UnionDeclaration> for UnionDeclaration {
-    fn from(ast: &crate::flat_ast::UnionDeclaration) -> Self {
+impl From<&flat_ast::UnionDeclaration> for UnionDeclaration {
+    fn from(ast: &flat_ast::UnionDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
@@ -877,14 +899,17 @@ impl From<&crate::flat_ast::UnionDeclaration> for UnionDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::UnionMember> for UnionMember {
-    fn from(ast: &crate::flat_ast::UnionMember) -> Self {
+impl From<&flat_ast::UnionMember> for UnionMember {
+    fn from(ast: &flat_ast::UnionMember) -> Self {
         Self {
             ordinal: ast.ordinal.clone(),
             reserved: ast.reserved.clone(),
             name: ast.name.clone(),
             type_: ast.type_.as_ref().map(Into::into),
-            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast
+                .experimental_maybe_from_alias
+                .as_ref()
+                .map(Into::into),
             location: ast.location.as_ref().map(Into::into),
             deprecated: ast.deprecated.clone(),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
@@ -892,8 +917,8 @@ impl From<&crate::flat_ast::UnionMember> for UnionMember {
     }
 }
 
-impl From<&crate::flat_ast::AliasDeclaration> for AliasDeclaration {
-    fn from(ast: &crate::flat_ast::AliasDeclaration) -> Self {
+impl From<&flat_ast::AliasDeclaration> for AliasDeclaration {
+    fn from(ast: &flat_ast::AliasDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
@@ -905,15 +930,18 @@ impl From<&crate::flat_ast::AliasDeclaration> for AliasDeclaration {
     }
 }
 
-impl From<&crate::flat_ast::NewTypeDeclaration> for NewTypeDeclaration {
-    fn from(ast: &crate::flat_ast::NewTypeDeclaration) -> Self {
+impl From<&flat_ast::NewTypeDeclaration> for NewTypeDeclaration {
+    fn from(ast: &flat_ast::NewTypeDeclaration) -> Self {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
             deprecated: ast.deprecated.clone(),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
-            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast
+                .experimental_maybe_from_alias
+                .as_ref()
+                .map(Into::into),
         }
     }
 }

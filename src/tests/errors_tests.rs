@@ -1,3 +1,4 @@
+use crate::flat_ast;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
@@ -30,10 +31,7 @@ protocol Example {
         .maybe_response_err_type
         .as_ref()
         .expect("error type not found");
-    assert!(matches!(
-        err_type,
-        crate::flat_ast::Type::Primitive(_)
-    ));
+    assert!(matches!(err_type, flat_ast::Type::Primitive(_)));
 }
 
 #[test]
@@ -271,10 +269,7 @@ protocol Example {
         .maybe_response_err_type
         .as_ref()
         .expect("error type not found");
-    assert!(matches!(
-        err_type,
-        crate::flat_ast::Type::Identifier(_)
-    ));
+    assert!(matches!(err_type, flat_ast::Type::Identifier(_)));
 }
 
 #[test]

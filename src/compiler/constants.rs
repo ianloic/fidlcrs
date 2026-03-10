@@ -3,6 +3,7 @@ use crate::diagnostics::Error;
 use crate::flat_ast::*;
 use crate::name::NamingContext;
 use crate::raw_ast;
+use crate::raw_ast::LayoutParameter;
 use crate::raw_ast::{Layout, LiteralKind};
 impl<'node, 'src> super::Compiler<'node, 'src> {
     pub fn eval_constant_value_as_string(
@@ -74,12 +75,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value_as_string(&m.value)),
                                 RawDecl::Type(t) => match &t.layout {
-                                    crate::raw_ast::Layout::Bits(b) => b
+                                    raw_ast::Layout::Bits(b) => b
                                         .members
                                         .iter()
                                         .find(|m| m.name.data() == member_name)
                                         .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                                    crate::raw_ast::Layout::Enum(e) => e
+                                    raw_ast::Layout::Enum(e) => e
                                         .members
                                         .iter()
                                         .find(|m| m.name.data() == member_name)
@@ -123,16 +124,15 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             return match decl {
                                 RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
                                 RawDecl::Type(t) => match &t.layout {
-                                    crate::raw_ast::Layout::Enum(_)
-                                    | crate::raw_ast::Layout::Bits(_) => Some("numeric"),
+                                    raw_ast::Layout::Enum(_) | raw_ast::Layout::Bits(_) => {
+                                        Some("numeric")
+                                    }
                                     _ => None,
                                 },
                                 _ => None,
                             };
                         } else if let RawDecl::Const(c) = decl {
-                            if let crate::raw_ast::LayoutParameter::Identifier(id) =
-                                &c.type_ctor.layout
-                            {
+                            if let LayoutParameter::Identifier(id) = &c.type_ctor.layout {
                                 let mut type_name = id.to_string();
                                 if type_name.starts_with("fidl.") {
                                     type_name = type_name[5..].to_string();
@@ -545,7 +545,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         if let Some(decl) = decl_info {
                             match decl {
                                 RawDecl::Const(c) => match &c.type_ctor.layout {
-                                    crate::raw_ast::LayoutParameter::Identifier(id) => {
+                                    LayoutParameter::Identifier(id) => {
                                         c_layout_str =
                                             id.components.last().map(|c| c.element.span().data);
                                     }
@@ -843,13 +843,13 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                 .any(|m| m.name.data() == member_name_str);
                                         }
                                         RawDecl::Type(t) => match &t.layout {
-                                            crate::raw_ast::Layout::Bits(b) => {
+                                            raw_ast::Layout::Bits(b) => {
                                                 found_member = b
                                                     .members
                                                     .iter()
                                                     .any(|m| m.name.data() == member_name_str)
                                             }
-                                            crate::raw_ast::Layout::Enum(e) => {
+                                            raw_ast::Layout::Enum(e) => {
                                                 found_member = e
                                                     .members
                                                     .iter()

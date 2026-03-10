@@ -1,6 +1,9 @@
 use crate::compiler::{Compiler, RawDecl};
+use crate::diagnostics::Error;
 use crate::name::NamingContext;
 use crate::raw_ast;
+use crate::raw_ast::AttributeList;
+use crate::source_span::SourceSpan;
 use crate::step::Step;
 
 pub struct ConsumeStep<'node, 'src> {
@@ -33,15 +36,12 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             let mut file_import_paths = std::collections::HashSet::new();
             for using_decl in &file.using_decls {
                 let span = unsafe {
-                    std::mem::transmute::<
-                        crate::source_span::SourceSpan,
-                        crate::source_span::SourceSpan,
-                    >(using_decl.element.span().clone())
+                    std::mem::transmute::<SourceSpan, SourceSpan>(using_decl.element.span().clone())
                 };
 
                 if using_decl.attributes.is_some() {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrAttributesNotAllowedOnLibraryImport,
+                        Error::ErrAttributesNotAllowedOnLibraryImport,
                         span.clone(),
                         &[],
                     );
@@ -55,11 +55,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     .unwrap_or_else(|| path.clone());
 
                 if !dependent_library_names.contains(&path) && path != main_library_name {
-                    compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrUnknownLibrary,
-                        span.clone(),
-                        &[&path],
-                    );
+                    compiler
+                        .reporter
+                        .fail(Error::ErrUnknownLibrary, span.clone(), &[&path]);
                     continue;
                 }
 
@@ -68,40 +66,34 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         .maybe_alias
                         .as_ref()
                         .map(|a| unsafe {
-                            std::mem::transmute::<
-                                crate::source_span::SourceSpan,
-                                crate::source_span::SourceSpan,
-                            >(a.element.span().clone())
+                            std::mem::transmute::<SourceSpan, SourceSpan>(a.element.span().clone())
                         })
                         .unwrap_or_else(|| unsafe {
-                            std::mem::transmute::<
-                                crate::source_span::SourceSpan,
-                                crate::source_span::SourceSpan,
-                            >(
-                                using_decl.using_path.element.span().clone()
+                            std::mem::transmute::<SourceSpan, SourceSpan>(
+                                using_decl.using_path.element.span().clone(),
                             )
                         });
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport,
+                        Error::ErrDeclNameConflictsWithLibraryImport,
                         err_span,
                         &[&local_name],
                     );
                 } else if file_import_paths.contains(&path) {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrDuplicateLibraryImport,
+                        Error::ErrDuplicateLibraryImport,
                         span.clone(),
                         &[&path],
                     );
                 } else if file_imports.contains(&local_name) {
                     if using_decl.maybe_alias.is_some() {
                         compiler.reporter.fail(
-                            crate::diagnostics::Error::ErrConflictingLibraryImportAlias,
+                            Error::ErrConflictingLibraryImportAlias,
                             span.clone(),
                             &[&path, &local_name],
                         );
                     } else {
                         compiler.reporter.fail(
-                            crate::diagnostics::Error::ErrConflictingLibraryImport,
+                            Error::ErrConflictingLibraryImport,
                             span.clone(),
                             &[&path],
                         );
@@ -129,7 +121,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
         }
         if let Some(mut decl) = main_library_decl {
             if !all_library_attributes.is_empty() {
-                decl.attributes = Some(Box::new(crate::raw_ast::AttributeList {
+                decl.attributes = Some(Box::new(AttributeList {
                     attributes: all_library_attributes,
                     element: decl
                         .attributes
@@ -299,7 +291,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
         for (span, name) in to_report {
             let span_safe = unsafe { std::mem::transmute(span) };
             compiler.reporter.fail(
-                crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport,
+                Error::ErrDeclNameConflictsWithLibraryImport,
                 span_safe,
                 &[&name],
             );

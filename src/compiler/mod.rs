@@ -1,9 +1,12 @@
+use crate::attribute_schema::AttributeSchemaMap;
 use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
 use crate::flat_ast::*;
+use crate::json_generator;
 use crate::raw_ast;
 use crate::reporter::Reporter;
 use crate::resolve_step::ResolveStep;
+use crate::source_span::SourceSpan;
 use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
@@ -169,7 +172,7 @@ pub struct Compiler<'node, 'src> {
     pub skip_eager_compile: bool,
     pub anonymous_structs: HashSet<String>,
     pub experimental_flags: ExperimentalFlags,
-    pub attribute_schemas: crate::attribute_schema::AttributeSchemaMap,
+    pub attribute_schemas: AttributeSchemaMap,
     pub library_imports: HashMap<String, raw_ast::UsingDeclaration<'src>>,
     pub used_imports: std::cell::RefCell<HashSet<String>>,
     pub allow_unused_imports: bool,
@@ -213,7 +216,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
             experimental_flags: ExperimentalFlags::new(),
-            attribute_schemas: crate::attribute_schema::AttributeSchemaMap::new(),
+            attribute_schemas: AttributeSchemaMap::new(),
             library_imports: HashMap::new(),
             used_imports: std::cell::RefCell::new(HashSet::new()),
             allow_unused_imports: false,
@@ -310,7 +313,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .reporter
             .diagnostics()
             .iter()
-            .any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Error);
+            .any(|d| d.def.kind() == ErrorKind::Error);
         if has_errors {
             return;
         }
@@ -321,7 +324,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 println!("REPORTING UNUSED: {}", local_name);
                 let span = unsafe { std::mem::transmute(decl.using_path.element.span()) };
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrUnusedImport,
+                    Error::ErrUnusedImport,
                     span,
                     &[&self.library_name, &decl.using_path.to_string()],
                 );
@@ -1595,7 +1598,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some(shape) = self.shapes.get(name) {
                     obj.insert(
                         "type_shape_v2".to_string(),
-                        serde_json::to_value(crate::json_generator::TypeShape::from(shape)).unwrap(),
+                        serde_json::to_value(json_generator::TypeShape::from(shape)).unwrap(),
                     );
                 }
             }
@@ -1767,7 +1770,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut maybe_unknown_value = None;
         let mut member_names = std::collections::HashSet::new();
         let mut member_values = std::collections::HashMap::new();
-        let mut unknown_member_span: Option<crate::source_span::SourceSpan<'src>> = None;
+        let mut unknown_member_span: Option<SourceSpan<'src>> = None;
         let mut max_val_spans = vec![];
 
         for member in &decl.members {
@@ -1787,8 +1790,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
                 if eval_val == max_val_u64 {
                     let span = member.name.element.span().clone();
-                    let transmuted_span: crate::source_span::SourceSpan<'src> =
-                        unsafe { std::mem::transmute(span) };
+                    let transmuted_span: SourceSpan<'src> = unsafe { std::mem::transmute(span) };
                     max_val_spans.push(transmuted_span);
                 }
 
@@ -1805,8 +1807,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if attributes.iter().any(|a| a.name == "unknown") {
                 if let Some(ref _prev_span) = unknown_member_span {
                     let dup_span = member.name.element.span().clone();
-                    let transmuted_dup: crate::source_span::SourceSpan<'src> =
-                        unsafe { std::mem::transmute(dup_span) };
+                    let transmuted_dup: SourceSpan<'src> = unsafe { std::mem::transmute(dup_span) };
                     self.reporter.fail(
                         Error::ErrUnknownAttributeOnMultipleEnumMembers,
                         transmuted_dup,
@@ -1814,7 +1815,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 } else {
                     let first_span = member.name.element.span().clone();
-                    let transmuted_first: crate::source_span::SourceSpan<'src> =
+                    let transmuted_first: SourceSpan<'src> =
                         unsafe { std::mem::transmute(first_span) };
                     unknown_member_span = Some(transmuted_first.clone());
 
@@ -3120,13 +3121,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if id.components.len() > 2 {
                                 let fallback_lib = parts[..parts.len() - 1].join(".");
                                 self.reporter.fail(
-                                    crate::diagnostics::Error::ErrUnknownDependentLibrary,
+                                    Error::ErrUnknownDependentLibrary,
                                     span_safe,
                                     &[&local_lib_name, &fallback_lib],
                                 );
                             } else {
                                 self.reporter.fail(
-                                    crate::diagnostics::Error::ErrNameNotFound,
+                                    Error::ErrNameNotFound,
                                     span_safe,
                                     &[&local_lib_name, &self.library_name],
                                 );
@@ -5723,7 +5724,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         }
 
-                        if !is_valid_error_type && !self.experimental_flags.is_enabled(crate::experimental_flags::ExperimentalFlag::AllowArbitraryErrorTypes) {
+                        if !is_valid_error_type
+                            && !self
+                                .experimental_flags
+                                .is_enabled(ExperimentalFlag::AllowArbitraryErrorTypes)
+                        {
                             self.reporter
                                 .fail(Error::ErrInvalidErrorType, tc.element.span(), &[]);
                         }

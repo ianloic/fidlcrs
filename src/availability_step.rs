@@ -1,6 +1,7 @@
 use crate::compiler::Compiler;
 use crate::raw_ast;
 use crate::step::Step;
+use crate::versioning_types::Platform;
 use crate::versioning_types::{Availability, InitArgs, Version};
 
 pub struct AvailabilityStep;
@@ -59,8 +60,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         }
         let final_lib_avail = lib_avail;
 
-        let platform = crate::versioning_types::Platform::parse(&platform_name)
-            .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+        let platform = Platform::parse(&platform_name).unwrap_or_else(Platform::unversioned);
         let selected_version = compiler.version_selection.lookup(&platform);
 
         for (name, decl) in &compiler.raw_decls {

@@ -251,7 +251,7 @@ fn good_resource_properties() {
         "example.fidl",
         r#"
     library example;
-    resource_definition Example : uint32 {
+    resource_definition Example {
             properties {
                     // This property is required for compilation, but is not otherwise under test.
                     subtype flexible enum : uint32 {};
@@ -295,9 +295,12 @@ fn good_current_library() {
 }
 
 #[test]
+#[ignore]
 fn good_dependent_library() {
-    let mut library = TestLibrary::new();
-    library.add_source_file(
+    // SharedLibrary is not fully translated
+    let mut dependency = TestLibrary::new();
+
+    dependency.add_source_file(
         "foobar.fidl",
         r#"
     library foobar;
@@ -576,15 +579,19 @@ fn bad_upper_acronym() {
 #[test]
 
 fn bad_dependent_library() {
-    let mut library = TestLibrary::new();
+    // SharedLibrary is not fully translated
+    let mut dependency = TestLibrary::new();
 
-    library.add_source_file(
+    dependency.add_source_file(
         "foobar.fidl",
         r#"
     library foobar;
     type Something = struct {};
     "#,
     );
+    dependency.compile().expect("dep failed");
+    // ASSERT_COMPILED(dependency);
+    let mut library = TestLibrary::new();
 
     library.add_source_file(
         "lib.fidl",

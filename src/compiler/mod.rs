@@ -320,8 +320,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let used = self.used_imports.borrow();
         for (local_name, decl) in &self.library_imports {
             if !used.contains(local_name) {
-                // temporary debug
-                println!("REPORTING UNUSED: {}", local_name);
                 let span = unsafe {
                     std::mem::transmute::<
                         crate::source_span::SourceSpan<'_>,
@@ -3080,8 +3078,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let mut local_lib_name = parts.join(".");
                     if library_name == self.library_name {
                         if let Some(import) = self.library_imports.get(&local_lib_name) {
-                            // temporary debug
-                            println!("MARKING {} AS USED", local_lib_name);
                             self.used_imports
                                 .borrow_mut()
                                 .insert(local_lib_name.clone());

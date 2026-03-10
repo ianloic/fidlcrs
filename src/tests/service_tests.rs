@@ -1,11 +1,4 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 fn good_empty_service() {
@@ -16,8 +9,7 @@ fn good_empty_service() {
 library example;
 
 service SomeService {};
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -43,8 +35,7 @@ service SomeService {
     some_protocol_first_second client_end:SomeProtocol1;
     some_protocol_second client_end:SomeProtocol2;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -71,8 +62,7 @@ service MyService {
     my_service_member client_end:MyProtocol;
     my_service_member client_end:MyProtocol;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -81,10 +71,7 @@ service MyService {
 #[ignore]
 fn bad_no_nullable_protocol_members() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0088.test.fidl".to_string(),
-        get_file_content("bad/fi-0088.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0088.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -102,8 +89,7 @@ type NotAProtocol = struct {};
 service SomeService {
     not_a_protocol NotAProtocol;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -112,10 +98,7 @@ service SomeService {
 #[ignore]
 fn bad_no_server_ends() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0112.test.fidl".to_string(),
-        get_file_content("bad/fi-0112.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0112.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -133,8 +116,7 @@ service SomeService {};
 type CannotUseService = struct {
     svc SomeService;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -143,9 +125,6 @@ type CannotUseService = struct {
 #[ignore]
 fn bad_cannot_use_more_than_one_protocol_transport_kind() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0113.test.fidl".to_string(),
-        get_file_content("bad/fi-0113.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0113.test.fidl");
     assert!(lib.compile().is_err());
 }

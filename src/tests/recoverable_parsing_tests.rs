@@ -1,5 +1,4 @@
 use super::test_library::TestLibrary;
-use crate::source_file::SourceFile;
 
 #[test]
 #[ignore]
@@ -26,8 +25,7 @@ type Enum = enum {
 type Bits = bits {
     CONSTANT = ;  // Second error
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -55,8 +53,7 @@ type Union = union {
 type Struct = struct {
     value string;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -103,8 +100,7 @@ type TimeZone = struct {
     name string;
     region vector<string>;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -125,8 +121,7 @@ type NameCollision = struct {};
 type NameCollision = struct {};       // This name collision error will not be
                                       // reported, because if parsing fails
                                       // compilation is skipped
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -147,8 +142,7 @@ type Bits = bits {
     FOUR = 0x4    // Second error
     EIGHT = 0x8;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -169,8 +163,7 @@ type Enum = enum {
     THREE = 3   // Second error
     FOUR = 4;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -198,8 +191,7 @@ protocol Example {
       struct { b bool; }) -> (/// Doc comment
       struct { b bool; });
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -217,8 +209,7 @@ library example;
 protocol Example {
   Method() -> (vector<);
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -242,8 +233,7 @@ service Service {
   q Q              // Second error
   r R;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -264,8 +254,7 @@ type Struct = struct {
     vector_value vector<handle>      // Error
     int_value int32;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -286,8 +275,7 @@ type Table = table {
     3: value_with space vector<handle>; // Error
     4: int_value int32;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -308,8 +296,7 @@ type Union = union {
     4: missing_semicolon string // Second error
     5: int_value int16;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -333,8 +320,7 @@ type Struct = struct {
 type Good = struct {};
 
 extra_token // Second error
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -377,8 +363,7 @@ type TypeDecl = struct {
     // errors[11]: unexpected token
     f9 vector<uint16>:,16,,optional,;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");

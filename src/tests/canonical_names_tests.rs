@@ -1,4 +1,3 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -41,8 +40,7 @@ fn good_top_level() {
     };
     protocol FoObaR {};
     service FOoBAR {};
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -59,8 +57,7 @@ fn good_attributes() {
     @foo_bar
     @f_o_o_b_a_r
     type Example = struct {};
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -75,8 +72,7 @@ fn good_attribute_arguments() {
     library example;
     @some_attribute(foobar="", foo_bar="", f_o_o_b_a_r="")
     type Example = struct {};
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -94,8 +90,7 @@ fn good_struct_members() {
             foo_bar bool;
             f_o_o_b_a_r bool;
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -113,8 +108,7 @@ fn good_table_members() {
             2: foo_bar bool;
             3: f_o_o_b_a_r bool;
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -132,8 +126,7 @@ fn good_union_members() {
             2: foo_bar bool;
             3: f_o_o_b_a_r bool;
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -151,8 +144,7 @@ fn good_enum_members() {
             foo_bar = 2;
             f_o_o_b_a_r = 3;
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -170,8 +162,7 @@ fn good_bits_members() {
             foo_bar = 2;
             f_o_o_b_a_r = 4;
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -189,8 +180,7 @@ fn good_protocol_methods() {
             foo_bar() -> ();
             f_o_o_b_a_r() -> ();
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -210,8 +200,7 @@ fn good_method_parameters() {
                     f_o_o_b_a_r bool;
             }) -> ();
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -231,8 +220,7 @@ fn good_method_results() {
                     f_o_o_b_a_r bool;
             });
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -251,8 +239,7 @@ fn good_service_members() {
             foo_bar client_end:P;
             f_o_o_b_a_r client_end:P;
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -275,8 +262,7 @@ fn good_resource_properties() {
                     f_o_o_b_a_r uint32;
             };
     };
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -291,8 +277,7 @@ fn good_upper_acronym() {
     library example;
     type HTTPServer = struct {};
     type httpserver = struct {};
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -306,8 +291,7 @@ fn good_current_library() {
         r#"
     library example;
     type example = struct {};
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -323,8 +307,7 @@ fn good_dependent_library() {
         r#"
     library foobar;
     type Something = struct {};
-    "#
-        ,
+    "#,
     );
     dependency.compile().expect("dep failed");
     // ASSERT_COMPILED(dependency);
@@ -345,8 +328,7 @@ fn good_dependent_library() {
     type FooBaR = bits { A = 1; };
     protocol FoObaR {};
     service FOoBAR {};
-    "#
-        ,
+    "#,
     );
     library.compile().expect("compilation failed");
 }
@@ -369,8 +351,7 @@ fn bad_attributes() {
     @fooBar
     @FooBar
     type Example = struct {};
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -387,8 +368,7 @@ fn bad_attribute_arguments() {
     library example;
     @some_attribute(fooBar="", FooBar="")
     type Example = struct {};
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -407,8 +387,7 @@ fn bad_struct_members() {
             myStructMember string;
             MyStructMember uint64;
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -427,8 +406,7 @@ fn bad_table_members() {
             1: myField bool;
             2: MyField bool;
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -447,8 +425,7 @@ fn bad_union_members() {
             1: myVariant bool;
             2: MyVariant bool;
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -467,8 +444,7 @@ fn bad_enum_members() {
         fooBar = 1;
         FooBar = 2;
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -487,8 +463,7 @@ fn bad_bits_members() {
             fooBar = 1;
             FooBar = 2;
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -507,8 +482,7 @@ fn bad_protocol_methods() {
             strict myMethod() -> ();
             strict MyMethod() -> ();
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -526,8 +500,7 @@ fn bad_method_parameters() {
     protocol Example {
         example(struct { fooBar bool; FooBar bool; }) -> ();
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -545,8 +518,7 @@ fn bad_method_results() {
     protocol Example {
         example() -> (struct { fooBar bool; FooBar bool; });
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -566,8 +538,7 @@ fn bad_service_members() {
             myServiceMember client_end:MyProtocol;
             MyServiceMember client_end:MyProtocol;
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -589,8 +560,7 @@ fn bad_resource_properties() {
                     Rights uint32;
             };
     };
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -616,8 +586,7 @@ fn bad_upper_acronym() {
     library example;
     type HTTPServer = struct {};
     type HttpServer = struct {};
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -634,8 +603,7 @@ fn bad_dependent_library() {
         r#"
     library foobar;
     type Something = struct {};
-    "#
-        ,
+    "#,
     );
     dependency.compile().expect("dep failed");
     // ASSERT_COMPILED(dependency);
@@ -647,8 +615,7 @@ fn bad_dependent_library() {
     library example;
     using foobar;
     alias FOOBAR = foobar.Something;
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());
@@ -671,8 +638,7 @@ fn bad_consecutive_underscores() {
     library example;
     type it_is_the_same = struct {};
     type it__is___the____same = struct {};
-    "#
-        ,
+    "#,
     );
     // EXPECT FAIL
     assert!(library.compile().is_err());

@@ -1,19 +1,10 @@
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 fn good_simple_struct() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0001.test.fidl".to_string(),
-        get_file_content("good/fi-0001.test.fidl"),
-    ));
+    lib.add_errcat_file("good/fi-0001.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -29,8 +20,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field int64 = 20;
 };
-"#
-        ,
+"#,
     );
     let _root = lib.compile().expect("compilation failed");
     // TODO: assert type_decl members length = 1
@@ -39,10 +29,7 @@ type MyStruct = struct {
 #[test]
 fn bad_primitive_default_value_no_annotation() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0050.test.fidl".to_string(),
-        get_file_content("bad/fi-0050.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0050.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -60,8 +47,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field int64 = A;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -78,8 +64,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field int64 = A;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -100,8 +85,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field MyEnum = MyEnum.A;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -122,8 +106,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field int64 = MyEnum.A;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -143,8 +126,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field MyEnum = OtherEnum.A;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -152,10 +134,7 @@ type MyStruct = struct {
 #[test]
 fn bad_default_value_primitive_in_enum() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0103.test.fidl".to_string(),
-        get_file_content("bad/fi-0103.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0103.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -175,8 +154,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field MyBits = MyBits.A;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -197,8 +175,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field int64 = MyBits.A;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -218,8 +195,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field MyBits = OtherBits.A;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -238,8 +214,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field MyBits = 1;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -258,8 +233,7 @@ type MyStruct = struct {
     @allow_deprecated_struct_defaults
     field MyEnum = A;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -267,10 +241,7 @@ type MyStruct = struct {
 #[test]
 fn bad_default_value_nullable_string() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0091.test.fidl".to_string(),
-        get_file_content("bad/fi-0091.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0091.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -286,8 +257,7 @@ type MyStruct = struct {
     my_struct_member string;
     my_struct_member uint8;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -303,8 +273,7 @@ library example;
 type MyStruct = struct {
     arr array<uint8, 65535>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -312,40 +281,28 @@ type MyStruct = struct {
 #[test]
 fn bad_inline_size_exceeds_64k() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0111.test.fidl".to_string(),
-        get_file_content("bad/fi-0111.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0111.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_mutually_recursive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0057-a.test.fidl".to_string(),
-        get_file_content("bad/fi-0057-a.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0057-a.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_self_recursive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0057-c.test.fidl".to_string(),
-        get_file_content("bad/fi-0057-c.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0057-c.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_recursive_box() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0057.test.fidl".to_string(),
-        get_file_content("good/fi-0057.test.fidl"),
-    ));
+    lib.add_errcat_file("good/fi-0057.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -360,8 +317,7 @@ library example;
 type MySelf = struct {
     me vector<MySelf>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -377,8 +333,7 @@ library example;
 type MySelf = struct {
     me vector<MySelf>:optional;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -402,8 +357,7 @@ type Yang = struct {
 type Leaf = struct {
   yin Yin;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -428,8 +382,7 @@ type Yang = struct {
 type Leaf = struct {
   x int32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -454,8 +407,7 @@ type Intersection = struct {
   yin Yin;
   yang Yang;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -463,20 +415,14 @@ type Intersection = struct {
 #[test]
 fn bad_box_cannot_be_optional() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0169.test.fidl".to_string(),
-        get_file_content("bad/fi-0169.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0169.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_struct_cannot_be_optional() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0159.test.fidl".to_string(),
-        get_file_content("bad/fi-0159.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0159.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -493,8 +439,7 @@ using zx;
 type Foo = resource struct {
     handle_member box<zx.Handle>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -502,10 +447,7 @@ type Foo = resource struct {
 #[test]
 fn bad_cannot_box_primitive() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0193.test.fidl".to_string(),
-        get_file_content("bad/fi-0193.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0193.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -523,8 +465,7 @@ type Foo = struct {
 };
 
 const BAR bool = "not a bool";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -532,20 +473,14 @@ const BAR bool = "not a bool";
 #[test]
 fn cannot_refer_to_int_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0053-a.test.fidl".to_string(),
-        get_file_content("bad/fi-0053-a.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0053-a.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn cannot_refer_to_struct_member() {
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0053-b.test.fidl".to_string(),
-        get_file_content("bad/fi-0053-b.test.fidl"),
-    ));
+    lib.add_errcat_file("bad/fi-0053-b.test.fidl");
     assert!(lib.compile().is_err());
 }
 

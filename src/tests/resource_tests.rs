@@ -1,11 +1,4 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 
@@ -25,8 +18,7 @@ resource_definition SomeResource : uint32 {
         subtype MyEnum;
     };
 };
-"#
-        ,
+"#,
     );
     let _root = match lib.compile() {
         Ok(root) => root,
@@ -57,8 +49,7 @@ resource_definition SomeResource : uint32 {
         rights uint32;
     };
 };
-"#
-        ,
+"#,
     );
     let _root = match lib.compile() {
         Ok(root) => root,
@@ -89,8 +80,7 @@ resource_definition SomeResource : via {
         subtype MyEnum;
     };
 };
-"#
-        ,
+"#,
     );
     let _root = match lib.compile() {
         Ok(root) => root,
@@ -122,8 +112,7 @@ resource_definition SomeResource : via {
         rights via;
     };
 };
-"#
-        ,
+"#,
     );
     let _root = match lib.compile() {
         Ok(root) => root,
@@ -145,8 +134,7 @@ library example;
 
 resource_definition SomeResource : uint32 {
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -154,13 +142,8 @@ resource_definition SomeResource : uint32 {
 #[test]
 
 fn bad_no_properties() {
-    let file_content = get_file_content("bad/fi-0029.noformat.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0029.noformat.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0029.noformat.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -180,8 +163,7 @@ resource_definition MyResource : uint32 {
         rights uint32;
     };
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -189,39 +171,24 @@ resource_definition MyResource : uint32 {
 #[test]
 
 fn bad_not_uint32() {
-    let file_content = get_file_content("bad/fi-0172.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0172.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0172.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_missing_subtype_property_test() {
-    let file_content = get_file_content("bad/fi-0173.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0173.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0173.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_subtype_not_enum() {
-    let file_content = get_file_content("bad/fi-0175.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0175.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0175.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -239,8 +206,7 @@ resource_definition handle : uint32 {
         subtype uint32;
     };
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -248,13 +214,8 @@ resource_definition handle : uint32 {
 #[test]
 
 fn bad_non_bits_rights() {
-    let file_content = get_file_content("bad/fi-0177.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0177.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0177.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -272,8 +233,7 @@ resource_definition handle : uint32 {
         subtype handle;
     };
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

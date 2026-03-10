@@ -1,4 +1,3 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -17,8 +16,7 @@ open protocol HasComposeMethod1 {
 open protocol HasComposeMethod2 {
     compose() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -39,8 +37,7 @@ open protocol HasComposeMethod1 {
 open protocol HasComposeMethod2 {
     strict compose() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -61,8 +58,7 @@ open protocol HasComposeMethod1 {
 open protocol HasComposeMethod2 {
     flexible compose() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -99,8 +95,7 @@ open protocol HasStrictMethod5 {
 open protocol HasStrictMethod6 {
     flexible strict() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -137,8 +132,7 @@ open protocol HasFlexibleTwoWayMethod5 {
 open protocol HasFlexibleTwoWayMethod6 {
     flexible flexible() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -158,8 +152,7 @@ open protocol HasNormalMethod1 {
 open protocol HasNormalMethod2 {
     MyMethod() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -179,8 +172,7 @@ open protocol HasNormalMethod1 {
 open protocol HasNormalMethod2 {
     strict MyMethod() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -200,8 +192,7 @@ open protocol HasNormalMethod1 {
 open protocol HasNormalMethod2 {
     flexible MyMethod() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -217,8 +208,7 @@ library example;
 protocol HasEvent {
     -> MyEvent();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -234,8 +224,7 @@ library example;
 protocol HasEvent {
     strict -> MyMethod();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -251,8 +240,7 @@ library example;
 protocol HasEvent {
     flexible -> MyMethod();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -291,8 +279,7 @@ open protocol Open {
   strict -> StrictEvent();
   flexible -> FlexibleEvent();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -309,8 +296,7 @@ library example;
 closed protocol Closed {
   flexible -> Event();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -335,8 +321,7 @@ library example;
 closed protocol Closed {
   flexible Method() -> ();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -361,8 +346,7 @@ library example;
 protocol BadMethod {
     open Method();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -381,8 +365,7 @@ open protocol Test {
   strict MethodC() -> () error int32;
   flexible MethodD() -> () error int32;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -399,8 +382,7 @@ library example;
 open protocol Test {
   strict Method() -> (struct {});
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -417,8 +399,7 @@ library example;
 open protocol Test {
   flexible Method() -> (struct {});
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -435,8 +416,7 @@ library example;
 open protocol Test {
   strict Method() -> (struct {}) error int32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -453,8 +433,7 @@ library example;
 open protocol Test {
   flexible Method() -> (struct {}) error int32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -470,8 +449,7 @@ library example;
 open protocol Test {
   flexible Method() -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -487,8 +465,7 @@ library example;
 open protocol Test {
   strict Method() -> () error int32;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -504,8 +481,7 @@ library example;
 open protocol Test {
   flexible Method() -> () error int32;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -523,8 +499,7 @@ open protocol Example {
         foo string;
     });
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -542,8 +517,7 @@ open protocol Example {
         foo string;
     }) error uint32;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }

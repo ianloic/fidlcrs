@@ -1,12 +1,5 @@
 use crate::diagnostics::Error;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 fn good_using() {
@@ -19,13 +12,9 @@ library dependent;
 type Bar = struct {
     s int8;
 };
-"#
-        ,
+"#,
     );
-    lib.add_source(SourceFile::new(
-        "good/fi-0178.test.fidl".to_string(),
-        get_file_content("good/fi-0178.test.fidl"),
-    ));
+    lib.add_errcat_file("good/fi-0178.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -53,8 +42,7 @@ fn bad_missing_using() {
     lib.add_source_file(
         "example.fidl",
         "library example;
-type Foo = struct { dep dependent.Bar; };"
-            ,
+type Foo = struct { dep dependent.Bar; };",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -76,8 +64,7 @@ fn bad_using_alias_ref_through_fqn() {
     lib.add_source_file(
         "dependent.fidl",
         "library dependent;
-type Bar = struct { s int8; };"
-            ,
+type Bar = struct { s int8; };",
     );
 
     lib.add_source_file(
@@ -104,16 +91,12 @@ fn bad_duplicate_using_no_alias() {
 #[test]
 fn bad_duplicate_using_first_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "dependent.fidl",
-        "library dependent;",
-    );
+    lib.add_source_file("dependent.fidl", "library dependent;");
     lib.add_source_file(
         "example.fidl",
         "library example;
 using dependent as alias;
-using dependent;"
-            ,
+using dependent;",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -123,16 +106,12 @@ using dependent;"
 #[test]
 fn bad_duplicate_using_second_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "dependent.fidl",
-        "library dependent;",
-    );
+    lib.add_source_file("dependent.fidl", "library dependent;");
     lib.add_source_file(
         "example.fidl",
         "library example;
 using dependent;
-using dependent as alias;"
-            ,
+using dependent as alias;",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -142,16 +121,12 @@ using dependent as alias;"
 #[test]
 fn bad_duplicate_using_same_library_same_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "dependent.fidl",
-        "library dependent;",
-    );
+    lib.add_source_file("dependent.fidl", "library dependent;");
     lib.add_source_file(
         "example.fidl",
         "library example;
 using dependent as alias;
-using dependent as alias;"
-            ,
+using dependent as alias;",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -161,16 +136,12 @@ using dependent as alias;"
 #[test]
 fn bad_duplicate_using_same_library_different_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "dependent.fidl",
-        "library dependent;",
-    );
+    lib.add_source_file("dependent.fidl", "library dependent;");
     lib.add_source_file(
         "example.fidl",
         "library example;
 using dependent as alias1;
-using dependent as alias2;"
-            ,
+using dependent as alias2;",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -180,20 +151,13 @@ using dependent as alias2;"
 #[test]
 fn bad_conflicting_using_library_and_alias() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "dependent1.fidl",
-        "library dependent1;",
-    );
-    lib.add_source_file(
-        "dependent2.fidl",
-        "library dependent2;",
-    );
+    lib.add_source_file("dependent1.fidl", "library dependent1;");
+    lib.add_source_file("dependent2.fidl", "library dependent2;");
     lib.add_source_file(
         "example.fidl",
         "library example;
 using dependent1;
-using dependent2 as dependent1;"
-            ,
+using dependent2 as dependent1;",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -226,10 +190,7 @@ fn bad_conflicting_using_alias_and_alias() {
 fn bad_unused_using() {
     let mut lib = TestLibrary::new();
 
-    lib.add_source_file(
-        "dependent.fidl",
-        "library dependent;",
-    );
+    lib.add_source_file("dependent.fidl", "library dependent;");
     lib.add_errcat_file("bad/fi-0178.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -257,25 +218,18 @@ fn bad_library_declaration_name_collision() {
 
 #[test]
 fn bad_aliased_library_declaration_name_collision() {
-    let dep = SourceFile::new(
-        "dep.fidl".to_string(),
-        "library dep;\ntype A = struct{};".to_string(),
-    );
-
     let mut lib = TestLibrary::new();
     lib.add_source_file(
         "dep.fidl",
         "library dep;
-type A = struct{};"
-            ,
+type A = struct{};",
     );
     lib.add_source_file(
         "lib.fidl",
         "library lib;
 using dep as x;
 type x = struct{};
-type B = struct{a dep.A;};"
-            ,
+type B = struct{a dep.A;};",
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();

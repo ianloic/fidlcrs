@@ -21,8 +21,7 @@ library exampleusing;
 
 @on_dep_struct
 type Empty = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -78,8 +77,7 @@ service ExampleService {
     @no_doc
     p client_end:ExampleProtocol;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -105,8 +103,7 @@ library fidl.test.dupattributes;
 protocol A {
     MethodA();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -138,8 +135,7 @@ library fidl.test.dupattributes;
 protocol A {
     MethodA();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -153,8 +149,7 @@ fn bad_no_two_same_attribute_on_library() {
         r#"
 @dup("first")
 library fidl.test.dupattributes;
-"#
-        ,
+"#,
     );
 
     lib.add_source_file(
@@ -162,8 +157,7 @@ library fidl.test.dupattributes;
         r#"
 @dup("second")
 library fidl.test.dupattributes;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -197,8 +191,7 @@ type Foo = struct {};
 // This actually gets added at 1 because we misspelled "available".
 @availabe(added=2)
 type Foo = resource struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -215,8 +208,7 @@ library fidl.test;
 protocol A {
     MethodA();
 };
-"#
-        ,
+"#,
     );
 }
 
@@ -253,8 +245,7 @@ library fidl.test.transportattributes;
 protocol A {
     MethodA();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -271,8 +262,7 @@ library fidl.test.transportattributes;
 protocol A {
     MethodA();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -289,8 +279,7 @@ library fidl.test.transportattributes;
 protocol A {
     MethodA();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -307,8 +296,7 @@ library fidl.test;
 type U = flexible union {
   1: a int32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -324,8 +312,7 @@ library fidl.test;
 type U = flexible union {
   @unknown 1: a int32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -341,8 +328,7 @@ library fidl.test;
 type B = flexible bits : uint32 {
   @unknown A = 0x1;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -395,8 +381,7 @@ protocol MyProtocol {
     @selector("test") // no error, this placement is allowed
     MyMethod();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -428,8 +413,7 @@ protocol MyOtherProtocol {
 protocol MyProtocol {
   MyMethod();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -552,8 +536,7 @@ library fidl.test;
 protocol ExampleProtocol {
     Method(struct { arg exampleusing.Empty; } @on_parameter);
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -581,8 +564,7 @@ protocol MyProtocol {
     inner_layout @qux struct {};
   });
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -604,8 +586,7 @@ library example;
 
 @foo(bar="abc", baz="def")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -627,8 +608,7 @@ library example;
 
 @foo("abc", bar="def")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -643,8 +623,7 @@ library example;
 
 @foo(bar="abc", "def")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -659,8 +638,7 @@ library example;
 
 @foo("abc", bar=def)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -675,8 +653,7 @@ library example;
 
 @foo(bar="abc", def)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -705,8 +682,7 @@ library example;
 
 @foo("bar")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -721,8 +697,7 @@ library example;
 
 @foo(a="bar")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -737,8 +712,7 @@ library example;
 
 @foo("bar")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_foo = AttributeSchema::new(Kind::ValidateOnly);
     s_foo = s_foo.add_arg(
@@ -762,8 +736,7 @@ library example;
 
 @foo("bar")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_foo = AttributeSchema::new(Kind::ValidateOnly);
     s_foo = s_foo.add_arg(
@@ -790,8 +763,7 @@ type MyStruct = struct {};
 
 @foo
 type MyOtherStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_foo = AttributeSchema::new(Kind::ValidateOnly);
     s_foo = s_foo.add_arg(
@@ -851,8 +823,7 @@ type MyStruct = struct {};
 // Order independent.
 @multiple_args(second="bar", first="foo")
 type MyOtherStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_multi = AttributeSchema::new(Kind::ValidateOnly);
     s_multi = s_multi.add_arg(
@@ -897,8 +868,7 @@ type MyStruct4 = struct {};
 // No arguments at all.
 @multiple_args
 type MyStruct5 = struct {};
-"#
-        ,
+"#,
     );
     let mut s_multi = AttributeSchema::new(Kind::ValidateOnly);
     s_multi = s_multi.add_arg(
@@ -937,8 +907,7 @@ type MyStruct2 = struct {};
 // Only 1 argument present.
 @multiple_args(first="foo")
 type MyStruct3 = struct {};
-"#
-        ,
+"#,
     );
     let mut s_multi = AttributeSchema::new(Kind::ValidateOnly);
     s_multi = s_multi.add_arg(
@@ -992,8 +961,7 @@ library example;
 
 @attr(foo="abc", bar=true, baz=false)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1019,8 +987,7 @@ const baz bool = false;
 
 @attr(foo=foo, bar=bar, baz=baz)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1038,8 +1005,7 @@ const bar float32 = -2.3;
 
 @attr(foo=foo, bar=bar)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1069,8 +1035,7 @@ library fidl.test;
         float32=1.2,
         float64=-3.4)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1127,8 +1092,7 @@ library example;
 
 @attr(true)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1185,8 +1149,7 @@ library example;
 
 @attr("foo")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1243,8 +1206,7 @@ library example;
 
 @attr(-1)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1344,8 +1306,7 @@ const float64 fidl.float64 = -3.4;
         float32=float32,
         float64=float64)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1404,8 +1365,7 @@ const foo bool = true;
 
 @attr(foo)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1464,8 +1424,7 @@ const foo string:3 = "foo";
 
 @attr(foo)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1524,8 +1483,7 @@ const foo uint16 = 259;
 
 @attr(foo)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     for k in [
@@ -1582,8 +1540,7 @@ library example;
 
 @attr(1)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     s_attr = s_attr.add_anonymous_arg(AttributeArgSchema::new(
@@ -1607,8 +1564,7 @@ library example;
 type MyStruct = struct {};
 
 const BAD uint8 = 1;
-"#
-        ,
+"#,
     );
     let mut s_attr = AttributeSchema::new(Kind::ValidateOnly);
     s_attr = s_attr.add_anonymous_arg(AttributeArgSchema::new(
@@ -1630,8 +1586,7 @@ library example;
 
 @attr("abc")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1646,8 +1601,7 @@ library example;
 
 @attr(foo="abc")
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1662,8 +1616,7 @@ library example;
 
 @foo(nonexistent)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1678,8 +1631,7 @@ library example;
 
 @foo(nonexistent)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_foo = AttributeSchema::new(Kind::ValidateOnly);
     s_foo = s_foo.add_arg(
@@ -1703,8 +1655,7 @@ library example;
 
 @foo(nonexistent)
 type MyStruct = struct {};
-"#
-        ,
+"#,
     );
     let mut s_foo = AttributeSchema::new(Kind::ValidateOnly);
     s_foo = s_foo.add_arg(
@@ -1730,8 +1681,7 @@ library example;
 type MyStruct = struct {};
 
 const BAD bool = "not a bool";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1748,8 +1698,7 @@ library example;
 type MyStruct = struct {};
 
 const BAD bool = "not a bool";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1766,8 +1715,7 @@ library example;
 type MyStruct = struct {};
 
 const BAD bool = "not a bool";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1782,8 +1730,7 @@ library example;
 
 @foo(BAR)
 const BAR bool = true;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1798,8 +1745,7 @@ library example;
 
 @foo(BAR)
 const BAR string = "bar";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1814,8 +1760,7 @@ library example;
 
 @foo(BAR)
 const BAR bool = true;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1832,8 +1777,7 @@ library example;
 const FIRST bool = true;
 @foo(FIRST)
 const SECOND bool = false;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1850,8 +1794,7 @@ library example;
 const FIRST string = "first";
 @foo(FIRST)
 const SECOND string = "second";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1868,8 +1811,7 @@ library example;
 const FIRST bool = true;
 @foo(FIRST)
 const SECOND bool = false;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1882,8 +1824,7 @@ fn bad_library_references_nonexistent_const() {
         r#"
 @foo(nonexistent)
 library example;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1898,8 +1839,7 @@ fn bad_library_references_const() {
 library example;
 
 const BAR bool = true;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1912,8 +1852,7 @@ fn bad_library_references_external_const() {
         r#"
 library dependency;
 const BAR bool = true;
-"#
-        ,
+"#,
     );
     lib.add_source_file(
         "example.fidl",
@@ -1921,8 +1860,7 @@ const BAR bool = true;
 @foo(dependency.BAR)
 library example;
 using dependency;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1937,8 +1875,7 @@ library example;
 
 @discoverable
 protocol Foo {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -2008,8 +1945,7 @@ library example;
 type Foo = union {
     1: s string;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -2033,8 +1969,7 @@ protocol R{};
 
 @discoverable(client="platform, external", server="external, platform")
 protocol S{};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -2056,8 +1991,7 @@ protocol P{
 
 @no_resource
 protocol Q{};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -2079,8 +2013,7 @@ protocol P{
 
 @no_resource
 protocol Q{};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -2101,8 +2034,7 @@ protocol P{
 };
 
 protocol Q{};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -2123,8 +2055,7 @@ protocol P{
 
 @no_resource
 protocol Q{};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

@@ -1,6 +1,5 @@
 use crate::flat_ast::Type;
 use crate::flat_ast::TypeKind;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
@@ -17,8 +16,7 @@ using zx;
 type MyStruct = resource struct {
     h zx.Handle:<THREAD, zx.Rights.DUPLICATE | zx.Rights.TRANSFER>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -52,8 +50,7 @@ using zx;
 type MyStruct = resource struct {
     h zx.Handle:VMO;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -87,8 +84,7 @@ using zx;
 protocol P {
     Method(struct { h zx.Handle:<VMO, 1>; });  // rights must be zx.Rights-typed.
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -107,8 +103,7 @@ using zx;
 type MyStruct = resource struct {
     h zx.Handle;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -144,8 +139,7 @@ type MyStruct = resource struct {
   b zx.Handle:<PROCESS>;
   c zx.Handle:<VMO, zx.Rights.TRANSFER>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -201,8 +195,7 @@ using zx;
 type MyStruct = struct {
   a zx.Handle:ZIPPY;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -221,8 +214,7 @@ using zx;
 type MyStruct = struct {
     h handle<vmo>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -249,8 +241,7 @@ resource_definition handle : uint32 {
 type MyStruct = resource struct {
     h handle:VMO;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -292,8 +283,7 @@ resource_definition handle : uint32 {
 type MyStruct = resource struct {
     h handle:<1, optional>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -321,8 +311,7 @@ resource_definition handle : uint32 {
 type MyStruct = resource struct {
     h handle:<VMO, "my_improperly_typed_rights", optional>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -338,8 +327,7 @@ library example;
 type MyStruct = resource struct {
     h handle;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -355,8 +343,7 @@ library example;
 type MyStruct = resource struct {
     h handle:VMO;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -374,8 +361,7 @@ alias my_handle = handle;
 type MyStruct = resource struct {
     h my_handle:VMO;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

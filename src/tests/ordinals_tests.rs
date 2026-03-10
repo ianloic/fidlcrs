@@ -1,5 +1,4 @@
 use super::test_library::{LookupHelpers, TestLibrary};
-use crate::source_file::SourceFile;
 
 #[test]
 #[ignore]
@@ -14,8 +13,7 @@ library example;
 protocol Special {
     ThisOneHashesToZero() -> (struct { i int64; });
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(
@@ -39,8 +37,7 @@ protocol Special {
     ClashOne(struct { s string; b bool; }) -> (struct { i int32; });
     ClashTwo(struct { s string; }) -> (resource struct { r zx.Handle:CHANNEL; });
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(
@@ -66,8 +63,7 @@ protocol Special {
     @selector("ClashTwo")
     bar(struct { s string; }) -> (resource struct { r zx.Handle:CHANNEL; });
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(
@@ -105,8 +101,7 @@ protocol Special {
     ClashOne(struct { s string; b bool; }) -> (struct { i int32; });
     ClashTwo(struct { s string; }) -> (resource struct { r zx.Handle:CHANNEL; });
 };
-"#
-        ,
+"#,
     );
     let _root = library.compile().expect("compilation failed");
 }
@@ -128,8 +123,7 @@ protocol protocol {
         i int32;
     });
 };
-"#
-        ,
+"#,
     );
     let root = library.compile().expect("compilation failed");
 
@@ -152,8 +146,7 @@ protocol at {
     @selector("a.b.c/protocol.selector")
     all();
 };
-"#
-        ,
+"#,
     );
     let root = library.compile().expect("compilation failed");
 
@@ -190,8 +183,7 @@ protocol at {
     @selector(true)
     all();
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(
@@ -215,8 +207,7 @@ protocol at {
 };
 
 const SEL string = "a.b.c/protocol.selector";
-"#
-        ,
+"#,
     );
     let _root = library.compile().expect("compilation failed");
 }
@@ -235,8 +226,7 @@ protocol at {
     @selector(nonexistent)
     all();
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(
@@ -288,8 +278,7 @@ protocol protocol {
     s30();
     s31();
 };
-"#
-        ,
+"#,
     );
     let root = library.compile().expect("compilation failed");
 
@@ -355,8 +344,7 @@ protocol SomeProtocol {
     @selector("fuchsia.io1/Node.Open")
     SomeMethod();
 };
-"#
-        ,
+"#,
     );
     let _root = library.compile().expect("compilation failed");
 }
@@ -382,8 +370,7 @@ protocol Directory {
 protocol DirectoryAdmin {
     compose Directory;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(

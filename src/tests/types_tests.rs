@@ -1,7 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 
 use crate::diagnostics::Error;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -27,8 +26,7 @@ const up uintptr64 = 0;
 const uc uchar = 0;
 const f32 float32 = 0;
 const f64 float64 = 0;
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -56,8 +54,7 @@ const uintptr64 fidl.uintptr64 = 0;
 const uchar fidl.uchar = 0;
 const float32 fidl.float32 = 0;
 const float64 fidl.float64 = 0;
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -98,8 +95,7 @@ type TypeDecl = struct {
       1: i0 bool;
     };
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -148,8 +144,7 @@ type TypeDecl = struct {
        i3 array<struct{},5>;
      },5>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -167,8 +162,7 @@ type t1 = resource struct {
   u0 union { 1: b bool; };
   u1 union { 1: b bool; }:optional;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -200,8 +194,7 @@ type TypeDecl= struct {
   a14 Alias:optional;
   a15 Alias:<16,optional>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -224,8 +217,7 @@ type TypeDecl= struct {
   u4 UnionAlias;
   u5 UnionAlias:optional;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -248,8 +240,7 @@ type TypeDecl = resource struct {
   h4 zx.Handle:<VMO,zx.Rights.TRANSFER>;
   h5 zx.Handle:<VMO,zx.Rights.TRANSFER,optional>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -275,8 +266,7 @@ library example;
 type Foo = struct {
   foo array;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -315,8 +305,7 @@ library example;
 type Foo = struct {
   bar struct {}<1>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -340,8 +329,7 @@ alias MyVmo = zx.Handle:VMO;
 type Foo = struct {
     foo MyVmo:zx.ObjType.CHANNEL;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -365,8 +353,7 @@ alias MyVmo = zx.Handle:<VMO, zx.Rights.TRANSFER>;
 type Foo = resource struct {
     foo MyVmo:optional;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -392,8 +379,7 @@ library example;
 type Foo = struct {
     foo array<uint8, uint8>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -424,8 +410,7 @@ const optional uint8 = 3;
 type Foo = resource struct {
     foo vector<uint8>:<10, optional>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -444,8 +429,7 @@ library example;
 type Foo = resource struct {
     foo vector<uint8>:"hello";
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -465,8 +449,7 @@ library example;
 type Foo = struct {
     foo FrameworkErr;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -485,8 +468,7 @@ library example;
 type Foo = struct {
     foo fidl.FrameworkErr;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -507,10 +489,7 @@ fn bad_usize64_without_flag() {
 #[test]
 fn bad_uintptr64_without_flag() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "example.fidl",
-        r#"library example; alias T = uintptr64;"#,
-    );
+    lib.add_source_file("example.fidl", r#"library example; alias T = uintptr64;"#);
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -520,10 +499,7 @@ fn bad_uintptr64_without_flag() {
 #[test]
 fn bad_uchar_without_flag() {
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "example.fidl",
-        r#"library example; alias T = uchar;"#,
-    );
+    lib.add_source_file("example.fidl", r#"library example; alias T = uchar;"#);
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -547,10 +523,7 @@ fn bad_experimental_pointer_without_flag() {
 fn good_usize64_with_flag() {
     let mut lib = TestLibrary::new();
     lib.enable_flag("zx_c_types");
-    lib.add_source_file(
-        "example.fidl",
-        r#"library example; alias T = usize64;"#,
-    );
+    lib.add_source_file("example.fidl", r#"library example; alias T = usize64;"#);
     lib.compile().unwrap();
 }
 
@@ -558,10 +531,7 @@ fn good_usize64_with_flag() {
 fn good_uintptr64_with_flag() {
     let mut lib = TestLibrary::new();
     lib.enable_flag("zx_c_types");
-    lib.add_source_file(
-        "example.fidl",
-        r#"library example; alias T = uintptr64;"#,
-    );
+    lib.add_source_file("example.fidl", r#"library example; alias T = uintptr64;"#);
     lib.compile().unwrap();
 }
 
@@ -569,10 +539,7 @@ fn good_uintptr64_with_flag() {
 fn good_uchar_with_flag() {
     let mut lib = TestLibrary::new();
     lib.enable_flag("zx_c_types");
-    lib.add_source_file(
-        "example.fidl",
-        r#"library example; alias T = uchar;"#,
-    );
+    lib.add_source_file("example.fidl", r#"library example; alias T = uchar;"#);
     lib.compile().unwrap();
 }
 

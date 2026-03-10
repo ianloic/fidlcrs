@@ -11,8 +11,7 @@ fn bad_multiple_library_declarations_agree() {
         r#"
 @available(added=1)
 library example;
-"#
-        ,
+"#,
     );
 
     library.add_source_file(
@@ -20,8 +19,7 @@ library example;
         r#"
 @available(added=1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrDuplicateAttribute);
@@ -39,8 +37,7 @@ fn bad_multiple_library_declarations_disagree() {
         r#"
 @available(added=1)
 library example;
-"#
-        ,
+"#,
     );
 
     library.add_source_file(
@@ -48,8 +45,7 @@ library example;
         r#"
 @available(added=2)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrDuplicateAttribute);
@@ -67,8 +63,7 @@ fn bad_multiple_library_declarations_head() {
         r#"
 @available(added=HEAD)
 library example;
-"#
-        ,
+"#,
     );
 
     library.add_source_file(
@@ -76,8 +71,7 @@ library example;
         r#"
 @available(added=HEAD)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrDuplicateAttribute);
@@ -95,8 +89,7 @@ fn good_all_arguments_on_library() {
         r#"
 @available(platform="notexample", added=1, deprecated=2, removed=3, note="use xyz instead")
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("notexample", "1");
     library.compile().expect("compilation failed");
@@ -115,8 +108,7 @@ library example;
 
 @available(added=1, deprecated=2, removed=3, note="use xyz instead")
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "1");
     library.compile().expect("compilation failed");
@@ -140,8 +132,7 @@ fn good_all_arguments_on_decl_modifier() {
 library example;
 
 type Foo = resource(added=1, removed=2) struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "1");
     library.compile().expect("compilation failed");
@@ -171,8 +162,7 @@ fn bad_anonymous_layout_top_level() {
 library example;
 
 type Foo = @available(added=2) struct {};
-"#
-        ,
+"#,
     );
     // library.expect_fail(Error::ErrAttributeInsideTypeDeclaration);
     let _ = library.compile();
@@ -195,8 +185,7 @@ fn bad_invalid_version_zero() {
         r#"
 @available(added=0)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidVersion);
@@ -214,8 +203,7 @@ fn good_version_min_normal() {
         r#"
 @available(added=1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     library.compile().expect("compilation failed");
@@ -231,8 +219,7 @@ fn good_version_max_normal() {
         r#"
 @available(added=0x7fffffff) // 2^31-1
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     library.compile().expect("compilation failed");
@@ -248,8 +235,7 @@ fn bad_invalid_version_above_max_normal() {
         r#"
 @available(added=0x80000000) // 2^31
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidVersion);
@@ -267,8 +253,7 @@ fn bad_invalid_version_unknown_reserved() {
         r#"
 @available(added=0x8abc1234)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidVersion);
@@ -286,8 +271,7 @@ fn good_version_next_name() {
         r#"
 @available(added=NEXT)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     library.compile().expect("compilation failed");
@@ -303,8 +287,7 @@ fn good_version_next_number() {
         r#"
 @available(added=0xFFD00000)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     library.compile().expect("compilation failed");
@@ -320,8 +303,7 @@ fn good_version_head_name() {
         r#"
 @available(added=HEAD)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     library.compile().expect("compilation failed");
@@ -337,8 +319,7 @@ fn good_version_head_number() {
         r#"
 @available(added=0xFFE00000)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     library.compile().expect("compilation failed");
@@ -354,8 +335,7 @@ fn bad_invalid_version_legacy_name() {
         r#"
 @available(added=LEGACY)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidVersion);
@@ -373,8 +353,7 @@ fn bad_invalid_version_legacy_number() {
         r#"
 @available(added=0xFFF00000)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidVersion);
@@ -392,8 +371,7 @@ fn bad_invalid_version_negative() {
         r#"
 @available(added=-1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrCouldNotResolveAttributeArg);
@@ -412,8 +390,7 @@ fn bad_invalid_version_overflow_uint32() {
         r#"
 @available(added=0x100000000) // 2^32
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrCouldNotResolveAttributeArg);
@@ -492,8 +469,7 @@ fn bad_library_renamed() {
         r#"
 @available(added=1, removed=2, renamed="foo")
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrCannotBeRenamed);
@@ -535,8 +511,7 @@ library example;
 
 @available(added=1, removed=2, note="use xyz instead")
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "1");
     library.compile().expect("compilation failed");
@@ -558,8 +533,7 @@ type Foo = struct {};
 
 @available(added=2)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "1");
     library.compile().expect("compilation failed");
@@ -638,8 +612,7 @@ library example;
 
 @available(platform="bad")
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrPlatformNotOnLibrary);
@@ -726,8 +699,7 @@ library example;
 
 @available(added=2, replaced=2)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
@@ -745,8 +717,7 @@ fn bad_added_greater_than_removed() {
         r#"
 @available(added=2, removed=1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
@@ -767,8 +738,7 @@ library example;
 
 @available(added=3, replaced=2)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
@@ -786,8 +756,7 @@ fn good_added_equals_deprecated() {
         r#"
 @available(added=1, deprecated=1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "1");
     library.compile().expect("compilation failed");
@@ -803,8 +772,7 @@ fn bad_added_greater_than_deprecated() {
         r#"
 @available(added=2, deprecated=1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
@@ -840,8 +808,7 @@ library example;
 
 @available(added=1, deprecated=2, replaced=2)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
@@ -859,8 +826,7 @@ fn bad_deprecated_greater_than_removed() {
         r#"
 @available(added=1, deprecated=3, removed=2)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
@@ -881,8 +847,7 @@ library example;
 
 @available(added=1, deprecated=3, replaced=2)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);

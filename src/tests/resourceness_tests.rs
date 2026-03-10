@@ -14,8 +14,7 @@ library example;
 type Foo = resource bits {
     BAR = 1;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -33,8 +32,7 @@ library example;
 type Foo = resource enum {
     BAR = 1;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -51,8 +49,7 @@ fn bad_const_resourceness() {
 library example;
 
 resource const BAR uint32 = 1;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -69,8 +66,7 @@ fn bad_protocol_resourceness() {
 library example;
 
 resource protocol Foo {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -87,8 +83,7 @@ fn bad_alias_resourceness() {
 library example;
 
 resource alias B = bool;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -107,8 +102,7 @@ library example;
 type One = resource struct {};
 type Two = resource resource struct {};
 type Three = resource resource resource struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -273,8 +267,7 @@ protocol Protocol {};
 
 type Foo = struct { bad_member client_end:Protocol; };
 
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -297,8 +290,7 @@ type ResourceUnion = resource union { 1: b bool; };
 
 type Foo = struct { bad_member ResourceStruct; };
 
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -329,8 +321,7 @@ type ResourceUnion = resource union { 1: b bool; };
 
 type Foo = struct { bad_member HandleAlias; };
 
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -355,8 +346,7 @@ type ResourceUnion = resource union { 1: b bool; };
 
 type Foo = struct { bad_member vector<vector<zx.Handle>>; };
 
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -381,8 +371,7 @@ type Foo = struct {
 };
 
 type ResourceStruct = resource struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -407,8 +396,7 @@ type Middle = resource struct {
     bottom Bottom;
 };
 type Bottom = resource struct {};
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -428,8 +416,7 @@ type Middle = struct {
   bottom Bottom;
 };
 type Bottom = resource struct {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -452,8 +439,7 @@ type Ouro = struct {
 type Boros = struct {
     o box<Ouro>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -473,8 +459,7 @@ type Ouro = resource struct {
 type Boros = resource struct {
     o box<Ouro>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -494,8 +479,7 @@ type Ouro = resource struct {
 type Boros = struct {
   bad_member box<Ouro>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -517,8 +501,7 @@ type SR = strict resource union {
 type RS = strict resource union {
     1: b bool;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }

@@ -1,7 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 
 use crate::diagnostics::Error;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -15,8 +14,7 @@ library fidl.test.tables;
 type Foo = table {
     1: x int64;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -34,8 +32,7 @@ type Foo = table {
     1: y int64;
     2: z int64;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -49,8 +46,7 @@ fn good_allow_empty_tables() {
 library fidl.test.tables;
 
 type Foo = table {};
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -86,8 +82,7 @@ library test;
 type Foo = union {
   4294967296: foo string;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -107,8 +102,7 @@ type MyTable = table {
     1: my_field string;
     2: my_field uint32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -140,8 +134,7 @@ type Foo = table {
     @bar_attr
     2: bar bool;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -159,8 +152,7 @@ type Foo = table {
     1: x int64;
     2: please bool;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -184,8 +176,7 @@ type Foo = table {
     4: member struct;
     5: reserved bool;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -205,8 +196,7 @@ type Foo = table {
 type OptionalTableContainer = struct {
     foo Foo:optional;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -229,8 +219,7 @@ type Foo = table {
 type OptionalTableContainer = struct {
     foo Foo:<1, 2, 3>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -253,8 +242,7 @@ type Foo = table {
 type OptionalTableContainer = union {
     1: foo Foo:optional;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -277,8 +265,7 @@ type Foo = table {
 type Bar = table {
     1: foo Foo;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -298,8 +285,7 @@ type Foo = table {
 type OptionalTableContainer = flexible union {
     1: foo Foo;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -326,8 +312,7 @@ type Foo = table {
     // Integers can never be optional.
     1: t int64:optional;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -346,8 +331,7 @@ library fidl.test.tables;
 type Foo = table {
     1: t int64 = 1;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -367,8 +351,7 @@ library example;
 type MyTable = table {
     2: two int64;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -385,8 +368,7 @@ type MyTable = table {
     1: one int64;
     3: three int64;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -484,8 +466,7 @@ type Example = table {
     63: v63 int64;
     64: v64 MyStruct;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();

@@ -1,5 +1,4 @@
 use super::test_library::{LookupHelpers, TestLibrary};
-use crate::source_file::SourceFile;
 
 #[test]
 fn bad_enum_multiple_unknown() {
@@ -51,8 +50,7 @@ type Foo = flexible enum : int8 {
   ONE = 1;
   MAX = 127;
 };
-    "#
-        ,
+    "#,
     );
     let result = library.compile();
     assert!(
@@ -76,8 +74,7 @@ type Foo = flexible enum : uint8 {
     ONE = 1;
     MAX = 255;
 };
-    "#
-        ,
+    "#,
     );
     let root = library.compile().expect("Expected compilation to succeed");
 
@@ -103,8 +100,7 @@ type Foo = flexible enum : int8 {
     ONE = 1;
     MAX = 127;
 };
-    "#
-        ,
+    "#,
     );
     let root = library.compile().expect("Expected compilation to succeed");
 
@@ -130,8 +126,7 @@ type Foo = flexible enum : int8 {
     ONE = 1;
     MAX = 127;
 };
-    "#
-        ,
+    "#,
     );
     let root = library.compile().expect("Expected compilation to succeed");
 

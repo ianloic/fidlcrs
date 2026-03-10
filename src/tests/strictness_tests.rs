@@ -1,6 +1,5 @@
 #![allow(unused_mut, unused_variables)]
 use crate::diagnostics::Error;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -14,8 +13,7 @@ library example;
 type One = strict union { 1: b bool; };
 type Two = strict strict union { 1: b bool; };
 type Three = strict strict strict union { 1: b bool; };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -65,8 +63,7 @@ type StrictFoo = strict bits {
 type FlexibleFoo = flexible bits {
     BAR = 0x1;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -90,8 +87,7 @@ type StrictFoo = strict enum {
 type FlexibleFoo = flexible enum {
     BAR = 1;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -107,8 +103,7 @@ library example;
 type Foo = flexible enum {
     BAR = 1;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -124,8 +119,7 @@ library example;
 type Foo = flexible bits {
     BAR = 0x1;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }
@@ -149,8 +143,7 @@ fn bad_strictness_table() {
 library example;
 
 type StrictFoo = strict table {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
@@ -176,8 +169,7 @@ library example;
 type Foo = strict union {
     1: i int32;
 };
-"#
-        ,
+"#,
     );
     lib.compile().unwrap();
 }

@@ -1,5 +1,4 @@
 use super::test_library::TestLibrary;
-use crate::source_file::SourceFile;
 
 #[test]
 #[ignore]
@@ -16,8 +15,7 @@ protocol P {};              // Error: name collision
 
 type foo = struct {};
 type Foo = struct {};       // Error: canonical name collision
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -54,8 +52,7 @@ type OtherEnum = enum {
 type NonDenseTable = table {
     65: s string;                 // Error: too many ordinals
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -79,8 +76,7 @@ type Table = table {
 type Struct = struct {
     foo uint16;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -103,8 +99,7 @@ type Enum = enum {
     FOO                      // Error: cannot resolve enum member
         = "not a number";    // Error: cannot be interpreted as uint32
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -122,8 +117,7 @@ library example;
 
 @attr(1)
 const FOO string = 2;
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -147,8 +141,7 @@ type Foo = bits {
     BAZ = 2;               // Error: duplicate value 2
     XYZ = 3;               // Error: not a power of two
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -172,8 +165,7 @@ type Foo = flexible enum : uint8 {
     BAZ = 2;               // Error: duplicate value 2
     XYZ = 255;             // Error: max value on flexible enum
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -196,8 +188,7 @@ type Foo = struct {
     baz bool           // Error: cannot resolve default value
         = "not bool";  // Error: cannot interpret as bool
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -219,8 +210,7 @@ type Foo = table {
        vector;               // Error: expected 1 layout parameter
     65: s string;            // Error: too many ordinals
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -241,8 +231,7 @@ type Foo = union {
     1: qux                   // Error: duplicate ordinal
         vector;              // Error: expected 1 layout parameter
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -265,8 +254,7 @@ protocol Foo {
         b bool:optional;         // Error: bool cannot be optional
     }) error vector;             // Error: expected 1 layout parameter
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
@@ -289,8 +277,7 @@ service Foo {
     qux server_end:P;             // Error: must be client_end
     opt client_end:<P,optional>;  // Error: cannot be optional
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");

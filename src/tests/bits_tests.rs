@@ -1,23 +1,11 @@
 use crate::flat_ast::Type;
 use crate::flat_ast::TypeKind;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 fn good_simple() {
-    let file_content = get_file_content("good/fi-0067-a.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0067-a.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0067-a.test.fidl");
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -45,8 +33,7 @@ fn good_default_uint32() {
 type Fruit = bits {
     ORANGE = 1;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -66,13 +53,8 @@ type Fruit = bits {
 
 #[test]
 fn bad_signed() {
-    let file_content = get_file_content("bad/fi-0069.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0069.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0069.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -87,8 +69,7 @@ type Fruit = bits : uint64 {
     ORANGE = 1;
     APPLE = 1;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -107,21 +88,15 @@ type Fruit = bits {
 
 const FOUR uint32 = 4;
 const TWO_SQUARED uint32 = 4;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_unsigned_with_negative_member() {
-    let file_content = get_file_content("bad/fi-0102.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0102.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0102.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -136,8 +111,7 @@ type Fruit = bits : uint8 {
     ORANGE = 1;
     APPLE = 256;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -154,8 +128,7 @@ type Fruit = bits : uint64 {
     APPLE = 2;
     ORANGE = 4;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -168,8 +141,7 @@ fn bad_no_members_when_strict() {
         r#"library example;
 
 type B = strict bits {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -182,8 +154,7 @@ fn good_no_members_allowed_when_flexible() {
         r#"library example;
 
 type B = flexible bits {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -196,8 +167,7 @@ fn good_no_members_allowed_when_defaults_to_flexible() {
         r#"library example;
 
 type B = bits {};
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -214,33 +184,22 @@ type Fruit = bits : uint64 {
     bits = 2;
     uint64 = 4;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_non_power_of_two() {
-    let file_content = get_file_content("bad/fi-0067.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0067.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0067.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_with_mask() {
-    let file_content = get_file_content("good/fi-0067-b.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0067-b.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0067-b.test.fidl");
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -263,8 +222,7 @@ type NotNullable = bits {
 type Struct = struct {
     not_nullable NotNullable:optional;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -283,8 +241,7 @@ type NotNullable = bits {
 type Struct = struct {
     not_nullable NotNullable:<1, 2, 3>;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

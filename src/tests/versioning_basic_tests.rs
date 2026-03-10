@@ -10,8 +10,7 @@ fn good_library_default() {
         "example.fidl",
         r#"
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -27,8 +26,7 @@ fn good_library_added_at_head() {
         r#"
 @available(added=HEAD)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -44,8 +42,7 @@ fn good_library_added_at_one() {
         r#"
 @available(added=1)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -61,8 +58,7 @@ fn good_library_added_and_removed() {
         r#"
 @available(added=1, removed=2)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -78,8 +74,7 @@ fn good_library_added_and_deprecated_and_removed() {
         r#"
 @available(added=1, deprecated=2, removed=HEAD)
 library example;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -98,8 +93,7 @@ library example;
 
 @available(added=HEAD)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -118,8 +112,7 @@ library example;
 
 @available(added=1)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -138,8 +131,7 @@ library example;
 
 @available(added=1, removed=2)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -161,8 +153,7 @@ type Foo = struct {};
 
 @available(added=2)
 type Foo = resource struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -181,8 +172,7 @@ library example;
 
 @available(added=1, deprecated=2, removed=HEAD)
 type Foo = struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -236,8 +226,7 @@ fn good_decl_resourceness_added_and_removed() {
 library example;
 
 type Foo = resource(added=2, removed=3) struct {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -255,8 +244,7 @@ fn good_protocol_openness_added_and_removed() {
 library example;
 
 closed(added=2, removed=3) open(added=3) protocol Foo {};
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -321,8 +309,7 @@ library example;
 const FOO uint32 = BAR;
 @available(deprecated=1)
 const BAR uint32 = 1;
-"#
-        ,
+"#,
     );
     library.select_version("example", "HEAD");
     let _ = library.compile();
@@ -351,8 +338,7 @@ fn good_multiple_files() {
 /// Some doc comment.
 @available(added=1)
 library example;
-"#
-        ,
+"#,
     );
 }
 

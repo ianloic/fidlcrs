@@ -1,5 +1,4 @@
 use super::test_library::TestLibrary;
-use crate::source_file::SourceFile;
 
 #[test]
 fn good_single_anonymous_name_use() {
@@ -15,8 +14,7 @@ protocol Foo {
         some_param uint8;
     }) error uint32;
 };
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(result.is_ok(), "Expected compilation to succeed");
@@ -48,8 +46,7 @@ protocol Foo {
 };
 
 type FooSomeMethodRequest = struct {};
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(

@@ -1,4 +1,3 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
@@ -10,8 +9,7 @@ fn good_empty_struct() {
 library example;
 
 type Empty = struct {};
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let empty = root
@@ -84,8 +82,7 @@ type EmptyWithOtherThings = struct {
     // no padding
     h Empty;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let empty_with_other_things = root
@@ -228,8 +225,7 @@ type UnionOfThings = strict union {
     2: bu BoolAndU64;
 };
 type NewUnionOfThings = UnionOfThings;
-"#
-        ,
+"#,
     );
     lib.enable_flag("allow_new_types");
     let root = lib.compile().expect("compilation failed");
@@ -393,8 +389,7 @@ type BoolAndU64 = struct {
     b bool;
     u uint64;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
@@ -606,8 +601,7 @@ type ThreeHandlesOneOptional = resource struct {
   h2 zx.Handle:PORT;
   opt_h3 zx.Handle:<VMO, optional>;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -776,8 +770,7 @@ type Bits16 = strict bits : uint16 {
 type BitsImplicit = strict bits {
     VALUE = 1;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let bits16 = root
@@ -872,8 +865,7 @@ type TableWithBoolAndU64 = table {
     1: b bool;
     2: u uint64;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let no_members = root
@@ -1046,8 +1038,7 @@ type GapInMiddle = table {
 type GapAtStart = table {
     3: b bool;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let some_reserved = root
@@ -1126,8 +1117,7 @@ using zx;
 type TableWithOneHandle = resource table {
   1: h zx.Handle;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -1207,8 +1197,7 @@ type BoolAndU64 = struct {
 type OptionalBoolAndU64 = struct {
     s box<BoolAndU64>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
@@ -1411,8 +1400,7 @@ type TableWithBoolAndU64 = table {
 type TableWithOptionalTableWithBoolAndU64 = table {
     1: s TableWithBoolAndU64;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
@@ -1699,8 +1687,7 @@ type OptionalUnion = struct {
 type TableWithOptionalUnion = table {
     1: u UnionOfThings;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let union_with_out_of_line = root
@@ -1846,8 +1833,7 @@ type ManyHandleUnion = strict resource union {
   2: handle_array array<zx.Handle, 8>;
   3: handle_vector vector<zx.Handle>:8;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -1948,8 +1934,7 @@ type BoolOverlayAndUint8Struct = struct {
     bo BoolOverlay;
     x uint8;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let _bool_or_string_or_u64 = root
@@ -2061,8 +2046,7 @@ type TableWithUnboundedVectors = table {
     1: uv1 vector<int32>;
     2: uv2 vector<int32>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let padded_vector = root
@@ -2339,8 +2323,7 @@ type HandleTableVector = resource struct {
 type TableWithHandleStructVector = resource table {
   1: sv vector<OneHandle>:8;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -2599,8 +2582,7 @@ type TableWithShortString = table {
 type TableWithUnboundedString = table {
     1: s string;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let short_string = root
@@ -2742,8 +2724,7 @@ library example;
 type StringArray = struct {
     s string_array<5>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let string_array = root
@@ -2802,8 +2783,7 @@ type TableWithAnInt32ArrayWithPadding = table {
 type TableWithAnInt32ArrayNoPadding = table {
     1: a array<int32, 4>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let an_array = root
@@ -2974,8 +2954,7 @@ type NullableHandleArray = resource struct {
 type TableWithNullableHandleArray = resource table {
   1: ha array<zx.Handle:optional, 8>;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -3155,8 +3134,7 @@ type PaddingCheck = flexible union {
     1: three array<uint8, 3>;
     2: five array<uint8, 5>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let one_bool = root
@@ -3370,8 +3348,7 @@ type FlexibleLeafTable = table {};
 type StrictUnionOfFlexibleTable = strict union {
     1: ft FlexibleLeafTable;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let strict_union = root
@@ -3652,8 +3629,7 @@ type UsingRequestSomeProtocol = resource struct {
 type UsingOptRequestSomeProtocol = resource struct {
     value server_end:<SomeProtocol, optional>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let using_some_protocol = root
@@ -3796,8 +3772,7 @@ library example;
 protocol Test {
     Method(struct { a int16; b int16; });
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let _protocol = root
@@ -3816,8 +3791,7 @@ library example;
 protocol Test {
     strict Method() -> (struct { a int16; b int16; });
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let _protocol = root
@@ -3844,8 +3818,7 @@ protocol MessagePort {
         success bool;
     });
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
@@ -3912,8 +3885,7 @@ protocol MessagePort {
         success bool;
     });
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
@@ -3971,8 +3943,7 @@ protocol MessagePort {
         success bool;
     });
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
@@ -4030,8 +4001,7 @@ protocol MessagePort {
         success bool;
     });
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let web_message = root
@@ -4081,8 +4051,7 @@ library example;
 type TheStruct = struct {
     opt_one_more box<TheStruct>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let the_struct = root
@@ -4142,8 +4111,7 @@ type TheStruct = resource struct {
   some_handle zx.Handle:VMO;
   opt_one_more box<TheStruct>;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -4217,8 +4185,7 @@ type A = struct {
 type B = struct {
     bar box<A>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let struct_a = root.lookup_struct("example/A").expect("A not found");
@@ -4303,8 +4270,7 @@ type B = resource struct {
     b zx.Handle;
     bar box<A>;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -4390,8 +4356,7 @@ type Foo = struct {
 type Bar = struct {
     f box<Foo>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let struct_foo = root.lookup_struct("example/Foo").expect("Foo not found");
@@ -4469,8 +4434,7 @@ library example;
 type Foo = union {
     1: bar struct { f Foo:optional; };
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let union_foo = root.lookup_union("example/Foo").expect("Foo not found");
@@ -4520,8 +4484,7 @@ library example;
 type Foo = union {
     1: bar vector<Foo:optional>;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let union_foo = root.lookup_union("example/Foo").expect("Foo not found");
@@ -4570,8 +4533,7 @@ type Foo = resource union {
     1: bar array<Foo:optional, 1>;
     2: h zx.Handle;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -4623,8 +4585,7 @@ type Foo = resource union {
     1: bar array<Foo:optional, 2>;
     2: h zx.Handle;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -4678,8 +4639,7 @@ type Foo = resource union {
         2: h zx.Handle;
     };
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -4813,8 +4773,7 @@ type Priority = enum {
     EAGER = 0;
     LAZY = 1;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -4925,8 +4884,7 @@ type Sandwich = struct {
     union UnionSize8Alignment4;
     after uint32;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
@@ -5003,8 +4961,7 @@ type Sandwich = struct {
     union UnionSize12Alignment4;
     after int32;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
@@ -5086,8 +5043,7 @@ type Sandwich = struct {
     union UnionSize24Alignment8;
     after uint32;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
@@ -5164,8 +5120,7 @@ type Sandwich = struct {
     union UnionSize36Alignment4;
     after uint32;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
     let sandwich = root
@@ -5237,8 +5192,7 @@ using zx;
 type A = resource struct {
     zero_size vector<zx.Handle>:0;
 };
-"#
-        ,
+"#,
     );
     lib.use_library_zx();
 
@@ -5282,8 +5236,7 @@ type Foo = struct {
     f1 array<uint8, 2147483648>; // 2^31
     f2 array<uint8, 2147483648>; // 2^31
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -5298,8 +5251,7 @@ library example;
 type Foo = struct {
     big array<uint8, 65536>; // 2^16
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }

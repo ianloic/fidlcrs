@@ -34,8 +34,7 @@ library dep2;
 const Constant uint32 = 50;
 type Type = struct {};
 protocol Protocol {};
-"#
-            ,
+"#,
         );
         let _dep2_root = dep2.compile().expect("dep2 compilation failed");
 
@@ -49,8 +48,7 @@ library dep2;
 const Constant uint32 = 50;
 type Type = struct {};
 protocol Protocol {};
-"#
-            ,
+"#,
         );
         dep1.add_source(SourceFile::new(
             "dep1.fidl".to_string(),
@@ -79,8 +77,7 @@ library dep2;
 const Constant uint32 = 50;
 type Type = struct {};
 protocol Protocol {};
-"#
-            ,
+"#,
         );
         lib.add_source(SourceFile::new(
             "dep1.fidl".to_string(),
@@ -107,8 +104,7 @@ using dep1;
 protocol CapturesDependencyThroughCompose {
   compose dep1.ComposedProtocol;
 };
-"#
-            ,
+"#,
         );
         let root = lib.compile().expect("lib compilation failed");
 
@@ -126,8 +122,7 @@ fn good_does_not_follow_alias() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
@@ -136,8 +131,7 @@ fn good_does_not_follow_alias() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
 
     dep1.add_source_file(
@@ -149,8 +143,7 @@ fn good_does_not_follow_alias() {
     protocol ComposedProtocol {
     UsesDep2InAlias(struct { foo vector<Bar>; });
     };
-    "#
-        ,
+    "#,
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
@@ -159,8 +152,7 @@ fn good_does_not_follow_alias() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     lib.add_source_file(
         "dep1.fidl",
@@ -171,8 +163,7 @@ fn good_does_not_follow_alias() {
     protocol ComposedProtocol {
     UsesDep2InAlias(struct { foo vector<Bar>; });
     };
-    "#
-        ,
+    "#,
     );
 
     lib.add_source_file(
@@ -183,8 +174,7 @@ fn good_does_not_follow_alias() {
     protocol CapturesDependencyThroughCompose {
     compose dep1.ComposedProtocol;
     };
-    "#
-        ,
+    "#,
     );
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1"];
@@ -200,8 +190,7 @@ fn good_does_not_follow_nested_struct() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
@@ -210,8 +199,7 @@ fn good_does_not_follow_nested_struct() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
 
     dep1.add_source_file(
@@ -225,8 +213,7 @@ fn good_does_not_follow_nested_struct() {
     protocol ComposedProtocol {
     UsesDep2InNestedStruct(struct { foo vector<Bar>; });
     };
-    "#
-        ,
+    "#,
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
@@ -235,8 +222,7 @@ fn good_does_not_follow_nested_struct() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     lib.add_source_file(
         "dep1.fidl",
@@ -249,8 +235,7 @@ fn good_does_not_follow_nested_struct() {
     protocol ComposedProtocol {
     UsesDep2InNestedStruct(struct { foo vector<Bar>; });
     };
-    "#
-        ,
+    "#,
     );
 
     lib.add_source_file(
@@ -261,8 +246,7 @@ fn good_does_not_follow_nested_struct() {
     protocol CapturesDependencyThroughCompose {
     compose dep1.ComposedProtocol;
     };
-    "#
-        ,
+    "#,
     );
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1"];
@@ -278,8 +262,7 @@ fn good_error_syntax_success_type() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
@@ -288,8 +271,7 @@ fn good_error_syntax_success_type() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
 
     dep1.add_source_file(
@@ -300,8 +282,7 @@ fn good_error_syntax_success_type() {
     protocol ComposedProtocol {
     UsesDep2InSuccessType() -> (struct { foo vector<dep2.Foo>; }) error uint32;
     };
-    "#
-        ,
+    "#,
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
@@ -310,8 +291,7 @@ fn good_error_syntax_success_type() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     lib.add_source_file(
         "dep1.fidl",
@@ -321,8 +301,7 @@ fn good_error_syntax_success_type() {
     protocol ComposedProtocol {
     UsesDep2InSuccessType() -> (struct { foo vector<dep2.Foo>; }) error uint32;
     };
-    "#
-        ,
+    "#,
     );
 
     lib.add_source_file(
@@ -333,8 +312,7 @@ fn good_error_syntax_success_type() {
     protocol CapturesDependencyThroughCompose {
     compose dep1.ComposedProtocol;
     };
-    "#
-        ,
+    "#,
     );
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1", "dep2"];
@@ -350,8 +328,7 @@ fn good_error_syntax_error_type() {
         r#"
     library dep2;
     type Foo = flexible enum : uint32 {};
-    "#
-        ,
+    "#,
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
@@ -360,8 +337,7 @@ fn good_error_syntax_error_type() {
         r#"
     library dep2;
     type Foo = flexible enum : uint32 {};
-    "#
-        ,
+    "#,
     );
 
     dep1.add_source_file(
@@ -372,8 +348,7 @@ fn good_error_syntax_error_type() {
     protocol ComposedProtocol {
     UsesDep2InErrorType() -> () error dep2.Foo;
     };
-    "#
-        ,
+    "#,
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
@@ -382,8 +357,7 @@ fn good_error_syntax_error_type() {
         r#"
     library dep2;
     type Foo = flexible enum : uint32 {};
-    "#
-        ,
+    "#,
     );
     lib.add_source_file(
         "dep1.fidl",
@@ -393,8 +367,7 @@ fn good_error_syntax_error_type() {
     protocol ComposedProtocol {
     UsesDep2InErrorType() -> () error dep2.Foo;
     };
-    "#
-        ,
+    "#,
     );
 
     lib.add_source_file(
@@ -405,8 +378,7 @@ fn good_error_syntax_error_type() {
     protocol CapturesDependencyThroughCompose {
     compose dep1.ComposedProtocol;
     };
-    "#
-        ,
+    "#,
     );
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1", "dep2"];
@@ -422,8 +394,7 @@ fn good_flexible_response() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
@@ -432,8 +403,7 @@ fn good_flexible_response() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
 
     dep1.add_source_file(
@@ -444,8 +414,7 @@ fn good_flexible_response() {
     open protocol ComposedProtocol {
     flexible UsesDep2InFlexibleResponse() -> (struct { foo vector<dep2.Foo>; });
     };
-    "#
-        ,
+    "#,
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
@@ -454,8 +423,7 @@ fn good_flexible_response() {
         r#"
     library dep2;
     type Foo = struct {};
-    "#
-        ,
+    "#,
     );
     lib.add_source_file(
         "dep1.fidl",
@@ -465,8 +433,7 @@ fn good_flexible_response() {
     open protocol ComposedProtocol {
     flexible UsesDep2InFlexibleResponse() -> (struct { foo vector<dep2.Foo>; });
     };
-    "#
-        ,
+    "#,
     );
 
     lib.add_source_file(
@@ -477,8 +444,7 @@ fn good_flexible_response() {
     open protocol CapturesDependencyThroughCompose {
     compose dep1.ComposedProtocol;
     };
-    "#
-        ,
+    "#,
     );
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1", "dep2"];

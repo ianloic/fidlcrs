@@ -1,11 +1,4 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 fn good_valid_empty_protocol() {
@@ -15,8 +8,7 @@ fn good_valid_empty_protocol() {
         r#"library example;
 
 protocol Empty {};
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -35,8 +27,7 @@ fn good_valid_empty_open_protocol() {
         r#"library example;
 
 open protocol Empty {};
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -55,8 +46,7 @@ fn good_valid_empty_ajar_protocol() {
         r#"library example;
 
 ajar protocol Empty {};
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -75,8 +65,7 @@ fn good_valid_empty_closed_protocol() {
         r#"library example;
 
 closed protocol Empty {};
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -96,8 +85,7 @@ fn bad_empty_strict_protocol() {
         r#"library example;
 
 strict protocol Empty {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -111,8 +99,7 @@ fn bad_empty_flexible_protocol() {
         r#"library example;
 
 flexible protocol Empty {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -126,8 +113,7 @@ fn bad_open_missing_protocol_token() {
         r#"library example;
 
 open Empty {};
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -143,8 +129,7 @@ fn bad_empty_protocol_member() {
 protocol Example {
   ;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -175,8 +160,7 @@ protocol D {
     compose C;
     MethodD();
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -216,8 +200,7 @@ open protocol ComposeInOpen {
   compose Ajar;
   compose Open;
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -244,8 +227,7 @@ open protocol Composed {};
 closed protocol Composing {
   compose Composed;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -263,8 +245,7 @@ protocol A {};
 protocol B {
   strict compose A;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -291,8 +272,7 @@ protocol Child {
     compose ParentB;
     ChildMethod();
 };
-"#
-        ,
+"#,
     );
     let root = lib.compile().expect("compilation failed");
 
@@ -319,8 +299,7 @@ protocol MyProtocol {
     MyMethod();
     MyMethod();
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -328,26 +307,16 @@ protocol MyProtocol {
 #[test]
 
 fn bad_request_must_be_protocol() {
-    let file_content = get_file_content("bad/fi-0157.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0157.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0157.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_request_must_be_parameterized() {
-    let file_content = get_file_content("bad/fi-0168.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0168.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0168.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -366,8 +335,7 @@ type Foo = resource struct {
     c server_end:MyProtocol;
     d server_end:<MyProtocol, optional>;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -390,46 +358,30 @@ type Foo = resource struct {
     c ServerEnd;
     d ServerEnd:optional;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_method_absent_payload_struct() {
-    let file_content = get_file_content("good/fi-0077-a.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0077-a.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0077-a.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_event_absent_payload_struct() {
-    let file_content = get_file_content("good/fi-0077-b.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0077-b.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0077-b.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn bad_method_empty_payload_struct() {
-    let file_content = get_file_content("bad/fi-0077-a.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0077-a.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0077-a.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -448,8 +400,7 @@ protocol MyProtocol {
     MyMethodOneWay(MyStruct);
     MyMethodTwoWay(MyStruct) -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -469,8 +420,7 @@ protocol MyProtocol {
   MyMethod() -> (MyStruct);
     -> OnMyEvent(MyStruct);
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -489,8 +439,7 @@ type MyStruct = struct{
 protocol MyProtocol {
   MyMethod() -> (MyStruct) error uint32;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -514,8 +463,7 @@ protocol MyProtocol {
   });
   MyMethodTwoWay(MyTable) -> ();
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -539,8 +487,7 @@ protocol MyProtocol {
   });
   -> OnMyEvent(MyUnion);
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -556,8 +503,7 @@ fn bad_one_way_error_syntax() {
 protocol MyProtocol {
     MyOneWay() error int32;
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
@@ -565,13 +511,8 @@ protocol MyProtocol {
 #[test]
 
 fn bad_disallowed_request_type() {
-    let file_content = get_file_content("bad/fi-0075.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0075.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0075.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -586,8 +527,7 @@ fn bad_disallowed_response_type() {
 protocol MyProtocol {
     MyMethod() -> (uint32);
 };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }

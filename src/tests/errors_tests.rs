@@ -1,5 +1,4 @@
 use crate::flat_ast;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
@@ -17,8 +16,7 @@ protocol Example {
         foo string;
     }) error int32;
 };
-"#
-        ,
+"#,
     );
     let root = library.compile().expect("compilation failed");
     let decl = root
@@ -49,8 +47,7 @@ protocol Example {
         foo string;
     }) error uint32;
 };
-"#
-        ,
+"#,
     );
     library.compile().expect("compilation failed");
 }
@@ -68,8 +65,7 @@ library example;
 protocol MyProtocol {
   strict MyMethod() -> () error uint32;
 };
-"#
-        ,
+"#,
     );
     let root = library.compile().expect("compilation failed");
     let decl = root
@@ -101,8 +97,7 @@ protocol Example {
         foo string;
     }) error ErrorType;
 };
-"#
-        ,
+"#,
     );
     library.compile().expect("compilation failed");
 }
@@ -128,8 +123,7 @@ type ErrorType = enum : int32 {
     BAD = 2;
     UGLY = 3;
 };
-"#
-        ,
+"#,
     );
     library.compile().expect("compilation failed");
 }
@@ -162,8 +156,7 @@ library example;
 protocol Example {
     Method() -> (flub int32) error;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
@@ -181,8 +174,7 @@ library example;
 protocol Example {
     Method() -> (flub int32) error "hello";
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
@@ -200,8 +192,7 @@ library example;
 protocol Example {
     Method() -> error int32;
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
@@ -217,8 +208,7 @@ fn bad_error_unexpected_end_of_file() {
 
 library example;
 type ForgotTheSemicolon = table {}
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
@@ -254,8 +244,7 @@ library example;
 protocol Example {
     Method() -> () error table {};
 };
-"#
-        ,
+"#,
     );
     let root = library.compile().expect("compilation failed");
 
@@ -285,8 +274,7 @@ protocol Example {
     @transitional
     Method();
 };
-"#
-        ,
+"#,
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");

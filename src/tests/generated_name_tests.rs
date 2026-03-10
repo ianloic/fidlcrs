@@ -1,5 +1,4 @@
 use super::test_library::{LookupHelpers, TestLibrary};
-use crate::source_file::SourceFile;
 
 #[test]
 fn good_inside_struct() {
@@ -13,8 +12,7 @@ library fidl.test;
 type Foo = struct {
   bar @generated_name("Good") struct {};
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -35,8 +33,7 @@ library fidl.test;
 type Foo = table {
   1: bar @generated_name("Good") struct {};
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -60,8 +57,7 @@ library fidl.test;
 type Foo = union {
   1: bar @generated_name("Good") struct {};
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -85,8 +81,7 @@ library fidl.test;
 protocol Foo {
   Bar(@generated_name("Good") struct { x uint32; });
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -108,8 +103,7 @@ library fidl.test;
 protocol Foo {
   strict Bar() -> (@generated_name("Good") struct { x uint32; });
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -131,8 +125,7 @@ library fidl.test;
 protocol Foo {
   Bar() -> (@generated_name("Good") struct { x uint32; }) error uint32;
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -172,8 +165,7 @@ library fidl.test;
 protocol Foo {
   Bar() -> () error @generated_name("Good") enum { A = 1; };
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -214,8 +206,7 @@ type Foo = struct {
     A = 1;
   };
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -238,8 +229,7 @@ type Foo = struct {
     A = 1;
   };
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -262,8 +252,7 @@ type Foo = struct {
     x uint32;
   };
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -286,8 +275,7 @@ type Foo = struct {
     1: x uint32;
   };
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -310,8 +298,7 @@ type Foo = struct {
     1: x uint32;
   };
 };
-        "#
-        ,
+        "#,
     );
     let root = library.compile().expect("compilation failed");
     let foo = root
@@ -332,8 +319,7 @@ library fidl.test;
 type Foo = struct {
   foo @generated_name("Bar") struct {};
 };
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(result.is_ok(), "compilation failed");
@@ -351,8 +337,7 @@ library fidl.test;
 
 @generated_name("Good")
 type Bad = struct {};
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(
@@ -371,8 +356,7 @@ fn bad_on_top_level_struct() {
 library fidl.test;
 
 type Foo = @generated_name("Bad") struct {};
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(
@@ -395,8 +379,7 @@ type Foo = struct {
 };
 
 type Bar = struct {};
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(
@@ -432,8 +415,7 @@ type MetaVars = enum {
   @generated_name("BAD")
   BAR = 2;
 };
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(
@@ -458,8 +440,7 @@ service Bar {
   @generated_name("One")
   bar_one client_end:Foo;
 };
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(
@@ -481,8 +462,7 @@ library fidl.test;
 type Foo = struct {
   bad @generated_name struct {};
 };
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(
@@ -518,8 +498,7 @@ type Foo = struct {
 };
 
 type Baz = struct {};
-        "#
-        ,
+        "#,
     );
     let result = library.compile();
     assert!(

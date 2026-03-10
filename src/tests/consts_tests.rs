@@ -1,11 +1,4 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
-use std::fs;
-
-fn get_file_content(path: &str) -> String {
-    let full_path = format!("fidlc/tests/fidl/{}", path);
-    fs::read_to_string(&full_path).unwrap_or_else(|_| panic!("Failed to read file {}", full_path))
-}
 
 #[test]
 fn good_literals_test() {
@@ -19,8 +12,7 @@ const C_HEX_S uint32 = 0xABCDEF;
 const C_HEX_L uint32 = 0XABCDEF;
 const C_BINARY_S uint32 = 0b101010111100110111101111;
 const C_BINARY_L uint32 = 0B101010111100110111101111;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -33,8 +25,7 @@ fn good_const_test_bool() {
         r#"library example;
 
 const c bool = false;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -42,13 +33,8 @@ const c bool = false;
 #[test]
 
 fn bad_const_test_bool_with_string() {
-    let file_content = get_file_content("bad/fi-0065-a.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0065-a.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0065-a.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -61,8 +47,7 @@ fn bad_const_test_bool_with_numeric() {
         r#"library example;
 
 const c bool = 6;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -75,8 +60,7 @@ fn good_const_test_int32() {
         r#"library example;
 
 const c int32 = 42;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -90,8 +74,7 @@ fn good_const_test_int32_from_other_const() {
 
 const b int32 = 42;
 const c int32 = b;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -105,8 +88,7 @@ fn bad_const_test_int32_with_string() {
         r#"library example;
 
 const c int32 = "foo";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -120,33 +102,22 @@ fn bad_const_test_int32_with_bool() {
         r#"library example;
 
 const c int32 = true;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_const_test_int64() {
-    let file_content = get_file_content("good/fi-0066-b.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0066-b.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0066-b.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_const_test_uint64() {
-    let file_content = get_file_content("good/fi-0066-a.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0066-a.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0066-a.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -159,8 +130,7 @@ fn good_const_test_uint64_from_other_uint32() {
 
 const a uint32 = 42;
 const b uint64 = a;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -168,13 +138,8 @@ const b uint64 = a;
 #[test]
 
 fn bad_const_test_uint64_negative() {
-    let file_content = get_file_content("bad/fi-0066.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0066.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0066.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -187,8 +152,7 @@ fn bad_const_test_uint64_overflow() {
         r#"library example;
 
 const a uint64 = 18446744073709551616;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -202,8 +166,7 @@ fn good_const_test_float32() {
 
 const b float32 = 1.61803;
 const c float32 = -36.46216;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -216,8 +179,7 @@ fn good_const_test_float32_high_limit() {
         r#"library example;
 
 const hi float32 = 3.402823e38;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -230,8 +192,7 @@ fn good_const_test_float32_low_limit() {
         r#"library example;
 
 const lo float32 = -3.40282e38;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -245,8 +206,7 @@ fn bad_const_test_float32_high_limit() {
         r#"library example;
 
 const hi float32 = 3.41e38;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -260,21 +220,15 @@ fn bad_const_test_float32_low_limit() {
         r#"library example;
 
 const b float32 = -3.41e38;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_const_test_string() {
-    let file_content = get_file_content("good/fi-0002.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0002.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0002.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -287,8 +241,7 @@ fn good_const_test_string_from_other_const() {
 
 const c string:4 = "four";
 const d string:5 = c;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -302,8 +255,7 @@ fn bad_const_test_string_with_numeric() {
         r#"library example;
 
 const c string = 4;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -317,8 +269,7 @@ fn bad_const_test_string_with_bool() {
         r#"library example;
 
 const c string = true;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -332,8 +283,7 @@ fn bad_const_test_string_with_string_too_long() {
         r#"library example;
 
 const c string:4 = "hello";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -347,8 +297,7 @@ fn good_const_test_using() {
 
 alias foo = int32;
 const c foo = 2;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -363,8 +312,7 @@ fn bad_const_test_using_with_inconvertible_value() {
 
 alias foo = int32;
 const c foo = "nope";
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -372,13 +320,8 @@ const c foo = "nope";
 #[test]
 
 fn bad_const_test_nullable_string() {
-    let file_content = get_file_content("bad/fi-0059.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0059.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0059.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -391,8 +334,7 @@ fn bad_const_test_array() {
         r#"library example;
 
 const c array<int32,2> = -1;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -406,8 +348,7 @@ fn bad_const_test_vector() {
         r#"library example;
 
 const c vector<int32>:2 = -1;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -432,8 +373,7 @@ resource_definition handle : uint32 {
 };
 
 const c handle:THREAD = -1;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -449,8 +389,7 @@ type MyEnum = strict enum : int32 {
     A = 5;
 };
 const c int32 = MyEnum.A;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -466,8 +405,7 @@ type MyBits = strict bits : uint32 {
     A = 0x00000001;
 };
 const c uint32 = MyBits.A;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -483,8 +421,7 @@ type MyEnum = strict enum : int32 {
     A = 5;
 };
 const c MyEnum = MyEnum.A;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -500,8 +437,7 @@ type MyBits = strict bits : uint32 {
     A = 0x00000001;
 };
 const c MyBits = MyBits.A;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -517,8 +453,7 @@ type MyBits = strict bits : uint32 {
     A = 0x00000001;
 };
 const c MyBits = 0;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -526,13 +461,8 @@ const c MyBits = 0;
 #[test]
 
 fn bad_const_different_enum_member_reference() {
-    let file_content = get_file_content("bad/fi-0064.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0064.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0064.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -547,8 +477,7 @@ fn bad_const_different_bits_member_reference() {
 type MyBits = bits : uint32 { VALUE = 0x00000001; };
 type OtherBits = bits : uint32 { VALUE = 0x00000004; };
 const c MyBits = OtherBits.VALUE;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -563,8 +492,7 @@ fn bad_const_assign_primitive_to_enum() {
 
 type MyEnum = enum : int32 { VALUE = 1; };
 const c MyEnum = 5;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -579,8 +507,7 @@ fn bad_const_assign_primitive_to_bits() {
 
 type MyBits = bits : uint32 { VALUE = 0x00000001; };
 const c MyBits = 5;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -598,8 +525,7 @@ type Example = struct {
     s string:MAX;
     v vector<bool>:MAX;
 };
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -613,8 +539,7 @@ fn good_max_bound_test_convert_to_unbounded() {
 
 const A string:MAX = "foo";
 const B string = A;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -628,8 +553,7 @@ fn good_max_bound_test_convert_from_unbounded() {
 
 const A string = "foo";
 const B string:MAX = A;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -643,8 +567,7 @@ fn bad_max_bound_test_assign_to_const() {
         r#"library example;
 
 const FOO uint32 = MAX;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -652,23 +575,13 @@ const FOO uint32 = MAX;
 #[test]
 
 fn bad_max_bound_test_library_qualified() {
-    let dependency = SourceFile::new(
-        "dependency.fidl".to_string(),
-        r#"library dependency;
-
-type Example = struct {};
-"#
-        .to_string(),
-    );
-
     let mut lib = TestLibrary::new();
     lib.add_source_file(
         "dependency.fidl",
         r#"library dependency;
 
 type Example = struct {};
-"#
-        ,
+"#,
     ); // Or however multi-file or multi-lib is supported (might fail)
     lib.add_source_file(
         "example.fidl",
@@ -677,8 +590,7 @@ type Example = struct {};
 using dependency;
 
 type Example = struct { s string:dependency.MAX; };
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -692,8 +604,7 @@ fn bad_parameterize_primitive() {
         r#"library example;
 
 const u uint8<string> = 0;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -701,37 +612,22 @@ const u uint8<string> = 0;
 #[test]
 #[ignore]
 fn bad_name_collision() {
-    let file_content = get_file_content("bad/fi-0034.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0034.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0034.test.fidl");
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_fix_name_collision_rename() {
-    let file_content = get_file_content("good/fi-0034-b.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0034-b.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0034-b.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_fix_name_collision_remove() {
-    let file_content = get_file_content("good/fi-0034-a.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0034-a.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0034-a.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -745,16 +641,14 @@ fn good_multi_file_const_reference() {
 type Protein = struct {
     amino_acids vector<uint64>:SMALL_SIZE;
 };
-"#
-        ,
+"#,
     );
     lib.add_source_file(
         "second.fidl",
         r#"library example;
 
 const SMALL_SIZE uint32 = 4;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -774,8 +668,7 @@ type EnumType = enum : int32 {
 };
 
 const dee EnumType = EnumType.D;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -795,8 +688,7 @@ type BitsType = bits {
 };
 
 const dee BitsType = BitsType.D;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -816,8 +708,7 @@ type MyBits = strict bits : uint8 {
 };
 const bitsValue MyBits = MyBits.A | MyBits.B | MyBits.D;
 const Result uint16 = MyBits.A | MyBits.B | MyBits.D;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -825,13 +716,8 @@ const Result uint16 = MyBits.A | MyBits.B | MyBits.D;
 #[test]
 #[ignore]
 fn bad_or_operator_different_types_test() {
-    let file_content = get_file_content("bad/fi-0065-b.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0065-b.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0065-b.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -845,8 +731,7 @@ fn good_or_operator_different_types_test() {
 const one uint8 = 0x0001;
 const two_fifty_six uint16 = 0x0100;
 const two_fifty_seven uint16 = one | two_fifty_six;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -854,13 +739,8 @@ const two_fifty_seven uint16 = one | two_fifty_six;
 #[test]
 #[ignore]
 fn bad_or_operator_non_primitive_types_test() {
-    let file_content = get_file_content("bad/fi-0061.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0061.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("bad/fi-0061.test.fidl");
     assert!(lib.compile().is_err());
 }
 
@@ -881,8 +761,7 @@ const three MyBits = MyBits.A | MyBits.B;
 const seven MyBits = three | MyBits.C;
 const fifteen MyBits = (three | seven) | MyBits.D;
 const bitsValue MyBits = MyBits.A | ( ( (MyBits.A | MyBits.B) | MyBits.D) | MyBits.C);
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -903,8 +782,7 @@ type AnotherEnum = enum {
 };
 const a OneEnum = OneEnum.A;
 const b AnotherEnum = a;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -924,8 +802,7 @@ type AnotherEnum = enum {
     B = 1;
 };
 const a OneEnum = AnotherEnum.B;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -939,21 +816,15 @@ fn bad_const_references_invalid_const() {
         r#"library example;
 const A string = Z;
 const Z string = 1;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_declaration() {
-    let file_content = get_file_content("good/fi-0006.test.fidl");
-
     let mut lib = TestLibrary::new();
-    lib.add_source(SourceFile::new(
-        "good/fi-0006.test.fidl".to_string(),
-        file_content,
-    ));
+    lib.add_errcat_file("good/fi-0006.test.fidl");
     lib.compile().expect("compilation failed");
 }
 
@@ -965,8 +836,7 @@ fn good_integer_convert_wider() {
         r#"library example;
 const X uint16 = 23;
 const WIDE uint32 = X;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -979,8 +849,7 @@ fn good_integer_convert_narrower() {
         r#"library example;
 const X uint16 = 255;
 const NARROW uint8 = X;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -993,8 +862,7 @@ fn good_integer_convert_to_signed() {
         r#"library example;
 const X uint16 = 23;
 const SIGNED int16 = X;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1007,8 +875,7 @@ fn good_integer_convert_to_unsigned() {
         r#"library example;
 const X int16 = 23;
 const UNSIGNED uint16 = X;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1022,8 +889,7 @@ fn bad_integer_convert_narrower_out_of_range() {
         r#"library example;
 const X uint16 = 256;
 const NARROW uint8 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1037,8 +903,7 @@ fn bad_integer_convert_to_signed_out_of_range() {
         r#"library example;
 const X uint16 = 32768; // 2^15
 const SIGNED int16 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1052,8 +917,7 @@ fn bad_integer_convert_to_unsigned_negative() {
         r#"library example;
 const X int16 = -1;
 const UNSIGNED uint16 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1066,8 +930,7 @@ fn good_convert_float_wider() {
         r#"library example;
 const X float32 = 23;
 const WIDE float64 = X;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1080,8 +943,7 @@ fn good_convert_float_narrower() {
         r#"library example;
 const X float64 = 3.4028234663852886e38; // max float32
 const NARROW float32 = X;
-"#
-        ,
+"#,
     );
     lib.compile().expect("compilation failed");
 }
@@ -1095,8 +957,7 @@ fn bad_convert_float_narrower_out_of_range_positive() {
         r#"library example;
 const X float64 = 3.402823466385289e38; // just above max float32
 const NARROW float32 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1110,8 +971,7 @@ fn bad_convert_float_narrower_out_of_range_negative() {
         r#"library example;
 const X float64 = -3.402823466385289e38; // just below min float32
 const NARROW float32 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1125,8 +985,7 @@ fn bad_convert_integer_to_float() {
         r#"library example;
 const X uint16 = 1;
 const FLOAT float32 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }
@@ -1140,8 +999,7 @@ fn bad_convert_float_to_integer() {
         r#"library example;
 const X float32 = 1;
 const INTEGER uint16 = X;
-"#
-        ,
+"#,
     );
     assert!(lib.compile().is_err());
 }

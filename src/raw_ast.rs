@@ -233,7 +233,7 @@ pub struct ResourceDeclaration<'a> {
     pub element: SourceElement<'a>,
     pub attributes: Option<Box<AttributeList<'a>>>,
     pub name: Identifier<'a>,
-    pub type_ctor: TypeConstructor<'a>,
+    pub type_ctor: Option<TypeConstructor<'a>>,
     pub properties: Vec<ResourceProperty<'a>>,
 }
 

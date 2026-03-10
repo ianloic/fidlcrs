@@ -18,7 +18,9 @@ struct CanonicalNames {
 
 impl CanonicalNames {
     fn new() -> Self {
-        Self { names: HashMap::new() }
+        Self {
+            names: HashMap::new(),
+        }
     }
 
     fn insert(
@@ -37,7 +39,8 @@ impl CanonicalNames {
                 prev_site.clone(),
             ))
         } else {
-            self.names.insert(canonical, (raw_name, kind.to_string(), site));
+            self.names
+                .insert(canonical, (raw_name, kind.to_string(), site));
             Ok(())
         }
     }
@@ -1641,7 +1644,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         kind: &str,
         span: SourceSpan<'src>,
     ) {
-        if let Err((is_exact, prev_raw, prev_kind, prev_site)) = names.insert(raw_name.clone(), kind, span) {
+        if let Err((is_exact, prev_raw, prev_kind, prev_site)) =
+            names.insert(raw_name.clone(), kind, span)
+        {
             if is_exact {
                 self.reporter.fail(
                     Error::ErrNameCollision,
@@ -1653,7 +1658,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.reporter.fail(
                     Error::ErrNameCollisionCanonical,
                     span,
-                    &[&kind.to_string(), &raw_name, &prev_kind, &prev_raw, &prev_site, &canon],
+                    &[
+                        &kind.to_string(),
+                        &raw_name,
+                        &prev_kind,
+                        &prev_raw,
+                        &prev_site,
+                        &canon,
+                    ],
                 );
             }
         }
@@ -1813,7 +1825,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             let name_str = member.name.data().to_string();
-            self.check_canonical_insert(&mut member_names, name_str.clone(), "member", member.name.element.span());
+            self.check_canonical_insert(
+                &mut member_names,
+                name_str.clone(),
+                "member",
+                member.name.element.span(),
+            );
 
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
                 if eval_val == max_val_u64 {
@@ -2077,7 +2094,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             let name_str = member.name.data().to_string();
-            self.check_canonical_insert(&mut member_names, name_str.clone(), "member", member.name.element.span());
+            self.check_canonical_insert(
+                &mut member_names,
+                name_str.clone(),
+                "member",
+                member.name.element.span(),
+            );
 
             // Calculate mask and validate value
             let mut valid_value = true;
@@ -2336,7 +2358,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
                 let name_str = member.name.as_ref().unwrap().data().to_string();
-                self.check_canonical_insert(&mut member_names, name_str.clone(), "table field", member.name.as_ref().unwrap().element.span());
+                self.check_canonical_insert(
+                    &mut member_names,
+                    name_str.clone(),
+                    "table field",
+                    member.name.as_ref().unwrap().element.span(),
+                );
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     NamingContext::create(
                         name_element
@@ -2595,7 +2622,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if let Some(n_name) = &member.name {
                 let member_name = n_name.data();
-                self.check_canonical_insert(&mut member_names, member_name.to_string(), "union member", n_name.element.span());
+                self.check_canonical_insert(
+                    &mut member_names,
+                    member_name.to_string(),
+                    "union member",
+                    n_name.element.span(),
+                );
             }
 
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
@@ -2876,7 +2908,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         for member in &decl.members {
             let member_name = member.name.data();
-            self.check_canonical_insert(&mut member_names, member_name.to_string(), "struct member", member.name.element.span());
+            self.check_canonical_insert(
+                &mut member_names,
+                member_name.to_string(),
+                "struct member",
+                member.name.element.span(),
+            );
 
             let ctx = naming_context.clone().unwrap_or_else(|| {
                 NamingContext::create(if let Some(id) = &decl.name {
@@ -4691,7 +4728,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let ctx = NamingContext::create(name);
 
-        let type_obj = self.resolve_type(&decl.type_ctor, library_name, Some(ctx));
+        let type_obj = if let Some(tc) = &decl.type_ctor {
+            self.resolve_type(tc, library_name, Some(ctx))
+        } else {
+            Type::Primitive(PrimitiveType {
+                common: TypeCommon {
+                    experimental_maybe_from_alias: None,
+                    outer_alias: None,
+                    deprecated: Some(false),
+                    maybe_attributes: vec![],
+                    field_shape: None,
+                    type_shape: TypeShape {
+                        inline_size: 4,
+                        alignment: 4,
+                        depth: 0,
+                        max_handles: 0,
+                        max_out_of_line: 0,
+                        has_padding: false,
+                        has_flexible_envelope: false,
+                    },
+                    maybe_size_constant_name: None,
+                    resource: false,
+                },
+                subtype: PrimitiveSubtype::Uint32,
+            })
+        };
 
         // C++ checks if type resolves to a uint32 primitive
         let mut is_uint32 = if let Type::Primitive(p) = &type_obj {
@@ -4746,7 +4807,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for prop in &decl.properties {
             let prop_name = prop.name.data().to_string();
 
-            self.check_canonical_insert(&mut property_names, prop_name.clone(), "resource property", prop.name.element.span());
+            self.check_canonical_insert(
+                &mut property_names,
+                prop_name.clone(),
+                "resource property",
+                prop.name.element.span(),
+            );
 
             let prop_ctx = NamingContext::create(name).enter_member(prop_name.as_str());
             let prop_type = self.resolve_type(&prop.type_ctor, library_name, Some(prop_ctx));
@@ -4863,7 +4929,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let ctx = NamingContext::create(name).enter_member(member.name.data());
             let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(ctx));
             let member_name = member.name.data().to_string();
-            self.check_canonical_insert(&mut member_names, member_name.clone(), "service member", member.name.element.span());
+            self.check_canonical_insert(
+                &mut member_names,
+                member_name.clone(),
+                "service member",
+                member.name.element.span(),
+            );
             let attributes = self.compile_attribute_list(&member.attributes);
 
             members.push(ServiceMember {
@@ -5136,7 +5207,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 );
             }
 
-            self.check_canonical_insert(&mut method_names, m.name.data().to_string(), "method", m.name.element.span());
+            self.check_canonical_insert(
+                &mut method_names,
+                m.name.data().to_string(),
+                "method",
+                m.name.element.span(),
+            );
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter
                     .fail(Error::ErrUnexpectedToken, m.name.element.span(), &[]);

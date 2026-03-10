@@ -235,13 +235,15 @@ pub(crate) fn get_dependencies<'node, 'src>(
             }
         }
         RawDecl::Resource(r) => {
-            collect_deps_from_ctor(
-                &r.type_ctor,
-                library_name,
-                &mut deps,
-                skip_optional,
-                inline_names,
-            );
+            if let Some(type_ctor) = &r.type_ctor {
+                collect_deps_from_ctor(
+                    type_ctor,
+                    library_name,
+                    &mut deps,
+                    skip_optional,
+                    inline_names,
+                );
+            }
             for prop in &r.properties {
                 collect_deps_from_ctor(
                     &prop.type_ctor,

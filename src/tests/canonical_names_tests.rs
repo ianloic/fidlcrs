@@ -1,4 +1,4 @@
-use crate::tests::test_library::TestLibrary;
+use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
 
 #[test]
 fn bad_collision() {
@@ -295,10 +295,9 @@ fn good_current_library() {
 }
 
 #[test]
-#[ignore]
 fn good_dependent_library() {
-    // SharedLibrary is not fully translated
-    let mut dependency = TestLibrary::new();
+    let mut shared = SharedAmongstLibraries::new();
+    let mut dependency = TestLibrary::with_shared(&mut shared);
 
     dependency.add_source_file(
         "foobar.fidl",
@@ -307,6 +306,10 @@ fn good_dependent_library() {
     type Something = struct {};
     "#,
     );
+
+    dependency.compile().expect("compilation failed");
+
+    let mut library = TestLibrary::with_shared(&mut shared);
 
     library.add_source_file(
         "example.fidl",
@@ -579,8 +582,8 @@ fn bad_upper_acronym() {
 #[test]
 
 fn bad_dependent_library() {
-    // SharedLibrary is not fully translated
-    let mut dependency = TestLibrary::new();
+    let mut shared = SharedAmongstLibraries::new();
+    let mut dependency = TestLibrary::with_shared(&mut shared);
 
     dependency.add_source_file(
         "foobar.fidl",
@@ -590,8 +593,7 @@ fn bad_dependent_library() {
     "#,
     );
     dependency.compile().expect("dep failed");
-    // ASSERT_COMPILED(dependency);
-    let mut library = TestLibrary::new();
+    let mut library = TestLibrary::with_shared(&mut shared);
 
     library.add_source_file(
         "lib.fidl",

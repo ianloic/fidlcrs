@@ -1906,8 +1906,13 @@ impl<'a, 'b> Parser<'a, 'b> {
             .unwrap_or_else(|| self.last_token.clone());
         self.consume_token_with_subkind(TokenSubkind::ResourceDefinition)?;
         let name = self.parse_identifier()?;
-        self.consume_token(TokenKind::Colon)?;
-        let type_ctor = self.parse_type_constructor()?;
+
+        let mut type_ctor = None;
+        if self.last_token.kind == TokenKind::Colon {
+            self.consume_token(TokenKind::Colon)?;
+            type_ctor = Some(self.parse_type_constructor()?);
+        }
+
         self.consume_token(TokenKind::LeftCurly)?;
 
         // properties

@@ -7,6 +7,85 @@ use crate::parser::Parser;
 use crate::raw_ast;
 use crate::reporter::Reporter;
 use crate::source_file::{SourceFile, VirtualSourceFile};
+use std::cell::RefCell;
+
+pub struct SharedAmongstLibraries {
+    pub experimental_flags: Vec<String>,
+    pub select_versions: Vec<(String, String)>,
+    pub custom_schemas: std::collections::HashMap<String, AttributeSchema>,
+    pub all_source_files: Vec<SourceFile>,
+}
+
+impl Default for SharedAmongstLibraries {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SharedAmongstLibraries {
+    pub fn new() -> Self {
+        Self {
+            experimental_flags: Vec::new(),
+            select_versions: Vec::new(),
+            custom_schemas: std::collections::HashMap::new(),
+            all_source_files: Vec::new(),
+        }
+    }
+
+    pub fn use_library_zx(&mut self) {
+        let dummy_zx = SourceFile::new(
+            "zx.fidl".to_string(),
+            r#"
+library zx;
+
+type ObjType = strict enum : uint32 {
+    NONE = 0;
+    PROCESS = 1;
+    THREAD = 2;
+    VMO = 3;
+    CHANNEL = 4;
+    EVENT = 5;
+    PORT = 6;
+};
+
+type Rights = strict bits : uint32 {
+    DUPLICATE = 0x00000001;
+    TRANSFER = 0x00000002;
+};
+
+resource_definition Handle : uint32 {
+    properties {
+        subtype ObjType;
+        rights Rights;
+    };
+};
+"#
+            .to_string(),
+        );
+        self.all_source_files.insert(0, dummy_zx);
+    }
+
+    pub fn use_library_fdf(&mut self) {
+        let dummy_fdf = SourceFile::new(
+            "fdf.fidl".to_string(),
+            r#"
+library fdf;
+
+type ObjType = strict enum : uint32 {
+  CHANNEL = 1;
+};
+
+resource_definition handle : uint32 {
+    properties {
+        subtype ObjType;
+    };
+};
+"#
+            .to_string(),
+        );
+        self.all_source_files.insert(0, dummy_fdf);
+    }
+}
 
 pub struct TestLibrary<'a> {
     reporter: Reporter<'a>,
@@ -16,6 +95,7 @@ pub struct TestLibrary<'a> {
     pub experimental_flags: Vec<String>,
     pub select_versions: Vec<(String, String)>,
     pub custom_schemas: std::collections::HashMap<String, AttributeSchema>,
+    pub shared: Option<RefCell<&'a mut SharedAmongstLibraries>>,
 }
 
 impl<'a> Default for TestLibrary<'a> {
@@ -33,7 +113,24 @@ impl<'a> TestLibrary<'a> {
             experimental_flags: Vec::new(),
             select_versions: Vec::new(),
             custom_schemas: std::collections::HashMap::new(),
+            shared: None,
         }
+    }
+
+    pub fn with_shared(shared: &'a mut SharedAmongstLibraries) -> Self {
+        let mut lib = Self::new();
+        lib.experimental_flags = shared.experimental_flags.clone();
+        lib.select_versions = shared.select_versions.clone();
+        lib.custom_schemas = shared.custom_schemas.clone();
+        // Add all previously compiled files
+        for sf in &shared.all_source_files {
+            lib.source_files.push(SourceFile::new(
+                sf.filename().to_string(),
+                sf.data().to_string(),
+            ));
+        }
+        lib.shared = Some(RefCell::new(shared));
+        lib
     }
 
     pub fn with_source_file(filename: &str, contents: &str) -> Self {
@@ -69,6 +166,12 @@ impl<'a> TestLibrary<'a> {
     }
 
     pub fn use_library_zx(&mut self) {
+        if let Some(shared_cell) = &self.shared {
+            shared_cell.borrow_mut().use_library_zx();
+            // Re-sync source files? No, just copy them all when compiling next time?
+            // TestLibrary compilation takes `self.source_files` and `shared.all_source_files`.
+            // We can just add it to `self.source_files` directly.
+        }
         let dummy_zx = SourceFile::new(
             "zx.fidl".to_string(),
             r#"
@@ -102,6 +205,9 @@ resource_definition Handle : uint32 {
     }
 
     pub fn use_library_fdf(&mut self) {
+        if let Some(shared_cell) = &self.shared {
+            shared_cell.borrow_mut().use_library_fdf();
+        }
         let dummy_fdf = SourceFile::new(
             "fdf.fidl".to_string(),
             r#"
@@ -189,6 +295,26 @@ resource_definition handle : uint32 {
             }
             return Err("Compilation failed".to_string());
         }
+
+        // Check for warnings? TestLibrary doesn't do warnings as errors unless flag set, but here we can just update shared.
+
+        // Actually, update shared with OUR new files so next time they are dependencies!
+        if res.is_ok() {
+            if let Some(shared_cell) = &self.shared {
+                let mut shared = shared_cell.borrow_mut();
+                shared.experimental_flags = self.experimental_flags.clone();
+                shared.select_versions = self.select_versions.clone();
+                shared.custom_schemas = self.custom_schemas.clone();
+                let old_len = shared.all_source_files.len();
+                for sf in self.source_files.iter().skip(old_len) {
+                    shared.all_source_files.push(SourceFile::new(
+                        sf.filename().to_string(),
+                        sf.data().to_string(),
+                    ));
+                }
+            }
+        }
+
         res
     }
 

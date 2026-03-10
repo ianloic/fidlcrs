@@ -289,7 +289,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 if lib != compiler.library_name {
                     continue;
                 }
-                
+
                 let is_anonymous = compiler.anonymous_structs.contains(full_name);
                 if is_anonymous {
                     continue;
@@ -314,23 +314,33 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 };
 
                 if let Some((prev_raw, prev_kind, prev_site)) = canonical_names.get(&canon) {
-                    let err_span = unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span) };
-                    
+                    let err_span =
+                        unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span) };
+
                     if prev_raw == local_decl_name {
                         if prev_kind == &"library import" {
-                             errors_to_emit.push((Error::ErrDeclNameConflictsWithLibraryImport, err_span, vec![local_decl_name.to_string()]));
+                            errors_to_emit.push((
+                                Error::ErrDeclNameConflictsWithLibraryImport,
+                                err_span,
+                                vec![local_decl_name.to_string()],
+                            ));
                         } else {
-                             errors_to_emit.push((
-                                 Error::ErrNameCollision,
-                                 err_span,
-                                 vec![decl_kind.to_string(), local_decl_name.to_string(), prev_kind.to_string(), prev_site.clone()]
-                             ));
+                            errors_to_emit.push((
+                                Error::ErrNameCollision,
+                                err_span,
+                                vec![
+                                    decl_kind.to_string(),
+                                    local_decl_name.to_string(),
+                                    prev_kind.to_string(),
+                                    prev_site.clone(),
+                                ],
+                            ));
                         }
                     } else if prev_kind == &"library import" {
                         errors_to_emit.push((
                             Error::ErrDeclNameConflictsWithLibraryImportCanonical,
                             err_span,
-                            vec![local_decl_name.to_string(), canon.clone()]
+                            vec![local_decl_name.to_string(), canon.clone()],
                         ));
                     } else {
                         errors_to_emit.push((
@@ -342,8 +352,8 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                 prev_kind.to_string(),
                                 prev_raw.clone(),
                                 prev_site.clone(),
-                                canon.clone()
-                            ]
+                                canon.clone(),
+                            ],
                         ));
                     }
                 } else {
@@ -353,7 +363,8 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
         }
 
         for (err, span, args) in errors_to_emit {
-            let ref_args: Vec<&dyn std::fmt::Debug> = args.iter().map(|s| s as &dyn std::fmt::Debug).collect();
+            let ref_args: Vec<&dyn std::fmt::Debug> =
+                args.iter().map(|s| s as &dyn std::fmt::Debug).collect();
             compiler.reporter.fail(err, span, &ref_args);
         }
     }

@@ -1,5 +1,5 @@
 use crate::flat_ast::TypeKind;
-use crate::tests::test_library::{LookupHelpers, TestLibrary};
+use crate::tests::test_library::{LookupHelpers, SharedAmongstLibraries, TestLibrary};
 
 #[test]
 #[ignore]

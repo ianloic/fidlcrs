@@ -1,4 +1,4 @@
-use crate::tests::test_library::TestLibrary;
+use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
 
 #[test]
 fn good_literals_test() {

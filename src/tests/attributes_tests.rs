@@ -8,7 +8,7 @@ use crate::compiler::Compiler;
 use crate::diagnostics::Error;
 use crate::raw_ast;
 use crate::source_span::SourceSpan;
-use crate::tests::test_library::TestLibrary;
+use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
 
 #[test]
 fn good_placement_of_attributes() {

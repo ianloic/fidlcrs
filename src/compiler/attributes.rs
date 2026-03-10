@@ -53,7 +53,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if attr.name.element.start_token.span.data == "transitional" {
-                    let span = attr.name.element.span().clone();
+                    let span = attr.name.element.span();
                     // Bypass the '_ lifetime issue by recreating the span with 'src
                     let transmuted_span: SourceSpan<'src> = unsafe { std::mem::transmute(span) };
                     self.reporter.fail(
@@ -263,14 +263,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         let schemas = &self.attribute_schemas;
 
         // 1. Validate library attributes
-        if let Some(libr) = &self.library_decl {
-            if let Some(attrs) = &libr.attributes {
-                schemas.validate(self, "library", false, attrs);
-            }
+        if let Some(libr) = &self.library_decl
+            && let Some(attrs) = &libr.attributes
+        {
+            schemas.validate(self, "library", false, attrs);
         }
 
         // 2. Validate all declarations and their members
-        for (_name, raw_decl) in &self.raw_decls {
+        for raw_decl in self.raw_decls.values() {
             let kind = match raw_decl {
                 RawDecl::Struct(_) => "struct",
                 RawDecl::Enum(_) => "enum",

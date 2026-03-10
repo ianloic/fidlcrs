@@ -17,43 +17,43 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             .unwrap_or_else(|| "unversioned".to_string());
 
         let mut lib_avail = Availability::unbounded();
-        if let Some(lib_decl) = &compiler.library_decl {
-            if let Some(attrs) = &lib_decl.attributes {
-                for attr in &attrs.attributes {
-                    if attr.name.data() == "available" {
-                        let mut added = None;
-                        let mut deprecated = None;
-                        let mut removed = None;
-                        for arg in &attr.args {
-                            let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
-                            let val_str = match &arg.value {
-                                raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
-                                raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
-                                _ => "".to_string(),
-                            };
-                            if arg_name == "platform" {
-                                platform_name = val_str.trim_matches('"').to_string();
-                            }
-                            if arg_name == "added" {
-                                added = Version::parse(&val_str);
-                            }
-                            if arg_name == "deprecated" {
-                                deprecated = Version::parse(&val_str);
-                            }
-                            if arg_name == "removed" {
-                                removed = Version::parse(&val_str);
-                            }
+        if let Some(lib_decl) = &compiler.library_decl
+            && let Some(attrs) = &lib_decl.attributes
+        {
+            for attr in &attrs.attributes {
+                if attr.name.data() == "available" {
+                    let mut added = None;
+                    let mut deprecated = None;
+                    let mut removed = None;
+                    for arg in &attr.args {
+                        let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
+                        let val_str = match &arg.value {
+                            raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                            raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                            _ => "".to_string(),
+                        };
+                        if arg_name == "platform" {
+                            platform_name = val_str.trim_matches('"').to_string();
                         }
-                        let mut initial = Availability::new();
-                        if initial.init(InitArgs {
-                            added,
-                            deprecated,
-                            removed,
-                            replaced: false,
-                        }) {
-                            let _ = initial.inherit(&Availability::unbounded());
-                            lib_avail = initial;
+                        if arg_name == "added" {
+                            added = Version::parse(&val_str);
                         }
+                        if arg_name == "deprecated" {
+                            deprecated = Version::parse(&val_str);
+                        }
+                        if arg_name == "removed" {
+                            removed = Version::parse(&val_str);
+                        }
+                    }
+                    let mut initial = Availability::new();
+                    if initial.init(InitArgs {
+                        added,
+                        deprecated,
+                        removed,
+                        replaced: false,
+                    }) {
+                        let _ = initial.inherit(&Availability::unbounded());
+                        lib_avail = initial;
                     }
                 }
             }
@@ -110,11 +110,11 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         let mut any_decl_removed = false;
 
         compiler.raw_decls.retain(|name, _| {
-            if let Some(avail) = decl_availability.get(name) {
-                if !avail.set().contains(selected_version) {
-                    any_decl_removed = true;
-                    return false;
-                }
+            if let Some(avail) = decl_availability.get(name)
+                && !avail.set().contains(selected_version)
+            {
+                any_decl_removed = true;
+                return false;
             }
             true
         });

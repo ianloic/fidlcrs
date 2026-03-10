@@ -150,7 +150,7 @@ impl<'a> NamingContext<'a> {
                 Kind::Decl | Kind::LayoutMember => {}
             }
             names.push(ctx.name.data().to_string());
-            current = ctx.parent.as_ref().map(|rc| &**rc);
+            current = ctx.parent.as_deref();
         }
         names.reverse();
         names

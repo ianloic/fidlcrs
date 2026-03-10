@@ -549,9 +549,9 @@ impl From<&flat_ast::Location> for Location {
     fn from(ast: &flat_ast::Location) -> Self {
         Self {
             filename: ast.filename.clone(),
-            line: ast.line.clone(),
-            column: ast.column.clone(),
-            length: ast.length.clone(),
+            line: ast.line,
+            column: ast.column,
+            length: ast.length,
         }
     }
 }
@@ -559,13 +559,13 @@ impl From<&flat_ast::Location> for Location {
 impl From<&flat_ast::TypeShape> for TypeShape {
     fn from(ast: &flat_ast::TypeShape) -> Self {
         Self {
-            inline_size: ast.inline_size.clone(),
-            alignment: ast.alignment.clone(),
-            depth: ast.depth.clone(),
-            max_handles: ast.max_handles.clone(),
-            max_out_of_line: ast.max_out_of_line.clone(),
-            has_padding: ast.has_padding.clone(),
-            has_flexible_envelope: ast.has_flexible_envelope.clone(),
+            inline_size: ast.inline_size,
+            alignment: ast.alignment,
+            depth: ast.depth,
+            max_handles: ast.max_handles,
+            max_out_of_line: ast.max_out_of_line,
+            has_padding: ast.has_padding,
+            has_flexible_envelope: ast.has_flexible_envelope,
         }
     }
 }
@@ -573,8 +573,8 @@ impl From<&flat_ast::TypeShape> for TypeShape {
 impl From<&flat_ast::FieldShape> for FieldShape {
     fn from(ast: &flat_ast::FieldShape) -> Self {
         Self {
-            offset: ast.offset.clone(),
-            padding: ast.padding.clone(),
+            offset: ast.offset,
+            padding: ast.padding,
         }
     }
 }
@@ -608,7 +608,7 @@ impl From<&flat_ast::StructMember> for StructMember {
                 .map(Into::into),
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             maybe_default_value: ast.maybe_default_value.as_ref().map(Into::into),
             field_shape: (&ast.field_shape).into(),
@@ -622,18 +622,18 @@ impl From<&flat_ast::StructDeclaration> for StructDeclaration {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             members: ast.members.iter().map(Into::into).collect(),
-            resource: ast.resource.clone(),
-            is_empty_success_struct: ast.is_empty_success_struct.clone(),
+            resource: ast.resource,
+            is_empty_success_struct: ast.is_empty_success_struct,
             type_shape: (&ast.type_shape).into(),
         }
     }
 }
 
 impl From<&flat_ast::BitField> for BitField {
-    fn from(ast: &flat_ast::BitField) -> Self {
+    fn from(_ast: &flat_ast::BitField) -> Self {
         Self {}
     }
 }
@@ -644,12 +644,12 @@ impl From<&flat_ast::BitsDeclaration> for BitsDeclaration {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
             mask: ast.mask.clone(),
             members: ast.members.iter().map(Into::into).collect(),
-            strict: ast.strict.clone(),
+            strict: ast.strict,
         }
     }
 }
@@ -659,7 +659,7 @@ impl From<&flat_ast::BitsMember> for BitsMember {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             value: (&ast.value).into(),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
         }
@@ -671,7 +671,7 @@ impl From<&flat_ast::ConstDeclaration> for ConstDeclaration {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
             value: (&ast.value).into(),
@@ -685,12 +685,12 @@ impl From<&flat_ast::EnumDeclaration> for EnumDeclaration {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: ast.type_.clone(),
             members: ast.members.iter().map(Into::into).collect(),
-            strict: ast.strict.clone(),
-            maybe_unknown_value: ast.maybe_unknown_value.clone(),
+            strict: ast.strict,
+            maybe_unknown_value: ast.maybe_unknown_value,
         }
     }
 }
@@ -700,7 +700,7 @@ impl From<&flat_ast::EnumMember> for EnumMember {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             value: (&ast.value).into(),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
         }
@@ -757,7 +757,7 @@ impl From<&flat_ast::ResourceProperty> for ResourceProperty {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             type_: (&ast.type_).into(),
         }
     }
@@ -768,7 +768,7 @@ impl From<&flat_ast::ExperimentalResourceDeclaration> for ExperimentalResourceDe
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
             properties: ast.properties.iter().map(Into::into).collect(),
@@ -781,7 +781,7 @@ impl From<&flat_ast::ProtocolDeclaration> for ProtocolDeclaration {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             openness: ast.openness.clone(),
             composed_protocols: ast.composed_protocols.iter().map(Into::into).collect(),
@@ -797,7 +797,7 @@ impl From<&flat_ast::ProtocolCompose> for ProtocolCompose {
             name: ast.name.clone(),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
         }
     }
 }
@@ -806,18 +806,18 @@ impl From<&flat_ast::ProtocolMethod> for ProtocolMethod {
     fn from(ast: &flat_ast::ProtocolMethod) -> Self {
         Self {
             kind: ast.kind.clone(),
-            ordinal: ast.ordinal.clone(),
+            ordinal: ast.ordinal,
             name: ast.name.clone(),
-            strict: ast.strict.clone(),
+            strict: ast.strict,
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
-            has_request: ast.has_request.clone(),
+            deprecated: ast.deprecated,
+            has_request: ast.has_request,
             maybe_request_payload: ast.maybe_request_payload.as_ref().map(Into::into),
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
-            has_response: ast.has_response.clone(),
+            has_response: ast.has_response,
             maybe_response_payload: ast.maybe_response_payload.as_ref().map(Into::into),
-            is_composed: ast.is_composed.clone(),
-            has_error: ast.has_error.clone(),
+            is_composed: ast.is_composed,
+            has_error: ast.has_error,
             maybe_response_success_type: ast.maybe_response_success_type.as_ref().map(Into::into),
             maybe_response_err_type: ast.maybe_response_err_type.as_ref().map(Into::into),
         }
@@ -829,7 +829,7 @@ impl From<&flat_ast::ServiceDeclaration> for ServiceDeclaration {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             members: ast.members.iter().map(Into::into).collect(),
         }
@@ -842,7 +842,7 @@ impl From<&flat_ast::ServiceMember> for ServiceMember {
             type_: (&ast.type_).into(),
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
         }
     }
@@ -854,11 +854,11 @@ impl From<&flat_ast::TableDeclaration> for TableDeclaration {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             members: ast.members.iter().map(Into::into).collect(),
-            strict: ast.strict.clone(),
-            resource: ast.resource.clone(),
+            strict: ast.strict,
+            resource: ast.resource,
             type_shape: (&ast.type_shape).into(),
         }
     }
@@ -867,8 +867,8 @@ impl From<&flat_ast::TableDeclaration> for TableDeclaration {
 impl From<&flat_ast::TableMember> for TableMember {
     fn from(ast: &flat_ast::TableMember) -> Self {
         Self {
-            ordinal: ast.ordinal.clone(),
-            reserved: ast.reserved.clone(),
+            ordinal: ast.ordinal,
+            reserved: ast.reserved,
             type_: ast.type_.as_ref().map(Into::into),
             experimental_maybe_from_alias: ast
                 .experimental_maybe_from_alias
@@ -876,7 +876,7 @@ impl From<&flat_ast::TableMember> for TableMember {
                 .map(Into::into),
             name: ast.name.clone(),
             location: ast.location.as_ref().map(Into::into),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
         }
     }
@@ -888,12 +888,12 @@ impl From<&flat_ast::UnionDeclaration> for UnionDeclaration {
             name: ast.name.clone(),
             naming_context: ast.naming_context.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             members: ast.members.iter().map(Into::into).collect(),
-            strict: ast.strict.clone(),
-            resource: ast.resource.clone(),
-            is_result: ast.is_result.clone(),
+            strict: ast.strict,
+            resource: ast.resource,
+            is_result: ast.is_result,
             type_shape: (&ast.type_shape).into(),
         }
     }
@@ -902,8 +902,8 @@ impl From<&flat_ast::UnionDeclaration> for UnionDeclaration {
 impl From<&flat_ast::UnionMember> for UnionMember {
     fn from(ast: &flat_ast::UnionMember) -> Self {
         Self {
-            ordinal: ast.ordinal.clone(),
-            reserved: ast.reserved.clone(),
+            ordinal: ast.ordinal,
+            reserved: ast.reserved,
             name: ast.name.clone(),
             type_: ast.type_.as_ref().map(Into::into),
             experimental_maybe_from_alias: ast
@@ -911,7 +911,7 @@ impl From<&flat_ast::UnionMember> for UnionMember {
                 .as_ref()
                 .map(Into::into),
             location: ast.location.as_ref().map(Into::into),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
         }
     }
@@ -922,7 +922,7 @@ impl From<&flat_ast::AliasDeclaration> for AliasDeclaration {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             partial_type_ctor: (&ast.partial_type_ctor).into(),
             type_: (&ast.type_).into(),
@@ -935,7 +935,7 @@ impl From<&flat_ast::NewTypeDeclaration> for NewTypeDeclaration {
         Self {
             name: ast.name.clone(),
             location: (&ast.location).into(),
-            deprecated: ast.deprecated.clone(),
+            deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
             experimental_maybe_from_alias: ast

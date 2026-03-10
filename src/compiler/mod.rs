@@ -480,45 +480,44 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 target_id = Some(&alias.name);
             }
 
-            if let Some(id) = target_id {
-                if let Some(pos) = id.find('/') {
-                    let d = id[..pos].to_string();
-                    if d != compiler.library_name {
-                        deps.insert(d.clone());
-                    }
+            if let Some(id) = target_id
+                && let Some(pos) = id.find('/')
+            {
+                let d = id[..pos].to_string();
+                if d != compiler.library_name {
+                    deps.insert(d.clone());
+                }
 
-                    if compiler.anonymous_structs.contains(id) {
-                        if let Some(s) = compiler
-                            .external_struct_declarations
-                            .iter()
-                            .find(|s| &s.name == id)
-                        {
-                            for m in &s.members {
-                                extract_deps_from_type(&m.type_, deps, compiler);
-                            }
-                        }
+                if compiler.anonymous_structs.contains(id)
+                    && let Some(s) = compiler
+                        .external_struct_declarations
+                        .iter()
+                        .find(|s| s.name == id)
+                {
+                    for m in &s.members {
+                        extract_deps_from_type(&m.type_, deps, compiler);
                     }
                 }
             }
-            if let Some(inner) = ty.element_type() {
-                if ty.experimental_maybe_from_alias.is_none() {
-                    extract_deps_from_type(inner, deps, compiler);
+            if let Some(inner) = ty.element_type()
+                && ty.experimental_maybe_from_alias.is_none()
+            {
+                extract_deps_from_type(inner, deps, compiler);
+            }
+            if let Some(proto) = ty.protocol()
+                && let Some(pos) = proto.find('/')
+            {
+                let d = proto[..pos].to_string();
+                if d != compiler.library_name {
+                    deps.insert(d);
                 }
             }
-            if let Some(proto) = ty.protocol() {
-                if let Some(pos) = proto.find('/') {
-                    let d = proto[..pos].to_string();
-                    if d != compiler.library_name {
-                        deps.insert(d);
-                    }
-                }
-            }
-            if let Some(res) = ty.resource_identifier() {
-                if let Some(pos) = res.find('/') {
-                    let d = res[..pos].to_string();
-                    if d != compiler.library_name {
-                        deps.insert(d);
-                    }
+            if let Some(res) = ty.resource_identifier()
+                && let Some(pos) = res.find('/')
+            {
+                let d = res[..pos].to_string();
+                if d != compiler.library_name {
+                    deps.insert(d);
                 }
             }
             if let Some(c_name) = &ty.maybe_size_constant_name {
@@ -569,51 +568,50 @@ impl<'node, 'src> Compiler<'node, 'src> {
             compiler: &Compiler,
         ) {
             let mut target_id = val.get("identifier").and_then(|i| i.as_str());
-            if let Some(alias) = val.get("experimental_maybe_from_alias") {
-                if let Some(n) = alias.get("name").and_then(|n| n.as_str()) {
-                    target_id = Some(n);
-                }
+            if let Some(alias) = val.get("experimental_maybe_from_alias")
+                && let Some(n) = alias.get("name").and_then(|n| n.as_str())
+            {
+                target_id = Some(n);
             }
 
-            if let Some(id) = target_id {
-                if let Some(pos) = id.find('/') {
-                    let d = id[..pos].to_string();
-                    if d != compiler.library_name {
-                        deps.insert(d.clone());
-                    }
+            if let Some(id) = target_id
+                && let Some(pos) = id.find('/')
+            {
+                let d = id[..pos].to_string();
+                if d != compiler.library_name {
+                    deps.insert(d.clone());
+                }
 
-                    if compiler.anonymous_structs.contains(id) {
-                        if let Some(s) = compiler
-                            .external_struct_declarations
-                            .iter()
-                            .find(|s| &s.name == id)
-                        {
-                            for m in &s.members {
-                                extract_deps_from_type(&m.type_, deps, compiler);
-                            }
-                        }
+                if compiler.anonymous_structs.contains(id)
+                    && let Some(s) = compiler
+                        .external_struct_declarations
+                        .iter()
+                        .find(|s| s.name == id)
+                {
+                    for m in &s.members {
+                        extract_deps_from_type(&m.type_, deps, compiler);
                     }
                 }
             }
-            if let Some(inner) = val.get("element_type") {
-                if val.get("experimental_maybe_from_alias").is_none() {
-                    extract_deps_from_type_value(inner, deps, compiler);
+            if let Some(inner) = val.get("element_type")
+                && val.get("experimental_maybe_from_alias").is_none()
+            {
+                extract_deps_from_type_value(inner, deps, compiler);
+            }
+            if let Some(proto) = val.get("protocol").and_then(|p| p.as_str())
+                && let Some(pos) = proto.find('/')
+            {
+                let d = proto[..pos].to_string();
+                if d != compiler.library_name {
+                    deps.insert(d);
                 }
             }
-            if let Some(proto) = val.get("protocol").and_then(|p| p.as_str()) {
-                if let Some(pos) = proto.find('/') {
-                    let d = proto[..pos].to_string();
-                    if d != compiler.library_name {
-                        deps.insert(d);
-                    }
-                }
-            }
-            if let Some(res) = val.get("resource_identifier").and_then(|r| r.as_str()) {
-                if let Some(pos) = res.find('/') {
-                    let d = res[..pos].to_string();
-                    if d != compiler.library_name {
-                        deps.insert(d);
-                    }
+            if let Some(res) = val.get("resource_identifier").and_then(|r| r.as_str())
+                && let Some(pos) = res.find('/')
+            {
+                let d = res[..pos].to_string();
+                if d != compiler.library_name {
+                    deps.insert(d);
                 }
             }
             if let Some(c_name) = val.get("maybe_size_constant_name").and_then(|m| m.as_str()) {
@@ -901,17 +899,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let padding_before = (align - (offset % align)) % align;
 
                 let maybe_offset = offset.checked_add(padding_before);
-                if maybe_offset.is_none() {
-                    if !overflowed {
-                        overflowed = true;
-                        if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
-                            let span = raw_decl.element().span();
-                            self.reporter.fail(
-                                Error::ErrTypeShapeIntegerOverflow,
-                                span,
-                                &[&offset, &"+", &padding_before],
-                            );
-                        }
+                if maybe_offset.is_none() && !overflowed {
+                    overflowed = true;
+                    if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                        let span = raw_decl.element().span();
+                        self.reporter.fail(
+                            Error::ErrTypeShapeIntegerOverflow,
+                            span,
+                            &[&offset, &"+", &padding_before],
+                        );
                     }
                 }
                 offset = maybe_offset.unwrap_or(u32::MAX);
@@ -919,17 +915,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 member.field_shape.offset = offset;
 
                 let maybe_offset2 = offset.checked_add(size);
-                if maybe_offset2.is_none() {
-                    if !overflowed {
-                        overflowed = true;
-                        if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
-                            let span = raw_decl.element().span();
-                            self.reporter.fail(
-                                Error::ErrTypeShapeIntegerOverflow,
-                                span,
-                                &[&offset, &"+", &size],
-                            );
-                        }
+                if maybe_offset2.is_none() && !overflowed {
+                    overflowed = true;
+                    if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                        let span = raw_decl.element().span();
+                        self.reporter.fail(
+                            Error::ErrTypeShapeIntegerOverflow,
+                            span,
+                            &[&offset, &"+", &size],
+                        );
                     }
                 }
                 offset = maybe_offset2.unwrap_or(u32::MAX);
@@ -942,17 +936,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 1
             } else {
                 let maybe_total = offset.checked_add(final_padding);
-                if maybe_total.is_none() {
-                    if !overflowed {
-                        overflowed = true;
-                        if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
-                            let span = raw_decl.element().span();
-                            self.reporter.fail(
-                                Error::ErrTypeShapeIntegerOverflow,
-                                span,
-                                &[&offset, &"+", &final_padding],
-                            );
-                        }
+                if maybe_total.is_none() && !overflowed {
+                    overflowed = true;
+                    if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                        let span = raw_decl.element().span();
+                        self.reporter.fail(
+                            Error::ErrTypeShapeIntegerOverflow,
+                            span,
+                            &[&offset, &"+", &final_padding],
+                        );
                     }
                 }
                 maybe_total.unwrap_or(u32::MAX)
@@ -981,20 +973,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
             decl.type_shape.has_padding = has_padding || final_padding > 0;
             decl.type_shape.has_flexible_envelope = has_flex;
 
-            if !overflowed && total_size > 65535 {
-                if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
-                    let span = raw_decl.element().span();
-                    let display_name = decl
-                        .name
-                        .rsplit_once('/')
-                        .map(|x| x.1)
-                        .unwrap_or(&decl.name);
-                    self.reporter.fail(
-                        Error::ErrInlineSizeExceedsLimit,
-                        span,
-                        &[&display_name, &total_size, &65535u32],
-                    );
-                }
+            if !overflowed
+                && total_size > 65535
+                && let Some(raw_decl) = self.raw_decls.get(&decl.name)
+            {
+                let span = raw_decl.element().span();
+                let display_name = decl
+                    .name
+                    .rsplit_once('/')
+                    .map(|x| x.1)
+                    .unwrap_or(&decl.name);
+                self.reporter.fail(
+                    Error::ErrInlineSizeExceedsLimit,
+                    span,
+                    &[&display_name, &total_size, &65535u32],
+                );
             }
         }
         for decl in &mut self.union_declarations {
@@ -1079,29 +1072,28 @@ impl<'node, 'src> Compiler<'node, 'src> {
         shapes: &HashMap<String, TypeShape>,
         struct_names: &HashSet<String>,
     ) {
-        if ty.kind() == TypeKind::Identifier {
-            if let Some(ref id) = ty.identifier() {
-                if let Some(shape) = shapes.get(id) {
-                    if ty.nullable() == Some(true) && struct_names.contains(id) {
-                        let inner_inline = shape.inline_size;
-                        let padding = (8 - (inner_inline % 8)) % 8;
-                        let max_out_of_line = shape
-                            .max_out_of_line
-                            .saturating_add(inner_inline.saturating_add(padding));
+        if ty.kind() == TypeKind::Identifier
+            && let Some(ref id) = ty.identifier()
+            && let Some(shape) = shapes.get(id)
+        {
+            if ty.nullable() == Some(true) && struct_names.contains(id) {
+                let inner_inline = shape.inline_size;
+                let padding = (8 - (inner_inline % 8)) % 8;
+                let max_out_of_line = shape
+                    .max_out_of_line
+                    .saturating_add(inner_inline.saturating_add(padding));
 
-                        ty.type_shape = TypeShape {
-                            inline_size: 8,
-                            alignment: 8,
-                            depth: shape.depth.saturating_add(1),
-                            max_handles: shape.max_handles,
-                            max_out_of_line,
-                            has_padding: shape.has_padding || padding > 0,
-                            has_flexible_envelope: shape.has_flexible_envelope,
-                        };
-                    } else {
-                        ty.type_shape = shape.clone();
-                    }
-                }
+                ty.type_shape = TypeShape {
+                    inline_size: 8,
+                    alignment: 8,
+                    depth: shape.depth.saturating_add(1),
+                    max_handles: shape.max_handles,
+                    max_out_of_line,
+                    has_padding: shape.has_padding || padding > 0,
+                    has_flexible_envelope: shape.has_flexible_envelope,
+                };
+            } else {
+                ty.type_shape = shape.clone();
             }
         }
         let mut inner_shape_opt = None;
@@ -1174,10 +1166,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let raw_ast::LayoutParameter::Identifier(id2) = &param.layout {
                         n = id2.to_string();
                     }
-                } else if let Some(constraint) = type_ctor.constraints.first() {
-                    if let raw_ast::Constant::Identifier(id2) = constraint {
-                        n = id2.identifier.to_string();
-                    }
+                } else if let Some(constraint) = type_ctor.constraints.first()
+                    && let raw_ast::Constant::Identifier(id2) = constraint
+                {
+                    n = id2.identifier.to_string();
                 }
                 if n.contains('.') {
                     n = n.replace('.', "/");
@@ -1226,10 +1218,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let raw_ast::LayoutParameter::Identifier(id2) = &param.layout {
                         p_name = id2.to_string();
                     }
-                } else if let Some(constraint) = type_ctor.constraints.first() {
-                    if let raw_ast::Constant::Identifier(id2) = constraint {
-                        p_name = id2.identifier.to_string();
-                    }
+                } else if let Some(constraint) = type_ctor.constraints.first()
+                    && let raw_ast::Constant::Identifier(id2) = constraint
+                {
+                    p_name = id2.identifier.to_string();
                 }
                 if !p_name.is_empty() {
                     let full = if p_name.contains('.') {
@@ -1280,13 +1272,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         maybe_size = Some(self.compile_constant(&c));
                     }
                 }
-            } else if n == "vector" || n == "string" {
-                if let Some(c) = type_ctor.constraints.first() {
-                    if !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")
-                    {
-                        maybe_size = Some(self.compile_constant(c));
-                    }
-                }
+            } else if (n == "vector" || n == "string")
+                && let Some(c) = type_ctor.constraints.first()
+                && !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")
+            {
+                maybe_size = Some(self.compile_constant(c));
             }
         }
 
@@ -1408,7 +1398,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     {
                         self.reporter.fail(
                             Error::ErrNewTypesNotAllowed,
-                            t.name.element.span().clone(),
+                            t.name.element.span(),
                             &[&t.name.data(), &existing_type_name],
                         );
                     }
@@ -1517,25 +1507,25 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let mut extra_to_compile = vec![];
                 for m in &compiled.methods {
-                    if let Some(req) = &m.maybe_request_payload {
-                        if let Some(id) = req.identifier() {
-                            extra_to_compile.push(id.clone());
-                        }
+                    if let Some(req) = &m.maybe_request_payload
+                        && let Some(id) = req.identifier()
+                    {
+                        extra_to_compile.push(id.clone());
                     }
-                    if let Some(res) = &m.maybe_response_payload {
-                        if let Some(id) = res.identifier() {
-                            extra_to_compile.push(id.clone());
-                        }
+                    if let Some(res) = &m.maybe_response_payload
+                        && let Some(id) = res.identifier()
+                    {
+                        extra_to_compile.push(id.clone());
                     }
-                    if let Some(suc) = &m.maybe_response_success_type {
-                        if let Some(id) = suc.identifier() {
-                            extra_to_compile.push(id.clone());
-                        }
+                    if let Some(suc) = &m.maybe_response_success_type
+                        && let Some(id) = suc.identifier()
+                    {
+                        extra_to_compile.push(id.clone());
                     }
-                    if let Some(err) = &m.maybe_response_err_type {
-                        if let Some(id) = err.identifier() {
-                            extra_to_compile.push(id.clone());
-                        }
+                    if let Some(err) = &m.maybe_response_err_type
+                        && let Some(id) = err.identifier()
+                    {
+                        extra_to_compile.push(id.clone());
                     }
                 }
 
@@ -1652,7 +1642,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 id.to_string()
             } else {
                 self.reporter
-                    .fail(Error::ErrInvalidWrappedType, sc.element.span().clone(), &[]);
+                    .fail(Error::ErrInvalidWrappedType, sc.element.span(), &[]);
                 "uint32".to_string()
             }
         } else {
@@ -1664,54 +1654,46 @@ impl<'node, 'src> Compiler<'node, 'src> {
         ];
 
         let mut resolved_subtype = "uint32".to_string();
-        if let Some(ref sc) = decl.subtype {
-            if let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout {
-                let mut current = id.to_string();
-                loop {
-                    if current.starts_with("fidl.") {
-                        current = current[5..].to_string();
-                    }
-                    if matches!(
-                        current.as_str(),
-                        "uint8"
-                            | "uint16"
-                            | "uint32"
-                            | "uint64"
-                            | "int8"
-                            | "int16"
-                            | "int32"
-                            | "int64"
-                    ) {
-                        resolved_subtype = current;
-                        break;
-                    }
-                    let mut full_name = current.clone();
-                    if !full_name.contains('/') {
-                        let fqn = format!("{}/{}", library_name, current);
-                        if self.raw_decls.contains_key(&fqn) {
-                            full_name = fqn;
-                        } else if let Some((lib, name)) = current.rsplit_once('.') {
-                            let dep_fqn = format!("{}/{}", lib, name);
-                            if self.raw_decls.contains_key(&dep_fqn) {
-                                full_name = dep_fqn;
-                            } else {
-                                full_name = fqn;
-                            }
-                        } else {
-                            full_name = fqn;
-                        }
-                    }
-                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
-                        if let raw_ast::LayoutParameter::Identifier(ref inner_id) =
-                            alias.type_ctor.layout
-                        {
-                            current = inner_id.to_string();
-                            continue;
-                        }
-                    }
+        if let Some(ref sc) = decl.subtype
+            && let raw_ast::LayoutParameter::Identifier(ref id) = sc.layout
+        {
+            let mut current = id.to_string();
+            loop {
+                if current.starts_with("fidl.") {
+                    current = current[5..].to_string();
+                }
+                if matches!(
+                    current.as_str(),
+                    "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16" | "int32" | "int64"
+                ) {
                     resolved_subtype = current;
                     break;
                 }
+                let mut full_name = current.clone();
+                if !full_name.contains('/') {
+                    let fqn = format!("{}/{}", library_name, current);
+                    if self.raw_decls.contains_key(&fqn) {
+                        full_name = fqn;
+                    } else if let Some((lib, name)) = current.rsplit_once('.') {
+                        let dep_fqn = format!("{}/{}", lib, name);
+                        if self.raw_decls.contains_key(&dep_fqn) {
+                            full_name = dep_fqn;
+                        } else {
+                            full_name = fqn;
+                        }
+                    } else {
+                        full_name = fqn;
+                    }
+                }
+                if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name)
+                    && let raw_ast::LayoutParameter::Identifier(ref inner_id) =
+                        alias.type_ctor.layout
+                {
+                    current = inner_id.to_string();
+                    continue;
+                }
+                resolved_subtype = current;
+                break;
             }
         }
 
@@ -1719,9 +1701,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.reporter.fail(
                 Error::ErrEnumTypeMustBeIntegralPrimitive,
                 if let Some(sc) = &decl.subtype {
-                    sc.element.start_token.span.clone()
+                    sc.element.start_token.span
                 } else {
-                    decl.name.as_ref().unwrap().element.span().clone()
+                    decl.name.as_ref().unwrap().element.span()
                 },
                 &[&subtype_name],
             );
@@ -1758,7 +1740,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "uint8" => u8::MAX as u64,
             "uint16" => u16::MAX as u64,
             "uint32" => u32::MAX as u64,
-            "uint64" => u64::MAX as u64,
+            "uint64" => u64::MAX,
             "int8" => i8::MAX as u64,
             "int16" => i16::MAX as u64,
             "int32" => i32::MAX as u64,
@@ -1789,7 +1771,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
                 if eval_val == max_val_u64 {
-                    let span = member.name.element.span().clone();
+                    let span = member.name.element.span();
                     let transmuted_span: SourceSpan<'src> = unsafe { std::mem::transmute(span) };
                     max_val_spans.push(transmuted_span);
                 }
@@ -1806,7 +1788,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             // Check for unknown attribute
             if attributes.iter().any(|a| a.name == "unknown") {
                 if let Some(ref _prev_span) = unknown_member_span {
-                    let dup_span = member.name.element.span().clone();
+                    let dup_span = member.name.element.span();
                     let transmuted_dup: SourceSpan<'src> = unsafe { std::mem::transmute(dup_span) };
                     self.reporter.fail(
                         Error::ErrUnknownAttributeOnMultipleEnumMembers,
@@ -1814,10 +1796,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[],
                     );
                 } else {
-                    let first_span = member.name.element.span().clone();
+                    let first_span = member.name.element.span();
                     let transmuted_first: SourceSpan<'src> =
                         unsafe { std::mem::transmute(first_span) };
-                    unknown_member_span = Some(transmuted_first.clone());
+                    unknown_member_span = Some(transmuted_first);
 
                     if strict {
                         self.reporter.fail(
@@ -1852,7 +1834,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             for span in &max_val_spans {
                 self.reporter.fail(
                     Error::ErrFlexibleEnumMemberWithMaxValue,
-                    span.clone(),
+                    *span,
                     &[&max_val_u64.to_string()],
                 );
             }
@@ -1885,9 +1867,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.reporter.fail(
                 Error::ErrMustHaveOneMember,
                 if let Some(n) = &decl.name {
-                    n.element.span().clone()
+                    n.element.span()
                 } else {
-                    decl.element.span().clone()
+                    decl.element.span()
                 },
                 &[],
             );
@@ -1994,20 +1976,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             full_name = fqn;
                         }
                     }
-                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name) {
-                        if let raw_ast::LayoutParameter::Identifier(ref inner_id) =
+                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name)
+                        && let raw_ast::LayoutParameter::Identifier(ref inner_id) =
                             alias.type_ctor.layout
-                        {
-                            current = inner_id.to_string();
-                            continue;
-                        }
+                    {
+                        current = inner_id.to_string();
+                        continue;
                     }
                     subtype_name = current;
                     break;
                 }
             } else {
                 self.reporter
-                    .fail(Error::ErrInvalidWrappedType, sc.element.span().clone(), &[]);
+                    .fail(Error::ErrInvalidWrappedType, sc.element.span(), &[]);
             }
         }
 
@@ -2018,10 +1999,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if !is_valid_type {
             self.reporter.fail(
                 Error::ErrBitsTypeMustBeUnsignedIntegralPrimitive,
-                decl.name.as_ref().map_or_else(
-                    || decl.element.start_token.span.clone(),
-                    |id| id.element.span(),
-                ),
+                decl.name
+                    .as_ref()
+                    .map_or_else(|| decl.element.start_token.span, |id| id.element.span()),
                 &[&subtype_name],
             );
         }
@@ -2035,10 +2015,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if strict && decl.members.is_empty() {
             self.reporter.fail(
                 Error::ErrMustHaveOneMember,
-                decl.name.as_ref().map_or_else(
-                    || decl.element.start_token.span.clone(),
-                    |id| id.element.span(),
-                ),
+                decl.name
+                    .as_ref()
+                    .map_or_else(|| decl.element.start_token.span, |id| id.element.span()),
                 &[],
             );
         }
@@ -2218,7 +2197,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     maybe_size_constant_name: None,
                     resource: false,
                     deprecated: None,
-                    type_shape: type_shape,
+                    type_shape,
                 },
                 subtype: subtype_name.parse().unwrap_or(PrimitiveSubtype::Uint32),
             }),
@@ -2302,20 +2281,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 o => o as u32,
             };
 
-            if let Some(prev) = members.iter().find(|m: &&TableMember| m.ordinal == ordinal) {
-                if ordinal != 0 {
-                    let location_str = format!(
-                        "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename,
-                        prev.location.as_ref().unwrap().line,
-                        prev.location.as_ref().unwrap().column
-                    );
-                    self.reporter.fail(
-                        Error::ErrDuplicateTableFieldOrdinal,
-                        member.ordinal.as_ref().unwrap().element.span(),
-                        &[&location_str],
-                    );
-                }
+            if let Some(prev) = members.iter().find(|m: &&TableMember| m.ordinal == ordinal)
+                && ordinal != 0
+            {
+                let location_str = format!(
+                    "{}:{}:{}",
+                    prev.location.as_ref().unwrap().filename,
+                    prev.location.as_ref().unwrap().line,
+                    prev.location.as_ref().unwrap().column
+                );
+                self.reporter.fail(
+                    Error::ErrDuplicateTableFieldOrdinal,
+                    member.ordinal.as_ref().unwrap().element.span(),
+                    &[&location_str],
+                );
             }
 
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
@@ -2554,14 +2533,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let ordinal = match ordinal {
                 Ok(o) => {
-                    if o == 0 {
-                        if member.ordinal.is_some() {
-                            self.reporter.fail(
-                                Error::ErrOrdinalsMustStartAtOne,
-                                member.ordinal.as_ref().unwrap().element.span(),
-                                &[],
-                            );
-                        }
+                    if o == 0 && member.ordinal.is_some() {
+                        self.reporter.fail(
+                            Error::ErrOrdinalsMustStartAtOne,
+                            member.ordinal.as_ref().unwrap().element.span(),
+                            &[],
+                        );
                     }
                     o
                 }
@@ -2575,20 +2552,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             };
 
-            if let Some(prev) = members.iter().find(|m: &&UnionMember| m.ordinal == ordinal) {
-                if ordinal != 0 {
-                    let location_str = format!(
-                        "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename,
-                        prev.location.as_ref().unwrap().line,
-                        prev.location.as_ref().unwrap().column
-                    );
-                    self.reporter.fail(
-                        Error::ErrDuplicateUnionMemberOrdinal,
-                        member.ordinal.as_ref().unwrap().element.span(),
-                        &[&location_str],
-                    );
-                }
+            if let Some(prev) = members.iter().find(|m: &&UnionMember| m.ordinal == ordinal)
+                && ordinal != 0
+            {
+                let location_str = format!(
+                    "{}:{}:{}",
+                    prev.location.as_ref().unwrap().filename,
+                    prev.location.as_ref().unwrap().line,
+                    prev.location.as_ref().unwrap().column
+                );
+                self.reporter.fail(
+                    Error::ErrDuplicateUnionMemberOrdinal,
+                    member.ordinal.as_ref().unwrap().element.span(),
+                    &[&location_str],
+                );
             }
 
             if let Some(n_name) = &member.name {
@@ -2804,10 +2781,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut overlay_has_padding = false;
         if decl.is_overlay {
             for member in &members {
-                if let Some(type_obj) = &member.type_ {
-                    if inline_size > 8u32.saturating_add(type_obj.type_shape.inline_size) {
-                        overlay_has_padding = true;
-                    }
+                if let Some(type_obj) = &member.type_
+                    && inline_size > 8u32.saturating_add(type_obj.type_shape.inline_size)
+                {
+                    overlay_has_padding = true;
                 }
             }
         }
@@ -3090,7 +3067,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .iter()
                 .any(|m| m.subkind == TokenSubkind::Resource),
             is_empty_success_struct: false,
-            type_shape: type_shape,
+            type_shape,
         }
     }
 
@@ -3262,7 +3239,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !type_ctor.parameters.is_empty() {
                     self.reporter.fail(
                         Error::ErrWrongNumberOfLayoutParameters,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[
                             &generated_name.as_deref().unwrap_or(default_name),
                             &0_usize,
@@ -3274,7 +3251,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let _decl_context = naming_context
                     .as_ref()
                     .map(|ctx| ctx.context())
-                    .unwrap_or_else(Vec::new);
+                    .unwrap_or_default();
 
                 let final_short_name = generated_name.unwrap_or_else(|| {
                     naming_context
@@ -3370,19 +3347,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut actual_constraints = type_ctor.constraints.clone();
         let mut nullable = type_ctor.nullable;
 
-        if let Some(c) = actual_constraints.last() {
-            if let raw_ast::Constant::Identifier(id) = c {
-                if id.identifier.to_string() == "optional" {
-                    let mut is_nullability = true;
-                    // If it is in the same scope, it might resolve to a constant.
-                    if self.eval_constant_value(c).is_some() {
-                        is_nullability = false;
-                    }
-                    if is_nullability {
-                        actual_constraints.pop();
-                        nullable = true;
-                    }
-                }
+        if let Some(c) = actual_constraints.last()
+            && let raw_ast::Constant::Identifier(id) = c
+            && id.identifier.to_string() == "optional"
+        {
+            let mut is_nullability = true;
+            // If it is in the same scope, it might resolve to a constant.
+            if self.eval_constant_value(c).is_some() {
+                is_nullability = false;
+            }
+            if is_nullability {
+                actual_constraints.pop();
+                nullable = true;
             }
         }
 
@@ -3423,7 +3399,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !type_ctor.parameters.is_empty() {
                     self.reporter.fail(
                         Error::ErrWrongNumberOfLayoutParameters,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[&resolved_name, &0_usize, &type_ctor.parameters.len()],
                     );
                 }
@@ -3431,22 +3407,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if nullable {
                     self.reporter.fail(
                         Error::ErrCannotBeOptional,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[&resolved_name],
                     );
                 }
 
-                if matches!(resolved_name.as_str(), "uchar" | "usize64" | "uintptr64") {
-                    if !self
+                if matches!(resolved_name.as_str(), "uchar" | "usize64" | "uintptr64")
+                    && !self
                         .experimental_flags
                         .is_enabled(ExperimentalFlag::ZxCTypes)
-                    {
-                        self.reporter.fail(
-                            Error::ErrExperimentalZxCTypesDisallowed,
-                            type_ctor.element.start_token.span.clone(),
-                            &[&resolved_name],
-                        );
-                    }
+                {
+                    self.reporter.fail(
+                        Error::ErrExperimentalZxCTypesDisallowed,
+                        type_ctor.element.start_token.span,
+                        &[&resolved_name],
+                    );
                 }
 
                 let (inline_size, alignment) = match resolved_name.as_str() {
@@ -3485,7 +3460,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 {
                     self.reporter.fail(
                         Error::ErrExperimentalZxCTypesDisallowed,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[&resolved_name],
                     );
                 }
@@ -3496,11 +3471,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     Some(&type_ctor.parameters[0])
                 };
 
-                let inner_type_opt = if let Some(i) = inner {
-                    Some(Box::new(self.resolve_type(i, library_name, naming_context)))
-                } else {
-                    None
-                };
+                let inner_type_opt =
+                    inner.map(|i| Box::new(self.resolve_type(i, library_name, naming_context)));
 
                 Type::ExperimentalPointer(ExperimentalPointerType {
                     common: TypeCommon {
@@ -3529,7 +3501,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if actual_constraints.len() > 1 {
                     self.reporter.fail(
                         Error::ErrTooManyConstraints,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[&resolved_name, &1_usize, &actual_constraints.len()],
                     );
                 }
@@ -3774,7 +3746,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if type_ctor.parameters.len() < 2 {
                     self.reporter.fail(
                         Error::ErrWrongNumberOfLayoutParameters,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[],
                     );
                     return Type::Unknown(UnknownType {
@@ -3806,7 +3778,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if nullable {
                     self.reporter.fail(
                         Error::ErrCannotBeOptional,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[&"array"],
                     );
                 }
@@ -3818,7 +3790,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if val == 0 {
                         self.reporter.fail(
                             Error::ErrMustHaveNonZeroSize,
-                            count_param.element.start_token.span.clone(),
+                            count_param.element.start_token.span,
                             &[&"array"],
                         );
                     }
@@ -3897,7 +3869,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !type_ctor.constraints.is_empty() {
                     self.reporter.fail(
                         Error::ErrTooManyConstraints,
-                        type_ctor.element.start_token.span.clone(),
+                        type_ctor.element.start_token.span,
                         &[&"array", &0_usize, &type_ctor.constraints.len()],
                     );
                 }
@@ -4193,7 +4165,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if filtered_constraints.len() > res_decl.properties.len() {
                         self.reporter.fail(
                             Error::ErrTooManyConstraints,
-                            type_ctor.element.start_token.span.clone(),
+                            type_ctor.element.start_token.span,
                             &[&full_name, &0_usize, &res_decl.properties.len()],
                         );
                     } else {
@@ -4209,7 +4181,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 {
                                     id.to_string()
                                 } else {
-                                    format!("{}/{}", res_library_name, id.to_string())
+                                    format!("{}/{}", res_library_name, id)
                                 };
                             }
 
@@ -4236,11 +4208,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                 found = true;
                                                 handle_subtype = ident_str.to_lowercase();
                                                 if let raw_ast::Constant::Literal(lit) = &mem.value
+                                                    && let Ok(v) = lit.literal.value.parse::<u32>()
                                                 {
-                                                    if let Ok(v) = lit.literal.value.parse::<u32>()
-                                                    {
-                                                        handle_obj_type = v;
-                                                    }
+                                                    handle_obj_type = v;
                                                 }
                                                 break;
                                             }
@@ -4249,14 +4219,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     if !found {
                                         self.reporter.fail(
                                             Error::ErrUnexpectedConstraint,
-                                            type_ctor.element.start_token.span.clone(),
+                                            type_ctor.element.start_token.span,
                                             &[&full_name],
                                         );
                                     }
                                 } else {
                                     self.reporter.fail(
                                         Error::ErrExpectedType,
-                                        type_ctor.element.start_token.span.clone(),
+                                        type_ctor.element.start_token.span,
                                         &[],
                                     );
                                 }
@@ -4284,25 +4254,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                                 let ident_str =
                                                     id.identifier.components.last().unwrap().data();
                                                 for mem in &b.members {
-                                                    if mem.name.data() == ident_str {
-                                                        if let raw_ast::Constant::Literal(lit) =
+                                                    if mem.name.data() == ident_str
+                                                        && let raw_ast::Constant::Literal(lit) =
                                                             &mem.value
+                                                    {
+                                                        let val_str = lit.literal.value.clone();
+                                                        let parsed = if val_str.starts_with("0x")
+                                                            || val_str.starts_with("0X")
                                                         {
-                                                            let val_str = lit.literal.value.clone();
-                                                            let parsed = if val_str
-                                                                .starts_with("0x")
-                                                                || val_str.starts_with("0X")
-                                                            {
-                                                                u32::from_str_radix(
-                                                                    &val_str[2..],
-                                                                    16,
-                                                                )
-                                                            } else {
-                                                                val_str.parse::<u32>()
-                                                            };
-                                                            if let Ok(v) = parsed {
-                                                                return Some(v);
-                                                            }
+                                                            u32::from_str_radix(&val_str[2..], 16)
+                                                        } else {
+                                                            val_str.parse::<u32>()
+                                                        };
+                                                        if let Ok(v) = parsed {
+                                                            return Some(v);
                                                         }
                                                     }
                                                 }
@@ -4324,7 +4289,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 if !found {
                                     self.reporter.fail(
                                         Error::ErrUnexpectedConstraint,
-                                        type_ctor.element.start_token.span.clone(),
+                                        type_ctor.element.start_token.span,
                                         &[&full_name],
                                     );
                                 }
@@ -4378,8 +4343,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         },
                         _ => false,
                     };
-                    if is_user_decl_no_params {
-                        if type_ctor.nullable
+                    if is_user_decl_no_params
+                        && (type_ctor.nullable
                             || type_ctor.constraints.iter().any(|c| {
                                 if let raw_ast::Constant::Identifier(id) = c {
                                     id.identifier.to_string() != "optional"
@@ -4387,73 +4352,70 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     true
                                 }
                             })
-                            || (!type_ctor.constraints.is_empty() && !nullable)
-                        {
-                            // This is a bit ad-hoc, but effectively checks constraints > 0
-                            if !type_ctor.constraints.is_empty() {
-                                let has_non_optional = type_ctor.constraints.iter().any(|c| {
-                                    if let raw_ast::Constant::Identifier(id) = c {
-                                        id.identifier.to_string() != "optional"
-                                    } else {
-                                        true
-                                    }
-                                });
-                                if has_non_optional {
-                                    self.reporter.fail(
-                                        Error::ErrTooManyConstraints,
-                                        type_ctor.element.start_token.span.clone(),
-                                        &[&name, &0_usize, &type_ctor.constraints.len()],
-                                    );
+                            || (!type_ctor.constraints.is_empty() && !nullable))
+                    {
+                        // This is a bit ad-hoc, but effectively checks constraints > 0
+                        if !type_ctor.constraints.is_empty() {
+                            let has_non_optional = type_ctor.constraints.iter().any(|c| {
+                                if let raw_ast::Constant::Identifier(id) = c {
+                                    id.identifier.to_string() != "optional"
+                                } else {
+                                    true
                                 }
+                            });
+                            if has_non_optional {
+                                self.reporter.fail(
+                                    Error::ErrTooManyConstraints,
+                                    type_ctor.element.start_token.span,
+                                    &[&name, &0_usize, &type_ctor.constraints.len()],
+                                );
                             }
                         }
                     }
                 }
 
-                if nullable {
-                    if let Some(decl) = self.raw_decls.get(&full_name) {
-                        let is_struct = match decl {
-                            RawDecl::Struct(_) => true,
-                            RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Struct(_)),
-                            _ => false,
-                        };
-                        if is_struct {
-                            self.reporter.fail(
-                                Error::ErrStructCannotBeOptional,
-                                type_ctor.element.span(),
-                                &[&name],
-                            );
-                            nullable = false;
-                        }
-                        let is_table = match decl {
-                            RawDecl::Table(_) => true,
-                            RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Table(_)),
-                            _ => false,
-                        };
-                        if is_table {
-                            self.reporter.fail(
-                                Error::ErrCannotBeOptional,
-                                type_ctor.element.span(),
-                                &[&name],
-                            );
-                            nullable = false;
-                        }
-                        let is_enum_or_bits_or_service = match decl {
-                            RawDecl::Enum(_) | RawDecl::Bits(_) | RawDecl::Service(_) => true,
-                            RawDecl::Type(t) => matches!(
-                                t.layout,
-                                raw_ast::Layout::Enum(_) | raw_ast::Layout::Bits(_)
-                            ),
-                            _ => false,
-                        };
-                        if is_enum_or_bits_or_service {
-                            self.reporter.fail(
-                                Error::ErrCannotBeOptional,
-                                type_ctor.element.span(),
-                                &[&name],
-                            );
-                            nullable = false;
-                        }
+                if nullable && let Some(decl) = self.raw_decls.get(&full_name) {
+                    let is_struct = match decl {
+                        RawDecl::Struct(_) => true,
+                        RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Struct(_)),
+                        _ => false,
+                    };
+                    if is_struct {
+                        self.reporter.fail(
+                            Error::ErrStructCannotBeOptional,
+                            type_ctor.element.span(),
+                            &[&name],
+                        );
+                        nullable = false;
+                    }
+                    let is_table = match decl {
+                        RawDecl::Table(_) => true,
+                        RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Table(_)),
+                        _ => false,
+                    };
+                    if is_table {
+                        self.reporter.fail(
+                            Error::ErrCannotBeOptional,
+                            type_ctor.element.span(),
+                            &[&name],
+                        );
+                        nullable = false;
+                    }
+                    let is_enum_or_bits_or_service = match decl {
+                        RawDecl::Enum(_) | RawDecl::Bits(_) | RawDecl::Service(_) => true,
+                        RawDecl::Type(t) => matches!(
+                            t.layout,
+                            raw_ast::Layout::Enum(_) | raw_ast::Layout::Bits(_)
+                        ),
+                        _ => false,
+                    };
+                    if is_enum_or_bits_or_service {
+                        self.reporter.fail(
+                            Error::ErrCannotBeOptional,
+                            type_ctor.element.span(),
+                            &[&name],
+                        );
+                        nullable = false;
                     }
                 }
 
@@ -4511,7 +4473,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if !type_ctor.parameters.is_empty() {
                         self.reporter.fail(
                             Error::ErrWrongNumberOfLayoutParameters,
-                            type_ctor.element.start_token.span.clone(),
+                            type_ctor.element.start_token.span,
                             &[&name, &0_usize, &type_ctor.parameters.len()],
                         );
                     }
@@ -4520,7 +4482,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if !actual_constraints.is_empty() && !a.type_ctor.constraints.is_empty() {
                             self.reporter.fail(
                                 Error::ErrCannotConstrainTwice,
-                                type_ctor.element.start_token.span.clone(),
+                                type_ctor.element.start_token.span,
                                 &[&name],
                             );
                             has_err = true;
@@ -4758,38 +4720,35 @@ impl<'node, 'src> Compiler<'node, 'src> {
         } else {
             false
         };
-        if !is_uint32 {
-            if let Some(id) = type_obj.identifier().as_ref() {
-                let mut curr = id.clone();
-                for _ in 0..100 {
-                    if curr == "uint32" {
-                        is_uint32 = true;
-                        break;
-                    }
-                    if let Some(d) = self.raw_decls.get(&curr) {
-                        if let RawDecl::Alias(a) = d {
-                            match &a.type_ctor.layout {
-                                raw_ast::LayoutParameter::Identifier(inner_id) => {
-                                    let next = inner_id.to_string();
-                                    if next == "uint32" {
-                                        is_uint32 = true;
-                                        break;
-                                    }
-                                    curr = if next.contains('/') || self.shapes.contains_key(&next)
-                                    {
-                                        next
-                                    } else {
-                                        format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
-                                    };
+        if !is_uint32 && let Some(id) = type_obj.identifier().as_ref() {
+            let mut curr = id.clone();
+            for _ in 0..100 {
+                if curr == "uint32" {
+                    is_uint32 = true;
+                    break;
+                }
+                if let Some(d) = self.raw_decls.get(&curr) {
+                    if let RawDecl::Alias(a) = d {
+                        match &a.type_ctor.layout {
+                            raw_ast::LayoutParameter::Identifier(inner_id) => {
+                                let next = inner_id.to_string();
+                                if next == "uint32" {
+                                    is_uint32 = true;
+                                    break;
                                 }
-                                _ => break,
+                                curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                    next
+                                } else {
+                                    format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                };
                             }
-                        } else {
-                            break;
+                            _ => break,
                         }
                     } else {
                         break;
                     }
+                } else {
+                    break;
                 }
             }
         }
@@ -4861,43 +4820,41 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     false
                 };
-                if !is_uint32_prop {
-                    if let Some(id) = prop_type.identifier().as_ref() {
-                        let mut curr = id.clone();
-                        for _ in 0..100 {
-                            if curr == "uint32" {
-                                is_uint32_prop = true;
-                                break;
-                            }
-                            if let Some(d) = self.raw_decls.get(&curr) {
-                                if let RawDecl::Alias(a) = d {
-                                    match &a.type_ctor.layout {
-                                        raw_ast::LayoutParameter::Identifier(inner_id) => {
-                                            let next = inner_id.to_string();
-                                            if next == "uint32" {
-                                                is_uint32_prop = true;
-                                                break;
-                                            }
-                                            curr = if next.contains('/')
-                                                || self.shapes.contains_key(&next)
-                                            {
-                                                next
-                                            } else {
-                                                format!(
-                                                    "{}/{}",
-                                                    curr.split('/').next().unwrap_or(""),
-                                                    next
-                                                )
-                                            };
+                if !is_uint32_prop && let Some(id) = prop_type.identifier().as_ref() {
+                    let mut curr = id.clone();
+                    for _ in 0..100 {
+                        if curr == "uint32" {
+                            is_uint32_prop = true;
+                            break;
+                        }
+                        if let Some(d) = self.raw_decls.get(&curr) {
+                            if let RawDecl::Alias(a) = d {
+                                match &a.type_ctor.layout {
+                                    raw_ast::LayoutParameter::Identifier(inner_id) => {
+                                        let next = inner_id.to_string();
+                                        if next == "uint32" {
+                                            is_uint32_prop = true;
+                                            break;
                                         }
-                                        _ => break,
+                                        curr = if next.contains('/')
+                                            || self.shapes.contains_key(&next)
+                                        {
+                                            next
+                                        } else {
+                                            format!(
+                                                "{}/{}",
+                                                curr.split('/').next().unwrap_or(""),
+                                                next
+                                            )
+                                        };
                                     }
-                                } else {
-                                    break;
+                                    _ => break,
                                 }
                             } else {
                                 break;
                             }
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -5012,7 +4969,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut methods = vec![];
         let mut method_names = std::collections::HashSet::new();
-        let has_no_resource = decl.attributes.as_ref().map_or(false, |attrs| {
+        let has_no_resource = decl.attributes.as_ref().is_some_and(|attrs| {
             attrs
                 .attributes
                 .iter()
@@ -5143,45 +5100,45 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         for m in &decl.methods {
             if has_no_resource {
-                for layout in [&m.request_payload, &m.response_payload, &m.error_payload] {
-                    if let Some(l) = layout {
-                        let mut current_layout = Some(l);
-                        let mut modifiers = None;
-                        while let Some(cl) = current_layout {
-                            match cl {
-                                raw_ast::Layout::Struct(s) => {
-                                    modifiers = Some(&s.modifiers);
-                                    break;
-                                }
-                                raw_ast::Layout::Table(t) => {
-                                    modifiers = Some(&t.modifiers);
-                                    break;
-                                }
-                                raw_ast::Layout::Union(u) => {
-                                    modifiers = Some(&u.modifiers);
-                                    break;
-                                }
-                                raw_ast::Layout::TypeConstructor(tc) => {
-                                    if let raw_ast::LayoutParameter::Inline(inline) = &tc.layout {
-                                        current_layout = Some(&**inline);
-                                    } else {
-                                        break;
-                                    }
-                                }
-                                _ => break,
+                for l in [&m.request_payload, &m.response_payload, &m.error_payload]
+                    .into_iter()
+                    .flatten()
+                {
+                    let mut current_layout = Some(l);
+                    let mut modifiers = None;
+                    while let Some(cl) = current_layout {
+                        match cl {
+                            raw_ast::Layout::Struct(s) => {
+                                modifiers = Some(&s.modifiers);
+                                break;
                             }
-                        }
-                        if let Some(mods) = modifiers {
-                            if let Some(res_mod) =
-                                mods.iter().find(|mo| mo.subkind == TokenSubkind::Resource)
-                            {
-                                self.reporter.fail(
-                                    Error::ErrResourceForbiddenHere,
-                                    res_mod.element.span(),
-                                    &[],
-                                );
+                            raw_ast::Layout::Table(t) => {
+                                modifiers = Some(&t.modifiers);
+                                break;
                             }
+                            raw_ast::Layout::Union(u) => {
+                                modifiers = Some(&u.modifiers);
+                                break;
+                            }
+                            raw_ast::Layout::TypeConstructor(tc) => {
+                                if let raw_ast::LayoutParameter::Inline(inline) = &tc.layout {
+                                    current_layout = Some(&**inline);
+                                } else {
+                                    break;
+                                }
+                            }
+                            _ => break,
                         }
+                    }
+                    if let Some(mods) = modifiers
+                        && let Some(res_mod) =
+                            mods.iter().find(|mo| mo.subkind == TokenSubkind::Resource)
+                    {
+                        self.reporter.fail(
+                            Error::ErrResourceForbiddenHere,
+                            res_mod.element.span(),
+                            &[],
+                        );
                     }
                 }
             }
@@ -5704,23 +5661,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             {
                                 is_valid_error_type = true;
                             }
-                        } else if err_type_resolved.kind() == TypeKind::Identifier {
-                            if let Some(id) = &err_type_resolved.identifier() {
-                                if let Some(e_decl) =
-                                    self.enum_declarations.iter().find(|e| &e.name == id)
-                                {
-                                    if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
-                                        is_valid_error_type = true;
-                                    }
-                                } else if let Some(e_decl) = self
-                                    .external_enum_declarations
-                                    .iter()
-                                    .find(|e| &e.name == id)
-                                {
-                                    if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
-                                        is_valid_error_type = true;
-                                    }
+                        } else if err_type_resolved.kind() == TypeKind::Identifier
+                            && let Some(id) = &err_type_resolved.identifier()
+                        {
+                            if let Some(e_decl) =
+                                self.enum_declarations.iter().find(|e| &e.name == id)
+                            {
+                                if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
+                                    is_valid_error_type = true;
                                 }
+                            } else if let Some(e_decl) = self
+                                .external_enum_declarations
+                                .iter()
+                                .find(|e| &e.name == id)
+                                && (e_decl.type_ == "int32" || e_decl.type_ == "uint32")
+                            {
+                                is_valid_error_type = true;
                             }
                         }
 

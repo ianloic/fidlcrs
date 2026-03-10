@@ -374,7 +374,7 @@ impl Type {
     }
     pub fn rights(&self) -> Option<u32> {
         match self {
-            Type::Handle(t) => t.rights.clone(),
+            Type::Handle(t) => t.rights,
             _ => None,
         }
     }

@@ -194,7 +194,7 @@ pub fn discoverable_constraint<'node, 'src>(
                 }
                 if !valid {
                     let arg_span: SourceSpan =
-                        unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                        unsafe { std::mem::transmute(arg.value.element().span()) };
                     compiler.reporter.fail(
                         Error::ErrInvalidDiscoverableName,
                         arg_span,
@@ -220,7 +220,7 @@ pub fn discoverable_constraint<'node, 'src>(
             }
             if !valid {
                 let arg_span: SourceSpan =
-                    unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                    unsafe { std::mem::transmute(arg.value.element().span()) };
                 compiler
                     .reporter
                     .fail(Error::ErrInvalidDiscoverableLocation, arg_span, &[&s_val]);
@@ -242,22 +242,22 @@ pub fn transport_constraint<'node, 'src>(
             .as_ref()
             .map(|n| n.element.start_token.span.data)
             .unwrap_or("value");
-        if arg_name == "value" {
-            if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
-                let s = val.trim_matches('"');
-                if s != "Banjo" && s != "Channel" && s != "Driver" && s != "Syscall" {
-                    let arg_span: SourceSpan =
-                        unsafe { std::mem::transmute(arg.value.element().span().clone()) };
-                    compiler.reporter.fail(
-                        Error::ErrInvalidTransportType,
-                        arg_span,
-                        &[
-                            &s.to_string(),
-                            &"Banjo, Channel, Driver, Syscall".to_string(),
-                        ],
-                    );
-                    passed = false;
-                }
+        if arg_name == "value"
+            && let Some(val) = compiler.eval_constant_value_as_string(&arg.value)
+        {
+            let s = val.trim_matches('"');
+            if s != "Banjo" && s != "Channel" && s != "Driver" && s != "Syscall" {
+                let arg_span: SourceSpan =
+                    unsafe { std::mem::transmute(arg.value.element().span()) };
+                compiler.reporter.fail(
+                    Error::ErrInvalidTransportType,
+                    arg_span,
+                    &[
+                        &s.to_string(),
+                        &"Banjo, Channel, Driver, Syscall".to_string(),
+                    ],
+                );
+                passed = false;
             }
         }
     }
@@ -268,7 +268,7 @@ pub fn no_resource_constraint<'node, 'src>(
     compiler: &Compiler<'node, 'src>,
     attr: &raw_ast::Attribute<'src>,
 ) -> bool {
-    let span: SourceSpan = unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+    let span: SourceSpan = unsafe { std::mem::transmute(attr.name.element.span()) };
     if !compiler
         .experimental_flags
         .is_enabled(ExperimentalFlag::NoResourceAttribute)
@@ -286,7 +286,7 @@ pub fn available_constraint<'node, 'src>(
     attr: &raw_ast::Attribute<'src>,
 ) -> bool {
     let mut passed = true;
-    let span: SourceSpan = unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+    let span: SourceSpan = unsafe { std::mem::transmute(attr.name.element.span()) };
 
     let mut added = None;
     let mut deprecated = None;
@@ -302,8 +302,7 @@ pub fn available_constraint<'node, 'src>(
             .as_ref()
             .map(|n| n.element.start_token.span.data)
             .unwrap_or("value");
-        let arg_span: SourceSpan =
-            unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+        let arg_span: SourceSpan = unsafe { std::mem::transmute(arg.value.element().span()) };
         let mut version_str = None;
         if arg_name == "added"
             || arg_name == "deprecated"
@@ -366,85 +365,84 @@ pub fn available_constraint<'node, 'src>(
     {
         compiler
             .reporter
-            .fail(Error::ErrAvailableMissingArguments, span.clone(), &[]);
+            .fail(Error::ErrAvailableMissingArguments, span, &[]);
         passed = false;
     }
 
     if let Some((_, _a_span)) = &added {
-        if let Some((_, d_span)) = &deprecated {
-            if added.as_ref().unwrap().0 > deprecated.as_ref().unwrap().0 {
-                compiler
-                    .reporter
-                    .fail(Error::ErrInvalidAvailabilityOrder, d_span.clone(), &[]);
-                passed = false;
-            }
+        if let Some((_, d_span)) = &deprecated
+            && added.as_ref().unwrap().0 > deprecated.as_ref().unwrap().0
+        {
+            compiler
+                .reporter
+                .fail(Error::ErrInvalidAvailabilityOrder, *d_span, &[]);
+            passed = false;
         }
-        if let Some((_, r_span)) = &removed {
-            if added.as_ref().unwrap().0 >= removed.as_ref().unwrap().0 {
-                compiler
-                    .reporter
-                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
-                passed = false;
-            }
+        if let Some((_, r_span)) = &removed
+            && added.as_ref().unwrap().0 >= removed.as_ref().unwrap().0
+        {
+            compiler
+                .reporter
+                .fail(Error::ErrInvalidAvailabilityOrder, *r_span, &[]);
+            passed = false;
         }
-        if let Some((_, r_span)) = &replaced {
-            if added.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0 {
-                compiler
-                    .reporter
-                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
-                passed = false;
-            }
+        if let Some((_, r_span)) = &replaced
+            && added.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0
+        {
+            compiler
+                .reporter
+                .fail(Error::ErrInvalidAvailabilityOrder, *r_span, &[]);
+            passed = false;
         }
     }
 
     if let Some((_, _d_span)) = &deprecated {
-        if let Some((_, r_span)) = &removed {
-            if deprecated.as_ref().unwrap().0 >= removed.as_ref().unwrap().0 {
-                compiler
-                    .reporter
-                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
-                passed = false;
-            }
+        if let Some((_, r_span)) = &removed
+            && deprecated.as_ref().unwrap().0 >= removed.as_ref().unwrap().0
+        {
+            compiler
+                .reporter
+                .fail(Error::ErrInvalidAvailabilityOrder, *r_span, &[]);
+            passed = false;
         }
-        if let Some((_, r_span)) = &replaced {
-            if deprecated.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0 {
-                compiler
-                    .reporter
-                    .fail(Error::ErrInvalidAvailabilityOrder, r_span.clone(), &[]);
-                passed = false;
-            }
+        if let Some((_, r_span)) = &replaced
+            && deprecated.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0
+        {
+            compiler
+                .reporter
+                .fail(Error::ErrInvalidAvailabilityOrder, *r_span, &[]);
+            passed = false;
         }
     }
 
     if removed.is_some() && replaced.is_some() {
         compiler
             .reporter
-            .fail(Error::ErrRemovedAndReplaced, span.clone(), &[]);
+            .fail(Error::ErrRemovedAndReplaced, span, &[]);
         passed = false;
     }
 
-    if let Some((_, n_span)) = &note {
-        if deprecated.is_none() && removed.is_none() && replaced.is_none() {
-            compiler.reporter.fail(
-                Error::ErrNoteWithoutDeprecationOrRemoval,
-                n_span.clone(),
-                &[],
-            );
-            passed = false;
-        }
+    if let Some((_, n_span)) = &note
+        && deprecated.is_none()
+        && removed.is_none()
+        && replaced.is_none()
+    {
+        compiler
+            .reporter
+            .fail(Error::ErrNoteWithoutDeprecationOrRemoval, *n_span, &[]);
+        passed = false;
     }
 
-    if let Some((_r_name, r_span)) = &renamed {
-        if replaced.is_none() && removed.is_none() {
-            compiler.reporter.fail(
-                Error::ErrRenamedWithoutReplacedOrRemoved,
-                r_span.clone(),
-                &[],
-            );
-            passed = false;
-        }
-        // we'll check renamed to same name in compiler pass or similar since we don't have the element name here
+    if let Some((_r_name, r_span)) = &renamed
+        && replaced.is_none()
+        && removed.is_none()
+    {
+        compiler
+            .reporter
+            .fail(Error::ErrRenamedWithoutReplacedOrRemoved, *r_span, &[]);
+        passed = false;
     }
+    // we'll check renamed to same name in compiler pass or similar since we don't have the element name here
 
     passed
 }
@@ -718,15 +716,12 @@ impl AttributeSchemaMap {
                     && *prev_prov == raw_ast::AttributeProvenance::DocComment
                 {
                     // Multiple doc comments are allowed
-                    scope.insert(
-                        canon.clone(),
-                        (attr.name.element.span().clone(), attr.provenance),
-                    );
+                    scope.insert(canon.clone(), (attr.name.element.span(), attr.provenance));
                     continue;
                 }
 
                 let transmuted_span: SourceSpan =
-                    unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+                    unsafe { std::mem::transmute(attr.name.element.span()) };
                 if prev.data == name {
                     compiler.reporter.fail(
                         Error::ErrDuplicateAttribute,
@@ -746,7 +741,7 @@ impl AttributeSchemaMap {
                     );
                 }
             } else {
-                scope.insert(canon, (attr.name.element.span().clone(), attr.provenance));
+                scope.insert(canon, (attr.name.element.span(), attr.provenance));
             }
 
             let mut arg_scope: HashMap<String, SourceSpan> = HashMap::new();
@@ -757,8 +752,7 @@ impl AttributeSchemaMap {
                     .map(|n| n.element.start_token.span.data)
                     .unwrap_or("value");
                 let arg_canon = canonicalize(arg_name);
-                let arg_span: SourceSpan =
-                    unsafe { std::mem::transmute(arg.element.span().clone()) };
+                let arg_span: SourceSpan = unsafe { std::mem::transmute(arg.element.span()) };
 
                 let is_compile_early = self
                     .schemas
@@ -769,18 +763,16 @@ impl AttributeSchemaMap {
                     && decl_kind == "library"
                     && !matches!(arg.value, raw_ast::Constant::Literal(_))
                 {
-                    compiler.reporter.fail(
-                        Error::ErrReferenceInLibraryAttribute,
-                        arg_span.clone(),
-                        &[],
-                    );
+                    compiler
+                        .reporter
+                        .fail(Error::ErrReferenceInLibraryAttribute, arg_span, &[]);
                 }
 
-                if let Some(prev) = arg_scope.insert(arg_canon.clone(), arg_span.clone()) {
+                if let Some(prev) = arg_scope.insert(arg_canon.clone(), arg_span) {
                     if prev.data == arg_name {
                         compiler.reporter.fail(
                             Error::ErrDuplicateAttributeArg,
-                            arg_span.clone(),
+                            arg_span,
                             &[
                                 &name.to_string(),
                                 &arg_name.to_string(),
@@ -790,7 +782,7 @@ impl AttributeSchemaMap {
                     } else {
                         compiler.reporter.fail(
                             Error::ErrDuplicateAttributeArgCanonical,
-                            arg_span.clone(),
+                            arg_span,
                             &[
                                 &name.to_string(),
                                 &arg_name.to_string(),
@@ -811,7 +803,7 @@ impl AttributeSchemaMap {
                         let dist = edit_distance(name, k);
                         if dist > 0 && dist < 2 {
                             let transmuted_span: SourceSpan =
-                                unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+                                unsafe { std::mem::transmute(attr.name.element.span()) };
                             compiler.reporter.fail(
                                 Error::WarnAttributeTypo,
                                 transmuted_span,
@@ -825,7 +817,7 @@ impl AttributeSchemaMap {
                     if attr.args.is_empty() {
                         if attr.name.element.end_token.span.data.ends_with(')') {
                             let transmuted_span: SourceSpan =
-                                unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+                                unsafe { std::mem::transmute(attr.name.element.span()) };
                             compiler.reporter.fail(
                                 Error::ErrAttributeWithEmptyParens,
                                 transmuted_span,
@@ -838,7 +830,7 @@ impl AttributeSchemaMap {
                                 Some(actual_type) => {
                                     if actual_type != "string" && actual_type != "bool" {
                                         let arg_span: SourceSpan = unsafe {
-                                            std::mem::transmute(arg.value.element().span().clone())
+                                            std::mem::transmute(arg.value.element().span())
                                         };
                                         let name_str = attr.name.element.start_token.span.data;
                                         let arg_name = arg
@@ -854,9 +846,8 @@ impl AttributeSchemaMap {
                                     }
                                 }
                                 None => {
-                                    let arg_span: SourceSpan = unsafe {
-                                        std::mem::transmute(arg.value.element().span().clone())
-                                    };
+                                    let arg_span: SourceSpan =
+                                        unsafe { std::mem::transmute(arg.value.element().span()) };
                                     compiler.reporter.fail(
                                         Error::ErrCouldNotResolveAttributeArg,
                                         arg_span,
@@ -871,12 +862,12 @@ impl AttributeSchemaMap {
             };
 
             let transmuted_span: SourceSpan =
-                unsafe { std::mem::transmute(attr.name.element.span().clone()) };
+                unsafe { std::mem::transmute(attr.name.element.span()) };
 
             if schema.kind == Kind::Deprecated {
                 compiler.reporter.fail(
                     Error::ErrDeprecatedAttribute,
-                    transmuted_span.clone(),
+                    transmuted_span,
                     &[&name.to_string()],
                 );
             }
@@ -892,20 +883,16 @@ impl AttributeSchemaMap {
             if !valid_placement {
                 compiler.reporter.fail(
                     Error::ErrInvalidAttributePlacement,
-                    transmuted_span.clone(),
+                    transmuted_span,
                     &[&name.to_string()],
                 );
             }
 
             // Validate arguments
-            if attr.args.is_empty() {
-                if attr.name.element.end_token.span.data.ends_with(')') {
-                    compiler.reporter.fail(
-                        Error::ErrAttributeWithEmptyParens,
-                        transmuted_span.clone(),
-                        &[],
-                    );
-                }
+            if attr.args.is_empty() && attr.name.element.end_token.span.data.ends_with(')') {
+                compiler
+                    .reporter
+                    .fail(Error::ErrAttributeWithEmptyParens, transmuted_span, &[]);
             }
 
             for arg in &attr.args {
@@ -922,24 +909,20 @@ impl AttributeSchemaMap {
                     .or(single_schema_arg_name)
                     .unwrap_or("value");
                 let _arg_canon = canonicalize(arg_name);
-                let arg_span: SourceSpan =
-                    unsafe { std::mem::transmute(arg.element.span().clone()) };
+                let arg_span: SourceSpan = unsafe { std::mem::transmute(arg.element.span()) };
 
-                if let Some(arg_schema) = schema.arg_schemas.get(arg_name) {
-                    if arg_schema.arg_type == ArgType::Special(SpecialCase::Version) {
-                        if let raw_ast::Constant::Identifier(id) = &arg.value {
-                            let name = id.identifier.to_string();
-                            if name == "NEXT" || name == "HEAD" {
-                                continue;
-                            } else {
-                                compiler.reporter.fail(
-                                    Error::ErrInvalidVersion,
-                                    arg_span.clone(),
-                                    &[&name],
-                                );
-                                continue;
-                            }
-                        }
+                if let Some(arg_schema) = schema.arg_schemas.get(arg_name)
+                    && arg_schema.arg_type == ArgType::Special(SpecialCase::Version)
+                    && let raw_ast::Constant::Identifier(id) = &arg.value
+                {
+                    let name = id.identifier.to_string();
+                    if name == "NEXT" || name == "HEAD" {
+                        continue;
+                    } else {
+                        compiler
+                            .reporter
+                            .fail(Error::ErrInvalidVersion, arg_span, &[&name]);
+                        continue;
                     }
                 }
 
@@ -948,7 +931,7 @@ impl AttributeSchemaMap {
                 {
                     compiler.reporter.fail(
                         Error::ErrAttributeArgRequiresLiteral,
-                        arg_span.clone(),
+                        arg_span,
                         &[&arg_name.to_string(), &name.to_string()],
                     );
                     continue;
@@ -957,7 +940,7 @@ impl AttributeSchemaMap {
                 if schema.arg_schemas.is_empty() {
                     compiler.reporter.fail(
                         Error::ErrAttributeDisallowsArgs,
-                        transmuted_span.clone(),
+                        transmuted_span,
                         &[&name.to_string()],
                     );
                     continue;
@@ -966,7 +949,7 @@ impl AttributeSchemaMap {
                 if !schema.arg_schemas.contains_key(arg_name) {
                     compiler.reporter.fail(
                         Error::ErrUnknownAttributeArg,
-                        transmuted_span.clone(),
+                        transmuted_span,
                         &[&name.to_string(), &arg_name.to_string()],
                     );
                     continue;
@@ -975,13 +958,13 @@ impl AttributeSchemaMap {
                 if arg.name.is_none() && schema.arg_schemas.len() > 1 {
                     compiler.reporter.fail(
                         Error::ErrAttributeArgNotNamed,
-                        transmuted_span.clone(),
+                        transmuted_span,
                         &[&name.to_string()],
                     );
                 } else if arg.name.is_some() && schema.arg_schemas.len() == 1 {
                     compiler.reporter.fail(
                         Error::ErrAttributeArgMustNotBeNamed,
-                        transmuted_span.clone(),
+                        transmuted_span,
                         &[],
                     );
                 }
@@ -1008,9 +991,8 @@ impl AttributeSchemaMap {
                                     _ => actual_type,
                                 };
 
-                                let arg_span: SourceSpan = unsafe {
-                                    std::mem::transmute(arg.value.element().span().clone())
-                                };
+                                let arg_span: SourceSpan =
+                                    unsafe { std::mem::transmute(arg.value.element().span()) };
 
                                 let value_str = match &arg.value {
                                     raw_ast::Constant::Literal(l) => {
@@ -1024,7 +1006,7 @@ impl AttributeSchemaMap {
 
                                 compiler.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType,
-                                    arg_span.clone(),
+                                    arg_span,
                                     &[
                                         &value_str,
                                         &actual_str.to_string(),
@@ -1102,7 +1084,7 @@ impl AttributeSchemaMap {
                         }
                         None => {
                             let arg_span: SourceSpan =
-                                unsafe { std::mem::transmute(arg.value.element().span().clone()) };
+                                unsafe { std::mem::transmute(arg.value.element().span()) };
                             compiler.reporter.fail(
                                 Error::ErrCouldNotResolveAttributeArg,
                                 arg_span,
@@ -1114,40 +1096,35 @@ impl AttributeSchemaMap {
             }
 
             for (req_name, req_schema) in schema.arg_schemas.iter() {
-                if req_schema.optionality == Optionality::Required {
-                    if attr
-                        .args
-                        .iter()
-                        .find(|a| {
-                            let single_schema_arg_name = if schema.arg_schemas.len() == 1 {
-                                schema.arg_schemas.keys().next().map(|s| s.as_str())
-                            } else {
-                                None
-                            };
-
-                            let arg_name = a
-                                .name
-                                .as_ref()
-                                .map(|n| n.element.start_token.span.data)
-                                .or(single_schema_arg_name)
-                                .unwrap_or("value");
-                            arg_name == req_name.as_str()
-                        })
-                        .is_none()
-                    {
-                        if schema.arg_schemas.len() == 1 {
-                            compiler.reporter.fail(
-                                Error::ErrMissingRequiredAnonymousAttributeArg,
-                                transmuted_span.clone(),
-                                &[&name.to_string()],
-                            );
+                if req_schema.optionality == Optionality::Required
+                    && !attr.args.iter().any(|a| {
+                        let single_schema_arg_name = if schema.arg_schemas.len() == 1 {
+                            schema.arg_schemas.keys().next().map(|s| s.as_str())
                         } else {
-                            compiler.reporter.fail(
-                                Error::ErrMissingRequiredAttributeArg,
-                                transmuted_span.clone(),
-                                &[&name.to_string(), &req_name.to_string()],
-                            );
-                        }
+                            None
+                        };
+
+                        let arg_name = a
+                            .name
+                            .as_ref()
+                            .map(|n| n.element.start_token.span.data)
+                            .or(single_schema_arg_name)
+                            .unwrap_or("value");
+                        arg_name == req_name.as_str()
+                    })
+                {
+                    if schema.arg_schemas.len() == 1 {
+                        compiler.reporter.fail(
+                            Error::ErrMissingRequiredAnonymousAttributeArg,
+                            transmuted_span,
+                            &[&name.to_string()],
+                        );
+                    } else {
+                        compiler.reporter.fail(
+                            Error::ErrMissingRequiredAttributeArg,
+                            transmuted_span,
+                            &[&name.to_string(), &req_name.to_string()],
+                        );
                     }
                 }
             }

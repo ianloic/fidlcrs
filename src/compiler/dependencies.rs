@@ -363,12 +363,11 @@ pub(crate) fn collect_deps_from_ctor(
                 deps.push(format!("{}/{}", library_name, name));
             }
         }
-    } else if let raw_ast::LayoutParameter::Inline(_) = ctor.layout {
-        if let Some(name) =
+    } else if let raw_ast::LayoutParameter::Inline(_) = ctor.layout
+        && let Some(name) =
             inline_names.get(&(ctor.element.start_token.span.data.as_ptr() as usize))
-        {
-            deps.push(name.clone());
-        }
+    {
+        deps.push(name.clone());
     }
 
     for param in &ctor.parameters {
@@ -457,11 +456,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let mut cycle_str = String::new();
                 for cname in cycle_names {
                     let ckind = decl_kinds.get(cname).unwrap_or(&"unknown");
-                    let short_name = cname.split('/').last().unwrap_or(cname);
+                    let short_name = cname.split('/').next_back().unwrap_or(cname);
                     cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
                 }
                 let kind = decl_kinds.get(name).unwrap_or(&"unknown");
-                let short_name = name.split('/').last().unwrap_or(name);
+                let short_name = name.split('/').next_back().unwrap_or(name);
                 cycle_str.push_str(&format!("{} '{}'", kind, short_name));
 
                 let span = if let Some(decl) = decls.get(name) {
@@ -637,16 +636,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         d.extend(get_type_dependencies(req));
                     }
                     if m.has_error {
-                        let decl_name_short = name.split('/').last().unwrap();
+                        let decl_name_short = name.split('/').next_back().unwrap();
                         let union_name = format!(
                             "{}/{}_{}_Result",
                             self.library_name, decl_name_short, m.name
                         );
                         d.push(union_name);
-                    } else {
-                        if let Some(res) = &m.maybe_response_payload {
-                            d.extend(get_type_dependencies(res));
-                        }
+                    } else if let Some(res) = &m.maybe_response_payload {
+                        d.extend(get_type_dependencies(res));
                     }
                 }
             }

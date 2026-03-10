@@ -26,20 +26,18 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         } else {
                             val
                         }
-                    } else {
-                        if let Ok(n) = val.parse::<u64>() {
-                            n.to_string()
-                        } else if let Ok(n) = val.parse::<i64>() {
-                            n.to_string()
-                        } else if let Ok(_) = val.parse::<f64>() {
-                            if val == "1.41421358" {
-                                "1.41421".to_string()
-                            } else {
-                                val
-                            }
+                    } else if let Ok(n) = val.parse::<u64>() {
+                        n.to_string()
+                    } else if let Ok(n) = val.parse::<i64>() {
+                        n.to_string()
+                    } else if val.parse::<f64>().is_ok() {
+                        if val == "1.41421358" {
+                            "1.41421".to_string()
                         } else {
                             val
                         }
+                    } else {
+                        val
                     };
                     Some(format!("\"{}\"", n_str))
                 }
@@ -60,38 +58,38 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("\"4294967295\"".to_string());
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
-                    if let Some(decl) = self.raw_decls.get(type_full_name) {
-                        if let Some(member_name) = maybe_member {
-                            return match decl {
-                                RawDecl::Bits(b) => b
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
+                    && let Some(decl) = self.raw_decls.get(type_full_name)
+                {
+                    if let Some(member_name) = maybe_member {
+                        return match decl {
+                            RawDecl::Bits(b) => b
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                            RawDecl::Enum(e) => e
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                            RawDecl::Type(t) => match &t.layout {
+                                raw_ast::Layout::Bits(b) => b
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                                RawDecl::Enum(e) => e
+                                raw_ast::Layout::Enum(e) => e
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                                RawDecl::Type(t) => match &t.layout {
-                                    raw_ast::Layout::Bits(b) => b
-                                        .members
-                                        .iter()
-                                        .find(|m| m.name.data() == member_name)
-                                        .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                                    raw_ast::Layout::Enum(e) => e
-                                        .members
-                                        .iter()
-                                        .find(|m| m.name.data() == member_name)
-                                        .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                                    _ => None,
-                                },
                                 _ => None,
-                            };
-                        } else if let RawDecl::Const(c) = decl {
-                            return self.eval_constant_value_as_string(&c.value);
-                        }
+                            },
+                            _ => None,
+                        };
+                    } else if let RawDecl::Const(c) = decl {
+                        return self.eval_constant_value_as_string(&c.value);
                     }
                 }
 
@@ -118,35 +116,35 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("numeric");
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
-                    if let Some(decl) = self.raw_decls.get(type_full_name) {
-                        if maybe_member.is_some() {
-                            return match decl {
-                                RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
-                                RawDecl::Type(t) => match &t.layout {
-                                    raw_ast::Layout::Enum(_) | raw_ast::Layout::Bits(_) => {
-                                        Some("numeric")
-                                    }
-                                    _ => None,
-                                },
-                                _ => None,
-                            };
-                        } else if let RawDecl::Const(c) = decl {
-                            if let LayoutParameter::Identifier(id) = &c.type_ctor.layout {
-                                let mut type_name = id.to_string();
-                                if type_name.starts_with("fidl.") {
-                                    type_name = type_name[5..].to_string();
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
+                    && let Some(decl) = self.raw_decls.get(type_full_name)
+                {
+                    if maybe_member.is_some() {
+                        return match decl {
+                            RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
+                            RawDecl::Type(t) => match &t.layout {
+                                raw_ast::Layout::Enum(_) | raw_ast::Layout::Bits(_) => {
+                                    Some("numeric")
                                 }
-                                return match type_name.as_str() {
-                                    "string" => Some("string"),
-                                    "bool" => Some("bool"),
-                                    "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16"
-                                    | "int32" | "int64" | "float32" | "float64" | "uchar"
-                                    | "usize64" | "uintptr64" => Some("numeric"),
-                                    _ => None,
-                                };
-                            }
+                                _ => None,
+                            },
+                            _ => None,
+                        };
+                    } else if let RawDecl::Const(c) = decl
+                        && let LayoutParameter::Identifier(id) = &c.type_ctor.layout
+                    {
+                        let mut type_name = id.to_string();
+                        if type_name.starts_with("fidl.") {
+                            type_name = type_name[5..].to_string();
                         }
+                        return match type_name.as_str() {
+                            "string" => Some("string"),
+                            "bool" => Some("bool"),
+                            "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16"
+                            | "int32" | "int64" | "float32" | "float64" | "uchar" | "usize64"
+                            | "uintptr64" => Some("numeric"),
+                            _ => None,
+                        };
                     }
                 }
                 None
@@ -187,38 +185,38 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some(u32::MAX as u64); // Approximation
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
-                    if let Some(decl) = self.raw_decls.get(type_full_name) {
-                        if let Some(member_name) = maybe_member {
-                            return match decl {
-                                RawDecl::Bits(b) => b
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
+                    && let Some(decl) = self.raw_decls.get(type_full_name)
+                {
+                    if let Some(member_name) = maybe_member {
+                        return match decl {
+                            RawDecl::Bits(b) => b
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value(&m.value)),
+                            RawDecl::Enum(e) => e
+                                .members
+                                .iter()
+                                .find(|m| m.name.data() == member_name)
+                                .and_then(|m| self.eval_constant_value(&m.value)),
+                            RawDecl::Type(t) => match &t.layout {
+                                raw_ast::Layout::Bits(b) => b
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value(&m.value)),
-                                RawDecl::Enum(e) => e
+                                raw_ast::Layout::Enum(e) => e
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value(&m.value)),
-                                RawDecl::Type(t) => match &t.layout {
-                                    raw_ast::Layout::Bits(b) => b
-                                        .members
-                                        .iter()
-                                        .find(|m| m.name.data() == member_name)
-                                        .and_then(|m| self.eval_constant_value(&m.value)),
-                                    raw_ast::Layout::Enum(e) => e
-                                        .members
-                                        .iter()
-                                        .find(|m| m.name.data() == member_name)
-                                        .and_then(|m| self.eval_constant_value(&m.value)),
-                                    _ => None,
-                                },
                                 _ => None,
-                            };
-                        } else if let RawDecl::Const(c) = decl {
-                            return self.eval_constant_value(&c.value);
-                        }
+                            },
+                            _ => None,
+                        };
+                    } else if let RawDecl::Const(c) = decl {
+                        return self.eval_constant_value(&c.value);
                     }
                 }
 
@@ -287,21 +285,19 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             } else {
                                 val.clone()
                             }
-                        } else {
-                            if let Ok(n) = val.parse::<u64>() {
-                                n.to_string()
-                            } else if let Ok(n) = val.parse::<i64>() {
-                                n.to_string()
-                            } else if let Ok(n) = val.parse::<f64>() {
-                                // Match C++ `printf("%g")` 6 sig-fig serialization output just for testing
-                                if val == "1.41421358" {
-                                    "1.41421".to_string()
-                                } else {
-                                    n.to_string()
-                                }
+                        } else if let Ok(n) = val.parse::<u64>() {
+                            n.to_string()
+                        } else if let Ok(n) = val.parse::<i64>() {
+                            n.to_string()
+                        } else if let Ok(n) = val.parse::<f64>() {
+                            // Match C++ `printf("%g")` 6 sig-fig serialization output just for testing
+                            if val == "1.41421358" {
+                                "1.41421".to_string()
                             } else {
-                                val.clone()
+                                n.to_string()
                             }
+                        } else {
+                            val.clone()
                         };
                         (
                             "numeric",
@@ -436,13 +432,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
         if subtype.starts_with("float") {
             return match subtype {
-                "float32" => {
-                    let r = val_str.parse::<f64>().map_or(false, |v| {
-                        !v.is_infinite() && v >= f32::MIN as f64 && v <= f32::MAX as f64
-                    });
-                    r
-                }
-                "float64" => val_str.parse::<f64>().map_or(false, |v| !v.is_infinite()),
+                "float32" => val_str.parse::<f64>().is_ok_and(|v| {
+                    !v.is_infinite() && v >= f32::MIN as f64 && v <= f32::MAX as f64
+                }),
+                "float64" => val_str.parse::<f64>().is_ok_and(|v| !v.is_infinite()),
                 _ => false,
             };
         }
@@ -472,7 +465,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let subtype = &p.subtype.to_string();
                 match constant {
                     raw_ast::Constant::Literal(lit) => {
-                        let span = lit.literal.element.start_token.span.clone();
+                        let span = lit.literal.element.start_token.span;
                         match &lit.literal.kind {
                             raw_ast::LiteralKind::String => {
                                 self.reporter.fail(
@@ -512,7 +505,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         }
                     }
                     raw_ast::Constant::Identifier(id) => {
-                        let span = id.element.start_token.span.clone();
+                        let span = id.element.start_token.span;
                         let name = id.identifier.to_string();
                         if name == "MAX" {
                             self.reporter.fail(
@@ -577,7 +570,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                         } else {
                                             self.reporter.fail(
                                                 Error::ErrCouldNotResolveMember,
-                                                span.clone(),
+                                                span,
                                                 &[&"bits"],
                                             );
                                             return;
@@ -592,7 +585,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                         } else {
                                             self.reporter.fail(
                                                 Error::ErrCouldNotResolveMember,
-                                                span.clone(),
+                                                span,
                                                 &[&"enum"],
                                             );
                                             return;
@@ -611,7 +604,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                             } else {
                                                 self.reporter.fail(
                                                     Error::ErrCouldNotResolveMember,
-                                                    span.clone(),
+                                                    span,
                                                     &[&"bits"],
                                                 );
                                                 return;
@@ -629,7 +622,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                             } else {
                                                 self.reporter.fail(
                                                     Error::ErrCouldNotResolveMember,
-                                                    span.clone(),
+                                                    span,
                                                     &[&"enum"],
                                                 );
                                                 return;
@@ -648,18 +641,16 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             let left_is_float = subtype.starts_with("float");
                             let right_is_float = c_layout.starts_with("float");
 
-                            if c_layout != subtype {
-                                if let Some(RawDecl::Const(c)) = decl_info {
-                                    if let raw_ast::Constant::Literal(lit) = &c.value {
-                                        if !self.check_numeric_bounds(&lit.literal.value, subtype) {
-                                            self.reporter.fail(
-                                                Error::ErrConstantOverflowsType,
-                                                span,
-                                                &[&lit.literal.value, subtype],
-                                            );
-                                        }
-                                    }
-                                }
+                            if c_layout != subtype
+                                && let Some(RawDecl::Const(c)) = decl_info
+                                && let raw_ast::Constant::Literal(lit) = &c.value
+                                && !self.check_numeric_bounds(&lit.literal.value, subtype)
+                            {
+                                self.reporter.fail(
+                                    Error::ErrConstantOverflowsType,
+                                    span,
+                                    &[&lit.literal.value, subtype],
+                                );
                             }
 
                             if left_is_bool != right_is_bool || left_is_float != right_is_float {
@@ -685,7 +676,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             }
             Type::String(s) => match constant {
                 raw_ast::Constant::Literal(lit) => {
-                    let span = lit.literal.element.start_token.span.clone();
+                    let span = lit.literal.element.start_token.span;
                     if !matches!(lit.literal.kind, raw_ast::LiteralKind::String) {
                         self.reporter.fail(
                             Error::ErrTypeCannotBeConvertedToType,
@@ -700,33 +691,33 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 .chars()
                                 .peekable();
                             while let Some(ch) = chars.next() {
-                                if ch == '\\' {
-                                    if let Some(&next) = chars.peek() {
-                                        if next == 'u' {
-                                            chars.next(); // 'u'
-                                            if chars.peek() == Some(&'{') {
-                                                chars.next(); // '{'
-                                                let mut hex = String::new();
-                                                while let Some(&c) = chars.peek() {
-                                                    if c == '}' {
-                                                        chars.next(); // '}'
-                                                        break;
-                                                    }
-                                                    hex.push(c);
-                                                    chars.next();
+                                if ch == '\\'
+                                    && let Some(&next) = chars.peek()
+                                {
+                                    if next == 'u' {
+                                        chars.next(); // 'u'
+                                        if chars.peek() == Some(&'{') {
+                                            chars.next(); // '{'
+                                            let mut hex = String::new();
+                                            while let Some(&c) = chars.peek() {
+                                                if c == '}' {
+                                                    chars.next(); // '}'
+                                                    break;
                                                 }
-                                                if let Ok(val) = u32::from_str_radix(&hex, 16) {
-                                                    if let Some(c) = std::char::from_u32(val) {
-                                                        len += c.len_utf8();
-                                                        continue;
-                                                    }
-                                                }
+                                                hex.push(c);
+                                                chars.next();
                                             }
-                                        } else {
-                                            chars.next(); // consume escaped char
-                                            len += next.len_utf8();
-                                            continue;
+                                            if let Ok(val) = u32::from_str_radix(&hex, 16)
+                                                && let Some(c) = std::char::from_u32(val)
+                                            {
+                                                len += c.len_utf8();
+                                                continue;
+                                            }
                                         }
+                                    } else {
+                                        chars.next(); // consume escaped char
+                                        len += next.len_utf8();
+                                        continue;
                                     }
                                 }
                                 len += ch.len_utf8();
@@ -753,7 +744,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     }
                 }
                 raw_ast::Constant::Identifier(id) => {
-                    let span = id.element.start_token.span.clone();
+                    let span = id.element.start_token.span;
                     let name = id.identifier.to_string();
                     let mut full_name = name.clone();
                     if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
@@ -768,10 +759,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     }
 
                     let mut valid = false;
-                    if let Some(RawDecl::Const(c)) = self.raw_decls.get(&full_name) {
-                        if c.type_ctor.element.start_token.span.data == "string" {
-                            valid = true;
-                        }
+                    if let Some(RawDecl::Const(c)) = self.raw_decls.get(&full_name)
+                        && c.type_ctor.element.start_token.span.data == "string"
+                    {
+                        valid = true;
                     }
                     if !valid {
                         self.reporter.fail(
@@ -791,7 +782,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                 match constant {
                     raw_ast::Constant::Literal(lit) => {
-                        let span = lit.literal.element.start_token.span.clone();
+                        let span = lit.literal.element.start_token.span;
                         if expected_decl_kind == "bits"
                             && lit.literal.kind == raw_ast::LiteralKind::Numeric
                             && lit.literal.value == "0"
@@ -805,7 +796,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         );
                     }
                     raw_ast::Constant::Identifier(id) => {
-                        let span = id.element.start_token.span.clone();
+                        let span = id.element.start_token.span;
                         let name = id.identifier.to_string();
                         let mut type_full_name = "".to_string();
                         let mut member_name_str = "";
@@ -863,10 +854,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 if !found_member {
                                     self.reporter.fail(
                                         Error::ErrCouldNotResolveMember,
-                                        span.clone(),
+                                        span,
                                         &[&expected_decl_kind],
                                     );
-                                    return;
                                 }
                             }
                         } else {
@@ -957,7 +947,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             let layout_str = decl.type_ctor.element.start_token.span.data;
             self.reporter.fail(
                 Error::ErrInvalidConstantType,
-                decl.name.element.start_token.span.clone(),
+                decl.name.element.start_token.span,
                 &[&layout_str],
             );
         }

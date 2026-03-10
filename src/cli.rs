@@ -175,13 +175,13 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
         }
     };
 
-    if let Some(expected_name) = _expected_library_name {
-        if &compiler.library_name != expected_name {
-            return Err(format!(
-                "Library name '{}' does not match the expected name '{}'\n",
-                compiler.library_name, expected_name
-            ));
-        }
+    if let Some(expected_name) = _expected_library_name
+        && &compiler.library_name != expected_name
+    {
+        return Err(format!(
+            "Library name '{}' does not match the expected name '{}'\n",
+            compiler.library_name, expected_name
+        ));
     }
 
     if let Some(expected_platform) = _expected_platform {
@@ -205,25 +205,20 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
         }
         if let Some(expected_version) = _expected_version_added {
             let mut found_added: Option<Version> = None;
-            if let Some(decl) = &compiler.library_decl {
-                if let Some(attrs) = &decl.attributes {
-                    for attr in &attrs.attributes {
-                        if attr.name.data() == "available" {
-                            for arg in &attr.args {
-                                let arg_name =
-                                    arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
-                                if arg_name == "added" || arg_name == "value" {
-                                    let val_str = match &arg.value {
-                                        raw_ast::Constant::Literal(lit) => {
-                                            lit.literal.value.clone()
-                                        }
-                                        raw_ast::Constant::Identifier(id) => {
-                                            id.identifier.to_string()
-                                        }
-                                        _ => "".to_string(),
-                                    };
-                                    found_added = Version::parse(&val_str);
-                                }
+            if let Some(decl) = &compiler.library_decl
+                && let Some(attrs) = &decl.attributes
+            {
+                for attr in &attrs.attributes {
+                    if attr.name.data() == "available" {
+                        for arg in &attr.args {
+                            let arg_name = arg.name.as_ref().map(|n| n.data()).unwrap_or("value");
+                            if arg_name == "added" || arg_name == "value" {
+                                let val_str = match &arg.value {
+                                    raw_ast::Constant::Literal(lit) => lit.literal.value.clone(),
+                                    raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                                    _ => "".to_string(),
+                                };
+                                found_added = Version::parse(&val_str);
                             }
                         }
                     }
@@ -268,7 +263,7 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
     }
 
     if let Some(dep_path) = dep_file_path {
-        let mut f = fs::File::create(&dep_path).unwrap();
+        let mut f = fs::File::create(dep_path).unwrap();
         if let Some(jp) = json_path {
             let input_files = filenames.join(" ");
             writeln!(f, "{} : {}", jp, input_files).unwrap();

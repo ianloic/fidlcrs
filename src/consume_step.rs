@@ -36,13 +36,13 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             let mut file_import_paths = std::collections::HashSet::new();
             for using_decl in &file.using_decls {
                 let span = unsafe {
-                    std::mem::transmute::<SourceSpan, SourceSpan>(using_decl.element.span().clone())
+                    std::mem::transmute::<SourceSpan, SourceSpan>(using_decl.element.span())
                 };
 
                 if using_decl.attributes.is_some() {
                     compiler.reporter.fail(
                         Error::ErrAttributesNotAllowedOnLibraryImport,
-                        span.clone(),
+                        span,
                         &[],
                     );
                 }
@@ -57,7 +57,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 if !dependent_library_names.contains(&path) && path != main_library_name {
                     compiler
                         .reporter
-                        .fail(Error::ErrUnknownLibrary, span.clone(), &[&path]);
+                        .fail(Error::ErrUnknownLibrary, span, &[&path]);
                     continue;
                 }
 
@@ -66,11 +66,11 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         .maybe_alias
                         .as_ref()
                         .map(|a| unsafe {
-                            std::mem::transmute::<SourceSpan, SourceSpan>(a.element.span().clone())
+                            std::mem::transmute::<SourceSpan, SourceSpan>(a.element.span())
                         })
                         .unwrap_or_else(|| unsafe {
                             std::mem::transmute::<SourceSpan, SourceSpan>(
-                                using_decl.using_path.element.span().clone(),
+                                using_decl.using_path.element.span(),
                             )
                         });
                     compiler.reporter.fail(
@@ -79,24 +79,20 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         &[&local_name],
                     );
                 } else if file_import_paths.contains(&path) {
-                    compiler.reporter.fail(
-                        Error::ErrDuplicateLibraryImport,
-                        span.clone(),
-                        &[&path],
-                    );
+                    compiler
+                        .reporter
+                        .fail(Error::ErrDuplicateLibraryImport, span, &[&path]);
                 } else if file_imports.contains(&local_name) {
                     if using_decl.maybe_alias.is_some() {
                         compiler.reporter.fail(
                             Error::ErrConflictingLibraryImportAlias,
-                            span.clone(),
+                            span,
                             &[&path, &local_name],
                         );
                     } else {
-                        compiler.reporter.fail(
-                            Error::ErrConflictingLibraryImport,
-                            span.clone(),
-                            &[&path],
-                        );
+                        compiler
+                            .reporter
+                            .fail(Error::ErrConflictingLibraryImport, span, &[&path]);
                     }
                 } else {
                     file_imports.insert(local_name.clone());
@@ -279,13 +275,12 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
         // Check for collisions between local names and library imports
         let mut to_report = Vec::new();
         for (full_name, decl) in &compiler.raw_decls {
-            if let Some((lib, local_decl_name)) = full_name.rsplit_once('/') {
-                if lib == compiler.library_name {
-                    if compiler.library_imports.contains_key(local_decl_name) {
-                        let span = decl.element().span();
-                        to_report.push((span, local_decl_name.to_string()));
-                    }
-                }
+            if let Some((lib, local_decl_name)) = full_name.rsplit_once('/')
+                && lib == compiler.library_name
+                && compiler.library_imports.contains_key(local_decl_name)
+            {
+                let span = decl.element().span();
+                to_report.push((span, local_decl_name.to_string()));
             }
         }
         for (span, name) in to_report {

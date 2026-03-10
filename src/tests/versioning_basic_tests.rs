@@ -1,5 +1,4 @@
 use super::test_library::TestLibrary;
-use crate::source_file::SourceFile;
 
 #[test]
 
@@ -285,10 +284,10 @@ fn remove_resource_modifier_and_handle() {
 fn bad_reference_outside_availability() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0220.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0220.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0220.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0220.test.fidl").unwrap()),
+    );
     library.select_version("test", "1");
     // library.expect_fail(Error::ErrNameNotFoundInVersionRange);
     assert!(library.compile().is_err());

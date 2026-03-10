@@ -1,5 +1,4 @@
 use crate::flat_ast::JsonRoot;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 fn direct_and_composed_dependencies(root: &JsonRoot) -> Vec<String> {
@@ -50,9 +49,9 @@ type Type = struct {};
 protocol Protocol {};
 "#,
         );
-        dep1.add_source(SourceFile::new(
-            "dep1.fidl".to_string(),
-            format!(
+        dep1.add_source_file(
+            "dep1.fidl",
+            &(format!(
                 r#"
 library dep1;
 
@@ -63,8 +62,8 @@ protocol ComposedProtocol {{
 }};
 "#,
                 type_usage
-            ),
-        ));
+            )),
+        );
         let _dep1_root = dep1.compile().expect("dep1 compilation failed");
 
         let mut lib = TestLibrary::new();
@@ -79,9 +78,9 @@ type Type = struct {};
 protocol Protocol {};
 "#,
         );
-        lib.add_source(SourceFile::new(
-            "dep1.fidl".to_string(),
-            format!(
+        lib.add_source_file(
+            "dep1.fidl",
+            &(format!(
                 r#"
 library dep1;
 
@@ -92,8 +91,8 @@ protocol ComposedProtocol {{
 }};
 "#,
                 type_usage
-            ),
-        ));
+            )),
+        );
         lib.add_source_file(
             "example.fidl",
             r#"

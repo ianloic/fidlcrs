@@ -1,4 +1,3 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 use std::collections::HashMap;
 
@@ -104,7 +103,7 @@ protocol #Protocol# {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec!["Protocol"];
         assert_eq!(unmangle_decls(&root.declaration_order), expected);
@@ -130,7 +129,7 @@ protocol #Protocol# {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec![
             "Element",
@@ -163,7 +162,7 @@ protocol #Protocol# {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected_suborders = vec![
             vec!["Element"],
@@ -193,7 +192,7 @@ protocol #Protocol# {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec!["Request", "ProtocolSomeMethodRequest", "Protocol"];
         assert_eq!(unmangle_decls(&root.declaration_order), expected);
@@ -222,7 +221,7 @@ type #Payload# = struct {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec!["Payload", "Union", "ProtocolSomeMethodRequest", "Protocol"];
         assert_eq!(unmangle_decls(&root.declaration_order), expected);
@@ -251,7 +250,7 @@ type #Payload# = struct {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected_suborders = vec![
             vec!["Payload", "Union"],
@@ -289,7 +288,7 @@ type #Union# = union {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec![
             "Payload",
@@ -327,7 +326,7 @@ type #Union# = union {
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected_suborders = vec![
             vec!["Payload", "Union"],
@@ -368,24 +367,15 @@ protocol #Decl1# {
         let source_dep = &sources[..idx];
         let source_ex = &sources[idx..];
 
-        let dependency = TestLibrary::with_source(SourceFile::new(
-            "dependency.fidl".to_string(),
-            source_dep.to_string(),
-        ));
+        let dependency = TestLibrary::with_source_file("dependency.fidl", &(source_dep));
         let root_dep = dependency.compile().unwrap();
 
         let mut library = TestLibrary::new();
         // TODO: How does TestLibrary handle multiple libraries?
         // Currently, TestLibrary compiles everything into one JSON root.
         // Let's add both sources to `library`.
-        library.add_source(SourceFile::new(
-            "dependency.fidl".to_string(),
-            source_dep.to_string(),
-        ));
-        library.add_source(SourceFile::new(
-            "example.fidl".to_string(),
-            source_ex.to_string(),
-        ));
+        library.add_source_file("dependency.fidl", &(source_dep));
+        library.add_source_file("example.fidl", &(source_ex));
 
         let root = library.compile().unwrap();
 
@@ -426,7 +416,7 @@ alias #Alias# = uint32;
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec!["Alias", "Constant"];
         assert_eq!(unmangle_decls(&root.declaration_order), expected);
@@ -446,7 +436,7 @@ alias #Alias# = uint32;
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec!["Alias", "Enum"];
         assert_eq!(unmangle_decls(&root.declaration_order), expected);
@@ -466,7 +456,7 @@ alias #Alias# = uint32;
 "#,
         );
 
-        let library = TestLibrary::with_source(SourceFile::new("example.fidl".to_string(), source));
+        let library = TestLibrary::with_source_file("example.fidl", &(source));
         let root = library.compile().unwrap();
         let expected = vec!["Alias", "Bits"];
         assert_eq!(unmangle_decls(&root.declaration_order), expected);

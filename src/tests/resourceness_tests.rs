@@ -1,7 +1,6 @@
 #![allow(unused_mut, unused_variables)]
 
 use crate::diagnostics::Error;
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -118,10 +117,7 @@ fn good_resource_simple() {
 
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "good/fi-0110-a.test.fidl".to_string(),
-        content,
-    ));
+    lib.add_source_file("good/fi-0110-a.test.fidl", &(content));
     lib.compile().unwrap();
 }
 #[test]
@@ -130,10 +126,7 @@ fn bad_resource_modifier_missing() {
 
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
-    lib.add_source(SourceFile::new(
-        "bad/fi-0110.test.fidl".to_string(),
-        content,
-    ));
+    lib.add_source_file("bad/fi-0110.test.fidl", &(content));
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
     assert_eq!(errors.len(), 1);
@@ -153,7 +146,7 @@ fn good_resource_struct() {
 
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), fidl_library));
+        lib.add_source_file("example.fidl", &(fidl_library));
         lib.compile().unwrap();
     }
 }
@@ -171,7 +164,7 @@ fn good_resource_table() {
 
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), fidl_library));
+        lib.add_source_file("example.fidl", &(fidl_library));
         lib.compile().unwrap();
     }
 }
@@ -188,7 +181,7 @@ fn good_resource_union() {
 
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), fidl_library));
+        lib.add_source_file("example.fidl", &(fidl_library));
         lib.compile().unwrap();
     }
 }
@@ -206,7 +199,7 @@ fn bad_handles_in_value_struct() {
 
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), fidl_library));
+        lib.add_source_file("example.fidl", &(fidl_library));
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
@@ -226,7 +219,7 @@ fn bad_handles_in_value_table() {
 
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), fidl_library));
+        lib.add_source_file("example.fidl", &(fidl_library));
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);
@@ -246,7 +239,7 @@ fn bad_handles_in_value_union() {
 
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), fidl_library));
+        lib.add_source_file("example.fidl", &(fidl_library));
         assert!(lib.compile().is_err());
         let errors = lib.reporter().diagnostics();
         assert_eq!(errors.len(), 1);

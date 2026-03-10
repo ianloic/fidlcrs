@@ -1,5 +1,4 @@
 use super::test_library::TestLibrary;
-use crate::source_file::SourceFile;
 
 #[test]
 
@@ -404,10 +403,10 @@ library example;
 fn bad_no_arguments() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0147.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0147.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0147.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0147.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrAvailableMissingArguments);
     let _ = library.compile();
@@ -419,10 +418,10 @@ fn bad_no_arguments() {
 fn bad_library_missing_added_only_removed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0150-a.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-a.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0150-a.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-a.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrLibraryAvailabilityMissingAdded);
     let _ = library.compile();
@@ -434,10 +433,10 @@ fn bad_library_missing_added_only_removed() {
 fn bad_library_missing_added_only_platform() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0150-b.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-b.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0150-b.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-b.test.fidl").unwrap()),
+    );
     library.select_version("foo", "HEAD");
     // library.expect_fail(Error::ErrLibraryAvailabilityMissingAdded);
     let _ = library.compile();
@@ -449,10 +448,10 @@ fn bad_library_missing_added_only_platform() {
 fn bad_library_replaced() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0204.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0204.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0204.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0204.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrLibraryReplaced);
     let _ = library.compile();
@@ -482,10 +481,10 @@ library example;
 fn bad_decl_renamed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0211.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0211.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0211.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0211.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrCannotBeRenamed);
     let _ = library.compile();
@@ -544,10 +543,10 @@ type Foo = struct {};
 fn bad_note_without_deprecation_removed_or_replaced() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0148.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0148.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0148.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0148.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrNoteWithoutDeprecationOrRemoval);
     let _ = library.compile();
@@ -559,10 +558,10 @@ fn bad_note_without_deprecation_removed_or_replaced() {
 fn bad_renamed_without_replaced() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0212.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0212.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0212.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0212.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrRenamedWithoutReplacedOrRemoved);
     let _ = library.compile();
@@ -574,10 +573,10 @@ fn bad_renamed_without_replaced() {
 fn bad_renamed_to_same_name() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0213.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0213.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0213.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0213.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrRenamedToSameName);
     let _ = library.compile();
@@ -589,10 +588,10 @@ fn bad_renamed_to_same_name() {
 fn bad_removed_and_replaced() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0203.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0203.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0203.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0203.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrRemovedAndReplaced);
     let _ = library.compile();
@@ -625,10 +624,10 @@ type Foo = struct {};
 fn bad_invalid_argument_on_modifier() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0218.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0218.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0218.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0218.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrInvalidModifierAvailableArgument);
     let _ = library.compile();
@@ -640,10 +639,10 @@ fn bad_invalid_argument_on_modifier() {
 fn bad_strictness_two_way_method_without_error() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0219.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0219.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0219.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0219.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrCannotChangeMethodStrictness);
     let _ = library.compile();
@@ -655,10 +654,10 @@ fn bad_strictness_two_way_method_without_error() {
 fn bad_use_in_unversioned_library() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0151.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0151.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0151.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0151.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrMissingLibraryAvailability);
     let _ = library.compile();
@@ -676,10 +675,10 @@ fn bad_use_in_unversioned_library_reported_once_per_attribute() {
 fn bad_added_equals_removed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0154-a.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-a.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0154-a.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-a.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
     let _ = library.compile();
@@ -785,10 +784,10 @@ library example;
 fn bad_deprecated_equals_removed() {
     let mut library = TestLibrary::new();
 
-    library.add_source(SourceFile::new(
-        "bad/fi-0154-b.test.fidl".to_string(),
-        std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-b.test.fidl").unwrap(),
-    ));
+    library.add_source_file(
+        "bad/fi-0154-b.test.fidl",
+        &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-b.test.fidl").unwrap()),
+    );
     library.select_version("test", "HEAD");
     // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
     let _ = library.compile();

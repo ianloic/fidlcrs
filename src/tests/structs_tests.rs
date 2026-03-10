@@ -1,4 +1,3 @@
-use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -491,9 +490,9 @@ fn bad_type_cannot_be_boxed_should_be_optional() {
     let boxed_names = vec!["Endpoint", "server_end:Endpoint", "client_end:Endpoint"];
     for boxed_name in boxed_names {
         let mut lib = TestLibrary::new();
-        lib.add_source(SourceFile::new(
-            "example.fidl".to_string(),
-            format!(
+        lib.add_source_file(
+            "example.fidl",
+            &(format!(
                 r#"
 library example;
 
@@ -504,8 +503,8 @@ type MyStruct = struct {{
 }};
 "#,
                 boxed_name
-            ),
-        ));
+            )),
+        );
         assert!(lib.compile().is_err());
     }
 }
@@ -515,9 +514,9 @@ fn bad_type_cannot_be_boxed_nor_optional() {
     let boxed_names = vec!["int32", "uint32", "bool"];
     for boxed_name in boxed_names {
         let mut lib = TestLibrary::new();
-        lib.add_source(SourceFile::new(
-            "example.fidl".to_string(),
-            format!(
+        lib.add_source_file(
+            "example.fidl",
+            &(format!(
                 r#"
 library example;
 
@@ -526,8 +525,8 @@ type MyStruct = struct {{
 }};
 "#,
                 boxed_name
-            ),
-        ));
+            )),
+        );
         assert!(lib.compile().is_err());
     }
 }

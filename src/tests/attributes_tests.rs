@@ -7,7 +7,6 @@ use crate::attribute_schema::Optionality;
 use crate::compiler::Compiler;
 use crate::diagnostics::Error;
 use crate::raw_ast;
-use crate::source_file::SourceFile;
 use crate::source_span::SourceSpan;
 use crate::tests::test_library::TestLibrary;
 
@@ -420,8 +419,18 @@ protocol MyProtocol {
 
 #[test]
 fn bad_constraint_only_three_members_on_struct() {
-    let source = SourceFile::new(
-        "example.fidl".to_string(),
+    fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
+        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
+        compiler.reporter.fail(
+            Error::ErrInvalidAttributePlacement,
+            span,
+            &[&"must_have_three_members".to_string()],
+        );
+        false
+    }
+    let mut lib = TestLibrary::new();
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library fidl.test;
 
@@ -432,20 +441,8 @@ type MyStruct = struct {
     three int64;
     oh_no_four int64;
 };
-"#
-        .to_string(),
+"#,
     );
-    fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
-        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
-        compiler.reporter.fail(
-            Error::ErrInvalidAttributePlacement,
-            span,
-            &[&"must_have_three_members".to_string()],
-        );
-        false
-    }
-    let mut lib = TestLibrary::new();
-    lib.add_source(source);
     let s_must = AttributeSchema::new(Kind::ValidateOnly).constrain(must_have_three_members);
     lib.add_attribute_schema("must_have_three_members", s_must);
     assert!(lib.compile().is_err());
@@ -453,17 +450,6 @@ type MyStruct = struct {
 
 #[test]
 fn bad_constraint_only_three_members_on_method() {
-    let source = SourceFile::new(
-        "example.fidl".to_string(),
-        r#"
-library fidl.test;
-
-protocol MyProtocol {
-    @must_have_three_members MyMethod();
-};
-"#
-        .to_string(),
-    );
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
         let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
         compiler.reporter.fail(
@@ -474,7 +460,16 @@ protocol MyProtocol {
         false
     }
     let mut lib = TestLibrary::new();
-    lib.add_source(source);
+    lib.add_source_file(
+        "example.fidl",
+        r#"
+library fidl.test;
+
+protocol MyProtocol {
+    @must_have_three_members MyMethod();
+};
+"#,
+    );
     let s_must = AttributeSchema::new(Kind::ValidateOnly).constrain(must_have_three_members);
     lib.add_attribute_schema("must_have_three_members", s_must);
     assert!(lib.compile().is_err());
@@ -482,8 +477,18 @@ protocol MyProtocol {
 
 #[test]
 fn bad_constraint_only_three_members_on_protocol() {
-    let source = SourceFile::new(
-        "example.fidl".to_string(),
+    fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
+        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
+        compiler.reporter.fail(
+            Error::ErrInvalidAttributePlacement,
+            span,
+            &[&"must_have_three_members".to_string()],
+        );
+        false
+    }
+    let mut lib = TestLibrary::new();
+    lib.add_source_file(
+        "example.fidl",
         r#"
 library fidl.test;
 
@@ -492,20 +497,8 @@ protocol MyProtocol {
     MyMethod();
     MySecondMethod();
 };
-"#
-        .to_string(),
+"#,
     );
-    fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
-        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
-        compiler.reporter.fail(
-            Error::ErrInvalidAttributePlacement,
-            span,
-            &[&"must_have_three_members".to_string()],
-        );
-        false
-    }
-    let mut lib = TestLibrary::new();
-    lib.add_source(source);
     let s_must = AttributeSchema::new(Kind::ValidateOnly).constrain(must_have_three_members);
     lib.add_attribute_schema("must_have_three_members", s_must);
     assert!(lib.compile().is_err());
@@ -1892,7 +1885,7 @@ protocol Foo {};
         .replace("%1", name);
 
         let mut lib = TestLibrary::new();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), source_text));
+        lib.add_source_file("example.fidl", &(source_text));
         lib.compile()
             .expect(&format!("compilation failed for {}", name));
     }
@@ -1910,7 +1903,7 @@ protocol Foo {};
         .replace("%1", name);
 
         let mut lib = TestLibrary::new();
-        lib.add_source(SourceFile::new("example.fidl".to_string(), source_text));
+        lib.add_source_file("example.fidl", &(source_text));
         assert!(
             lib.compile().is_err(),
             "expected compilation to fail for {}",

@@ -36,9 +36,9 @@ impl<'a> TestLibrary<'a> {
         }
     }
 
-    pub fn with_source(source_file: SourceFile) -> Self {
+    pub fn with_source_file(filename: &str, contents: &str) -> Self {
         let mut lib = Self::new();
-        lib.add_source(source_file);
+        lib.add_source_file(filename, contents);
         lib
     }
 
@@ -51,11 +51,7 @@ impl<'a> TestLibrary<'a> {
             .push((platform.to_string(), version.to_string()));
     }
 
-    pub fn add_source(&mut self, source_file: SourceFile) {
-        self.source_files.push(source_file);
-    }
-
-    pub fn add_source_file(&mut self, filename: &'static str, contents: &'static str) {
+    pub fn add_source_file(&mut self, filename: &str, contents: &str) {
         self.source_files
             .push(SourceFile::new(filename.to_string(), contents.to_string()));
     }
@@ -266,12 +262,8 @@ impl LookupHelpers for JsonRoot {
 
 #[test]
 fn test_test_library() {
-    let source = SourceFile::new(
-        "example.fidl".to_string(),
-        "library example; struct Foo { x uint32; };".to_string(),
-    );
     let mut lib = TestLibrary::new();
-    lib.add_source(source);
+    lib.add_source_file("example.fidl", "library example; struct Foo { x uint32; };");
     let root = lib.compile().expect("compilation failed");
     assert_eq!(root.name, "example");
     assert!(root.lookup_struct("example/Foo").is_some());

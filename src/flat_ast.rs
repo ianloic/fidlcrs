@@ -463,7 +463,11 @@ impl Type {
             maybe_element_count,
         })
     }
-    pub fn array(mut element_type: Box<Type>, element_count: u32) -> Self {
+    pub fn array(
+        mut element_type: Box<Type>,
+        element_count: u32,
+        maybe_size_constant_name: Option<String>,
+    ) -> Self {
         let mut inner_alias = element_type.outer_alias.take();
         if inner_alias.is_none()
             && element_type.kind() != TypeKind::Array
@@ -487,7 +491,7 @@ impl Type {
                 outer_alias: None,
                 maybe_attributes: vec![],
                 field_shape: None,
-                maybe_size_constant_name: None,
+                maybe_size_constant_name,
                 resource: element_type.resource,
                 deprecated: None,
                 type_shape: TypeShape {

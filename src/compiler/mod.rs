@@ -84,25 +84,17 @@ use crate::diagnostics::Error;
 use crate::diagnostics::ErrorKind;
 use crate::experimental_flags::ExperimentalFlag;
 use crate::experimental_flags::ExperimentalFlags;
-use crate::flat_ast::ArrayType;
-use crate::flat_ast::EndpointType;
 use crate::flat_ast::ExperimentalMaybeFromAlias;
-use crate::flat_ast::ExperimentalPointerType;
-use crate::flat_ast::HandleType;
-use crate::flat_ast::IdentifierType;
 use crate::flat_ast::PartialTypeCtor;
 use crate::flat_ast::PrimitiveSubtype;
 
 use crate::flat_ast::ProtocolCompose;
 
 use crate::flat_ast::Type;
-use crate::flat_ast::TypeCommon;
 use crate::flat_ast::TypeKind;
 use crate::flat_ast::TypeShape;
 use crate::flat_ast::UnionDeclaration;
 use crate::flat_ast::UnionMember;
-use crate::flat_ast::UnknownType;
-use crate::flat_ast::VectorType;
 use crate::name::NamingContext;
 use crate::raw_ast::LibraryDeclaration;
 use crate::source_file::{SourceFile, VirtualSourceFile};
@@ -3617,7 +3609,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let inner_type = self.resolve_type(elt_type, library_name, naming_context);
 
-                Type::array(Box::new(inner_type.clone()), count)
+                let maybe_size_constant_name = if let Some(param) = type_ctor.parameters.get(1) {
+                    if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
+                        Some(id.to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                Type::array(
+                    Box::new(inner_type.clone()),
+                    count,
+                    maybe_size_constant_name,
+                )
             }
 
             "client_end" | "server_end" => {

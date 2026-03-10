@@ -395,15 +395,12 @@ mod tests {
     }
 
     const COMPILE_DENYLIST: &[&str] = &[
-        "fuchsia.accessibility.scene",
         "fuchsia.accessibility.semantics",
-        "fuchsia.accessibility.virtualkeyboard",
         "fuchsia.audio.controller",
         "fuchsia.audio.device",
         "fuchsia.audio.effects",
         "fuchsia.audio.mixer",
         "fuchsia.audio",
-        "fuchsia.auth",
         "fuchsia.bluetooth.affordances",
         "fuchsia.bluetooth.avdtp.test",
         "fuchsia.bluetooth.avrcp.test",
@@ -449,7 +446,6 @@ mod tests {
         "fuchsia.device.fs",
         "fuchsia.device.vsock",
         "fuchsia.diagnostics.host",
-        "fuchsia.diagnostics.types",
         "fuchsia.diagnostics",
         "fuchsia.driver.crash",
         "fuchsia.driver.development",
@@ -464,7 +460,6 @@ mod tests {
         "fuchsia.element",
         "fuchsia.factory.lowpan",
         "fuchsia.factory",
-        "fuchsia.fdomain",
         "fuchsia.firmware.crash",
         "fuchsia.fonts.experimental",
         "fuchsia.fshost",
@@ -477,7 +472,6 @@ mod tests {
         "fuchsia.hardware.display",
         "fuchsia.hardware.fan",
         "fuchsia.hardware.google.nanohub",
-        "fuchsia.hardware.gpio",
         "fuchsia.hardware.hrtimer",
         "fuchsia.hardware.i2c.businfo",
         "fuchsia.hardware.i2cimpl",
@@ -498,14 +492,11 @@ mod tests {
         "fuchsia.hardware.sdio",
         "fuchsia.hardware.sdmmc",
         "fuchsia.hardware.sensors",
-        "fuchsia.hardware.spi",
         "fuchsia.hardware.spmi",
         "fuchsia.hardware.sysmem",
         "fuchsia.hardware.tee",
-        "fuchsia.hardware.telephony.transport",
         "fuchsia.hardware.temperature",
         "fuchsia.hardware.thermal",
-        "fuchsia.hardware.ufs",
         "fuchsia.hardware.usb.dci",
         "fuchsia.hardware.usb.endpoint",
         "fuchsia.hardware.usb.function",
@@ -517,15 +508,11 @@ mod tests {
         "fuchsia.images",
         "fuchsia.input.injection",
         "fuchsia.input.report",
-        "fuchsia.input.virtualkeyboard",
         "fuchsia.inspect",
         "fuchsia.io.test",
         "fuchsia.io",
-        "fuchsia.kms",
-        "fuchsia.lightsensor",
         "fuchsia.location.sensor",
         "fuchsia.logger",
-        "fuchsia.lowpan.bootstrap",
         "fuchsia.lowpan.device",
         "fuchsia.lowpan.driver",
         "fuchsia.lowpan.experimental",
@@ -538,7 +525,6 @@ mod tests {
         "fuchsia.media.target",
         "fuchsia.media",
         "fuchsia.mediacodec",
-        "fuchsia.mediastreams",
         "fuchsia.memory.attribution.plugin",
         "fuchsia.memory.attribution",
         "fuchsia.memory.heapdump.process",
@@ -597,7 +583,6 @@ mod tests {
         "fuchsia.settings.policy",
         "fuchsia.settings",
         "fuchsia.starnix.binder",
-        "fuchsia.storage.block",
         "fuchsia.storage.partitions",
         "fuchsia.sys2",
         "fuchsia.sysmem",
@@ -612,19 +597,10 @@ mod tests {
         "fuchsia.tracing.controller",
         "fuchsia.tracing.perfetto",
         "fuchsia.tracing.provider",
-        "fuchsia.ui.activity.control",
-        "fuchsia.ui.activity",
-        "fuchsia.ui.annotation",
-        "fuchsia.ui.app",
         "fuchsia.ui.composition.internal",
         "fuchsia.ui.composition",
-        "fuchsia.ui.focus",
         "fuchsia.ui.gfx",
         "fuchsia.ui.input.accessibility",
-        "fuchsia.ui.input",
-        "fuchsia.ui.input3",
-        "fuchsia.ui.keyboard.focus",
-        "fuchsia.ui.observation.geometry",
         "fuchsia.ui.observation.scope",
         "fuchsia.ui.observation.test",
         "fuchsia.ui.pointer.augment",
@@ -637,9 +613,7 @@ mod tests {
         "fuchsia.ui.test.context",
         "fuchsia.ui.test.input",
         "fuchsia.ui.test.scene",
-        "fuchsia.ui.views",
         "fuchsia.ultrasound",
-        "fuchsia.update.channelcontrol",
         "fuchsia.update.usb",
         "fuchsia.video",
         "fuchsia.virtualaudio",
@@ -864,6 +838,72 @@ mod tests {
         }
     }
 
+    fn compare_and_diff_ir(name: &str, expected_str: &str, actual_str: &str, print_diff: bool) -> bool {
+        if let (Ok(mut expected), Ok(mut actual)) = (
+            serde_json::from_str::<serde_json::Value>(expected_str),
+            serde_json::from_str::<serde_json::Value>(actual_str),
+        ) {
+            strip_filename(&mut expected);
+            strip_filename(&mut actual);
+
+            if expected != actual {
+                if print_diff {
+                    let exp_formatted = serde_json::to_string_pretty(&expected).unwrap();
+                    let act_formatted = serde_json::to_string_pretty(&actual).unwrap();
+
+                    let temp_dir = std::env::temp_dir();
+                    let exp_path = temp_dir.join(format!("{}_expected.json", name));
+                    let act_path = temp_dir.join(format!("{}_actual.json", name));
+
+                    std::fs::write(&exp_path, exp_formatted).unwrap();
+                    std::fs::write(&act_path, act_formatted).unwrap();
+
+                    println!("\nJSON mismatch for {}", name);
+                    if let Ok(output) = std::process::Command::new("diff")
+                        .arg("-u")
+                        .arg("--color=always")
+                        .arg(&exp_path)
+                        .arg(&act_path)
+                        .output()
+                    {
+                        println!("{}", String::from_utf8_lossy(&output.stdout));
+                    }
+
+                    let _ = std::fs::remove_file(&exp_path);
+                    let _ = std::fs::remove_file(&act_path);
+                }
+
+                false
+            } else {
+                true
+            }
+        } else {
+            false
+        }
+    }
+
+    fn compile_to_ir(
+        name: &str,
+        mut cli: Cli,
+        source_managers: Vec<Vec<String>>,
+        temp_dir: &std::path::Path,
+    ) -> Option<String> {
+        let out_json_path = temp_dir.join(format!("{}_out.fidl.json", name));
+        cli.json = Some(out_json_path.to_string_lossy().to_string());
+
+        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(&cli, &source_managers)));
+
+        let result = match res {
+            Ok(Err(_e)) => None,
+            Err(_) => None,
+            Ok(Ok(())) => std::fs::read_to_string(&out_json_path).ok(),
+        };
+
+        let _ = std::fs::remove_file(&out_json_path);
+
+        result
+    }
+
     #[test]
     fn test_compile_all_sdk_libraries() {
         let sdk_fidl = super::SdkFidl::new();
@@ -881,77 +921,27 @@ mod tests {
                 continue;
             }
 
-            if let Some((mut cli, source_managers)) = sdk_fidl.cli_for_library(name) {
-                let out_json_path = temp_dir.join(format!("{}_out.fidl.json", name));
-                cli.json = Some(out_json_path.to_string_lossy().to_string());
+            if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
+                if let Some(actual_str) = compile_to_ir(name, cli, source_managers, &temp_dir) {
+                    if !COMPARE_DENYLIST.contains(&name) {
+                        let ref_json_path = manifest_dir
+                            .join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
 
-                let res = std::panic::catch_unwind(|| run(&cli, &source_managers));
+                        if ref_json_path.exists() {
+                            let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
 
-                match res {
-                    Ok(Err(_e)) => {
-                        failed.push(name);
-                    }
-                    Err(_) => {
-                        failed.push(name);
-                    }
-                    Ok(Ok(())) => {
-                        if !COMPARE_DENYLIST.contains(&name) {
-                            let ref_json_path = manifest_dir
-                                .join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
-
-                            if ref_json_path.exists() {
-                                let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
-                                let actual_str = std::fs::read_to_string(&out_json_path).unwrap();
-
-                                if let (Ok(mut expected), Ok(mut actual)) = (
-                                    serde_json::from_str::<serde_json::Value>(&expected_str),
-                                    serde_json::from_str::<serde_json::Value>(&actual_str),
-                                ) {
-                                    strip_filename(&mut expected);
-                                    strip_filename(&mut actual);
-
-                                    if expected != actual {
-                                        let exp_formatted =
-                                            serde_json::to_string_pretty(&expected).unwrap();
-                                        let act_formatted =
-                                            serde_json::to_string_pretty(&actual).unwrap();
-
-                                        let exp_path =
-                                            temp_dir.join(format!("{}_expected.json", name));
-                                        let act_path =
-                                            temp_dir.join(format!("{}_actual.json", name));
-
-                                        std::fs::write(&exp_path, exp_formatted).unwrap();
-                                        std::fs::write(&act_path, act_formatted).unwrap();
-
-                                        println!("\nJSON mismatch for {}", name);
-                                        if let Ok(output) = std::process::Command::new("diff")
-                                            .arg("-u")
-                                            .arg("--color=always")
-                                            .arg(&exp_path)
-                                            .arg(&act_path)
-                                            .output()
-                                        {
-                                            println!("{}", String::from_utf8_lossy(&output.stdout));
-                                        }
-
-                                        let _ = std::fs::remove_file(&exp_path);
-                                        let _ = std::fs::remove_file(&act_path);
-
-                                        mismatched.push(name);
-                                    } else {
-                                        matched.push(name);
-                                    }
-                                } else {
-                                    mismatched.push(name);
-                                }
+                            if compare_and_diff_ir(name, &expected_str, &actual_str, true) {
+                                matched.push(name);
                             } else {
-                                println!("Reference JSON not found for {}", name);
-                                missing.push(name);
+                                mismatched.push(name);
                             }
+                        } else {
+                            println!("Reference JSON not found for {}", name);
+                            missing.push(name);
                         }
-                        let _ = std::fs::remove_file(&out_json_path);
                     }
+                } else {
+                    failed.push(name);
                 }
             }
         }
@@ -988,6 +978,62 @@ mod tests {
             failed.is_empty(),
             "Failed to compile some SDK libraries: {:?}",
             failed
+        );
+    }
+
+    #[test]
+    fn test_compile_denylist_is_accurate() {
+        let sdk_fidl = super::SdkFidl::new();
+        let temp_dir = std::env::temp_dir();
+
+        let mut unexpectedly_passed = Vec::new();
+
+        for name in COMPILE_DENYLIST {
+            if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
+                if compile_to_ir(name, cli, source_managers, &temp_dir).is_some() {
+                    unexpectedly_passed.push(*name);
+                }
+            } else {
+                unexpectedly_passed.push(*name);
+            }
+        }
+
+        assert_eq!(
+            unexpectedly_passed,
+            Vec::<&str>::new(),
+            "Libraries in COMPILE_DENYLIST that actually compiled successfully"
+        );
+    }
+
+    #[test]
+    fn test_compare_denylist_is_accurate() {
+        let sdk_fidl = super::SdkFidl::new();
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let temp_dir = std::env::temp_dir();
+
+        let mut unexpectedly_matched = Vec::new();
+
+        for name in COMPARE_DENYLIST {
+            if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
+                if let Some(actual_str) = compile_to_ir(name, cli, source_managers, &temp_dir) {
+                    let ref_json_path = manifest_dir
+                        .join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
+
+                    if ref_json_path.exists() {
+                        let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
+
+                        if compare_and_diff_ir(name, &expected_str, &actual_str, false) {
+                            unexpectedly_matched.push(*name);
+                        }
+                    }
+                }
+            }
+        }
+
+        assert_eq!(
+            unexpectedly_matched,
+            Vec::<&str>::new(),
+            "Libraries in COMPARE_DENYLIST that actually matched the reference JSON"
         );
     }
 }

@@ -22,7 +22,7 @@ type Foo = struct {};       // Error: canonical name collision
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_library_compile() {
     let mut library = TestLibrary::new();
 
@@ -59,7 +59,7 @@ type NonDenseTable = table {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_library_verify_attribute_placement() {
     let mut library = TestLibrary::new();
 
@@ -83,7 +83,7 @@ type Struct = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_attribute_compile() {
     let mut library = TestLibrary::new();
 
@@ -106,7 +106,7 @@ type Enum = enum {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_const() {
     let mut library = TestLibrary::new();
 
@@ -124,7 +124,7 @@ const FOO string = 2;
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_bits() {
     let mut library = TestLibrary::new();
 
@@ -148,7 +148,7 @@ type Foo = bits {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_enum() {
     let mut library = TestLibrary::new();
 
@@ -172,7 +172,7 @@ type Foo = flexible enum : uint8 {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_struct() {
     let mut library = TestLibrary::new();
 
@@ -195,7 +195,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_table() {
     let mut library = TestLibrary::new();
 
@@ -217,7 +217,7 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_union() {
     let mut library = TestLibrary::new();
 
@@ -238,7 +238,7 @@ type Foo = union {
 }
 
 #[test]
-#[ignore]
+
 fn bad_recover_in_protocol() {
     let mut library = TestLibrary::new();
 

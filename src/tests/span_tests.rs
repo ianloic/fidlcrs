@@ -1,7 +1,7 @@
 use super::test_library::TestLibrary;
 
 #[test]
-#[ignore]
+
 fn test_span_alias_declaration() {
     let mut library = TestLibrary::new();
 
@@ -52,7 +52,7 @@ fn test_span_attribute() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_attribute_arg() {
     let mut library = TestLibrary::new();
 
@@ -112,7 +112,7 @@ fn test_span_attribute_list() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_binary_operator_constant() {
     let mut library = TestLibrary::new();
 
@@ -135,7 +135,7 @@ fn test_span_binary_operator_constant() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_bool_literal() {
     let mut library = TestLibrary::new();
 
@@ -164,7 +164,7 @@ fn test_span_bool_literal() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_compound_identifier() {
     let mut library = TestLibrary::new();
 
@@ -175,7 +175,7 @@ fn test_span_compound_identifier() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_const_declaration() {
     let mut library = TestLibrary::new();
 
@@ -250,7 +250,7 @@ fn test_span_identifier() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_identifier_constant() {
     let mut library = TestLibrary::new();
 
@@ -264,7 +264,7 @@ fn test_span_identifier_constant() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_identifier_layout_parameter() {
     let mut library = TestLibrary::new();
 
@@ -278,7 +278,7 @@ fn test_span_identifier_layout_parameter() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_inline_layout_reference() {
     let mut library = TestLibrary::new();
 
@@ -326,7 +326,7 @@ fn test_span_inline_layout_reference() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_layout_parameter_list() {
     let mut library = TestLibrary::new();
 
@@ -345,7 +345,7 @@ fn test_span_layout_parameter_list() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_library_declaration() {
     let mut library = TestLibrary::new();
 
@@ -361,7 +361,7 @@ fn test_span_library_declaration() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_literal_constant() {
     let mut library = TestLibrary::new();
 
@@ -385,7 +385,7 @@ fn test_span_literal_constant() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_literal_layout_parameter() {
     let mut library = TestLibrary::new();
 
@@ -615,7 +615,7 @@ fn test_span_named_layout_reference() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_numeric_literal() {
     let mut library = TestLibrary::new();
 
@@ -648,7 +648,7 @@ fn test_span_ordinal64() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_ordinaled_layout() {
     let mut library = TestLibrary::new();
 
@@ -669,7 +669,7 @@ fn test_span_ordinaled_layout() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_ordinaled_layout_member() {
     let mut library = TestLibrary::new();
 
@@ -732,7 +732,7 @@ fn test_span_parameter_list() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_protocol_compose() {
     let mut library = TestLibrary::new();
 
@@ -759,7 +759,7 @@ fn test_span_protocol_compose() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_protocol_declaration() {
     let mut library = TestLibrary::new();
 
@@ -778,7 +778,7 @@ fn test_span_protocol_declaration() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_protocol_method() {
     let mut library = TestLibrary::new();
 
@@ -860,7 +860,7 @@ fn test_span_protocol_method() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_resource_declaration() {
     let mut library = TestLibrary::new();
 
@@ -876,7 +876,7 @@ fn test_span_resource_declaration() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_resource_property() {
     let mut library = TestLibrary::new();
 
@@ -892,7 +892,7 @@ fn test_span_resource_property() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_service_declaration() {
     let mut library = TestLibrary::new();
 
@@ -911,7 +911,7 @@ fn test_span_service_declaration() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_service_member() {
     let mut library = TestLibrary::new();
 
@@ -930,7 +930,7 @@ fn test_span_service_member() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_string_literal() {
     let mut library = TestLibrary::new();
 
@@ -954,7 +954,7 @@ fn test_span_string_literal() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_struct_layout() {
     let mut library = TestLibrary::new();
 
@@ -972,7 +972,7 @@ fn test_span_struct_layout() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_struct_layout_member() {
     let mut library = TestLibrary::new();
 
@@ -996,7 +996,7 @@ fn test_span_struct_layout_member() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_type_constraints() {
     let mut library = TestLibrary::new();
 
@@ -1131,7 +1131,7 @@ fn test_span_type_constructor() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_type_declaration() {
     let mut library = TestLibrary::new();
 
@@ -1155,7 +1155,7 @@ fn test_span_type_declaration() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_type_layout_parameter() {
     let mut library = TestLibrary::new();
 
@@ -1174,7 +1174,7 @@ fn test_span_type_layout_parameter() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_using() {
     let mut library = TestLibrary::new();
 
@@ -1190,7 +1190,7 @@ fn test_span_using() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_value_layout() {
     let mut library = TestLibrary::new();
 
@@ -1211,7 +1211,7 @@ fn test_span_value_layout() {
 }
 
 #[test]
-#[ignore]
+
 fn test_span_value_layout_member() {
     let mut library = TestLibrary::new();
 

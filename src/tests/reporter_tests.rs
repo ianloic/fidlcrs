@@ -4,7 +4,7 @@ use crate::source_file::SourceFile;
 use crate::source_span::SourceSpan;
 
 #[test]
-#[ignore]
+
 fn report_error_format_params() {
     let reporter = Reporter::new();
     let file = SourceFile::new("fake".to_string(), "span text".to_string());
@@ -21,7 +21,7 @@ fn report_error_format_params() {
 }
 
 #[test]
-#[ignore]
+
 fn make_error_then_report_it() {
     let reporter = Reporter::new();
     let file = SourceFile::new("fake".to_string(), "span text".to_string());
@@ -42,7 +42,7 @@ fn make_error_then_report_it() {
 }
 
 #[test]
-#[ignore]
+
 fn report_warning_format_params() {
     let reporter = Reporter::new();
     let file = SourceFile::new("fake".to_string(), "span text".to_string());
@@ -63,7 +63,7 @@ fn report_warning_format_params() {
 }
 
 #[test]
-#[ignore]
+
 fn make_warning_then_report_it() {
     let reporter = Reporter::new();
     let file = SourceFile::new("fake".to_string(), "span text".to_string());
@@ -82,7 +82,7 @@ fn make_warning_then_report_it() {
 }
 
 #[test]
-#[ignore]
+
 fn report_error_with_reused_format_params() {
     let reporter = Reporter::new();
     let file = SourceFile::new("fake".to_string(), "span text".to_string());

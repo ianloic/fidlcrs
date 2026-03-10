@@ -169,7 +169,7 @@ fn bad_selector_value_wrong_format() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_selector_value_not_string() {
     let mut library = TestLibrary::new();
 
@@ -213,7 +213,7 @@ const SEL string = "a.b.c/protocol.selector";
 }
 
 #[test]
-#[ignore]
+
 fn bad_selector_value_references_nonexistent() {
     let mut library = TestLibrary::new();
 

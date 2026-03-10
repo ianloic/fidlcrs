@@ -40,7 +40,7 @@ alias AliasOfDecl = TypeDecl;
 }
 
 #[test]
-#[ignore]
+
 fn good_primitive() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -65,7 +65,7 @@ alias alias_of_int16 = int16;
 }
 
 #[test]
-#[ignore]
+
 fn good_primitive_alias_before_use() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -106,7 +106,7 @@ type Message = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_no_optional_on_primitive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0156.test.fidl");
@@ -130,7 +130,7 @@ type Bad = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_invalid_size_constraint_type() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0101-a.test.fidl");
@@ -138,7 +138,7 @@ fn bad_invalid_size_constraint_type() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_invalid_size_constraint_is_not_value() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0101-b.test.fidl");
@@ -164,7 +164,7 @@ type Bad = struct {
 }
 
 #[test]
-#[ignore]
+
 fn good_vector_parameterized_on_decl() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -188,7 +188,7 @@ alias alias_of_vector_of_string = vector<string>;
 }
 
 #[test]
-#[ignore]
+
 fn bad_vector_parameterized_on_use() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -206,7 +206,7 @@ alias alias_of_vector = vector;
 }
 
 #[test]
-#[ignore]
+
 fn bad_vector_bounded_on_decl() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -255,7 +255,7 @@ fn good_unbounded_vector_bound_twice() {
 }
 
 #[test]
-#[ignore]
+
 fn good_vector_nullable_on_decl() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -279,7 +279,7 @@ alias alias_of_vector_of_string_nullable = vector<string>:optional;
 }
 
 #[test]
-#[ignore]
+
 fn good_vector_nullable_on_use() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -303,7 +303,7 @@ alias alias_of_vector_of_string = vector<string>;
 }
 
 #[test]
-#[ignore]
+
 fn bad_cannot_parameterize_twice() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -321,7 +321,7 @@ alias alias_of_vector_of_string = vector<string>;
 }
 
 #[test]
-#[ignore]
+
 fn bad_cannot_bound_twice() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0158.test.fidl");
@@ -379,7 +379,7 @@ alias AminoAcids = vector<uint64>:32;
 }
 
 #[test]
-#[ignore]
+
 fn bad_recursive_alias() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(

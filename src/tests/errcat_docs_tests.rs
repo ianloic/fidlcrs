@@ -140,7 +140,7 @@ fn markdown_files_exist() {
 }
 
 #[test]
-#[ignore]
+
 fn docs_are_accurate() {
     for def in ALL_ERRORS {
         if !def.documented() {
@@ -183,7 +183,7 @@ fn docs_are_accurate() {
 }
 
 #[test]
-#[ignore]
+
 fn all_good_files_are_tested() {
     let path = test_file_path("errcat_good_tests.cc");
     let source_file = match read_file(&path) {

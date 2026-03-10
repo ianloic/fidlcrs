@@ -334,13 +334,13 @@ fn good_dependent_library() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_top_level() {
     // TODO: port manually
 }
 
 #[test]
-#[ignore]
+
 fn bad_attributes() {
     let mut library = TestLibrary::new();
 
@@ -358,7 +358,7 @@ fn bad_attributes() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_attribute_arguments() {
     let mut library = TestLibrary::new();
 
@@ -567,7 +567,7 @@ fn bad_resource_properties() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_member_values() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0054.test.fidl");
@@ -593,7 +593,7 @@ fn bad_upper_acronym() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_dependent_library() {
     // SharedLibrary is not fully translated
     let mut dependency = TestLibrary::new();
@@ -622,7 +622,7 @@ fn bad_dependent_library() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_various_collisions() {
     // TODO: port manually
 }
@@ -645,25 +645,25 @@ fn bad_consecutive_underscores() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_inconsistent_type_spelling() {
     // TODO: port manually
 }
 
 #[test]
-#[ignore]
+
 fn bad_inconsistent_const_spelling() {
     // TODO: port manually
 }
 
 #[test]
-#[ignore]
+
 fn bad_inconsistent_enum_member_spelling() {
     // TODO: port manually
 }
 
 #[test]
-#[ignore]
+
 fn bad_inconsistent_bits_member_spelling() {
     // TODO: port manually
 }

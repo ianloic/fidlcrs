@@ -326,7 +326,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_on_type_declaration() {
     let mut library = TestLibrary::new();
 
@@ -389,7 +389,7 @@ type Bar = struct {};
 }
 
 #[test]
-#[ignore]
+
 fn bad_on_struct_member() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0120-b.test.fidl");
@@ -401,7 +401,7 @@ fn bad_on_struct_member() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_on_enum_member() {
     let mut library = TestLibrary::new();
 
@@ -425,7 +425,7 @@ type MetaVars = enum {
 }
 
 #[test]
-#[ignore]
+
 fn bad_on_service_member() {
     let mut library = TestLibrary::new();
 

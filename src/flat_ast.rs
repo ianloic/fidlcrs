@@ -125,6 +125,48 @@ pub enum PrimitiveSubtype {
     Uintptr64,
 }
 
+impl PrimitiveType {
+    pub fn new(subtype: PrimitiveSubtype) -> Self {
+        let (inline_size, alignment) = match subtype {
+            PrimitiveSubtype::Bool
+            | PrimitiveSubtype::Int8
+            | PrimitiveSubtype::Uint8
+            | PrimitiveSubtype::Uchar => (1, 1),
+            PrimitiveSubtype::Int16 | PrimitiveSubtype::Uint16 => (2, 2),
+            PrimitiveSubtype::Int32 | PrimitiveSubtype::Uint32 | PrimitiveSubtype::Float32 => {
+                (4, 4)
+            }
+            PrimitiveSubtype::Int64
+            | PrimitiveSubtype::Uint64
+            | PrimitiveSubtype::Float64
+            | PrimitiveSubtype::Usize64
+            | PrimitiveSubtype::Uintptr64 => (8, 8),
+        };
+
+        Self {
+            subtype,
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                deprecated: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                type_shape: TypeShape {
+                    inline_size,
+                    alignment,
+                    depth: 0,
+                    max_handles: 0,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+                maybe_size_constant_name: None,
+                resource: false,
+            },
+        }
+    }
+}
+
 impl std::str::FromStr for PrimitiveSubtype {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -291,6 +333,10 @@ impl std::ops::DerefMut for Type {
 }
 
 impl Type {
+    pub fn primitive(subtype: PrimitiveSubtype) -> Self {
+        Type::Primitive(PrimitiveType::new(subtype))
+    }
+
     pub fn kind(&self) -> TypeKind {
         match self {
             Type::Primitive(_) => TypeKind::Primitive,

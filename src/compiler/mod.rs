@@ -92,7 +92,7 @@ use crate::flat_ast::HandleType;
 use crate::flat_ast::IdentifierType;
 use crate::flat_ast::PartialTypeCtor;
 use crate::flat_ast::PrimitiveSubtype;
-use crate::flat_ast::PrimitiveType;
+
 use crate::flat_ast::ProtocolCompose;
 use crate::flat_ast::StringArrayType;
 use crate::flat_ast::StringType;
@@ -1773,27 +1773,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             );
         }
 
-        let expected_type = Type::Primitive(PrimitiveType {
-            common: TypeCommon {
-                experimental_maybe_from_alias: None,
-                outer_alias: None,
-                maybe_attributes: vec![],
-                field_shape: None,
-                maybe_size_constant_name: None,
-                resource: false,
-                deprecated: None,
-                type_shape: TypeShape {
-                    inline_size: 0,
-                    alignment: 0,
-                    depth: 0,
-                    max_handles: 0,
-                    max_out_of_line: 0,
-                    has_padding: false,
-                    has_flexible_envelope: false,
-                },
-            },
-            subtype: resolved_subtype.parse().unwrap_or(PrimitiveSubtype::Uint32),
-        });
+        let expected_type =
+            Type::primitive(resolved_subtype.parse().unwrap_or(PrimitiveSubtype::Uint32));
 
         let strict = decl
             .modifiers
@@ -2210,25 +2191,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             });
         }
 
-        let (inline_size, alignment) = match subtype_name.as_str() {
-            "uint8" => (1, 1),
-            "uint16" => (2, 2),
-            "uint32" => (4, 4),
-            "uint64" => (8, 8),
-            _ => (4, 4),
-        };
+        let subtype = subtype_name.parse().unwrap_or(PrimitiveSubtype::Uint32);
+        let primitive = Type::primitive(subtype);
 
-        let type_shape = TypeShape {
-            inline_size,
-            alignment,
-            depth: 0,
-            max_handles: 0,
-            max_out_of_line: 0,
-            has_padding: false,
-            has_flexible_envelope: false,
-        };
-
-        self.shapes.insert(full_name.clone(), type_shape.clone());
+        self.shapes
+            .insert(full_name.clone(), primitive.type_shape.clone());
 
         BitsDeclaration {
             name: full_name,
@@ -2246,19 +2213,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 attrs
             },
-            type_: Type::Primitive(PrimitiveType {
-                common: TypeCommon {
-                    experimental_maybe_from_alias: None,
-                    outer_alias: None,
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    maybe_size_constant_name: None,
-                    resource: false,
-                    deprecated: None,
-                    type_shape,
-                },
-                subtype: subtype_name.parse().unwrap_or(PrimitiveSubtype::Uint32),
-            }),
+            type_: primitive,
             mask: mask.to_string(),
             members,
             strict,
@@ -3449,34 +3404,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
 
-                let (inline_size, alignment) = match resolved_name.as_str() {
-                    "bool" | "int8" | "uint8" | "uchar" => (1, 1),
-                    "int16" | "uint16" => (2, 2),
-                    "int32" | "uint32" | "float32" => (4, 4),
-                    "int64" | "uint64" | "float64" | "usize64" | "uintptr64" => (8, 8),
-                    _ => (0, 0),
-                };
-                Type::Primitive(PrimitiveType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        resource: false,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size,
-                            alignment,
-                            depth: 0,
-                            max_handles: 0,
-                            max_out_of_line: 0,
-                            has_padding: false,
-                            has_flexible_envelope: false,
-                        },
-                    },
-                    subtype: resolved_name.parse().unwrap_or(PrimitiveSubtype::Uint32),
-                })
+                Type::primitive(resolved_name.parse().unwrap_or(PrimitiveSubtype::Uint32))
             }
             "experimental_pointer" => {
                 if !self
@@ -3660,27 +3588,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 let mut inner_type = if is_bytes {
-                    Type::Primitive(PrimitiveType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: TypeShape {
-                                inline_size: 1,
-                                alignment: 1,
-                                depth: 0,
-                                max_handles: 0,
-                                max_out_of_line: 0,
-                                has_padding: false,
-                                has_flexible_envelope: false,
-                            },
-                        },
-                        subtype: PrimitiveSubtype::Uint8,
-                    })
+                    Type::primitive(PrimitiveSubtype::Uint8)
                 } else {
                     self.resolve_type(inner.unwrap(), library_name, naming_context)
                 };
@@ -4731,27 +4639,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let type_obj = if let Some(tc) = &decl.type_ctor {
             self.resolve_type(tc, library_name, Some(ctx))
         } else {
-            Type::Primitive(PrimitiveType {
-                common: TypeCommon {
-                    experimental_maybe_from_alias: None,
-                    outer_alias: None,
-                    deprecated: Some(false),
-                    maybe_attributes: vec![],
-                    field_shape: None,
-                    type_shape: TypeShape {
-                        inline_size: 4,
-                        alignment: 4,
-                        depth: 0,
-                        max_handles: 0,
-                        max_out_of_line: 0,
-                        has_padding: false,
-                        has_flexible_envelope: false,
-                    },
-                    maybe_size_constant_name: None,
-                    resource: false,
-                },
-                subtype: PrimitiveSubtype::Uint32,
-            })
+            Type::primitive(PrimitiveSubtype::Uint32)
         };
 
         // C++ checks if type resolves to a uint32 primitive

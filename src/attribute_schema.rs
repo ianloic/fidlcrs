@@ -4,7 +4,7 @@ use crate::compiler::Compiler;
 use crate::diagnostics::Error;
 use crate::experimental_flags::ExperimentalFlag;
 use crate::flat_ast;
-use crate::flat_ast::TypeCommon;
+
 use crate::raw_ast;
 use crate::source_span::SourceSpan;
 use crate::versioning_types::Version;
@@ -1057,27 +1057,7 @@ impl AttributeSchemaMap {
                                     }
                                     _ => unreachable!(),
                                 };
-                                let p_type = flat_ast::Type::Primitive(flat_ast::PrimitiveType {
-                                    subtype,
-                                    common: TypeCommon {
-                                        experimental_maybe_from_alias: None,
-                                        outer_alias: None,
-                                        deprecated: None,
-                                        maybe_attributes: vec![],
-                                        field_shape: None,
-                                        type_shape: flat_ast::TypeShape {
-                                            inline_size: 0,
-                                            alignment: 1,
-                                            depth: 0,
-                                            max_handles: 0,
-                                            max_out_of_line: 0,
-                                            has_padding: false,
-                                            has_flexible_envelope: false,
-                                        },
-                                        maybe_size_constant_name: None,
-                                        resource: false,
-                                    },
-                                });
+                                let p_type = flat_ast::Type::primitive(subtype);
                                 compiler.validate_constant(&arg.value, &p_type);
                             }
                         }

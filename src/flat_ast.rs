@@ -390,32 +390,273 @@ impl Type {
             element_count,
         })
     }
-    pub fn unknown(t: UnknownType) -> Self {
-        Type::Unknown(t)
+    pub fn unknown() -> Self {
+        Type::Unknown(UnknownType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: false,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 0,
+                    alignment: 1,
+                    depth: 0,
+                    max_handles: 0,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+        })
     }
-    pub fn vector(t: VectorType) -> Self {
-        Type::Vector(t)
+    pub fn vector(
+        mut element_type: Box<Type>,
+        maybe_element_count: Option<u32>,
+        nullable: bool,
+        maybe_size_constant_name: Option<String>,
+    ) -> Self {
+        let mut inner_alias = element_type.outer_alias.take();
+        if inner_alias.is_none()
+            && element_type.kind() != TypeKind::Array
+            && element_type.kind() != TypeKind::Vector
+            && element_type.kind() != TypeKind::String
+            && element_type.kind() != TypeKind::Request
+        {
+            inner_alias = element_type.experimental_maybe_from_alias.take();
+        }
+        let new_depth = element_type.type_shape.depth.saturating_add(1);
+        let max_count = maybe_element_count.unwrap_or(u32::MAX);
+        let elem_size = element_type.type_shape.inline_size;
+        let elem_ool = element_type.type_shape.max_out_of_line;
+        let content_size = max_count.saturating_mul(elem_size.saturating_add(elem_ool));
+        let max_ool = if content_size % 8 == 0 {
+            content_size
+        } else {
+            content_size.saturating_add(8 - (content_size % 8))
+        };
+        let max_handles = max_count.saturating_mul(element_type.type_shape.max_handles);
+
+        Type::Vector(VectorType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: inner_alias,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name,
+                resource: element_type.resource,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 16,
+                    alignment: 8,
+                    depth: new_depth,
+                    max_handles,
+                    max_out_of_line: max_ool,
+                    has_padding: element_type.type_shape.has_padding || (elem_size % 8 != 0),
+                    has_flexible_envelope: element_type.type_shape.has_flexible_envelope,
+                },
+            },
+            element_type,
+            nullable,
+            maybe_element_count,
+        })
     }
-    pub fn array(t: ArrayType) -> Self {
-        Type::Array(t)
+    pub fn array(mut element_type: Box<Type>, element_count: u32) -> Self {
+        let mut inner_alias = element_type.outer_alias.take();
+        if inner_alias.is_none()
+            && element_type.kind() != TypeKind::Array
+            && element_type.kind() != TypeKind::Vector
+            && element_type.kind() != TypeKind::String
+            && element_type.kind() != TypeKind::Request
+        {
+            inner_alias = element_type.experimental_maybe_from_alias.take();
+        }
+        let elem_size = element_type.type_shape.inline_size;
+        let total_size = elem_size.saturating_mul(element_count);
+        let elem_ool = element_type.type_shape.max_out_of_line;
+        let max_ool = elem_ool.saturating_mul(element_count);
+        let max_handles = element_type.type_shape.max_handles.saturating_mul(element_count);
+        Type::Array(ArrayType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: inner_alias,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: element_type.resource,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: total_size,
+                    alignment: element_type.type_shape.alignment,
+                    depth: element_type.type_shape.depth,
+                    max_handles,
+                    max_out_of_line: max_ool,
+                    has_padding: element_type.type_shape.has_padding,
+                    has_flexible_envelope: element_type.type_shape.has_flexible_envelope,
+                },
+            },
+            element_type,
+            element_count,
+        })
     }
-    pub fn endpoint(t: EndpointType) -> Self {
-        Type::Endpoint(t)
+    pub fn endpoint(protocol: Option<String>, role: Option<String>, nullable: bool) -> Self {
+        Type::Endpoint(EndpointType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: true,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 4,
+                    alignment: 4,
+                    depth: 0,
+                    max_handles: 1,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            nullable,
+            protocol,
+            role,
+            protocol_transport: Some("Channel".to_string()),
+        })
     }
-    pub fn handle(t: HandleType) -> Self {
-        Type::Handle(t)
+    pub fn handle(
+        subtype: Option<String>,
+        rights: Option<u32>,
+        obj_type: Option<u32>,
+        nullable: bool,
+        resource_identifier: Option<String>,
+    ) -> Self {
+        Type::Handle(HandleType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: true,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 4,
+                    alignment: 4,
+                    depth: 0,
+                    max_handles: 1,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            subtype,
+            rights,
+            obj_type,
+            nullable,
+            resource_identifier,
+        })
     }
-    pub fn identifier_type(t: IdentifierType) -> Self {
-        Type::Identifier(t)
+    pub fn identifier_type(
+        identifier: Option<String>,
+        nullable: bool,
+        type_shape: TypeShape,
+        resource: bool,
+    ) -> Self {
+        Type::Identifier(IdentifierType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource,
+                deprecated: None,
+                type_shape,
+            },
+            identifier,
+            nullable,
+        })
     }
-    pub fn struct_type(t: StructType) -> Self {
-        Type::Struct(t)
+    pub fn struct_type(
+        identifier: Option<String>,
+        nullable: bool,
+        type_shape: TypeShape,
+        resource: bool,
+    ) -> Self {
+        Type::Struct(StructType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource,
+                deprecated: None,
+                type_shape,
+            },
+            identifier,
+            nullable,
+        })
     }
-    pub fn request(t: RequestType) -> Self {
-        Type::Request(t)
+    pub fn request(
+        subtype: Option<String>,
+        identifier: Option<String>,
+        nullable: bool,
+    ) -> Self {
+        Type::Request(RequestType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: true,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 4,
+                    alignment: 4,
+                    depth: 0,
+                    max_handles: 1,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            subtype,
+            identifier,
+            nullable,
+        })
     }
-    pub fn experimental_pointer(t: ExperimentalPointerType) -> Self {
-        Type::ExperimentalPointer(t)
+    pub fn experimental_pointer(
+        element_type: Option<Box<Type>>,
+        nullable: bool,
+    ) -> Self {
+        Type::ExperimentalPointer(ExperimentalPointerType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: false,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 8,
+                    alignment: 8,
+                    depth: 0,
+                    max_handles: 0,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            element_type,
+            nullable,
+        })
     }
 
     pub fn kind(&self) -> TypeKind {

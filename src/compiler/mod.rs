@@ -3088,26 +3088,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     &[&local_lib_name, &self.library_name],
                                 );
                             }
-                            return Type::unknown(UnknownType {
-                                common: TypeCommon {
-                                    experimental_maybe_from_alias: None,
-                                    outer_alias: None,
-                                    maybe_attributes: vec![],
-                                    field_shape: None,
-                                    maybe_size_constant_name: None,
-                                    resource: false,
-                                    deprecated: None,
-                                    type_shape: TypeShape {
-                                        inline_size: 0,
-                                        alignment: 1,
-                                        depth: 0,
-                                        max_handles: 0,
-                                        max_out_of_line: 0,
-                                        has_padding: false,
-                                        has_flexible_envelope: false,
-                                    },
-                                },
-                            });
+                            return Type::unknown();
                         }
                     }
                     let id_str = format!(
@@ -3123,26 +3104,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             raw_ast::LayoutParameter::Literal(_) => {
                 self.reporter
                     .fail(Error::ErrExpectedType, type_ctor.element.span(), &[]);
-                return Type::unknown(UnknownType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        resource: false,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: 0,
-                            alignment: 1,
-                            depth: 0,
-                            max_handles: 0,
-                            max_out_of_line: 0,
-                            has_padding: false,
-                            has_flexible_envelope: false,
-                        },
-                    },
-                });
+                return Type::unknown();
             }
             raw_ast::LayoutParameter::Type(_) => {
                 panic!("Type layout not supported in resolve_type yet")
@@ -3426,28 +3388,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let inner_type_opt =
                     inner.map(|i| Box::new(self.resolve_type(i, library_name, naming_context)));
 
-                Type::experimental_pointer(ExperimentalPointerType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        resource: false,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: 8,
-                            alignment: 8,
-                            depth: 0,
-                            max_handles: 0,
-                            max_out_of_line: 0,
-                            has_padding: false,
-                            has_flexible_envelope: false,
-                        },
-                    },
-                    element_type: inner_type_opt,
-                    nullable: nullable,
-                })
+                Type::experimental_pointer(inner_type_opt, nullable)
             }
             "string" => {
                 if actual_constraints.len() > 1 {
@@ -3519,42 +3460,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if !is_bytes && inner.is_none() {
                     // Error handling?
-                    return Type::unknown(UnknownType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: TypeShape {
-                                inline_size: 0,
-                                alignment: 1,
-                                depth: 0,
-                                max_handles: 0,
-                                max_out_of_line: 0,
-                                has_padding: false,
-                                has_flexible_envelope: false,
-                            },
-                        },
-                    });
+                    return Type::unknown();
                 }
 
-                let mut inner_type = if is_bytes {
+                let inner_type = if is_bytes {
                     Type::primitive(PrimitiveSubtype::Uint8)
                 } else {
                     self.resolve_type(inner.unwrap(), library_name, naming_context)
                 };
-                let mut inner_alias = inner_type.outer_alias.take();
-                if inner_alias.is_none()
-                    && inner_type.kind() != TypeKind::Array
-                    && inner_type.kind() != TypeKind::Vector
-                    && inner_type.kind() != TypeKind::String
-                    && inner_type.kind() != TypeKind::Request
-                {
-                    inner_alias = inner_type.experimental_maybe_from_alias.take();
-                }
+
 
                 let mut max_count = u32::MAX;
                 if let Some(c) = actual_constraints.first() {
@@ -3574,54 +3488,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                let new_depth = inner_type.type_shape.depth.saturating_add(1);
-                // println!("Vector depth calculation: inner {}, new {}", inner_type.type_shape.depth, new_depth);
 
-                let elem_size = inner_type.type_shape.inline_size;
-                let elem_ool = inner_type.type_shape.max_out_of_line;
-                let content_size = max_count.saturating_mul(elem_size.saturating_add(elem_ool));
-                let max_ool = if content_size % 8 == 0 {
-                    content_size
-                } else {
-                    content_size.saturating_add(8 - (content_size % 8))
-                };
 
-                let max_handles = max_count.saturating_mul(inner_type.type_shape.max_handles);
-
-                Type::vector(VectorType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: inner_alias,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: if let Some(raw_ast::Constant::Identifier(id)) =
+                Type::vector(Box::new(inner_type.clone()), if max_count == u32::MAX {
+                        None
+                    } else {
+                        Some(max_count)
+                    }, nullable, if let Some(raw_ast::Constant::Identifier(id)) =
                             type_ctor.constraints.first()
                         {
                             Some(id.identifier.to_string())
                         } else {
                             None
-                        },
-                        resource: inner_type.resource,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: 16,
-                            alignment: 8,
-                            depth: new_depth,
-                            max_handles,
-                            max_out_of_line: max_ool,
-                            has_padding: inner_type.type_shape.has_padding
-                                || !elem_size.is_multiple_of(8),
-                            has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
-                        },
-                    },
-                    element_type: Box::new(inner_type.clone()),
-                    maybe_element_count: if max_count == u32::MAX {
-                        None
-                    } else {
-                        Some(max_count)
-                    },
-                    nullable: nullable,
-                })
+                        })
             }
             "array" => {
                 if type_ctor.parameters.len() < 2 {
@@ -3630,26 +3509,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_ctor.element.start_token.span,
                         &[],
                     );
-                    return Type::unknown(UnknownType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: TypeShape {
-                                inline_size: 0,
-                                alignment: 1,
-                                depth: 0,
-                                max_handles: 0,
-                                max_out_of_line: 0,
-                                has_padding: false,
-                                has_flexible_envelope: false,
-                            },
-                        },
-                    });
+                    return Type::unknown();
                 }
                 // Array validation
                 let elt_type = &type_ctor.parameters[0];
@@ -3755,49 +3615,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
 
-                let mut inner_type = self.resolve_type(elt_type, library_name, naming_context);
-                let mut inner_alias = inner_type.outer_alias.take();
-                if inner_alias.is_none()
-                    && inner_type.kind() != TypeKind::Array
-                    && inner_type.kind() != TypeKind::Vector
-                    && inner_type.kind() != TypeKind::String
-                    && inner_type.kind() != TypeKind::Request
-                {
-                    inner_alias = inner_type.experimental_maybe_from_alias.take();
-                }
-                let total_size = count.saturating_mul(inner_type.type_shape.inline_size);
-                let max_ool = count.saturating_mul(inner_type.type_shape.max_out_of_line);
+                let inner_type = self.resolve_type(elt_type, library_name, naming_context);
 
-                Type::array(ArrayType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: inner_alias,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: if let Some(param) = type_ctor.parameters.get(1) {
-                            if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
-                                Some(id.to_string())
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        },
-                        resource: inner_type.resource,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: total_size,
-                            alignment: inner_type.type_shape.alignment,
-                            depth: inner_type.type_shape.depth,
-                            max_handles: inner_type.type_shape.max_handles.saturating_mul(count),
-                            max_out_of_line: max_ool,
-                            has_padding: inner_type.type_shape.has_padding,
-                            has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
-                        },
-                    },
-                    element_type: Box::new(inner_type.clone()),
-                    element_count: count,
-                })
+
+                Type::array(Box::new(inner_type.clone()), count)
             }
 
             "client_end" | "server_end" => {
@@ -3885,53 +3706,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                Type::endpoint(EndpointType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        resource: true,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: 4,
-                            alignment: 4,
-                            depth: 0,
-                            max_handles: 1,
-                            max_out_of_line: 0,
-                            has_padding: false,
-                            has_flexible_envelope: false,
-                        },
-                    },
-                    role: Some(role.to_string()),
-                    protocol: Some(protocol),
-                    protocol_transport: Some("Channel".to_string()),
-                    nullable: nullable,
-                })
+                Type::endpoint(Some(protocol), Some(role.to_string()), nullable)
             }
             "box" => {
                 if type_ctor.parameters.is_empty() {
-                    return Type::unknown(UnknownType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: TypeShape {
-                                inline_size: 0,
-                                alignment: 1,
-                                depth: 0,
-                                max_handles: 0,
-                                max_out_of_line: 0,
-                                has_padding: false,
-                                has_flexible_envelope: false,
-                            },
-                        },
-                    });
+                    return Type::unknown();
                 }
                 let inner = &type_ctor.parameters[0];
                 let prev = self.skip_eager_compile;
@@ -4178,31 +3957,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     }
 
-                    return Type::handle(HandleType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: true,
-                            deprecated: None,
-                            type_shape: TypeShape {
-                                inline_size: 4,
-                                alignment: 4,
-                                depth: 0,
-                                max_handles: 1,
-                                max_out_of_line: 0,
-                                has_padding: false,
-                                has_flexible_envelope: false,
-                            },
-                        },
-                        obj_type: Some(handle_obj_type),
-                        subtype: Some(handle_subtype),
-                        rights: Some(handle_rights),
-                        nullable: nullable,
-                        resource_identifier: Some(full_name.clone()),
-                    });
+                    return Type::handle(Some(handle_subtype), Some(handle_rights), Some(handle_obj_type), nullable, Some(full_name.clone()));
                 }
 
                 if let Some(decl) = self.raw_decls.get(&full_name) {
@@ -4336,20 +4091,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     false
                 };
                 if let Some(shape) = self.shapes.get(&full_name) {
-                    Type::identifier_type(IdentifierType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: is_resource,
-                            deprecated: None,
-                            type_shape: shape.clone(),
-                        },
-                        identifier: Some(full_name.clone()),
-                        nullable: nullable,
-                    })
+                    Type::identifier_type(Some(full_name.clone()), nullable, shape.clone(), is_resource)
                 } else if let Some(decl) = self.raw_decls.get(&full_name) {
                     if !type_ctor.parameters.is_empty() {
                         self.reporter.fail(
@@ -4418,16 +4160,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         (0, 1, false, false)
                     };
-                    Type::identifier_type(IdentifierType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: is_resource,
-                            deprecated: None,
-                            type_shape: TypeShape {
+                    Type::identifier_type(Some(full_name.clone()), nullable, TypeShape {
                                 inline_size: inline,
                                 alignment: align,
                                 depth: u32::MAX,
@@ -4435,37 +4168,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 max_out_of_line: u32::MAX,
                                 has_padding: padding,
                                 has_flexible_envelope: flex,
-                            },
-                        },
-                        identifier: Some(full_name.clone()),
-                        nullable: nullable,
-                    })
+                            }, is_resource)
                 } else {
                     self.reporter.fail(
                         Error::ErrNameNotFound,
                         type_ctor.element.span(),
                         &[&name, &library_name],
                     );
-                    Type::unknown(UnknownType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: TypeShape {
-                                inline_size: 0,
-                                alignment: 1,
-                                depth: 0,
-                                max_handles: 0,
-                                max_out_of_line: 0,
-                                has_padding: false,
-                                has_flexible_envelope: false,
-                            },
-                        },
-                    })
+                    Type::unknown()
                 }
             }
         }
@@ -5136,20 +4846,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth),
-                            nullable: false,
-                        }))
+                        Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
                     raw_ast::Layout::Table(t) => {
                         let ctx = NamingContext::create(decl.name.element.span())
@@ -5175,20 +4872,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth),
-                            nullable: false,
-                        }))
+                        Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
                     raw_ast::Layout::Union(u) => {
                         let ctx = NamingContext::create(decl.name.element.span())
@@ -5218,20 +4902,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth),
-                            nullable: false,
-                        }))
+                        Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
                     _ => {
                         // primitive or other inline layout
@@ -5359,20 +5030,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth),
-                            nullable: false,
-                        }))
+                        Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
                     raw_ast::Layout::Table(t) => {
                         let p_ctx = NamingContext::create(decl.name.element.span());
@@ -5417,20 +5075,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth),
-                            nullable: false,
-                        }))
+                        Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
                     raw_ast::Layout::Union(u) => {
                         let p_ctx = NamingContext::create(decl.name.element.span());
@@ -5479,20 +5124,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth),
-                            nullable: false,
-                        }))
+                        Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
                     _ => {
                         self.reporter.fail(
@@ -5626,20 +5258,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.insert(full_synth.clone(), shape.clone());
                             shape
                         };
-                        let typ = Type::identifier_type(IdentifierType {
-                            common: TypeCommon {
-                                experimental_maybe_from_alias: None,
-                                outer_alias: None,
-                                maybe_attributes: vec![],
-                                field_shape: None,
-                                maybe_size_constant_name: None,
-                                resource: false,
-                                deprecated: None,
-                                type_shape: shape,
-                            },
-                            identifier: Some(full_synth.clone()),
-                            nullable: false,
-                        });
+                        let typ = Type::identifier_type(Some(full_synth.clone()), false, shape, false);
                         maybe_response_success_type = Some(typ.clone());
                         typ
                     };
@@ -5735,16 +5354,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             ordinal: 3,
                             reserved: None,
                             name: Some("framework_err".to_string()),
-                            type_: Some(Type::identifier_type(IdentifierType {
-                                common: TypeCommon {
-                                    experimental_maybe_from_alias: None,
-                                    outer_alias: None,
-                                    maybe_attributes: vec![],
-                                    field_shape: None,
-                                    maybe_size_constant_name: None,
-                                    resource: false,
-                                    deprecated: None,
-                                    type_shape: TypeShape {
+                            type_: Some(Type::identifier_type(Some("fidl/internal/FrameworkErr".to_string()), false, TypeShape {
                                         inline_size: 4,
                                         alignment: 4,
                                         depth: 0,
@@ -5752,11 +5362,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         max_out_of_line: 0,
                                         has_padding: false,
                                         has_flexible_envelope: false,
-                                    },
-                                },
-                                identifier: Some("fidl/internal/FrameworkErr".to_string()),
-                                nullable: false,
-                            })),
+                                    }, false)),
                             location: Some(_framework_err_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
@@ -5785,20 +5391,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.compiled_decls.insert(full_synth_union.clone());
                     }
 
-                    Some(Type::identifier_type(IdentifierType {
-                        common: TypeCommon {
-                            experimental_maybe_from_alias: None,
-                            outer_alias: None,
-                            maybe_attributes: vec![],
-                            field_shape: None,
-                            maybe_size_constant_name: None,
-                            resource: false,
-                            deprecated: None,
-                            type_shape: union_shape,
-                        },
-                        identifier: Some(full_synth_union.clone()),
-                        nullable: false,
-                    }))
+                    Some(Type::identifier_type(Some(full_synth_union.clone()), false, union_shape, false))
                 } else {
                     None
                 }

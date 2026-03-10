@@ -4,7 +4,8 @@ use crate::tests::test_library::TestLibrary;
 #[test]
 
 fn good_valid_compose_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -18,16 +19,15 @@ open protocol HasComposeMethod2 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn good_valid_strict_compose_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -41,16 +41,15 @@ open protocol HasComposeMethod2 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn good_valid_flexible_compose_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -64,16 +63,15 @@ open protocol HasComposeMethod2 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn disabled_good_valid_strict_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -103,16 +101,15 @@ open protocol HasStrictMethod6 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn disabled_good_valid_flexible_two_way_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -142,15 +139,14 @@ open protocol HasFlexibleTwoWayMethod6 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_normal_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -164,15 +160,14 @@ open protocol HasNormalMethod2 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_strict_normal_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -186,15 +181,14 @@ open protocol HasNormalMethod2 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_flexible_normal_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -208,15 +202,14 @@ open protocol HasNormalMethod2 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_event() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -226,15 +219,14 @@ protocol HasEvent {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_strict_event() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -244,15 +236,14 @@ protocol HasEvent {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_flexible_event() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -262,15 +253,14 @@ protocol HasEvent {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_valid_strictness_modifiers() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -303,16 +293,15 @@ open protocol Open {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn bad_invalid_strictness_flexible_event_in_closed() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -322,9 +311,7 @@ closed protocol Closed {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
@@ -339,7 +326,8 @@ fn bad_invalid_strictness_flexible_one_way_method_in_closed() {
 #[test]
 
 fn bad_invalid_strictness_flexible_two_way_method_in_closed() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -349,9 +337,7 @@ closed protocol Closed {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
@@ -366,7 +352,8 @@ fn bad_invalid_strictness_flexible_two_way_method_in_ajar() {
 #[test]
 
 fn bad_invalid_openness_modifier_on_method() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -376,15 +363,14 @@ protocol BadMethod {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_valid_empty_payloads() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -397,16 +383,15 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn bad_invalid_empty_struct_payload_strict_no_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -416,16 +401,15 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 
 fn bad_empty_struct_payload_flexible_no_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -435,16 +419,15 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 
 fn bad_empty_struct_payload_strict_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -454,16 +437,15 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 
 fn bad_empty_struct_payload_flexible_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -473,15 +455,14 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_absent_payload_flexible_no_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -491,15 +472,14 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_absent_payload_strict_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -509,15 +489,14 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_absent_payload_flexible_error() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -527,15 +506,14 @@ open protocol Test {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_flexible_no_error_response_union() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -547,15 +525,14 @@ open protocol Example {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_flexible_error_response_union() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -567,8 +544,6 @@ open protocol Example {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }

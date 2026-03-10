@@ -5,7 +5,8 @@ use crate::source_file::SourceFile;
 #[ignore]
 fn bad_ordinal_cannot_be_zero() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -15,8 +16,7 @@ protocol Special {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -27,7 +27,8 @@ protocol Special {
 #[test]
 fn bad_clashing_ordinal_values() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -40,8 +41,7 @@ protocol Special {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -52,7 +52,8 @@ protocol Special {
 #[test]
 fn bad_clashing_ordinal_values_with_attribute() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -67,8 +68,7 @@ protocol Special {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -92,7 +92,8 @@ fn bad_clashing_ordinal_bad_selector() {
 #[ignore]
 fn good_attribute_resolves_clashes() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -106,15 +107,15 @@ protocol Special {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let _root = library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_ordinal_value_is_sha256() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library a.b.c;
@@ -129,8 +130,7 @@ protocol protocol {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let root = library.compile().expect("compilation failed");
 
     let proto = root
@@ -142,7 +142,8 @@ protocol protocol {
 #[test]
 fn good_selector_with_full_path() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library not.important;
@@ -153,8 +154,7 @@ protocol at {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let root = library.compile().expect("compilation failed");
 
     let _proto = root
@@ -179,7 +179,8 @@ fn bad_selector_value_wrong_format() {
 #[ignore]
 fn bad_selector_value_not_string() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library not.important;
@@ -191,8 +192,7 @@ protocol at {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -203,7 +203,8 @@ protocol at {
 #[test]
 fn good_selector_value_references_const() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library not.important;
@@ -216,8 +217,7 @@ protocol at {
 const SEL string = "a.b.c/protocol.selector";
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let _root = library.compile().expect("compilation failed");
 }
 
@@ -225,7 +225,8 @@ const SEL string = "a.b.c/protocol.selector";
 #[ignore]
 fn bad_selector_value_references_nonexistent() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library not.important;
@@ -236,8 +237,7 @@ protocol at {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),
@@ -248,7 +248,8 @@ protocol at {
 #[test]
 fn good_ordinal_value_is_first64_bits_of_sha256() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library a.b.c;
@@ -289,8 +290,7 @@ protocol protocol {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let root = library.compile().expect("compilation failed");
 
     let proto = root
@@ -345,7 +345,8 @@ fn good_hack_to_rename_fuchsia_io_to_fuchsia_io_one_no_selector() {
 #[test]
 fn good_hack_to_rename_fuchsia_io_to_fuchsia_io_one_has_selector() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library fuchsia.io;
@@ -356,15 +357,15 @@ protocol SomeProtocol {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let _root = library.compile().expect("compilation failed");
 }
 
 #[test]
 fn wrong_composed_method_does_not_get_generated_ordinal() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -383,8 +384,7 @@ protocol DirectoryAdmin {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),

@@ -9,7 +9,8 @@ fn get_file_content(path: &str) -> String {
 
 #[test]
 fn good_enum_test_simple() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -20,9 +21,7 @@ type Fruit = enum : uint64 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
     let type_decl = root
         .lookup_enum("example/Fruit")
@@ -33,7 +32,8 @@ type Fruit = enum : uint64 {
 
 #[test]
 fn good_enum_default_uint32() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -42,9 +42,7 @@ type Fruit = enum {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
     let type_decl = root
         .lookup_enum("example/Fruit")
@@ -56,16 +54,20 @@ type Fruit = enum {
 
 fn bad_enum_test_with_non_unique_values() {
     let file_content = get_file_content("bad/fi-0107.test.fidl");
-    let source = SourceFile::new("bad/fi-0107.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0107.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_enum_test_with_non_unique_values_out_of_line() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -78,16 +80,15 @@ const FOUR uint32 = 4;
 const TWO_SQUARED uint32 = 4;
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_enum_test_unsigned_with_negative_member() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -97,16 +98,15 @@ type Fruit = enum : uint64 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_enum_test_inferred_unsigned_with_negative_member() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -116,16 +116,15 @@ type Fruit = enum {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_enum_test_member_overflow() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -135,9 +134,7 @@ type Fruit = enum : uint8 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -145,16 +142,20 @@ type Fruit = enum : uint8 {
 
 fn bad_enum_test_float_type() {
     let file_content = get_file_content("bad/fi-0070.test.fidl");
-    let source = SourceFile::new("bad/fi-0070.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0070.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_enum_test_duplicate_member() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -165,42 +166,45 @@ type Fruit = flexible enum {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_enum_test_no_members_allowed_when_defaults_to_flexible() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
 type E = enum {};
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_enum_test_no_members_allowed_when_flexible() {
     let file_content = get_file_content("good/fi-0019-a.test.fidl");
-    let source = SourceFile::new("good/fi-0019-a.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "good/fi-0019-a.test.fidl".to_string(),
+        file_content,
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_enum_test_strict_with_members() {
     let file_content = get_file_content("good/fi-0019-b.test.fidl");
-    let source = SourceFile::new("good/fi-0019-b.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "good/fi-0019-b.test.fidl".to_string(),
+        file_content,
+    ));
     lib.compile().expect("compilation failed");
 }
 
@@ -208,15 +212,19 @@ fn good_enum_test_strict_with_members() {
 
 fn bad_enum_test_no_members_when_strict() {
     let file_content = get_file_content("bad/fi-0019.test.fidl");
-    let source = SourceFile::new("bad/fi-0019.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0019.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_enum_test_keyword_names() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -227,16 +235,15 @@ type Fruit = enum : uint64 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 
 fn bad_enum_shant_be_nullable() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -249,16 +256,15 @@ type Struct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_enum_multiple_constraints() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -271,17 +277,18 @@ type Struct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_simple_enum() {
     let file_content = get_file_content("good/fi-0008.test.fidl");
-    let source = SourceFile::new("good/fi-0008.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "good/fi-0008.test.fidl".to_string(),
+        file_content,
+    ));
     lib.compile().expect("compilation failed");
 }

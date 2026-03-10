@@ -9,7 +9,8 @@ fn get_file_content(path: &str) -> String {
 
 #[test]
 fn good_nonzero_size_array() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -18,24 +19,26 @@ type S = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_zero_size_array() {
     let file_content = get_file_content("bad/fi-0161.test.fidl");
-    let source = SourceFile::new("bad/fi-0161.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0161.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_no_size_array() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -44,15 +47,14 @@ type S = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_non_parameterized_array() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -61,15 +63,14 @@ type S = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_optional_array() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -78,15 +79,14 @@ type S = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_multiple_constraints_on_array() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"library example;
 
@@ -95,8 +95,6 @@ type S = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

@@ -9,18 +9,18 @@ fn get_file_content(path: &str) -> String {
 
 #[test]
 fn good_simple_struct() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "good/fi-0001.test.fidl".to_string(),
         get_file_content("good/fi-0001.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_primitive_default_value_literal() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -31,27 +31,25 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let _root = lib.compile().expect("compilation failed");
     // TODO: assert type_decl members length = 1
 }
 
 #[test]
 fn bad_primitive_default_value_no_annotation() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0050.test.fidl".to_string(),
         get_file_content("bad/fi-0050.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_primitive_default_value_const_reference() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -64,15 +62,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_missing_default_value_reference_target() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -83,15 +80,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_enum_default_value_enum_member_reference() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -106,15 +102,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_primitive_default_value_enum_member_reference() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -129,15 +124,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_default_value_enum_type() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -151,26 +145,24 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_default_value_primitive_in_enum() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0103.test.fidl".to_string(),
         get_file_content("bad/fi-0103.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_enum_default_value_bits_member_reference() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -185,15 +177,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_primitive_default_value_bits_member_reference() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -208,15 +199,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_default_value_bits_type() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -230,15 +220,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_default_value_primitive_in_bits() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -251,15 +240,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_legacy_enum_member_reference() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -272,26 +260,24 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_default_value_nullable_string() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0091.test.fidl".to_string(),
         get_file_content("bad/fi-0091.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_duplicate_member_name() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -302,15 +288,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_max_inline_size() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -320,59 +305,54 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_inline_size_exceeds_64k() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0111.test.fidl".to_string(),
         get_file_content("bad/fi-0111.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_mutually_recursive() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0057-a.test.fidl".to_string(),
         get_file_content("bad/fi-0057-a.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_self_recursive() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0057-c.test.fidl".to_string(),
         get_file_content("bad/fi-0057-c.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_recursive_box() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "good/fi-0057.test.fidl".to_string(),
         get_file_content("good/fi-0057.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_recursive_through_vector() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -382,15 +362,14 @@ type MySelf = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn good_recursive_optional_vector() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -400,15 +379,14 @@ type MySelf = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     lib.compile().expect("compilation failed");
 }
 
 #[test]
 fn bad_mutually_recursive_with_incoming_leaf() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -426,15 +404,14 @@ type Leaf = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_mutually_recursive_with_outoging_leaf() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -453,15 +430,14 @@ type Leaf = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_mutually_recursive_intersecting_loops() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -480,37 +456,34 @@ type Intersection = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_box_cannot_be_optional() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0169.test.fidl".to_string(),
         get_file_content("bad/fi-0169.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_struct_cannot_be_optional() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0159.test.fidl".to_string(),
         get_file_content("bad/fi-0159.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_handle_cannot_be_boxed_should_be_optional() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0171.test.fidl".to_string(),
         r#"
 library test.bad.fi0171;
@@ -522,26 +495,24 @@ type Foo = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_cannot_box_primitive() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0193.test.fidl".to_string(),
         get_file_content("bad/fi-0193.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn bad_default_value_references_invalid_const() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -554,31 +525,27 @@ type Foo = struct {
 const BAR bool = "not a bool";
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn cannot_refer_to_int_member() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0053-a.test.fidl".to_string(),
         get_file_content("bad/fi-0053-a.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 fn cannot_refer_to_struct_member() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0053-b.test.fidl".to_string(),
         get_file_content("bad/fi-0053-b.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
@@ -588,7 +555,8 @@ fn cannot_refer_to_struct_member() {
 fn bad_type_cannot_be_boxed_should_be_optional() {
     let boxed_names = vec!["Endpoint", "server_end:Endpoint", "client_end:Endpoint"];
     for boxed_name in boxed_names {
-        let source = SourceFile::new(
+        let mut lib = TestLibrary::new();
+        lib.add_source(SourceFile::new(
             "example.fidl".to_string(),
             format!(
                 r#"
@@ -602,9 +570,7 @@ type MyStruct = struct {{
 "#,
                 boxed_name
             ),
-        );
-        let mut lib = TestLibrary::new();
-        lib.add_source(&source);
+        ));
         assert!(lib.compile().is_err());
     }
 }
@@ -613,7 +579,8 @@ type MyStruct = struct {{
 fn bad_type_cannot_be_boxed_nor_optional() {
     let boxed_names = vec!["int32", "uint32", "bool"];
     for boxed_name in boxed_names {
-        let source = SourceFile::new(
+        let mut lib = TestLibrary::new();
+        lib.add_source(SourceFile::new(
             "example.fidl".to_string(),
             format!(
                 r#"
@@ -625,9 +592,7 @@ type MyStruct = struct {{
 "#,
                 boxed_name
             ),
-        );
-        let mut lib = TestLibrary::new();
-        lib.add_source(&source);
+        ));
         assert!(lib.compile().is_err());
     }
 }

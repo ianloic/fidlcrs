@@ -9,7 +9,8 @@ fn get_file_content(path: &str) -> String {
 
 #[test]
 fn good_empty_service() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -17,9 +18,7 @@ library example;
 service SomeService {};
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let service = root
@@ -30,7 +29,8 @@ service SomeService {};
 
 #[test]
 fn good_service() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -45,9 +45,7 @@ service SomeService {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let service = root
@@ -61,7 +59,8 @@ service SomeService {
 #[test]
 #[ignore]
 fn bad_cannot_have_conflicting_members() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -74,28 +73,26 @@ service MyService {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 #[ignore]
 fn bad_no_nullable_protocol_members() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0088.test.fidl".to_string(),
         get_file_content("bad/fi-0088.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 #[ignore]
 fn bad_only_protocol_members() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -107,28 +104,26 @@ service SomeService {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 #[ignore]
 fn bad_no_server_ends() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0112.test.fidl".to_string(),
         get_file_content("bad/fi-0112.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 #[ignore]
 fn bad_cannot_use_services_in_decls() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -140,20 +135,17 @@ type CannotUseService = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }
 
 #[test]
 #[ignore]
 fn bad_cannot_use_more_than_one_protocol_transport_kind() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "bad/fi-0113.test.fidl".to_string(),
         get_file_content("bad/fi-0113.test.fidl"),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err());
 }

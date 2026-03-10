@@ -20,7 +20,8 @@ fn good_collision_fix_rename() {
 #[test]
 fn good_top_level() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -42,15 +43,15 @@ fn good_top_level() {
     service FOoBAR {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_attributes() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -60,15 +61,15 @@ fn good_attributes() {
     type Example = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_attribute_arguments() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -76,15 +77,15 @@ fn good_attribute_arguments() {
     type Example = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_struct_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -95,15 +96,15 @@ fn good_struct_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_table_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -114,15 +115,15 @@ fn good_table_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_union_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -133,15 +134,15 @@ fn good_union_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_enum_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -152,15 +153,15 @@ fn good_enum_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_bits_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -171,15 +172,15 @@ fn good_bits_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_protocol_methods() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -190,15 +191,15 @@ fn good_protocol_methods() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_method_parameters() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -211,15 +212,15 @@ fn good_method_parameters() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_method_results() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -232,15 +233,15 @@ fn good_method_results() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_service_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -252,8 +253,7 @@ fn good_service_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
@@ -261,7 +261,8 @@ fn good_service_members() {
 #[ignore]
 fn good_resource_properties() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -276,15 +277,15 @@ fn good_resource_properties() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_upper_acronym() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -292,23 +293,22 @@ fn good_upper_acronym() {
     type httpserver = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
 #[test]
 fn good_current_library() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
     type example = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
@@ -317,19 +317,20 @@ fn good_current_library() {
 fn good_dependent_library() {
     // SharedLibrary is not fully translated
     let mut dependency = TestLibrary::new();
-    let dep_source = SourceFile::new(
+
+    dependency.add_source(SourceFile::new(
         "foobar.fidl".to_string(),
         r#"
     library foobar;
     type Something = struct {};
     "#
         .to_string(),
-    );
-    dependency.add_source(&dep_source);
+    ));
     dependency.compile().expect("dep failed");
     // ASSERT_COMPILED(dependency);
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -346,8 +347,7 @@ fn good_dependent_library() {
     service FOoBAR {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     library.compile().expect("compilation failed");
 }
 
@@ -361,7 +361,8 @@ fn bad_top_level() {
 #[ignore]
 fn bad_attributes() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -370,8 +371,7 @@ fn bad_attributes() {
     type Example = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -380,7 +380,8 @@ fn bad_attributes() {
 #[ignore]
 fn bad_attribute_arguments() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -388,8 +389,7 @@ fn bad_attribute_arguments() {
     type Example = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -398,7 +398,8 @@ fn bad_attribute_arguments() {
 #[ignore]
 fn bad_struct_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -408,8 +409,7 @@ fn bad_struct_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -418,7 +418,8 @@ fn bad_struct_members() {
 #[ignore]
 fn bad_table_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -428,8 +429,7 @@ fn bad_table_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -438,7 +438,8 @@ fn bad_table_members() {
 #[ignore]
 fn bad_union_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -448,8 +449,7 @@ fn bad_union_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -458,7 +458,8 @@ fn bad_union_members() {
 #[ignore]
 fn bad_enum_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -468,8 +469,7 @@ fn bad_enum_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -478,7 +478,8 @@ fn bad_enum_members() {
 #[ignore]
 fn bad_bits_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -488,8 +489,7 @@ fn bad_bits_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -498,7 +498,8 @@ fn bad_bits_members() {
 #[ignore]
 fn bad_protocol_methods() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -508,8 +509,7 @@ fn bad_protocol_methods() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -518,7 +518,8 @@ fn bad_protocol_methods() {
 #[ignore]
 fn bad_method_parameters() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -527,8 +528,7 @@ fn bad_method_parameters() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -537,7 +537,8 @@ fn bad_method_parameters() {
 #[ignore]
 fn bad_method_results() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -546,8 +547,7 @@ fn bad_method_results() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -556,7 +556,8 @@ fn bad_method_results() {
 #[ignore]
 fn bad_service_members() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -567,8 +568,7 @@ fn bad_service_members() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -577,7 +577,8 @@ fn bad_service_members() {
 #[ignore]
 fn bad_resource_properties() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -590,8 +591,7 @@ fn bad_resource_properties() {
     };
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -609,7 +609,8 @@ fn bad_member_values() {
 #[ignore]
 fn bad_upper_acronym() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -617,8 +618,7 @@ fn bad_upper_acronym() {
     type HttpServer = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -628,19 +628,20 @@ fn bad_upper_acronym() {
 fn bad_dependent_library() {
     // SharedLibrary is not fully translated
     let mut dependency = TestLibrary::new();
-    let dep_source = SourceFile::new(
+
+    dependency.add_source(SourceFile::new(
         "foobar.fidl".to_string(),
         r#"
     library foobar;
     type Something = struct {};
     "#
         .to_string(),
-    );
-    dependency.add_source(&dep_source);
+    ));
     dependency.compile().expect("dep failed");
     // ASSERT_COMPILED(dependency);
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "lib.fidl".to_string(),
         r#"
     library example;
@@ -648,8 +649,7 @@ fn bad_dependent_library() {
     alias FOOBAR = foobar.Something;
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }
@@ -664,7 +664,8 @@ fn bad_various_collisions() {
 #[ignore]
 fn bad_consecutive_underscores() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -672,8 +673,7 @@ fn bad_consecutive_underscores() {
     type it__is___the____same = struct {};
     "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     // EXPECT FAIL
     assert!(library.compile().is_err());
 }

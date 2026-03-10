@@ -10,7 +10,8 @@ fn get_file_content(path: &str) -> String {
 #[test]
 
 fn good_valid_without_rights() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -26,9 +27,7 @@ resource_definition SomeResource : uint32 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let _root = match lib.compile() {
         Ok(root) => root,
         Err(e) => {
@@ -42,7 +41,8 @@ resource_definition SomeResource : uint32 {
 #[test]
 
 fn good_valid_with_rights() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -59,9 +59,7 @@ resource_definition SomeResource : uint32 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let _root = match lib.compile() {
         Ok(root) => root,
         Err(e) => {
@@ -74,7 +72,8 @@ resource_definition SomeResource : uint32 {
 #[test]
 
 fn good_aliased_base_type_without_rights() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -92,9 +91,7 @@ resource_definition SomeResource : via {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let _root = match lib.compile() {
         Ok(root) => root,
         Err(e) => {
@@ -107,7 +104,8 @@ resource_definition SomeResource : via {
 #[test]
 
 fn good_aliased_base_type_with_rights() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -126,9 +124,7 @@ resource_definition SomeResource : via {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let _root = match lib.compile() {
         Ok(root) => root,
         Err(e) => {
@@ -141,7 +137,8 @@ resource_definition SomeResource : via {
 #[test]
 
 fn bad_empty() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -150,9 +147,7 @@ resource_definition SomeResource : uint32 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -160,16 +155,20 @@ resource_definition SomeResource : uint32 {
 
 fn bad_no_properties() {
     let file_content = get_file_content("bad/fi-0029.noformat.test.fidl");
-    let source = SourceFile::new("bad/fi-0029.noformat.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0029.noformat.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_duplicate_property() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -183,9 +182,7 @@ resource_definition MyResource : uint32 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -193,9 +190,12 @@ resource_definition MyResource : uint32 {
 
 fn bad_not_uint32() {
     let file_content = get_file_content("bad/fi-0172.test.fidl");
-    let source = SourceFile::new("bad/fi-0172.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0172.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -203,9 +203,12 @@ fn bad_not_uint32() {
 
 fn bad_missing_subtype_property_test() {
     let file_content = get_file_content("bad/fi-0173.test.fidl");
-    let source = SourceFile::new("bad/fi-0173.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0173.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -213,16 +216,20 @@ fn bad_missing_subtype_property_test() {
 
 fn bad_subtype_not_enum() {
     let file_content = get_file_content("bad/fi-0175.test.fidl");
-    let source = SourceFile::new("bad/fi-0175.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0175.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_subtype_not_identifier() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -234,9 +241,7 @@ resource_definition handle : uint32 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
@@ -244,16 +249,20 @@ resource_definition handle : uint32 {
 
 fn bad_non_bits_rights() {
     let file_content = get_file_content("bad/fi-0177.test.fidl");
-    let source = SourceFile::new("bad/fi-0177.test.fidl".to_string(), file_content);
+
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(SourceFile::new(
+        "bad/fi-0177.test.fidl".to_string(),
+        file_content,
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 
 fn bad_include_cycle() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -265,8 +274,6 @@ resource_definition handle : uint32 {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

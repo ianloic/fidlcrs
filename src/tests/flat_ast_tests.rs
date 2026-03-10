@@ -4,7 +4,8 @@ use crate::source_file::SourceFile;
 #[test]
 fn good_single_anonymous_name_use() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example0.fidl".to_string(),
         r#"
 library example;
@@ -16,8 +17,7 @@ protocol Foo {
 };
         "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     let result = library.compile();
     assert!(result.is_ok(), "Expected compilation to succeed");
 }
@@ -37,7 +37,8 @@ fn bad_cannot_reference_anonymous_name() {
 #[ignore]
 fn bad_anonymous_name_conflict() {
     let mut library = TestLibrary::new();
-    let source = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example0.fidl".to_string(),
         r#"
 library example;
@@ -49,8 +50,7 @@ protocol Foo {
 type FooSomeMethodRequest = struct {};
         "#
         .to_string(),
-    );
-    library.add_source(&source);
+    ));
     let result = library.compile();
     assert!(
         result.is_err(),

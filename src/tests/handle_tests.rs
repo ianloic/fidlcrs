@@ -5,7 +5,9 @@ use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
 fn good_handle_rights_test() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -17,10 +19,7 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -41,7 +40,9 @@ type MyStruct = resource struct {
 
 #[test]
 fn good_no_handle_rights_test() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -53,10 +54,7 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -77,7 +75,9 @@ type MyStruct = resource struct {
 
 #[test]
 fn bad_invalid_handle_rights_test() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -89,16 +89,15 @@ protocol P {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_plain_handle_test() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -110,10 +109,7 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -134,7 +130,9 @@ type MyStruct = resource struct {
 
 #[test]
 fn good_handle_fidl_defined_test() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -148,10 +146,7 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -194,7 +189,9 @@ type MyStruct = resource struct {
 
 #[test]
 fn bad_invalid_fidl_defined_handle_subtype() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -206,16 +203,15 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_disallow_old_handles() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.use_library_zx();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -227,16 +223,14 @@ type MyStruct = struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.use_library_zx();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn good_resource_definition_only_subtype_no_rights_test() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -257,9 +251,7 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     let root = lib.compile().expect("compilation failed");
 
     let type_decl = root
@@ -280,7 +272,8 @@ type MyStruct = resource struct {
 
 #[test]
 fn bad_invalid_subtype_at_use_site() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -301,15 +294,14 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_invalid_rights_at_use_site() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -331,15 +323,14 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_bare_handle_no_constraints() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -349,15 +340,14 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_bare_handle_with_constraints() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -367,15 +357,14 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }
 
 #[test]
 fn bad_bare_handle_with_constraints_through_alias() {
-    let source = SourceFile::new(
+    let mut lib = TestLibrary::new();
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -387,8 +376,6 @@ type MyStruct = resource struct {
 };
 "#
         .to_string(),
-    );
-    let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    ));
     assert!(lib.compile().is_err(), "expected compilation to fail");
 }

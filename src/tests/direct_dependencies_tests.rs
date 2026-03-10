@@ -25,7 +25,8 @@ fn good_direct_deps_simple() {
         "array<uint32, dep2.Constant>",
     ] {
         let mut dep2 = TestLibrary::new();
-        let dep2_source = SourceFile::new(
+
+        dep2.add_source(SourceFile::new(
             "dep2.fidl".to_string(),
             r#"
 library dep2;
@@ -35,12 +36,23 @@ type Type = struct {};
 protocol Protocol {};
 "#
             .to_string(),
-        );
-        dep2.add_source(&dep2_source);
+        ));
         let _dep2_root = dep2.compile().expect("dep2 compilation failed");
 
         let mut dep1 = TestLibrary::new();
-        let dep1_source = SourceFile::new(
+
+        dep1.add_source(SourceFile::new(
+            "dep2.fidl".to_string(),
+            r#"
+library dep2;
+
+const Constant uint32 = 50;
+type Type = struct {};
+protocol Protocol {};
+"#
+            .to_string(),
+        ));
+        dep1.add_source(SourceFile::new(
             "dep1.fidl".to_string(),
             format!(
                 r#"
@@ -54,13 +66,38 @@ protocol ComposedProtocol {{
 "#,
                 type_usage
             ),
-        );
-        dep1.add_source(&dep2_source);
-        dep1.add_source(&dep1_source);
+        ));
         let _dep1_root = dep1.compile().expect("dep1 compilation failed");
 
         let mut lib = TestLibrary::new();
-        let lib_source = SourceFile::new(
+
+        lib.add_source(SourceFile::new(
+            "dep2.fidl".to_string(),
+            r#"
+library dep2;
+
+const Constant uint32 = 50;
+type Type = struct {};
+protocol Protocol {};
+"#
+            .to_string(),
+        ));
+        lib.add_source(SourceFile::new(
+            "dep1.fidl".to_string(),
+            format!(
+                r#"
+library dep1;
+
+using dep2;
+
+protocol ComposedProtocol {{
+  UsesDep2(resource struct {{ data {}; }});
+}};
+"#,
+                type_usage
+            ),
+        ));
+        lib.add_source(SourceFile::new(
             "example.fidl".to_string(),
             r#"
 library example;
@@ -72,10 +109,7 @@ protocol CapturesDependencyThroughCompose {
 };
 "#
             .to_string(),
-        );
-        lib.add_source(&dep2_source);
-        lib.add_source(&dep1_source);
-        lib.add_source(&lib_source);
+        ));
         let root = lib.compile().expect("lib compilation failed");
 
         let expected: Vec<&str> = vec!["dep1", "dep2"];
@@ -86,19 +120,27 @@ protocol CapturesDependencyThroughCompose {
 #[test]
 fn good_does_not_follow_alias() {
     let mut dep2 = TestLibrary::new();
-    let dep2_source = SourceFile::new(
+
+    dep2.add_source(SourceFile::new(
         "dep2.fidl".to_string(),
         r#"
     library dep2;
     type Foo = struct {};
     "#
         .to_string(),
-    );
-    dep2.add_source(&dep2_source);
+    ));
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source(&dep2_source);
-    let dep1_source = SourceFile::new(
+    dep1.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+
+    dep1.add_source(SourceFile::new(
         "dep1.fidl".to_string(),
         r#"
     library dep1;
@@ -109,13 +151,31 @@ fn good_does_not_follow_alias() {
     };
     "#
         .to_string(),
-    );
-    dep1.add_source(&dep1_source);
+    ));
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source(&dep2_source);
-    lib.add_source(&dep1_source);
-    let lib_source = SourceFile::new(
+    lib.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+    lib.add_source(SourceFile::new(
+        "dep1.fidl".to_string(),
+        r#"
+    library dep1;
+    using dep2;
+    alias Bar = dep2.Foo;
+    protocol ComposedProtocol {
+    UsesDep2InAlias(struct { foo vector<Bar>; });
+    };
+    "#
+        .to_string(),
+    ));
+
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -125,8 +185,7 @@ fn good_does_not_follow_alias() {
     };
     "#
         .to_string(),
-    );
-    lib.add_source(&lib_source);
+    ));
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1"];
     assert_eq!(direct_and_composed_dependencies(&root), expected);
@@ -135,19 +194,27 @@ fn good_does_not_follow_alias() {
 #[test]
 fn good_does_not_follow_nested_struct() {
     let mut dep2 = TestLibrary::new();
-    let dep2_source = SourceFile::new(
+
+    dep2.add_source(SourceFile::new(
         "dep2.fidl".to_string(),
         r#"
     library dep2;
     type Foo = struct {};
     "#
         .to_string(),
-    );
-    dep2.add_source(&dep2_source);
+    ));
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source(&dep2_source);
-    let dep1_source = SourceFile::new(
+    dep1.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+
+    dep1.add_source(SourceFile::new(
         "dep1.fidl".to_string(),
         r#"
     library dep1;
@@ -160,13 +227,33 @@ fn good_does_not_follow_nested_struct() {
     };
     "#
         .to_string(),
-    );
-    dep1.add_source(&dep1_source);
+    ));
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source(&dep2_source);
-    lib.add_source(&dep1_source);
-    let lib_source = SourceFile::new(
+    lib.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+    lib.add_source(SourceFile::new(
+        "dep1.fidl".to_string(),
+        r#"
+    library dep1;
+    using dep2;
+    type Bar = struct {
+    foo dep2.Foo;
+    };
+    protocol ComposedProtocol {
+    UsesDep2InNestedStruct(struct { foo vector<Bar>; });
+    };
+    "#
+        .to_string(),
+    ));
+
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -176,8 +263,7 @@ fn good_does_not_follow_nested_struct() {
     };
     "#
         .to_string(),
-    );
-    lib.add_source(&lib_source);
+    ));
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1"];
     assert_eq!(direct_and_composed_dependencies(&root), expected);
@@ -186,19 +272,27 @@ fn good_does_not_follow_nested_struct() {
 #[test]
 fn good_error_syntax_success_type() {
     let mut dep2 = TestLibrary::new();
-    let dep2_source = SourceFile::new(
+
+    dep2.add_source(SourceFile::new(
         "dep2.fidl".to_string(),
         r#"
     library dep2;
     type Foo = struct {};
     "#
         .to_string(),
-    );
-    dep2.add_source(&dep2_source);
+    ));
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source(&dep2_source);
-    let dep1_source = SourceFile::new(
+    dep1.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+
+    dep1.add_source(SourceFile::new(
         "dep1.fidl".to_string(),
         r#"
     library dep1;
@@ -208,13 +302,30 @@ fn good_error_syntax_success_type() {
     };
     "#
         .to_string(),
-    );
-    dep1.add_source(&dep1_source);
+    ));
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source(&dep2_source);
-    lib.add_source(&dep1_source);
-    let lib_source = SourceFile::new(
+    lib.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+    lib.add_source(SourceFile::new(
+        "dep1.fidl".to_string(),
+        r#"
+    library dep1;
+    using dep2;
+    protocol ComposedProtocol {
+    UsesDep2InSuccessType() -> (struct { foo vector<dep2.Foo>; }) error uint32;
+    };
+    "#
+        .to_string(),
+    ));
+
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -224,8 +335,7 @@ fn good_error_syntax_success_type() {
     };
     "#
         .to_string(),
-    );
-    lib.add_source(&lib_source);
+    ));
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1", "dep2"];
     assert_eq!(direct_and_composed_dependencies(&root), expected);
@@ -234,19 +344,27 @@ fn good_error_syntax_success_type() {
 #[test]
 fn good_error_syntax_error_type() {
     let mut dep2 = TestLibrary::new();
-    let dep2_source = SourceFile::new(
+
+    dep2.add_source(SourceFile::new(
         "dep2.fidl".to_string(),
         r#"
     library dep2;
     type Foo = flexible enum : uint32 {};
     "#
         .to_string(),
-    );
-    dep2.add_source(&dep2_source);
+    ));
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source(&dep2_source);
-    let dep1_source = SourceFile::new(
+    dep1.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = flexible enum : uint32 {};
+    "#
+        .to_string(),
+    ));
+
+    dep1.add_source(SourceFile::new(
         "dep1.fidl".to_string(),
         r#"
     library dep1;
@@ -256,13 +374,30 @@ fn good_error_syntax_error_type() {
     };
     "#
         .to_string(),
-    );
-    dep1.add_source(&dep1_source);
+    ));
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source(&dep2_source);
-    lib.add_source(&dep1_source);
-    let lib_source = SourceFile::new(
+    lib.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = flexible enum : uint32 {};
+    "#
+        .to_string(),
+    ));
+    lib.add_source(SourceFile::new(
+        "dep1.fidl".to_string(),
+        r#"
+    library dep1;
+    using dep2;
+    protocol ComposedProtocol {
+    UsesDep2InErrorType() -> () error dep2.Foo;
+    };
+    "#
+        .to_string(),
+    ));
+
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -272,8 +407,7 @@ fn good_error_syntax_error_type() {
     };
     "#
         .to_string(),
-    );
-    lib.add_source(&lib_source);
+    ));
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1", "dep2"];
     assert_eq!(direct_and_composed_dependencies(&root), expected);
@@ -282,19 +416,27 @@ fn good_error_syntax_error_type() {
 #[test]
 fn good_flexible_response() {
     let mut dep2 = TestLibrary::new();
-    let dep2_source = SourceFile::new(
+
+    dep2.add_source(SourceFile::new(
         "dep2.fidl".to_string(),
         r#"
     library dep2;
     type Foo = struct {};
     "#
         .to_string(),
-    );
-    dep2.add_source(&dep2_source);
+    ));
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source(&dep2_source);
-    let dep1_source = SourceFile::new(
+    dep1.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+
+    dep1.add_source(SourceFile::new(
         "dep1.fidl".to_string(),
         r#"
     library dep1;
@@ -304,13 +446,30 @@ fn good_flexible_response() {
     };
     "#
         .to_string(),
-    );
-    dep1.add_source(&dep1_source);
+    ));
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source(&dep2_source);
-    lib.add_source(&dep1_source);
-    let lib_source = SourceFile::new(
+    lib.add_source(SourceFile::new(
+        "dep2.fidl".to_string(),
+        r#"
+    library dep2;
+    type Foo = struct {};
+    "#
+        .to_string(),
+    ));
+    lib.add_source(SourceFile::new(
+        "dep1.fidl".to_string(),
+        r#"
+    library dep1;
+    using dep2;
+    open protocol ComposedProtocol {
+    flexible UsesDep2InFlexibleResponse() -> (struct { foo vector<dep2.Foo>; });
+    };
+    "#
+        .to_string(),
+    ));
+
+    lib.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
     library example;
@@ -320,8 +479,7 @@ fn good_flexible_response() {
     };
     "#
         .to_string(),
-    );
-    lib.add_source(&lib_source);
+    ));
     let root = lib.compile().expect("lib compilation failed");
     let expected: Vec<&str> = vec!["dep1", "dep2"];
     assert_eq!(direct_and_composed_dependencies(&root), expected);

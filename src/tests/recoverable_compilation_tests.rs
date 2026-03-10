@@ -5,7 +5,8 @@ use crate::source_file::SourceFile;
 #[ignore]
 fn bad_recover_in_library_consume() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -17,8 +18,7 @@ type foo = struct {};
 type Foo = struct {};       // Error: canonical name collision
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -27,7 +27,8 @@ type Foo = struct {};       // Error: canonical name collision
 #[ignore]
 fn bad_recover_in_library_compile() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -55,8 +56,7 @@ type NonDenseTable = table {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -65,7 +65,8 @@ type NonDenseTable = table {
 #[ignore]
 fn bad_recover_in_library_verify_attribute_placement() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -80,8 +81,7 @@ type Struct = struct {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -90,7 +90,8 @@ type Struct = struct {
 #[ignore]
 fn bad_recover_in_attribute_compile() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -104,8 +105,7 @@ type Enum = enum {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -114,7 +114,8 @@ type Enum = enum {
 #[ignore]
 fn bad_recover_in_const() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -123,8 +124,7 @@ library example;
 const FOO string = 2;
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -133,7 +133,8 @@ const FOO string = 2;
 #[ignore]
 fn bad_recover_in_bits() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -148,8 +149,7 @@ type Foo = bits {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -158,7 +158,8 @@ type Foo = bits {
 #[ignore]
 fn bad_recover_in_enum() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -173,8 +174,7 @@ type Foo = flexible enum : uint8 {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -183,7 +183,8 @@ type Foo = flexible enum : uint8 {
 #[ignore]
 fn bad_recover_in_struct() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -197,8 +198,7 @@ type Foo = struct {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -207,7 +207,8 @@ type Foo = struct {
 #[ignore]
 fn bad_recover_in_table() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -220,8 +221,7 @@ type Foo = table {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -230,7 +230,8 @@ type Foo = table {
 #[ignore]
 fn bad_recover_in_union() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -242,8 +243,7 @@ type Foo = union {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -252,7 +252,8 @@ type Foo = union {
 #[ignore]
 fn bad_recover_in_protocol() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -266,8 +267,7 @@ protocol Foo {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }
@@ -276,7 +276,8 @@ protocol Foo {
 #[ignore]
 fn bad_recover_in_service() {
     let mut library = TestLibrary::new();
-    let source0 = SourceFile::new(
+
+    library.add_source(SourceFile::new(
         "example.fidl".to_string(),
         r#"
 library example;
@@ -290,8 +291,7 @@ service Foo {
 };
 "#
         .to_string(),
-    );
-    library.add_source(&source0);
+    ));
     let result = library.compile();
     assert!(result.is_err(), "Expected compilation to fail");
 }

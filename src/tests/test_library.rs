@@ -10,8 +10,7 @@ use crate::source_file::{SourceFile, VirtualSourceFile};
 
 pub struct TestLibrary<'a> {
     reporter: Reporter<'a>,
-    source_files: Vec<&'a SourceFile>,
-    shared_sources: Vec<Box<SourceFile>>,
+    source_files: Vec<SourceFile>,
     #[allow(dead_code)]
     generated_source_file: VirtualSourceFile,
     pub experimental_flags: Vec<String>,
@@ -30,7 +29,6 @@ impl<'a> TestLibrary<'a> {
         Self {
             reporter: Reporter::new(),
             source_files: Vec::new(),
-            shared_sources: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             experimental_flags: Vec::new(),
             select_versions: Vec::new(),
@@ -38,7 +36,7 @@ impl<'a> TestLibrary<'a> {
         }
     }
 
-    pub fn with_source(source_file: &'a SourceFile) -> Self {
+    pub fn with_source(source_file: SourceFile) -> Self {
         let mut lib = Self::new();
         lib.add_source(source_file);
         lib
@@ -53,8 +51,13 @@ impl<'a> TestLibrary<'a> {
             .push((platform.to_string(), version.to_string()));
     }
 
-    pub fn add_source(&mut self, source_file: &'a SourceFile) {
+    pub fn add_source(&mut self, source_file: SourceFile) {
         self.source_files.push(source_file);
+    }
+
+    pub fn add_source_file(&mut self, filename: &'static str, contents: &'static str) {
+        self.source_files
+            .push(SourceFile::new(filename.to_string(), contents.to_string()));
     }
 
     pub fn add_attribute_schema(&mut self, name: &str, schema: AttributeSchema) {
@@ -65,15 +68,12 @@ impl<'a> TestLibrary<'a> {
         use crate::tests::errcat::Errcat;
         let content = Errcat::get_fidl(path)
             .unwrap_or_else(|| panic!("failed to read errcat FIDL: {}", path));
-        let dummy = Box::new(SourceFile::new(path.to_string(), content));
-        let ptr: *const SourceFile = &*dummy;
-        self.shared_sources.push(dummy);
-        // Safety: the Box lives until the TestLibrary is dropped so this reference is valid.
-        self.source_files.push(unsafe { &*ptr });
+        self.source_files
+            .push(SourceFile::new(path.to_string(), content));
     }
 
     pub fn use_library_zx(&mut self) {
-        let dummy_zx = Box::new(SourceFile::new(
+        let dummy_zx = SourceFile::new(
             "zx.fidl".to_string(),
             r#"
 library zx;
@@ -101,15 +101,12 @@ resource_definition Handle : uint32 {
 };
 "#
             .to_string(),
-        ));
-        let ptr: *const SourceFile = &*dummy_zx;
-        self.shared_sources.push(dummy_zx);
-        // Safety: the Box lives until the TestLibrary is dropped so this reference is valid.
-        self.source_files.insert(0, unsafe { &*ptr });
+        );
+        self.source_files.insert(0, dummy_zx);
     }
 
     pub fn use_library_fdf(&mut self) {
-        let dummy_fdf = Box::new(SourceFile::new(
+        let dummy_fdf = SourceFile::new(
             "fdf.fidl".to_string(),
             r#"
 library fdf;
@@ -125,10 +122,8 @@ resource_definition handle : uint32 {
 };
 "#
             .to_string(),
-        ));
-        let ptr: *const SourceFile = &*dummy_fdf;
-        self.shared_sources.push(dummy_fdf);
-        self.source_files.insert(0, unsafe { &*ptr });
+        );
+        self.source_files.insert(0, dummy_fdf);
     }
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {
@@ -187,7 +182,11 @@ resource_definition handle : uint32 {
             }
         }
 
-        let res = compiler.compile(&main_asts, &dep_asts, &self.source_files);
+        let res = compiler.compile(
+            &main_asts,
+            &dep_asts,
+            &self.source_files.iter().collect::<Vec<_>>(),
+        );
         if !self.reporter.diagnostics().is_empty() {
             for err in self.reporter.diagnostics().iter() {
                 println!("{:?}", err);
@@ -272,7 +271,7 @@ fn test_test_library() {
         "library example; struct Foo { x uint32; };".to_string(),
     );
     let mut lib = TestLibrary::new();
-    lib.add_source(&source);
+    lib.add_source(source);
     let root = lib.compile().expect("compilation failed");
     assert_eq!(root.name, "example");
     assert!(root.lookup_struct("example/Foo").is_some());

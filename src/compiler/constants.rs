@@ -59,59 +59,38 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("\"4294967295\"".to_string());
                 }
 
-                let mut full_name = name.clone();
-                if !full_name.contains('/') {
-                    full_name = format!("{}/{}", self.library_name, name);
-                }
-
-                if let Some(decl) = self.raw_decls.get(&full_name) {
-                    if let RawDecl::Const(c) = decl {
-                        return self.eval_constant_value_as_string(&c.value);
-                    }
-                }
-
-                if let Some((type_name, member_name)) = name.rsplit_once('.') {
-                    let mut type_full_name = type_name.to_string();
-                    if !type_full_name.contains('/') {
-                        let local_fqn = format!("{}/{}", self.library_name, type_name);
-                        if self.raw_decls.contains_key(&local_fqn) {
-                            type_full_name = local_fqn;
-                        } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
-                            let dep_fqn = format!("{}/{}", lib_prefix, rest);
-                            if self.raw_decls.contains_key(&dep_fqn) {
-                                type_full_name = dep_fqn;
-                            }
-                        } else {
-                            type_full_name = local_fqn;
-                        }
-                    }
-                    if let Some(decl) = self.raw_decls.get(&type_full_name) {
-                        return match decl {
-                            RawDecl::Bits(b) => b
-                                .members
-                                .iter()
-                                .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                            RawDecl::Enum(e) => e
-                                .members
-                                .iter()
-                                .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                            RawDecl::Type(t) => match &t.layout {
-                                crate::raw_ast::Layout::Bits(b) => b
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                    if let Some(decl) = self.raw_decls.get(type_full_name) {
+                        if let Some(member_name) = maybe_member {
+                            return match decl {
+                                RawDecl::Bits(b) => b
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value_as_string(&m.value)),
-                                crate::raw_ast::Layout::Enum(e) => e
+                                RawDecl::Enum(e) => e
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                RawDecl::Type(t) => match &t.layout {
+                                    crate::raw_ast::Layout::Bits(b) => b
+                                        .members
+                                        .iter()
+                                        .find(|m| m.name.data() == member_name)
+                                        .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                    crate::raw_ast::Layout::Enum(e) => e
+                                        .members
+                                        .iter()
+                                        .find(|m| m.name.data() == member_name)
+                                        .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                    _ => None,
+                                },
                                 _ => None,
-                            },
-                            _ => None,
-                        };
+                            };
+                        } else if let RawDecl::Const(c) = decl {
+                            return self.eval_constant_value_as_string(&c.value);
+                        }
                     }
                 }
 
@@ -138,49 +117,35 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("numeric");
                 }
 
-                let mut full_name = name.clone();
-                if !full_name.contains('/') {
-                    full_name = format!("{}/{}", self.library_name, name);
-                }
-
-                if let Some(decl) = self.raw_decls.get(&full_name) {
-                    if let RawDecl::Const(c) = decl {
-                        if let crate::raw_ast::LayoutParameter::Identifier(id) = &c.type_ctor.layout
-                        {
-                            let mut type_name = id.to_string();
-                            if type_name.starts_with("fidl.") {
-                                type_name = type_name[5..].to_string();
-                            }
-                            return match type_name.as_str() {
-                                "string" => Some("string"),
-                                "bool" => Some("bool"),
-                                "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16"
-                                | "int32" | "int64" | "float32" | "float64" | "uchar"
-                                | "usize64" | "uintptr64" => Some("numeric"),
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                    if let Some(decl) = self.raw_decls.get(type_full_name) {
+                        if maybe_member.is_some() {
+                            return match decl {
+                                RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
+                                RawDecl::Type(t) => match &t.layout {
+                                    crate::raw_ast::Layout::Enum(_)
+                                    | crate::raw_ast::Layout::Bits(_) => Some("numeric"),
+                                    _ => None,
+                                },
                                 _ => None,
                             };
+                        } else if let RawDecl::Const(c) = decl {
+                            if let crate::raw_ast::LayoutParameter::Identifier(id) = &c.type_ctor.layout
+                            {
+                                let mut type_name = id.to_string();
+                                if type_name.starts_with("fidl.") {
+                                    type_name = type_name[5..].to_string();
+                                }
+                                return match type_name.as_str() {
+                                    "string" => Some("string"),
+                                    "bool" => Some("bool"),
+                                    "uint8" | "uint16" | "uint32" | "uint64" | "int8" | "int16"
+                                    | "int32" | "int64" | "float32" | "float64" | "uchar"
+                                    | "usize64" | "uintptr64" => Some("numeric"),
+                                    _ => None,
+                                };
+                            }
                         }
-                    }
-                }
-
-                if let Some((type_name, _member_name)) = name.rsplit_once('.') {
-                    let mut type_full_name = type_name.to_string();
-                    if !type_full_name.contains('/') {
-                        let local_fqn = format!("{}/{}", self.library_name, type_name);
-                        if self.raw_decls.contains_key(&local_fqn) {
-                            type_full_name = local_fqn;
-                        }
-                    }
-                    if let Some(decl) = self.raw_decls.get(&type_full_name) {
-                        return match decl {
-                            RawDecl::Enum(_) | RawDecl::Bits(_) => Some("numeric"),
-                            RawDecl::Type(t) => match &t.layout {
-                                crate::raw_ast::Layout::Enum(_)
-                                | crate::raw_ast::Layout::Bits(_) => Some("numeric"),
-                                _ => None,
-                            },
-                            _ => None,
-                        };
                     }
                 }
                 None
@@ -221,64 +186,36 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some(u32::MAX as u64); // Approximation
                 }
 
-                let mut full_name = name.clone();
-                if !full_name.contains('/') {
-                    full_name = format!("{}/{}", self.library_name, name);
-                }
-
-                if let Some(decl) = self.raw_decls.get(&full_name) {
-                    if let RawDecl::Const(c) = decl {
-                        return self.eval_constant_value(&c.value);
-                    }
-                }
-
-                if let Some((type_name, member_name)) = name.rsplit_once('.') {
-                    let mut type_full_name = type_name.to_string();
-                    if !type_full_name.contains('/') {
-                        let local_fqn = format!("{}/{}", self.library_name, type_name);
-                        if self.raw_decls.contains_key(&local_fqn) {
-                            type_full_name = local_fqn;
-                        } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
-                            let dep_fqn = format!("{}/{}", lib_prefix, rest);
-                            if self.raw_decls.contains_key(&dep_fqn) {
-                                type_full_name = dep_fqn;
-                            }
-                        } else {
-                            type_full_name = local_fqn;
-                        }
-                    }
-                    if let Some(decl) = self.raw_decls.get(&type_full_name) {
-                        return match decl {
-                            RawDecl::Bits(b) => b
-                                .members
-                                .iter()
-                                .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value(&m.value)),
-                            RawDecl::Enum(e) => e
-                                .members
-                                .iter()
-                                .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value(&m.value)),
-                            RawDecl::Type(t) => match &t.layout {
-                                raw_ast::Layout::Bits(b) => b
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                    if let Some(decl) = self.raw_decls.get(type_full_name) {
+                        if let Some(member_name) = maybe_member {
+                            return match decl {
+                                RawDecl::Bits(b) => b
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value(&m.value)),
-                                raw_ast::Layout::Enum(e) => e
+                                RawDecl::Enum(e) => e
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
                                     .and_then(|m| self.eval_constant_value(&m.value)),
+                                RawDecl::Type(t) => match &t.layout {
+                                    raw_ast::Layout::Bits(b) => b
+                                        .members
+                                        .iter()
+                                        .find(|m| m.name.data() == member_name)
+                                        .and_then(|m| self.eval_constant_value(&m.value)),
+                                    raw_ast::Layout::Enum(e) => e
+                                        .members
+                                        .iter()
+                                        .find(|m| m.name.data() == member_name)
+                                        .and_then(|m| self.eval_constant_value(&m.value)),
+                                    _ => None,
+                                },
                                 _ => None,
-                            },
-                            _ => None,
-                        };
-                    }
-
-                    let imported_name = format!("{}/{}", type_name, member_name);
-                    if let Some(decl) = self.raw_decls.get(&imported_name) {
-                        if let RawDecl::Const(c) = decl {
+                            };
+                        } else if let RawDecl::Const(c) = decl {
                             return self.eval_constant_value(&c.value);
                         }
                     }
@@ -424,38 +361,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     .unwrap_or_else(|| "\"0\"".to_string());
 
                 let mut full_name = id_str.clone();
-                if !full_name.contains('/') {
-                    let mut found = false;
-                    if let Some((type_name, member_name)) = id_str.rsplit_once('.') {
-                        let type_full_name = type_name.to_string();
-                        if !type_full_name.contains('/') {
-                            if self
-                                .raw_decls
-                                .contains_key(&format!("{}/{}", self.library_name, type_name))
-                            {
-                                full_name =
-                                    format!("{}/{}.{}", self.library_name, type_name, member_name);
-                                found = true;
-                            } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
-                                let fqn = format!("{}/{}", lib_prefix, rest);
-                                if self.raw_decls.contains_key(&fqn) {
-                                    full_name = format!("{}.{}", fqn, member_name);
-                                    found = true;
-                                }
-                            }
-                        }
-
-                        if !found {
-                            let imported_name = format!("{}/{}", type_name, member_name);
-                            if self.raw_decls.contains_key(&imported_name) {
-                                full_name = imported_name;
-                                found = true;
-                            }
-                        }
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&id_str) {
+                    if let Some(member) = maybe_member {
+                        full_name = format!("{}.{}", type_full_name, member);
+                    } else {
+                        full_name = type_full_name.to_string();
                     }
-                    if !found {
-                        full_name = format!("{}/{}", self.library_name, id_str);
-                    }
+                } else if !full_name.contains('/') {
+                    full_name = format!("{}/{}", self.library_name, id_str);
                 }
 
                 Constant {
@@ -610,17 +523,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         }
 
                         let mut full_name = name.clone();
-                        if !full_name.contains('/') {
-                            if let Some((type_name, member_name)) = name.rsplit_once('.') {
-                                let imp = format!("{}/{}", type_name, member_name);
-                                if self.raw_decls.contains_key(&imp) {
-                                    full_name = imp;
-                                } else {
-                                    full_name = format!("{}/{}", self.library_name, name);
-                                }
+                        if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                            if let Some(member) = maybe_member {
+                                full_name = format!("{}.{}", type_full_name, member);
                             } else {
-                                full_name = format!("{}/{}", self.library_name, name);
+                                full_name = type_full_name.to_string();
                             }
+                        } else if !full_name.contains('/') {
+                            full_name = format!("{}/{}", self.library_name, name);
                         }
 
                         let decl_info = self
@@ -843,17 +753,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let span = id.element.start_token.span.clone();
                     let name = id.identifier.to_string();
                     let mut full_name = name.clone();
-                    if !full_name.contains('/') {
-                        if let Some((type_name, member_name)) = name.rsplit_once('.') {
-                            let imp = format!("{}/{}", type_name, member_name);
-                            if self.raw_decls.contains_key(&imp) {
-                                full_name = imp;
-                            } else {
-                                full_name = format!("{}/{}", self.library_name, name);
-                            }
+                    if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                        if let Some(member) = maybe_member {
+                            full_name = format!("{}.{}", type_full_name, member);
                         } else {
-                            full_name = format!("{}/{}", self.library_name, name);
+                            full_name = type_full_name.to_string();
                         }
+                    } else if !full_name.contains('/') {
+                        full_name = format!("{}/{}", self.library_name, name);
                     }
 
                     let mut valid = false;
@@ -896,11 +803,19 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     raw_ast::Constant::Identifier(id) => {
                         let span = id.element.start_token.span.clone();
                         let name = id.identifier.to_string();
-                        if let Some((type_name, _member_name)) = name.rsplit_once('.') {
-                            let mut type_full_name = type_name.to_string();
-                            if !type_full_name.contains('/') {
-                                type_full_name = format!("{}/{}", self.library_name, type_name);
+                        let mut type_full_name = "".to_string();
+                        let mut member_name_str = "";
+                        if let Some((type_full, maybe_member)) = self.resolve_constant_decl(&name) {
+                            type_full_name = type_full.to_string();
+                            if let Some(m) = maybe_member {
+                                member_name_str = m;
                             }
+                        } else if let Some((t_name, m_name)) = name.rsplit_once('.') {
+                            type_full_name = format!("{}/{}", self.library_name, t_name);
+                            member_name_str = m_name;
+                        }
+
+                        if !type_full_name.is_empty() {
                             if type_full_name != expected_name {
                                 self.reporter.fail(
                                     Error::ErrMismatchedNameTypeAssignment,
@@ -915,26 +830,26 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                             found_member = b
                                                 .members
                                                 .iter()
-                                                .any(|m| m.name.data() == _member_name);
+                                                .any(|m| m.name.data() == member_name_str);
                                         }
                                         RawDecl::Enum(e) => {
                                             found_member = e
                                                 .members
                                                 .iter()
-                                                .any(|m| m.name.data() == _member_name);
+                                                .any(|m| m.name.data() == member_name_str);
                                         }
                                         RawDecl::Type(t) => match &t.layout {
                                             crate::raw_ast::Layout::Bits(b) => {
                                                 found_member = b
                                                     .members
                                                     .iter()
-                                                    .any(|m| m.name.data() == _member_name)
+                                                    .any(|m| m.name.data() == member_name_str)
                                             }
                                             crate::raw_ast::Layout::Enum(e) => {
                                                 found_member = e
                                                     .members
                                                     .iter()
-                                                    .any(|m| m.name.data() == _member_name)
+                                                    .any(|m| m.name.data() == member_name_str)
                                             }
                                             _ => {}
                                         },

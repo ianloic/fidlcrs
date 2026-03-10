@@ -170,6 +170,9 @@ pub struct Compiler<'node, 'src> {
     pub anonymous_structs: HashSet<String>,
     pub experimental_flags: ExperimentalFlags,
     pub attribute_schemas: crate::attribute_schema::AttributeSchemaMap,
+    pub library_imports: HashMap<String, raw_ast::UsingDeclaration<'src>>,
+    pub used_imports: std::cell::RefCell<HashSet<String>>,
+    pub allow_unused_imports: bool,
 }
 
 impl<'node, 'src> Compiler<'node, 'src> {
@@ -211,6 +214,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             anonymous_structs: HashSet::new(),
             experimental_flags: ExperimentalFlags::new(),
             attribute_schemas: crate::attribute_schema::AttributeSchemaMap::new(),
+            library_imports: HashMap::new(),
+            used_imports: std::cell::RefCell::new(HashSet::new()),
+            allow_unused_imports: false,
         }
     }
 
@@ -222,6 +228,79 @@ impl<'node, 'src> Compiler<'node, 'src> {
             line: pos.line,
             column: pos.column,
             length: span.data.len(),
+        }
+    }
+
+    pub fn resolve_constant_decl<'a>(&'a self, name: &'a str) -> Option<(&'a str, Option<&'a str>)> {
+        // returns (full_decl_name, maybe_member_name)
+        let mut full_name = name.to_string();
+        if !full_name.contains('/') {
+            full_name = format!("{}/{}", self.library_name, name);
+        }
+        if self.raw_decls.contains_key(&full_name) {
+            return Some((self.raw_decls.get_key_value(&full_name).unwrap().0.as_str(), None));
+        }
+
+        if let Some((type_name, member_name)) = name.rsplit_once('.') {
+            let mut type_full_name = type_name.to_string();
+            if !type_full_name.contains('/') {
+                let local_fqn = format!("{}/{}", self.library_name, type_name);
+                if self.raw_decls.contains_key(&local_fqn) {
+                    type_full_name = local_fqn;
+                } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
+                    let mut actual_lib = lib_prefix.to_string();
+                    if let Some(import) = self.library_imports.get(lib_prefix) {
+                        self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                        actual_lib = import.using_path.to_string();
+                    }
+                    let dep_fqn = format!("{}/{}", actual_lib, rest);
+                    if self.raw_decls.contains_key(&dep_fqn) {
+                        type_full_name = dep_fqn;
+                    }
+                } else if let Some(import) = self.library_imports.get(type_name) {
+                    self.used_imports.borrow_mut().insert(type_name.to_string());
+                    let dep_fqn = format!("{}/{}", import.using_path, member_name);
+                    if self.raw_decls.contains_key(&dep_fqn) {
+                        return Some((self.raw_decls.get_key_value(&dep_fqn).unwrap().0.as_str(), None));
+                    }
+                }
+            }
+            if self.raw_decls.contains_key(&type_full_name) {
+                return Some((self.raw_decls.get_key_value(&type_full_name).unwrap().0.as_str(), Some(member_name)));
+            }
+            
+            let imported_name = format!("{}/{}", type_name, member_name);
+            if self.raw_decls.contains_key(&imported_name) {
+                return Some((self.raw_decls.get_key_value(&imported_name).unwrap().0.as_str(), None));
+            }
+        }
+        None
+    }
+
+    pub fn verify_used_imports(&self) {
+        if self.allow_unused_imports {
+            return;
+        }
+        let has_errors = self
+            .reporter
+            .diagnostics()
+            .iter()
+            .any(|d| d.def.kind() == crate::diagnostics::ErrorKind::Error);
+        if has_errors {
+            return;
+        }
+        let used = self.used_imports.borrow();
+        for (local_name, decl) in &self.library_imports {
+            if !used.contains(local_name) {
+                // temporary debug
+                println!("REPORTING UNUSED: {}", local_name);
+                let span = unsafe { std::mem::transmute(decl.using_path.element.span()) };
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrUnusedImport,
+                    span,
+                    &[&self.library_name, &decl.using_path.to_string()],
+                );
+            }
         }
     }
 
@@ -252,6 +331,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         // 3. Compile
         let mut compile = CompileStep;
         compile.run(self);
+        
+        self.verify_used_imports();
         // Fixup max_handles for resources in cycles
         for decl in &mut self.struct_declarations {
             if decl.resource && decl.type_shape.depth == u32::MAX {
@@ -3000,9 +3081,25 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     for c in &id.components[..id.components.len() - 1] {
                         parts.push(c.data());
                     }
+                    let mut local_lib_name = parts.join(".");
+                    if library_name == self.library_name {
+                        if let Some(import) = self.library_imports.get(&local_lib_name) {
+                            // temporary debug
+                            println!("MARKING {} AS USED", local_lib_name);
+                            self.used_imports.borrow_mut().insert(local_lib_name.clone());
+                            local_lib_name = import.using_path.to_string();
+                        } else if local_lib_name != self.library_name && local_lib_name != "fidl" {
+                            let span_safe = unsafe { std::mem::transmute(id.element.span()) };
+                            self.reporter.fail(
+                                crate::diagnostics::Error::ErrUnknownDependentLibrary,
+                                span_safe,
+                                &[&local_lib_name, &local_lib_name],
+                            );
+                        }
+                    }
                     format!(
                         "{}/{}",
-                        parts.join("."),
+                        local_lib_name,
                         id.components.last().unwrap().data()
                     )
                 } else {
@@ -3804,8 +3901,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if let Some(constraint) = type_ctor.constraints.first() {
                     if let raw_ast::Constant::Identifier(id) = constraint {
                         let proto_name = id.identifier.to_string();
-                        if proto_name.contains('.') {
-                            protocol = proto_name.replace('.', "/");
+                        if let Some((lib_prefix, rest)) = proto_name.split_once('.') {
+                            let mut actual_lib = lib_prefix.to_string();
+                            if let Some(import) = self.library_imports.get(lib_prefix) {
+                                self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                                actual_lib = import.using_path.to_string();
+                            }
+                            protocol = format!("{}/{}", actual_lib, rest);
                         } else if proto_name.contains('/') {
                             protocol = proto_name;
                         } else {
@@ -3815,8 +3917,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some(param) = type_ctor.parameters.first() {
                     if let raw_ast::LayoutParameter::Identifier(id) = &param.layout {
                         let proto_name = id.to_string();
-                        if proto_name.contains('.') {
-                            protocol = proto_name.replace('.', "/");
+                        if let Some((lib_prefix, rest)) = proto_name.split_once('.') {
+                            let mut actual_lib = lib_prefix.to_string();
+                            if let Some(import) = self.library_imports.get(lib_prefix) {
+                                self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                                actual_lib = import.using_path.to_string();
+                            }
+                            protocol = format!("{}/{}", actual_lib, rest);
                         } else if proto_name.contains('/') {
                             protocol = proto_name;
                         } else {
@@ -4868,9 +4975,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut compiled_composed = vec![];
         for composed in &decl.composed_protocols {
             let mut composed_name = composed.protocol_name.to_string();
-            if composed_name.contains('.') {
-                let parts: Vec<&str> = composed_name.split('.').collect();
-                composed_name = format!("{}/{}", parts[0], parts[1]);
+            if let Some((lib_prefix, type_name)) = composed_name.rsplit_once('.') {
+                let mut actual_lib = lib_prefix.to_string();
+                if let Some(import) = self.library_imports.get(lib_prefix) {
+                    self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                    actual_lib = import.using_path.to_string();
+                }
+                composed_name = format!("{}/{}", actual_lib, type_name);
             }
             let full_composed_name = if composed_name.contains('/') {
                 composed_name.clone()

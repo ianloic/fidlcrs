@@ -107,13 +107,20 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         }
         compiler.decl_availability = decl_availability.clone();
 
+        let mut any_decl_removed = false;
+
         compiler.raw_decls.retain(|name, _| {
             if let Some(avail) = decl_availability.get(name) {
                 if !avail.set().contains(selected_version) {
+                    any_decl_removed = true;
                     return false;
                 }
             }
             true
         });
+
+        if any_decl_removed || !final_lib_avail.set().contains(selected_version) {
+            compiler.allow_unused_imports = true;
+        }
     }
 }

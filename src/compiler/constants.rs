@@ -130,7 +130,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 _ => None,
                             };
                         } else if let RawDecl::Const(c) = decl {
-                            if let crate::raw_ast::LayoutParameter::Identifier(id) = &c.type_ctor.layout
+                            if let crate::raw_ast::LayoutParameter::Identifier(id) =
+                                &c.type_ctor.layout
                             {
                                 let mut type_name = id.to_string();
                                 if type_name.starts_with("fidl.") {
@@ -523,7 +524,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         }
 
                         let mut full_name = name.clone();
-                        if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                        if let Some((type_full_name, maybe_member)) =
+                            self.resolve_constant_decl(&name)
+                        {
                             if let Some(member) = maybe_member {
                                 full_name = format!("{}.{}", type_full_name, member);
                             } else {
@@ -753,7 +756,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let span = id.element.start_token.span.clone();
                     let name = id.identifier.to_string();
                     let mut full_name = name.clone();
-                    if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name) {
+                    if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
+                    {
                         if let Some(member) = maybe_member {
                             full_name = format!("{}.{}", type_full_name, member);
                         } else {

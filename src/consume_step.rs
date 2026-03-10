@@ -48,7 +48,11 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 }
 
                 let path = using_decl.using_path.to_string();
-                let local_name = using_decl.maybe_alias.as_ref().map(|a| a.data().to_string()).unwrap_or_else(|| path.clone());
+                let local_name = using_decl
+                    .maybe_alias
+                    .as_ref()
+                    .map(|a| a.data().to_string())
+                    .unwrap_or_else(|| path.clone());
 
                 if !dependent_library_names.contains(&path) && path != main_library_name {
                     compiler.reporter.fail(
@@ -60,9 +64,23 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 }
 
                 if local_name == main_library_name {
-                    let err_span = using_decl.maybe_alias.as_ref()
-                        .map(|a| unsafe { std::mem::transmute::<crate::source_span::SourceSpan, crate::source_span::SourceSpan>(a.element.span().clone()) })
-                        .unwrap_or_else(|| unsafe { std::mem::transmute::<crate::source_span::SourceSpan, crate::source_span::SourceSpan>(using_decl.using_path.element.span().clone()) });
+                    let err_span = using_decl
+                        .maybe_alias
+                        .as_ref()
+                        .map(|a| unsafe {
+                            std::mem::transmute::<
+                                crate::source_span::SourceSpan,
+                                crate::source_span::SourceSpan,
+                            >(a.element.span().clone())
+                        })
+                        .unwrap_or_else(|| unsafe {
+                            std::mem::transmute::<
+                                crate::source_span::SourceSpan,
+                                crate::source_span::SourceSpan,
+                            >(
+                                using_decl.using_path.element.span().clone()
+                            )
+                        });
                     compiler.reporter.fail(
                         crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport,
                         err_span,
@@ -95,7 +113,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     // If multiple files import the same library with different aliases,
                     // we add them all; but our resolve_type is currently global.
                     // This is sufficient for the tests.
-                    compiler.library_imports.insert(local_name, using_decl.clone());
+                    compiler
+                        .library_imports
+                        .insert(local_name, using_decl.clone());
                 }
             }
             if let Some(decl) = &file.library_decl {

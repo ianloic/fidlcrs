@@ -231,14 +231,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-    pub fn resolve_constant_decl<'a>(&'a self, name: &'a str) -> Option<(&'a str, Option<&'a str>)> {
+    pub fn resolve_constant_decl<'a>(
+        &'a self,
+        name: &'a str,
+    ) -> Option<(&'a str, Option<&'a str>)> {
         // returns (full_decl_name, maybe_member_name)
         let mut full_name = name.to_string();
         if !full_name.contains('/') {
             full_name = format!("{}/{}", self.library_name, name);
         }
         if self.raw_decls.contains_key(&full_name) {
-            return Some((self.raw_decls.get_key_value(&full_name).unwrap().0.as_str(), None));
+            return Some((
+                self.raw_decls.get_key_value(&full_name).unwrap().0.as_str(),
+                None,
+            ));
         }
 
         if let Some((type_name, member_name)) = name.rsplit_once('.') {
@@ -250,7 +256,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
                     let mut actual_lib = lib_prefix.to_string();
                     if let Some(import) = self.library_imports.get(lib_prefix) {
-                        self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                        self.used_imports
+                            .borrow_mut()
+                            .insert(lib_prefix.to_string());
                         actual_lib = import.using_path.to_string();
                     }
                     let dep_fqn = format!("{}/{}", actual_lib, rest);
@@ -261,17 +269,34 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.used_imports.borrow_mut().insert(type_name.to_string());
                     let dep_fqn = format!("{}/{}", import.using_path, member_name);
                     if self.raw_decls.contains_key(&dep_fqn) {
-                        return Some((self.raw_decls.get_key_value(&dep_fqn).unwrap().0.as_str(), None));
+                        return Some((
+                            self.raw_decls.get_key_value(&dep_fqn).unwrap().0.as_str(),
+                            None,
+                        ));
                     }
                 }
             }
             if self.raw_decls.contains_key(&type_full_name) {
-                return Some((self.raw_decls.get_key_value(&type_full_name).unwrap().0.as_str(), Some(member_name)));
+                return Some((
+                    self.raw_decls
+                        .get_key_value(&type_full_name)
+                        .unwrap()
+                        .0
+                        .as_str(),
+                    Some(member_name),
+                ));
             }
-            
+
             let imported_name = format!("{}/{}", type_name, member_name);
             if self.raw_decls.contains_key(&imported_name) {
-                return Some((self.raw_decls.get_key_value(&imported_name).unwrap().0.as_str(), None));
+                return Some((
+                    self.raw_decls
+                        .get_key_value(&imported_name)
+                        .unwrap()
+                        .0
+                        .as_str(),
+                    None,
+                ));
             }
         }
         None
@@ -331,7 +356,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         // 3. Compile
         let mut compile = CompileStep;
         compile.run(self);
-        
+
         self.verify_used_imports();
         // Fixup max_handles for resources in cycles
         for decl in &mut self.struct_declarations {
@@ -3086,12 +3111,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some(import) = self.library_imports.get(&local_lib_name) {
                             // temporary debug
                             println!("MARKING {} AS USED", local_lib_name);
-                            self.used_imports.borrow_mut().insert(local_lib_name.clone());
+                            self.used_imports
+                                .borrow_mut()
+                                .insert(local_lib_name.clone());
                             local_lib_name = import.using_path.to_string();
                         } else if local_lib_name != self.library_name && local_lib_name != "fidl" {
                             let span_safe = unsafe { std::mem::transmute(id.element.span()) };
                             if id.components.len() > 2 {
-                                let fallback_lib = parts[..parts.len()-1].join(".");
+                                let fallback_lib = parts[..parts.len() - 1].join(".");
                                 self.reporter.fail(
                                     crate::diagnostics::Error::ErrUnknownDependentLibrary,
                                     span_safe,
@@ -3934,7 +3961,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some((lib_prefix, rest)) = proto_name.split_once('.') {
                             let mut actual_lib = lib_prefix.to_string();
                             if let Some(import) = self.library_imports.get(lib_prefix) {
-                                self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                                self.used_imports
+                                    .borrow_mut()
+                                    .insert(lib_prefix.to_string());
                                 actual_lib = import.using_path.to_string();
                             }
                             protocol = format!("{}/{}", actual_lib, rest);
@@ -3950,7 +3979,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some((lib_prefix, rest)) = proto_name.split_once('.') {
                             let mut actual_lib = lib_prefix.to_string();
                             if let Some(import) = self.library_imports.get(lib_prefix) {
-                                self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                                self.used_imports
+                                    .borrow_mut()
+                                    .insert(lib_prefix.to_string());
                                 actual_lib = import.using_path.to_string();
                             }
                             protocol = format!("{}/{}", actual_lib, rest);
@@ -5008,7 +5039,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some((lib_prefix, type_name)) = composed_name.rsplit_once('.') {
                 let mut actual_lib = lib_prefix.to_string();
                 if let Some(import) = self.library_imports.get(lib_prefix) {
-                    self.used_imports.borrow_mut().insert(lib_prefix.to_string());
+                    self.used_imports
+                        .borrow_mut()
+                        .insert(lib_prefix.to_string());
                     actual_lib = import.using_path.to_string();
                 }
                 composed_name = format!("{}/{}", actual_lib, type_name);

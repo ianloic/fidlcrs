@@ -1,6 +1,6 @@
 use crate::compiler::RawDecl;
 use crate::diagnostics::Error;
-use crate::json_generator::*;
+use crate::flat_ast::*;
 use crate::name::NamingContext;
 use crate::raw_ast;
 use crate::raw_ast::{Layout, LiteralKind};

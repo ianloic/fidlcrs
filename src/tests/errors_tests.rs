@@ -32,7 +32,7 @@ protocol Example {
         .expect("error type not found");
     assert!(matches!(
         err_type,
-        crate::json_generator::Type::Primitive(_)
+        crate::flat_ast::Type::Primitive(_)
     ));
 }
 
@@ -273,7 +273,7 @@ protocol Example {
         .expect("error type not found");
     assert!(matches!(
         err_type,
-        crate::json_generator::Type::Identifier(_)
+        crate::flat_ast::Type::Identifier(_)
     ));
 }
 

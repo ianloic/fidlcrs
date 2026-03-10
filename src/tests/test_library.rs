@@ -1,6 +1,6 @@
 use crate::compiler::Compiler;
 use crate::experimental_flags::ExperimentalFlags;
-use crate::json_generator::*;
+use crate::flat_ast::*;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::raw_ast;

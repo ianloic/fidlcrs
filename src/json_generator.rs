@@ -1,6 +1,5 @@
 use serde::Serialize;
 use std::collections::BTreeMap;
-
 #[derive(Serialize, Debug)]
 pub struct JsonRoot {
     pub name: String,
@@ -28,13 +27,11 @@ pub struct JsonRoot {
     pub declaration_order: Vec<String>,
     pub declarations: indexmap::IndexMap<String, String>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct LibraryDependency {
     pub name: String,
     pub declarations: indexmap::IndexMap<String, serde_json::Value>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct Location {
     pub filename: String,
@@ -42,7 +39,6 @@ pub struct Location {
     pub column: usize,
     pub length: usize,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct TypeShape {
     pub inline_size: u32,
@@ -53,13 +49,11 @@ pub struct TypeShape {
     pub has_padding: bool,
     pub has_flexible_envelope: bool,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct FieldShape {
     pub offset: u32,
     pub padding: u32,
 }
-
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum TypeKind {
@@ -76,383 +70,6 @@ pub enum TypeKind {
     Request,
     ExperimentalPointer,
 }
-
-#[derive(Clone, Debug, Serialize)]
-pub struct TypeCommon {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
-    #[serde(skip)]
-    pub outer_alias: Option<ExperimentalMaybeFromAlias>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub deprecated: Option<bool>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub maybe_attributes: Vec<Attribute>,
-    #[serde(rename = "field_shape_v2")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub field_shape: Option<FieldShape>,
-    #[serde(rename = "type_shape_v2")]
-    pub type_shape: TypeShape,
-    #[serde(skip)]
-    pub maybe_size_constant_name: Option<String>,
-    #[serde(skip)]
-    pub resource: bool,
-}
-
-#[derive(Clone, Debug)]
-pub enum Type {
-    Primitive(PrimitiveType),
-    String(StringType),
-    StringArray(StringArrayType),
-    Unknown(UnknownType),
-    Vector(VectorType),
-    Array(ArrayType),
-    Endpoint(EndpointType),
-    Handle(HandleType),
-    Identifier(IdentifierType),
-    Struct(StructType),
-    Request(RequestType),
-    ExperimentalPointer(ExperimentalPointerType),
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct PrimitiveType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    pub subtype: PrimitiveSubtype,
-}
-
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum PrimitiveSubtype {
-    Bool,
-    Int8,
-    Int16,
-    Int32,
-    Int64,
-    Uint8,
-    Uint16,
-    Uint32,
-    Uint64,
-    Float32,
-    Float64,
-    Uchar,
-    Usize64,
-    Uintptr64,
-}
-
-impl std::str::FromStr for PrimitiveSubtype {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "bool" => Ok(Self::Bool),
-            "int8" => Ok(Self::Int8),
-            "int16" => Ok(Self::Int16),
-            "int32" => Ok(Self::Int32),
-            "int64" => Ok(Self::Int64),
-            "uint8" => Ok(Self::Uint8),
-            "uint16" => Ok(Self::Uint16),
-            "uint32" => Ok(Self::Uint32),
-            "uint64" => Ok(Self::Uint64),
-            "float32" => Ok(Self::Float32),
-            "float64" => Ok(Self::Float64),
-            "uchar" => Ok(Self::Uchar),
-            "usize64" => Ok(Self::Usize64),
-            "uintptr64" => Ok(Self::Uintptr64),
-            _ => Err(format!("Invalid primitive subtype: {}", s)),
-        }
-    }
-}
-
-impl std::fmt::Display for PrimitiveSubtype {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Bool => "bool",
-            Self::Int8 => "int8",
-            Self::Int16 => "int16",
-            Self::Int32 => "int32",
-            Self::Int64 => "int64",
-            Self::Uint8 => "uint8",
-            Self::Uint16 => "uint16",
-            Self::Uint32 => "uint32",
-            Self::Uint64 => "uint64",
-            Self::Float32 => "float32",
-            Self::Float64 => "float64",
-            Self::Uchar => "uchar",
-            Self::Usize64 => "usize64",
-            Self::Uintptr64 => "uintptr64",
-        };
-        write!(f, "{}", s)
-    }
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct StringType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_element_count: Option<u32>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct StringArrayType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_count: Option<u32>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct UnknownType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct VectorType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_type: Option<Box<Type>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_element_count: Option<u32>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct ArrayType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_type: Option<Box<Type>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_count: Option<u32>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct EndpointType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub role: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol_transport: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct HandleType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subtype: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rights: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub obj_type: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resource_identifier: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct IdentifierType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct StructType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct RequestType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subtype: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct ExperimentalPointerType {
-    #[serde(flatten)]
-    pub common: TypeCommon,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub element_type: Option<Box<Type>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nullable: Option<bool>,
-}
-
-impl std::ops::Deref for Type {
-    type Target = TypeCommon;
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Type::Primitive(t) => &t.common,
-            Type::String(t) => &t.common,
-            Type::StringArray(t) => &t.common,
-            Type::Unknown(t) => &t.common,
-            Type::Vector(t) => &t.common,
-            Type::Array(t) => &t.common,
-            Type::Endpoint(t) => &t.common,
-            Type::Handle(t) => &t.common,
-            Type::Identifier(t) => &t.common,
-            Type::Struct(t) => &t.common,
-            Type::Request(t) => &t.common,
-            Type::ExperimentalPointer(t) => &t.common,
-        }
-    }
-}
-
-impl std::ops::DerefMut for Type {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match self {
-            Type::Primitive(t) => &mut t.common,
-            Type::String(t) => &mut t.common,
-            Type::StringArray(t) => &mut t.common,
-            Type::Unknown(t) => &mut t.common,
-            Type::Vector(t) => &mut t.common,
-            Type::Array(t) => &mut t.common,
-            Type::Endpoint(t) => &mut t.common,
-            Type::Handle(t) => &mut t.common,
-            Type::Identifier(t) => &mut t.common,
-            Type::Struct(t) => &mut t.common,
-            Type::Request(t) => &mut t.common,
-            Type::ExperimentalPointer(t) => &mut t.common,
-        }
-    }
-}
-
-impl Type {
-    pub fn kind(&self) -> TypeKind {
-        match self {
-            Type::Primitive(_) => TypeKind::Primitive,
-            Type::String(_) => TypeKind::String,
-            Type::StringArray(_) => TypeKind::StringArray,
-            Type::Unknown(_) => TypeKind::Unknown,
-            Type::Vector(_) => TypeKind::Vector,
-            Type::Array(_) => TypeKind::Array,
-            Type::Endpoint(_) => TypeKind::Endpoint,
-            Type::Handle(_) => TypeKind::Handle,
-            Type::Identifier(_) => TypeKind::Identifier,
-            Type::Struct(_) => TypeKind::Struct,
-            Type::Request(_) => TypeKind::Request,
-            Type::ExperimentalPointer(_) => TypeKind::ExperimentalPointer,
-        }
-    }
-
-    pub fn identifier(&self) -> Option<String> {
-        match self {
-            Type::Identifier(t) => t.identifier.clone(),
-            Type::Struct(t) => t.identifier.clone(),
-            Type::Request(t) => t.identifier.clone(),
-            _ => None,
-        }
-    }
-
-    pub fn element_type(&self) -> Option<&Type> {
-        match self {
-            Type::Array(t) => t.element_type.as_deref(),
-            Type::Vector(t) => t.element_type.as_deref(),
-            Type::ExperimentalPointer(t) => t.element_type.as_deref(),
-            _ => None,
-        }
-    }
-
-    pub fn nullable(&self) -> Option<bool> {
-        match self {
-            Type::String(t) => t.nullable,
-            Type::Vector(t) => t.nullable,
-            Type::Endpoint(t) => t.nullable,
-            Type::Handle(t) => t.nullable,
-            Type::Identifier(t) => t.nullable,
-            Type::Struct(t) => t.nullable,
-            Type::Request(t) => t.nullable,
-            Type::ExperimentalPointer(_) => None,
-            _ => None,
-        }
-    }
-    pub fn set_nullable(&mut self, val: bool) {
-        match self {
-            Type::String(t) => t.nullable = Some(val),
-            Type::Vector(t) => t.nullable = Some(val),
-            Type::Endpoint(t) => t.nullable = Some(val),
-            Type::Handle(t) => t.nullable = Some(val),
-            Type::Identifier(t) => t.nullable = Some(val),
-            Type::Struct(t) => t.nullable = Some(val),
-            Type::Request(t) => t.nullable = Some(val),
-            Type::ExperimentalPointer(t) => t.nullable = Some(val),
-            _ => {}
-        }
-    }
-    pub fn protocol(&self) -> Option<String> {
-        match self {
-            Type::Endpoint(t) => t.protocol.clone(),
-            _ => None,
-        }
-    }
-    pub fn resource_identifier(&self) -> Option<String> {
-        match self {
-            Type::Handle(t) => t.resource_identifier.clone(),
-            _ => None,
-        }
-    }
-    pub fn element_type_mut(&mut self) -> Option<&mut Type> {
-        match self {
-            Type::Array(t) => t.element_type.as_deref_mut(),
-            Type::Vector(t) => t.element_type.as_deref_mut(),
-            Type::ExperimentalPointer(t) => t.element_type.as_deref_mut(),
-            _ => None,
-        }
-    }
-    pub fn rights(&self) -> Option<u32> {
-        match self {
-            Type::Handle(t) => t.rights.clone(),
-            _ => None,
-        }
-    }
-    pub fn maybe_element_count(&self) -> Option<u32> {
-        match self {
-            Type::String(t) => t.maybe_element_count,
-            Type::Vector(t) => t.maybe_element_count,
-            _ => None,
-        }
-    }
-    pub fn element_count(&self) -> Option<u32> {
-        match self {
-            Type::Array(t) => t.element_count,
-            Type::StringArray(t) => t.element_count,
-            _ => None,
-        }
-    }
-}
-
-#[derive(Serialize, Clone, Debug)]
-pub struct ExperimentalMaybeFromAlias {
-    pub name: String,
-    pub args: Vec<String>,
-    pub nullable: bool,
-}
-
 #[derive(Serialize, Clone, Debug)]
 pub struct StructMember {
     #[serde(rename = "type")]
@@ -469,7 +86,6 @@ pub struct StructMember {
     #[serde(rename = "field_shape_v2")]
     pub field_shape: FieldShape,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct StructDeclaration {
     pub name: String,
@@ -484,13 +100,10 @@ pub struct StructDeclaration {
     #[serde(rename = "type_shape_v2")]
     pub type_shape: TypeShape,
 }
-
-// Placeholders for other declarations
 #[derive(Serialize, Clone, Debug)]
 pub struct BitField {
     // ...
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct BitsDeclaration {
     pub name: String,
@@ -505,7 +118,6 @@ pub struct BitsDeclaration {
     pub members: Vec<BitsMember>,
     pub strict: bool,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct BitsMember {
     pub name: String,
@@ -515,7 +127,6 @@ pub struct BitsMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct ConstDeclaration {
     pub name: String,
@@ -542,7 +153,6 @@ pub struct EnumDeclaration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_unknown_value: Option<u32>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct EnumMember {
     pub name: String,
@@ -552,8 +162,7 @@ pub struct EnumMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
 }
-
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Constant {
     pub kind: String,
     pub value: Box<serde_json::value::RawValue>,
@@ -563,38 +172,12 @@ pub struct Constant {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub literal: Option<Literal>,
 }
-
-impl Clone for Constant {
-    fn clone(&self) -> Self {
-        Self {
-            kind: self.kind.clone(),
-            value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
-                .unwrap(),
-            identifier: self.identifier.clone(),
-            literal: self.literal.clone(),
-        }
-    }
-}
-
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Literal {
     pub kind: String,
     pub value: Box<serde_json::value::RawValue>,
     pub expression: Box<serde_json::value::RawValue>,
 }
-
-impl Clone for Literal {
-    fn clone(&self) -> Self {
-        Self {
-            kind: self.kind.clone(),
-            value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
-                .unwrap(),
-        }
-    }
-}
-
 #[derive(Serialize, Clone, Debug)]
 pub struct AttributeArg {
     pub name: String,
@@ -603,7 +186,6 @@ pub struct AttributeArg {
     pub value: Constant,
     pub location: Location,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct Attribute {
     pub name: String,
@@ -618,7 +200,6 @@ pub struct ResourceProperty {
     #[serde(rename = "type")]
     pub type_: Type,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct ExperimentalResourceDeclaration {
     pub name: String,
@@ -643,7 +224,6 @@ pub struct ProtocolDeclaration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub implementation_locations: Option<std::collections::BTreeMap<String, Vec<String>>>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct ProtocolCompose {
     pub name: String,
@@ -652,7 +232,6 @@ pub struct ProtocolCompose {
     pub location: Location,
     pub deprecated: bool,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct ProtocolMethod {
     pub kind: String,
@@ -685,7 +264,6 @@ pub struct ServiceDeclaration {
     pub maybe_attributes: Vec<Attribute>,
     pub members: Vec<ServiceMember>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct ServiceMember {
     #[serde(rename = "type")]
@@ -710,7 +288,6 @@ pub struct TableDeclaration {
     #[serde(rename = "type_shape_v2")]
     pub type_shape: TypeShape,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct TableMember {
     pub ordinal: u32,
@@ -730,7 +307,6 @@ pub struct TableMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct UnionDeclaration {
     pub name: String,
@@ -747,7 +323,6 @@ pub struct UnionDeclaration {
     #[serde(rename = "type_shape_v2")]
     pub type_shape: TypeShape,
 }
-
 #[derive(Serialize, Clone, Debug)]
 pub struct UnionMember {
     pub ordinal: u32,
@@ -767,15 +342,6 @@ pub struct UnionMember {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
 }
-#[derive(Serialize, Clone, Debug)]
-pub struct PartialTypeCtor {
-    pub name: String,
-    pub args: Vec<PartialTypeCtor>,
-    pub nullable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_size: Option<Constant>,
-}
-
 #[derive(Serialize, Clone, Debug)]
 pub struct AliasDeclaration {
     pub name: String,
@@ -799,99 +365,555 @@ pub struct NewTypeDeclaration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
 }
+#[derive(Serialize, Clone, Debug)]
+pub struct ExperimentalMaybeFromAlias {
+    pub name: String,
+    pub args: Vec<String>,
+    pub nullable: bool,
+}
 
-impl serde::Serialize for Type {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        #[derive(serde::Serialize)]
-        struct TypeOldFormat<'a> {
-            #[serde(rename = "kind_v2")]
-            kind: TypeKind,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            obj_type: Option<u32>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            subtype: Option<String>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            identifier: Option<String>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            element_type: Option<&'a Type>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pointee_type: Option<&'a Type>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            experimental_maybe_from_alias: Option<&'a ExperimentalMaybeFromAlias>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            deprecated: Option<bool>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            role: Option<String>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            protocol: Option<String>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            element_count: Option<u32>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            maybe_element_count: Option<u32>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            rights: Option<u32>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            nullable: Option<bool>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            protocol_transport: Option<String>,
-            #[serde(skip_serializing_if = "Option::is_none")]
-            resource_identifier: Option<String>,
-            #[serde(skip_serializing_if = "Vec::is_empty")]
-            maybe_attributes: &'a Vec<Attribute>,
-            #[serde(rename = "field_shape_v2")]
-            #[serde(skip_serializing_if = "Option::is_none")]
-            field_shape: Option<&'a FieldShape>,
-            #[serde(rename = "type_shape_v2")]
-            type_shape: &'a TypeShape,
+#[derive(Serialize, Clone, Debug)]
+pub struct PartialTypeCtor {
+    pub name: String,
+    pub args: Vec<PartialTypeCtor>,
+    pub nullable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_size: Option<Constant>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct Type {
+    #[serde(rename = "kind_v2")]
+    pub kind: TypeKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub obj_type: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtype: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_type: Option<Box<Type>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pointee_type: Option<Box<Type>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub element_count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_element_count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rights: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nullable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol_transport: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_identifier: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub maybe_attributes: Vec<Attribute>,
+    #[serde(rename = "field_shape_v2")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field_shape: Option<FieldShape>,
+    #[serde(rename = "type_shape_v2")]
+    pub type_shape: TypeShape,
+}
+
+impl From<&crate::flat_ast::ExperimentalMaybeFromAlias> for ExperimentalMaybeFromAlias {
+    fn from(ast: &crate::flat_ast::ExperimentalMaybeFromAlias) -> Self {
+        Self {
+            name: ast.name.clone(),
+            args: ast.args.clone(),
+            nullable: ast.nullable,
         }
+    }
+}
 
-        let old = TypeOldFormat {
-            kind: self.kind(),
-            obj_type: match self {
-                Type::Handle(t) => t.obj_type,
+impl From<&crate::flat_ast::PartialTypeCtor> for PartialTypeCtor {
+    fn from(ast: &crate::flat_ast::PartialTypeCtor) -> Self {
+        Self {
+            name: ast.name.clone(),
+            args: ast.args.iter().map(Into::into).collect(),
+            nullable: ast.nullable,
+            maybe_size: ast.maybe_size.as_ref().map(Into::into),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::Type> for Type {
+    fn from(ast: &crate::flat_ast::Type) -> Self {
+        Self {
+            kind: (&ast.kind()).into(),
+            obj_type: match ast {
+                crate::flat_ast::Type::Handle(t) => t.obj_type,
                 _ => None,
             },
-            subtype: match self {
-                Type::Primitive(t) => Some(t.subtype.to_string()),
-                Type::Handle(t) => t.subtype.clone(),
-                Type::Request(t) => t.subtype.clone(),
+            subtype: match ast {
+                crate::flat_ast::Type::Primitive(t) => Some(t.subtype.to_string()),
+                crate::flat_ast::Type::Handle(t) => t.subtype.clone(),
+                crate::flat_ast::Type::Request(t) => t.subtype.clone(),
                 _ => None,
             },
-            identifier: self.identifier(),
-            element_type: if self.kind() != TypeKind::ExperimentalPointer {
-                self.element_type()
+            identifier: ast.identifier(),
+            element_type: if ast.kind() != crate::flat_ast::TypeKind::ExperimentalPointer {
+                ast.element_type().map(|t| Box::new(t.into()))
             } else {
                 None
             },
-            pointee_type: if self.kind() == TypeKind::ExperimentalPointer {
-                self.element_type()
+            pointee_type: if ast.kind() == crate::flat_ast::TypeKind::ExperimentalPointer {
+                ast.element_type().map(|t| Box::new(t.into()))
             } else {
                 None
             },
-            experimental_maybe_from_alias: self.experimental_maybe_from_alias.as_ref(),
-            deprecated: self.deprecated,
-            role: match self {
-                Type::Endpoint(t) => t.role.clone(),
+            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            deprecated: ast.deprecated,
+            role: match ast {
+                crate::flat_ast::Type::Endpoint(t) => t.role.clone(),
                 _ => None,
             },
-            protocol: self.protocol(),
-            element_count: self.element_count(),
-            maybe_element_count: self.maybe_element_count(),
-            rights: self.rights(),
-            nullable: self.nullable(),
-            protocol_transport: match self {
-                Type::Endpoint(t) => t.protocol_transport.clone(),
+            protocol: ast.protocol(),
+            element_count: ast.element_count(),
+            maybe_element_count: ast.maybe_element_count(),
+            rights: ast.rights(),
+            nullable: ast.nullable(),
+            protocol_transport: match ast {
+                crate::flat_ast::Type::Endpoint(t) => t.protocol_transport.clone(),
                 _ => None,
             },
-            resource_identifier: self.resource_identifier(),
-            maybe_attributes: &self.maybe_attributes,
-            field_shape: self.field_shape.as_ref(),
-            type_shape: &self.type_shape,
-        };
+            resource_identifier: ast.resource_identifier(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            field_shape: ast.field_shape.as_ref().map(Into::into),
+            type_shape: (&ast.type_shape).into(),
+        }
+    }
+}
 
-        old.serialize(serializer)
+impl From<&crate::flat_ast::JsonRoot> for JsonRoot {
+    fn from(ast: &crate::flat_ast::JsonRoot) -> Self {
+        Self {
+            name: ast.name.clone(),
+            platform: ast.platform.clone(),
+            available: ast.available.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            experiments: ast.experiments.clone(),
+            library_dependencies: ast.library_dependencies.iter().map(Into::into).collect(),
+            bits_declarations: ast.bits_declarations.iter().map(Into::into).collect(),
+            const_declarations: ast.const_declarations.iter().map(Into::into).collect(),
+            enum_declarations: ast.enum_declarations.iter().map(Into::into).collect(),
+            experimental_resource_declarations: ast.experimental_resource_declarations.iter().map(Into::into).collect(),
+            protocol_declarations: ast.protocol_declarations.iter().map(Into::into).collect(),
+            service_declarations: ast.service_declarations.iter().map(Into::into).collect(),
+            struct_declarations: ast.struct_declarations.iter().map(Into::into).collect(),
+            external_struct_declarations: ast.external_struct_declarations.iter().map(Into::into).collect(),
+            table_declarations: ast.table_declarations.iter().map(Into::into).collect(),
+            union_declarations: ast.union_declarations.iter().map(Into::into).collect(),
+            overlay_declarations: ast.overlay_declarations.as_ref().map(|v| v.iter().map(Into::into).collect()),
+            alias_declarations: ast.alias_declarations.iter().map(Into::into).collect(),
+            new_type_declarations: ast.new_type_declarations.iter().map(Into::into).collect(),
+            declaration_order: ast.declaration_order.clone(),
+            declarations: ast.declarations.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::LibraryDependency> for LibraryDependency {
+    fn from(ast: &crate::flat_ast::LibraryDependency) -> Self {
+        Self {
+            name: ast.name.clone(),
+            declarations: ast.declarations.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::Location> for Location {
+    fn from(ast: &crate::flat_ast::Location) -> Self {
+        Self {
+            filename: ast.filename.clone(),
+            line: ast.line.clone(),
+            column: ast.column.clone(),
+            length: ast.length.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::TypeShape> for TypeShape {
+    fn from(ast: &crate::flat_ast::TypeShape) -> Self {
+        Self {
+            inline_size: ast.inline_size.clone(),
+            alignment: ast.alignment.clone(),
+            depth: ast.depth.clone(),
+            max_handles: ast.max_handles.clone(),
+            max_out_of_line: ast.max_out_of_line.clone(),
+            has_padding: ast.has_padding.clone(),
+            has_flexible_envelope: ast.has_flexible_envelope.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::FieldShape> for FieldShape {
+    fn from(ast: &crate::flat_ast::FieldShape) -> Self {
+        Self {
+            offset: ast.offset.clone(),
+            padding: ast.padding.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::TypeKind> for TypeKind {
+    fn from(ast: &crate::flat_ast::TypeKind) -> Self {
+        match ast {
+            crate::flat_ast::TypeKind::Primitive => Self::Primitive,
+            crate::flat_ast::TypeKind::String => Self::String,
+            crate::flat_ast::TypeKind::StringArray => Self::StringArray,
+            crate::flat_ast::TypeKind::Unknown => Self::Unknown,
+            crate::flat_ast::TypeKind::Vector => Self::Vector,
+            crate::flat_ast::TypeKind::Array => Self::Array,
+            crate::flat_ast::TypeKind::Endpoint => Self::Endpoint,
+            crate::flat_ast::TypeKind::Handle => Self::Handle,
+            crate::flat_ast::TypeKind::Identifier => Self::Identifier,
+            crate::flat_ast::TypeKind::Struct => Self::Struct,
+            crate::flat_ast::TypeKind::Request => Self::Request,
+            crate::flat_ast::TypeKind::ExperimentalPointer => Self::ExperimentalPointer,
+        }
+    }
+}
+
+impl From<&crate::flat_ast::StructMember> for StructMember {
+    fn from(ast: &crate::flat_ast::StructMember) -> Self {
+        Self {
+            type_: (&ast.type_).into(),
+            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            maybe_default_value: ast.maybe_default_value.as_ref().map(Into::into),
+            field_shape: (&ast.field_shape).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::StructDeclaration> for StructDeclaration {
+    fn from(ast: &crate::flat_ast::StructDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            naming_context: ast.naming_context.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            members: ast.members.iter().map(Into::into).collect(),
+            resource: ast.resource.clone(),
+            is_empty_success_struct: ast.is_empty_success_struct.clone(),
+            type_shape: (&ast.type_shape).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::BitField> for BitField {
+    fn from(ast: &crate::flat_ast::BitField) -> Self {
+        Self {
+        }
+    }
+}
+
+impl From<&crate::flat_ast::BitsDeclaration> for BitsDeclaration {
+    fn from(ast: &crate::flat_ast::BitsDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            naming_context: ast.naming_context.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            type_: (&ast.type_).into(),
+            mask: ast.mask.clone(),
+            members: ast.members.iter().map(Into::into).collect(),
+            strict: ast.strict.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::BitsMember> for BitsMember {
+    fn from(ast: &crate::flat_ast::BitsMember) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            value: (&ast.value).into(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ConstDeclaration> for ConstDeclaration {
+    fn from(ast: &crate::flat_ast::ConstDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            type_: (&ast.type_).into(),
+            value: (&ast.value).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::EnumDeclaration> for EnumDeclaration {
+    fn from(ast: &crate::flat_ast::EnumDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            naming_context: ast.naming_context.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            type_: ast.type_.clone(),
+            members: ast.members.iter().map(Into::into).collect(),
+            strict: ast.strict.clone(),
+            maybe_unknown_value: ast.maybe_unknown_value.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::EnumMember> for EnumMember {
+    fn from(ast: &crate::flat_ast::EnumMember) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            value: (&ast.value).into(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::Constant> for Constant {
+    fn from(ast: &crate::flat_ast::Constant) -> Self {
+        Self {
+            kind: ast.kind.clone(),
+            value: serde_json::value::RawValue::from_string(ast.value.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string()).unwrap(),
+            identifier: ast.identifier.clone(),
+            literal: ast.literal.as_ref().map(Into::into),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::Literal> for Literal {
+    fn from(ast: &crate::flat_ast::Literal) -> Self {
+        Self {
+            kind: ast.kind.clone(),
+            value: serde_json::value::RawValue::from_string(ast.value.get().to_string()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string()).unwrap(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::AttributeArg> for AttributeArg {
+    fn from(ast: &crate::flat_ast::AttributeArg) -> Self {
+        Self {
+            name: ast.name.clone(),
+            type_: ast.type_.clone(),
+            value: (&ast.value).into(),
+            location: (&ast.location).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::Attribute> for Attribute {
+    fn from(ast: &crate::flat_ast::Attribute) -> Self {
+        Self {
+            name: ast.name.clone(),
+            arguments: ast.arguments.iter().map(Into::into).collect(),
+            location: (&ast.location).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ResourceProperty> for ResourceProperty {
+    fn from(ast: &crate::flat_ast::ResourceProperty) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            type_: (&ast.type_).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ExperimentalResourceDeclaration> for ExperimentalResourceDeclaration {
+    fn from(ast: &crate::flat_ast::ExperimentalResourceDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            type_: (&ast.type_).into(),
+            properties: ast.properties.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ProtocolDeclaration> for ProtocolDeclaration {
+    fn from(ast: &crate::flat_ast::ProtocolDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            openness: ast.openness.clone(),
+            composed_protocols: ast.composed_protocols.iter().map(Into::into).collect(),
+            methods: ast.methods.iter().map(Into::into).collect(),
+            implementation_locations: ast.implementation_locations.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ProtocolCompose> for ProtocolCompose {
+    fn from(ast: &crate::flat_ast::ProtocolCompose) -> Self {
+        Self {
+            name: ast.name.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ProtocolMethod> for ProtocolMethod {
+    fn from(ast: &crate::flat_ast::ProtocolMethod) -> Self {
+        Self {
+            kind: ast.kind.clone(),
+            ordinal: ast.ordinal.clone(),
+            name: ast.name.clone(),
+            strict: ast.strict.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            has_request: ast.has_request.clone(),
+            maybe_request_payload: ast.maybe_request_payload.as_ref().map(Into::into),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            has_response: ast.has_response.clone(),
+            maybe_response_payload: ast.maybe_response_payload.as_ref().map(Into::into),
+            is_composed: ast.is_composed.clone(),
+            has_error: ast.has_error.clone(),
+            maybe_response_success_type: ast.maybe_response_success_type.as_ref().map(Into::into),
+            maybe_response_err_type: ast.maybe_response_err_type.as_ref().map(Into::into),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ServiceDeclaration> for ServiceDeclaration {
+    fn from(ast: &crate::flat_ast::ServiceDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            members: ast.members.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::ServiceMember> for ServiceMember {
+    fn from(ast: &crate::flat_ast::ServiceMember) -> Self {
+        Self {
+            type_: (&ast.type_).into(),
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::TableDeclaration> for TableDeclaration {
+    fn from(ast: &crate::flat_ast::TableDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            naming_context: ast.naming_context.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            members: ast.members.iter().map(Into::into).collect(),
+            strict: ast.strict.clone(),
+            resource: ast.resource.clone(),
+            type_shape: (&ast.type_shape).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::TableMember> for TableMember {
+    fn from(ast: &crate::flat_ast::TableMember) -> Self {
+        Self {
+            ordinal: ast.ordinal.clone(),
+            reserved: ast.reserved.clone(),
+            type_: ast.type_.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            name: ast.name.clone(),
+            location: ast.location.as_ref().map(Into::into),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::UnionDeclaration> for UnionDeclaration {
+    fn from(ast: &crate::flat_ast::UnionDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            naming_context: ast.naming_context.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            members: ast.members.iter().map(Into::into).collect(),
+            strict: ast.strict.clone(),
+            resource: ast.resource.clone(),
+            is_result: ast.is_result.clone(),
+            type_shape: (&ast.type_shape).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::UnionMember> for UnionMember {
+    fn from(ast: &crate::flat_ast::UnionMember) -> Self {
+        Self {
+            ordinal: ast.ordinal.clone(),
+            reserved: ast.reserved.clone(),
+            name: ast.name.clone(),
+            type_: ast.type_.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+            location: ast.location.as_ref().map(Into::into),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::AliasDeclaration> for AliasDeclaration {
+    fn from(ast: &crate::flat_ast::AliasDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            partial_type_ctor: (&ast.partial_type_ctor).into(),
+            type_: (&ast.type_).into(),
+        }
+    }
+}
+
+impl From<&crate::flat_ast::NewTypeDeclaration> for NewTypeDeclaration {
+    fn from(ast: &crate::flat_ast::NewTypeDeclaration) -> Self {
+        Self {
+            name: ast.name.clone(),
+            location: (&ast.location).into(),
+            deprecated: ast.deprecated.clone(),
+            maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
+            type_: (&ast.type_).into(),
+            experimental_maybe_from_alias: ast.experimental_maybe_from_alias.as_ref().map(Into::into),
+        }
     }
 }

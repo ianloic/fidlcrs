@@ -1,6 +1,6 @@
 use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
-use crate::json_generator::*;
+use crate::flat_ast::*;
 use crate::raw_ast;
 use crate::reporter::Reporter;
 use crate::resolve_step::ResolveStep;
@@ -47,26 +47,26 @@ use crate::diagnostics::Error;
 use crate::diagnostics::ErrorKind;
 use crate::experimental_flags::ExperimentalFlag;
 use crate::experimental_flags::ExperimentalFlags;
-use crate::json_generator::ArrayType;
-use crate::json_generator::EndpointType;
-use crate::json_generator::ExperimentalMaybeFromAlias;
-use crate::json_generator::ExperimentalPointerType;
-use crate::json_generator::HandleType;
-use crate::json_generator::IdentifierType;
-use crate::json_generator::PartialTypeCtor;
-use crate::json_generator::PrimitiveSubtype;
-use crate::json_generator::PrimitiveType;
-use crate::json_generator::ProtocolCompose;
-use crate::json_generator::StringArrayType;
-use crate::json_generator::StringType;
-use crate::json_generator::Type;
-use crate::json_generator::TypeCommon;
-use crate::json_generator::TypeKind;
-use crate::json_generator::TypeShape;
-use crate::json_generator::UnionDeclaration;
-use crate::json_generator::UnionMember;
-use crate::json_generator::UnknownType;
-use crate::json_generator::VectorType;
+use crate::flat_ast::ArrayType;
+use crate::flat_ast::EndpointType;
+use crate::flat_ast::ExperimentalMaybeFromAlias;
+use crate::flat_ast::ExperimentalPointerType;
+use crate::flat_ast::HandleType;
+use crate::flat_ast::IdentifierType;
+use crate::flat_ast::PartialTypeCtor;
+use crate::flat_ast::PrimitiveSubtype;
+use crate::flat_ast::PrimitiveType;
+use crate::flat_ast::ProtocolCompose;
+use crate::flat_ast::StringArrayType;
+use crate::flat_ast::StringType;
+use crate::flat_ast::Type;
+use crate::flat_ast::TypeCommon;
+use crate::flat_ast::TypeKind;
+use crate::flat_ast::TypeShape;
+use crate::flat_ast::UnionDeclaration;
+use crate::flat_ast::UnionMember;
+use crate::flat_ast::UnknownType;
+use crate::flat_ast::VectorType;
 use crate::name::NamingContext;
 use crate::raw_ast::LibraryDeclaration;
 use crate::source_file::{SourceFile, VirtualSourceFile};
@@ -1595,7 +1595,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some(shape) = self.shapes.get(name) {
                     obj.insert(
                         "type_shape_v2".to_string(),
-                        serde_json::to_value(shape).unwrap(),
+                        serde_json::to_value(crate::json_generator::TypeShape::from(shape)).unwrap(),
                     );
                 }
             }

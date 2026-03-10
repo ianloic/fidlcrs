@@ -1,4 +1,4 @@
-use crate::json_generator::JsonRoot;
+use crate::flat_ast::JsonRoot;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::TestLibrary;
 

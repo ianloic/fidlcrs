@@ -1052,56 +1052,56 @@ impl AttributeSchemaMap {
                             {
                                 let subtype = match &arg_schema.arg_type {
                                     ArgType::Kind(ConstantValueKind::Int8) => {
-                                        crate::json_generator::PrimitiveSubtype::Int8
+                                        crate::flat_ast::PrimitiveSubtype::Int8
                                     }
                                     ArgType::Kind(ConstantValueKind::Int16) => {
-                                        crate::json_generator::PrimitiveSubtype::Int16
+                                        crate::flat_ast::PrimitiveSubtype::Int16
                                     }
                                     ArgType::Kind(ConstantValueKind::Int32) => {
-                                        crate::json_generator::PrimitiveSubtype::Int32
+                                        crate::flat_ast::PrimitiveSubtype::Int32
                                     }
                                     ArgType::Kind(ConstantValueKind::Int64) => {
-                                        crate::json_generator::PrimitiveSubtype::Int64
+                                        crate::flat_ast::PrimitiveSubtype::Int64
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint8) => {
-                                        crate::json_generator::PrimitiveSubtype::Uint8
+                                        crate::flat_ast::PrimitiveSubtype::Uint8
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint16) => {
-                                        crate::json_generator::PrimitiveSubtype::Uint16
+                                        crate::flat_ast::PrimitiveSubtype::Uint16
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint32) => {
-                                        crate::json_generator::PrimitiveSubtype::Uint32
+                                        crate::flat_ast::PrimitiveSubtype::Uint32
                                     }
                                     ArgType::Kind(ConstantValueKind::Uint64) => {
-                                        crate::json_generator::PrimitiveSubtype::Uint64
+                                        crate::flat_ast::PrimitiveSubtype::Uint64
                                     }
                                     ArgType::Kind(ConstantValueKind::ZxUsize64) => {
-                                        crate::json_generator::PrimitiveSubtype::Usize64
+                                        crate::flat_ast::PrimitiveSubtype::Usize64
                                     }
                                     ArgType::Kind(ConstantValueKind::ZxUintptr64) => {
-                                        crate::json_generator::PrimitiveSubtype::Uintptr64
+                                        crate::flat_ast::PrimitiveSubtype::Uintptr64
                                     }
                                     ArgType::Kind(ConstantValueKind::ZxUchar) => {
-                                        crate::json_generator::PrimitiveSubtype::Uchar
+                                        crate::flat_ast::PrimitiveSubtype::Uchar
                                     }
                                     ArgType::Kind(ConstantValueKind::Float32) => {
-                                        crate::json_generator::PrimitiveSubtype::Float32
+                                        crate::flat_ast::PrimitiveSubtype::Float32
                                     }
                                     ArgType::Kind(ConstantValueKind::Float64) => {
-                                        crate::json_generator::PrimitiveSubtype::Float64
+                                        crate::flat_ast::PrimitiveSubtype::Float64
                                     }
                                     _ => unreachable!(),
                                 };
-                                let p_type = crate::json_generator::Type::Primitive(
-                                    crate::json_generator::PrimitiveType {
+                                let p_type = crate::flat_ast::Type::Primitive(
+                                    crate::flat_ast::PrimitiveType {
                                         subtype,
-                                        common: crate::json_generator::TypeCommon {
+                                        common: crate::flat_ast::TypeCommon {
                                             experimental_maybe_from_alias: None,
                                             outer_alias: None,
                                             deprecated: None,
                                             maybe_attributes: vec![],
                                             field_shape: None,
-                                            type_shape: crate::json_generator::TypeShape {
+                                            type_shape: crate::flat_ast::TypeShape {
                                                 inline_size: 0,
                                                 alignment: 1,
                                                 depth: 0,

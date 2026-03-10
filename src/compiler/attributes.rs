@@ -1,6 +1,6 @@
 use crate::compiler::RawDecl;
 use crate::diagnostics::Error;
-use crate::json_generator::*;
+use crate::flat_ast::*;
 use crate::raw_ast;
 use crate::versioning_types::Version;
 impl<'node, 'src> super::Compiler<'node, 'src> {

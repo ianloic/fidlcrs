@@ -1,7 +1,7 @@
 use super::RawDecl;
 use crate::diagnostics::Error;
-use crate::json_generator;
-use crate::json_generator::*;
+use crate::flat_ast;
+use crate::flat_ast::*;
 use crate::raw_ast;
 use crate::reporter::Reporter;
 use std::collections::{HashMap, HashSet};
@@ -537,8 +537,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             // and do not induce topological sorting edges.
             deps
         }
-        pub(crate) fn get_constant_deps(c: &json_generator::Constant) -> Vec<String> {
-            let mut deps = Vec::new();
+        pub(crate) fn get_constant_deps(c: &flat_ast::Constant) -> Vec<String> {
+            let mut deps: Vec<String> = Vec::new();
             if let Some(id) = &c.identifier {
                 deps.push(id.clone());
             }

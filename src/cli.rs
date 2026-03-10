@@ -249,7 +249,8 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
         }
     }
 
-    let json_string = serde_json::to_string_pretty(&json_root).unwrap();
+    let serialized_root = crate::json_generator::JsonRoot::from(&json_root);
+    let json_string = serde_json::to_string_pretty(&serialized_root).unwrap();
 
     if let Some(out_path) = json_path {
         if let Some(p) = Path::new(&out_path).parent() {

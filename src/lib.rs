@@ -4,6 +4,7 @@ pub mod compiler;
 pub mod diagnostics;
 pub mod experimental_flags;
 pub mod json_generator;
+pub mod flat_ast;
 pub mod lexer;
 pub mod name;
 pub mod parser;

@@ -1,5 +1,5 @@
-use crate::json_generator::Type;
-use crate::json_generator::TypeKind;
+use crate::flat_ast::Type;
+use crate::flat_ast::TypeKind;
 use crate::source_file::SourceFile;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 use std::fs;

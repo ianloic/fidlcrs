@@ -233,7 +233,7 @@ pub struct UnknownType {
 #[derive(Clone, Debug)]
 pub struct VectorType {
     pub common: TypeCommon,
-    pub element_type: Option<Box<Type>>,
+    pub element_type: Box<Type>,
     pub nullable: bool,
     pub maybe_element_count: Option<u32>,
 }
@@ -241,8 +241,8 @@ pub struct VectorType {
 #[derive(Clone, Debug)]
 pub struct ArrayType {
     pub common: TypeCommon,
-    pub element_type: Option<Box<Type>>,
-    pub element_count: Option<u32>,
+    pub element_type: Box<Type>,
+    pub element_count: u32,
 }
 
 #[derive(Clone, Debug)]
@@ -398,8 +398,8 @@ impl Type {
 
     pub fn element_type(&self) -> Option<&Type> {
         match self {
-            Type::Array(t) => t.element_type.as_deref(),
-            Type::Vector(t) => t.element_type.as_deref(),
+            Type::Array(t) => Some(t.element_type.as_ref()),
+            Type::Vector(t) => Some(t.element_type.as_ref()),
             Type::ExperimentalPointer(t) => t.element_type.as_deref(),
             _ => None,
         }
@@ -445,8 +445,8 @@ impl Type {
     }
     pub fn element_type_mut(&mut self) -> Option<&mut Type> {
         match self {
-            Type::Array(t) => t.element_type.as_deref_mut(),
-            Type::Vector(t) => t.element_type.as_deref_mut(),
+            Type::Array(t) => Some(t.element_type.as_mut()),
+            Type::Vector(t) => Some(t.element_type.as_mut()),
             Type::ExperimentalPointer(t) => t.element_type.as_deref_mut(),
             _ => None,
         }
@@ -466,7 +466,7 @@ impl Type {
     }
     pub fn element_count(&self) -> Option<u32> {
         match self {
-            Type::Array(t) => t.element_count,
+            Type::Array(t) => Some(t.element_count),
             Type::StringArray(t) => t.element_count,
             _ => None,
         }

@@ -3660,7 +3660,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
                         },
                     },
-                    element_type: Some(Box::new(inner_type.clone())),
+                    element_type: Box::new(inner_type.clone()),
                     maybe_element_count: if max_count == u32::MAX {
                         None
                     } else {
@@ -3841,8 +3841,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_flexible_envelope: inner_type.type_shape.has_flexible_envelope,
                         },
                     },
-                    element_type: Some(Box::new(inner_type.clone())),
-                    element_count: Some(count),
+                    element_type: Box::new(inner_type.clone()),
+                    element_count: count,
                 })
             }
 

@@ -284,7 +284,12 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             }
         }
         for (span, name) in to_report {
-            let span_safe = unsafe { std::mem::transmute(span) };
+            let span_safe = unsafe {
+                std::mem::transmute::<
+                    crate::source_span::SourceSpan<'_>,
+                    crate::source_span::SourceSpan<'_>,
+                >(span)
+            };
             compiler.reporter.fail(
                 Error::ErrDeclNameConflictsWithLibraryImport,
                 span_safe,

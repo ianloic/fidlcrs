@@ -667,13 +667,12 @@ fn edit_distance(sequence1: &str, sequence2: &str) -> usize {
     let mut row1 = vec![0; s1_length + 1];
     let mut row2 = vec![0; s1_length + 1];
 
-    for i in 0..=s1_length {
-        row1[i] = i;
+    for (i, item) in row1.iter_mut().enumerate().take(s1_length + 1) {
+        *item = i;
     }
 
-    for j in 0..s2_length {
+    for (j, &s2c) in s2.iter().enumerate().take(s2_length) {
         row2[0] = j + 1;
-        let s2c = s2[j];
         for i in 1..=s1_length {
             let s1c = s1[i - 1];
             let cost = if s1c == s2c { 0 } else { 1 };

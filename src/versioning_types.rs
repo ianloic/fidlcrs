@@ -46,9 +46,11 @@ impl Version {
     pub const POS_INF: Version = Version(u32::MAX);
 
     pub fn from_number(number: u32) -> Option<Self> {
-        if number == Self::NEXT.0 || number == Self::HEAD.0 || number == Self::LEGACY.0 {
-            Some(Version(number))
-        } else if number > 0 && number < (1 << 31) {
+        if number == Self::NEXT.0
+            || number == Self::HEAD.0
+            || number == Self::LEGACY.0
+            || (number > 0 && number < (1 << 31))
+        {
             Some(Version(number))
         } else {
             None
@@ -71,15 +73,17 @@ impl Version {
     pub fn is_infinite(&self) -> bool {
         *self == Self::NEG_INF || *self == Self::POS_INF
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Self::NEG_INF => "-inf".to_string(),
-            Self::NEXT => "NEXT".to_string(),
-            Self::HEAD => "HEAD".to_string(),
-            Self::LEGACY => "LEGACY".to_string(),
-            Self::POS_INF => "+inf".to_string(),
-            _ => self.0.to_string(),
+            Self::NEG_INF => write!(f, "-inf"),
+            Self::NEXT => write!(f, "NEXT"),
+            Self::HEAD => write!(f, "HEAD"),
+            Self::LEGACY => write!(f, "LEGACY"),
+            Self::POS_INF => write!(f, "+inf"),
+            _ => write!(f, "{}", self.0),
         }
     }
 }
@@ -288,48 +292,50 @@ impl Availability {
             removed: InheritStatus::Ok,
         };
 
-        if self.added.is_none() {
-            self.added = parent.added;
-        } else if self.added.unwrap() < parent.added.unwrap() {
-            result.added = InheritStatus::BeforeParentAdded;
-        } else if self.added.unwrap() >= parent.removed.unwrap() {
-            result.added = InheritStatus::AfterParentRemoved;
-        }
-
-        if self.removed.is_none() {
-            self.removed = parent.removed;
-        } else if self.removed.unwrap() <= parent.added.unwrap() {
-            result.removed = InheritStatus::BeforeParentAdded;
-        } else if self.removed.unwrap() > parent.removed.unwrap() {
-            result.removed = InheritStatus::AfterParentRemoved;
-        }
-
-        if self.deprecated.is_none() {
-            if let Some(pd) = parent.deprecated
-                && pd < self.removed.unwrap()
-            {
-                self.deprecated = Some(std::cmp::max(pd, self.added.unwrap()));
+        if let Some(a) = self.added {
+            if a < parent.added.unwrap() {
+                result.added = InheritStatus::BeforeParentAdded;
+            } else if a >= parent.removed.unwrap() {
+                result.added = InheritStatus::AfterParentRemoved;
             }
-        } else if self.deprecated.unwrap() < parent.added.unwrap() {
-            result.deprecated = InheritStatus::BeforeParentAdded;
-        } else if self.deprecated.unwrap() >= parent.removed.unwrap() {
-            result.deprecated = InheritStatus::AfterParentRemoved;
-        } else if parent.deprecated.is_some()
-            && self.deprecated.unwrap() > parent.deprecated.unwrap()
-        {
-            result.deprecated = InheritStatus::AfterParentDeprecated;
+        } else {
+            self.added = parent.added;
         }
 
-        if self.ending.is_none() {
+        if let Some(r) = self.removed {
+            if r <= parent.added.unwrap() {
+                result.removed = InheritStatus::BeforeParentAdded;
+            } else if r > parent.removed.unwrap() {
+                result.removed = InheritStatus::AfterParentRemoved;
+            }
+        } else {
+            self.removed = parent.removed;
+        }
+
+        if let Some(d) = self.deprecated {
+            if d < parent.added.unwrap() {
+                result.deprecated = InheritStatus::BeforeParentAdded;
+            } else if d >= parent.removed.unwrap() {
+                result.deprecated = InheritStatus::AfterParentRemoved;
+            } else if parent.deprecated.is_some() && d > parent.deprecated.unwrap() {
+                result.deprecated = InheritStatus::AfterParentDeprecated;
+            }
+        } else if let Some(pd) = parent.deprecated
+            && pd < self.removed.unwrap()
+        {
+            self.deprecated = Some(std::cmp::max(pd, self.added.unwrap()));
+        }
+
+        if let Some(e) = self.ending {
+            if e == Ending::Replaced && self.removed.unwrap() == parent.removed.unwrap() {
+                result.removed = InheritStatus::AfterParentRemoved;
+            }
+        } else {
             self.ending = Some(if parent.ending.unwrap() == Ending::None {
                 Ending::None
             } else {
                 Ending::Inherited
             });
-        } else if self.ending.unwrap() == Ending::Replaced
-            && self.removed.unwrap() == parent.removed.unwrap()
-        {
-            result.removed = InheritStatus::AfterParentRemoved;
         }
 
         assert!(self.legacy.is_none());

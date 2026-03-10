@@ -322,7 +322,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if !used.contains(local_name) {
                 // temporary debug
                 println!("REPORTING UNUSED: {}", local_name);
-                let span = unsafe { std::mem::transmute(decl.using_path.element.span()) };
+                let span = unsafe {
+                    std::mem::transmute::<
+                        crate::source_span::SourceSpan<'_>,
+                        crate::source_span::SourceSpan<'_>,
+                    >(decl.using_path.element.span())
+                };
                 self.reporter.fail(
                     Error::ErrUnusedImport,
                     span,
@@ -1019,7 +1024,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let mut max_ool = 0u32;
             let mut max_handles = 0u32;
             let mut has_padding = false;
-            let mut has_flex = false;
             let mut max_ordinal = 0u32;
             for member in &mut decl.members {
                 max_ordinal = std::cmp::max(max_ordinal, member.ordinal);
@@ -1029,7 +1033,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     max_ool = max_ool.saturating_add(env.max_out_of_line);
                     max_handles = max_handles.saturating_add(env.max_handles);
                     has_padding |= env.has_padding;
-                    has_flex |= env.has_flexible_envelope;
                 }
             }
             if decl.type_shape.depth != u32::MAX {
@@ -1037,7 +1040,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     max_ool.saturating_add(max_ordinal.saturating_mul(8));
                 decl.type_shape.max_handles = max_handles;
                 decl.type_shape.has_padding = has_padding;
-                decl.type_shape.has_flexible_envelope = has_flex || true;
+                decl.type_shape.has_flexible_envelope = true;
             }
         }
         for decl in &mut self.alias_declarations {
@@ -1238,11 +1241,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         maybe_size: None,
                     });
                 }
-            } else if n == "box" {
-                if let Some(param) = type_ctor.parameters.first() {
-                    args.push(self.compile_partial_type_ctor(param, library_name));
-                }
-            } else if n == "array" {
+            } else if n == "box" || n == "array" {
                 if let Some(param) = type_ctor.parameters.first() {
                     args.push(self.compile_partial_type_ctor(param, library_name));
                 }
@@ -1280,9 +1279,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-        let is_box = name == "box";
         PartialTypeCtor {
-            nullable: type_ctor.nullable || (is_box && type_ctor.nullable) || type_ctor.constraints.iter().any(|c| matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")),
+            nullable: type_ctor.nullable || type_ctor.constraints.iter().any(|c| matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")),
             name,
             args,
             maybe_size,
@@ -2089,13 +2087,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         } else {
                             let is_negative = val_str.starts_with('-');
-                            if is_negative && subtype_name.starts_with("uint") {
-                                self.reporter.fail(
-                                    Error::ErrCannotResolveConstantValue,
-                                    member.value.element().span(),
-                                    &[],
-                                );
-                            } else if !val_str.chars().all(|c| c.is_ascii_digit()) {
+                            if (is_negative && subtype_name.starts_with("uint"))
+                                || !val_str.chars().all(|c| c.is_ascii_digit())
+                            {
                                 self.reporter.fail(
                                     Error::ErrCannotResolveConstantValue,
                                     member.value.element().span(),
@@ -2253,10 +2247,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let ordinal = match ordinal {
                 0 => {
-                    if member.ordinal.is_some() {
+                    if let Some(ord) = &member.ordinal {
                         self.reporter.fail(
                             Error::ErrOrdinalsMustStartAtOne,
-                            member.ordinal.as_ref().unwrap().element.span(),
+                            ord.element.span(),
                             &[],
                         );
                     }
@@ -2533,10 +2527,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let ordinal = match ordinal {
                 Ok(o) => {
-                    if o == 0 && member.ordinal.is_some() {
+                    if o == 0
+                        && let Some(ord) = &member.ordinal
+                    {
                         self.reporter.fail(
                             Error::ErrOrdinalsMustStartAtOne,
-                            member.ordinal.as_ref().unwrap().element.span(),
+                            ord.element.span(),
                             &[],
                         );
                     }
@@ -2649,12 +2645,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let attributes = self.compile_attribute_list(&member.attributes);
 
-            if member.default_value.is_some() {
-                self.reporter.fail(
-                    Error::ErrUnexpectedToken,
-                    member.default_value.as_ref().unwrap().element().span(),
-                    &[],
-                );
+            if let Some(def) = &member.default_value {
+                self.reporter
+                    .fail(Error::ErrUnexpectedToken, def.element().span(), &[]);
             }
 
             if attributes.iter().any(|a| a.name == "selector") {
@@ -3094,7 +3087,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 .insert(local_lib_name.clone());
                             local_lib_name = import.using_path.to_string();
                         } else if local_lib_name != self.library_name && local_lib_name != "fidl" {
-                            let span_safe = unsafe { std::mem::transmute(id.element.span()) };
+                            let span_safe = unsafe {
+                                std::mem::transmute::<
+                                    crate::source_span::SourceSpan<'_>,
+                                    crate::source_span::SourceSpan<'_>,
+                                >(id.element.span())
+                            };
                             if id.components.len() > 2 {
                                 let fallback_lib = parts[..parts.len() - 1].join(".");
                                 self.reporter.fail(
@@ -3528,12 +3526,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         outer_alias: None,
                         maybe_attributes: vec![],
                         field_shape: None,
-                        maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
-                            if let raw_ast::Constant::Identifier(id) = c {
-                                Some(id.identifier.to_string())
-                            } else {
-                                None
-                            }
+                        maybe_size_constant_name: if let Some(raw_ast::Constant::Identifier(id)) =
+                            type_ctor.constraints.first()
+                        {
+                            Some(id.identifier.to_string())
                         } else {
                             None
                         },
@@ -3606,9 +3602,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         &[&resolved_name],
                     );
                 }
-                let inner = if is_bytes {
-                    None
-                } else if type_ctor.parameters.is_empty() {
+                let inner = if is_bytes || type_ctor.parameters.is_empty() {
                     None
                 } else {
                     Some(&type_ctor.parameters[0])
@@ -3711,12 +3705,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         outer_alias: None,
                         maybe_attributes: vec![],
                         field_shape: None,
-                        maybe_size_constant_name: if let Some(c) = type_ctor.constraints.first() {
-                            if let raw_ast::Constant::Identifier(id) = c {
-                                Some(id.identifier.to_string())
-                            } else {
-                                None
-                            }
+                        maybe_size_constant_name: if let Some(raw_ast::Constant::Identifier(id)) =
+                            type_ctor.constraints.first()
+                        {
+                            Some(id.identifier.to_string())
                         } else {
                             None
                         },
@@ -3811,8 +3803,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             } else {
                                 id.to_string()
                             };
-                            let bare = if inner_name.starts_with("fidl/") {
-                                &inner_name["fidl/".len()..]
+                            let bare = if let Some(stripped) = inner_name.strip_prefix("fidl/") {
+                                stripped
                             } else {
                                 &inner_name
                             };
@@ -4333,14 +4325,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         | RawDecl::Union(_)
                         | RawDecl::Protocol(_)
                         | RawDecl::Service(_) => true,
-                        RawDecl::Type(t) => match t.layout {
+                        RawDecl::Type(t) => matches!(
+                            t.layout,
                             raw_ast::Layout::Bits(_)
-                            | raw_ast::Layout::Enum(_)
-                            | raw_ast::Layout::Struct(_)
-                            | raw_ast::Layout::Table(_)
-                            | raw_ast::Layout::Union(_) => true,
-                            _ => false,
-                        },
+                                | raw_ast::Layout::Enum(_)
+                                | raw_ast::Layout::Struct(_)
+                                | raw_ast::Layout::Table(_)
+                                | raw_ast::Layout::Union(_)
+                        ),
                         _ => false,
                     };
                     if is_user_decl_no_params
@@ -4513,10 +4505,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         ),
                         _ => false,
                     };
-                    let is_protocol = match decl {
-                        RawDecl::Protocol(_) => true,
-                        _ => false,
-                    };
+                    let is_protocol = matches!(decl, RawDecl::Protocol(_));
                     let (inline, align, flex, padding) = if is_union_or_table {
                         let is_strict = match decl {
                             RawDecl::Union(u) => u
@@ -4727,25 +4716,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     is_uint32 = true;
                     break;
                 }
-                if let Some(d) = self.raw_decls.get(&curr) {
-                    if let RawDecl::Alias(a) = d {
-                        match &a.type_ctor.layout {
-                            raw_ast::LayoutParameter::Identifier(inner_id) => {
-                                let next = inner_id.to_string();
-                                if next == "uint32" {
-                                    is_uint32 = true;
-                                    break;
-                                }
-                                curr = if next.contains('/') || self.shapes.contains_key(&next) {
-                                    next
-                                } else {
-                                    format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
-                                };
+                if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&curr) {
+                    match &a.type_ctor.layout {
+                        raw_ast::LayoutParameter::Identifier(inner_id) => {
+                            let next = inner_id.to_string();
+                            if next == "uint32" {
+                                is_uint32 = true;
+                                break;
                             }
-                            _ => break,
+                            curr = if next.contains('/') || self.shapes.contains_key(&next) {
+                                next
+                            } else {
+                                format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                            };
                         }
-                    } else {
-                        break;
+                        _ => break,
                     }
                 } else {
                     break;
@@ -4827,31 +4812,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             is_uint32_prop = true;
                             break;
                         }
-                        if let Some(d) = self.raw_decls.get(&curr) {
-                            if let RawDecl::Alias(a) = d {
-                                match &a.type_ctor.layout {
-                                    raw_ast::LayoutParameter::Identifier(inner_id) => {
-                                        let next = inner_id.to_string();
-                                        if next == "uint32" {
-                                            is_uint32_prop = true;
-                                            break;
-                                        }
-                                        curr = if next.contains('/')
-                                            || self.shapes.contains_key(&next)
-                                        {
-                                            next
-                                        } else {
-                                            format!(
-                                                "{}/{}",
-                                                curr.split('/').next().unwrap_or(""),
-                                                next
-                                            )
-                                        };
+                        if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&curr) {
+                            match &a.type_ctor.layout {
+                                raw_ast::LayoutParameter::Identifier(inner_id) => {
+                                    let next = inner_id.to_string();
+                                    if next == "uint32" {
+                                        is_uint32_prop = true;
+                                        break;
                                     }
-                                    _ => break,
+                                    curr = if next.contains('/') || self.shapes.contains_key(&next)
+                                    {
+                                        next
+                                    } else {
+                                        format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                    };
                                 }
-                            } else {
-                                break;
+                                _ => break,
                             }
                         } else {
                             break;

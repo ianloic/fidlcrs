@@ -884,10 +884,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             }
 
                             if let Some(c_layout) = c_layout_str {
-                                if c_layout != expected_name
-                                    && !(expected_name.contains('/')
-                                        && c_layout.contains('/')
-                                        && c_layout != expected_name)
+                                if (!c_layout.contains('/') || !expected_name.contains('/'))
+                                    && c_layout != expected_name
                                 {
                                     let is_primitive = c_layout == "bool"
                                         || c_layout.starts_with("int")

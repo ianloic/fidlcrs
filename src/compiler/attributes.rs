@@ -111,8 +111,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         for attr in doc_comments.iter() {
             let text = attr.name.element.start_token.span.data;
 
-            let stripped = if text.starts_with("///") {
-                &text[3..]
+            let stripped = if let Some(stripped) = text.strip_prefix("///") {
+                stripped
             } else {
                 text
             };

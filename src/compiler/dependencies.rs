@@ -436,6 +436,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         let mut keys: Vec<&String> = self.raw_decls.keys().collect();
         keys.sort();
 
+        #[allow(clippy::too_many_arguments)]
         pub(crate) fn visit<'a, 'b>(
             name: &str,
             decls: &HashMap<String, RawDecl<'a, 'b>>,

@@ -52,9 +52,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
                 if !dependent_library_names.contains(&path) && path != main_library_name {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrUnknownDependentLibrary,
+                        crate::diagnostics::Error::ErrUnknownLibrary,
                         span.clone(),
-                        &[&path, &path],
+                        &[&path],
                     );
                     continue;
                 }
@@ -75,8 +75,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         &[&path],
                     );
                 } else if file_imports.contains(&local_name) {
-                    let existing = compiler.library_imports.get(&local_name).unwrap();
-                    if using_decl.maybe_alias.is_some() || existing.maybe_alias.is_some() {
+                    if using_decl.maybe_alias.is_some() {
                         compiler.reporter.fail(
                             crate::diagnostics::Error::ErrConflictingLibraryImportAlias,
                             span.clone(),

@@ -3090,18 +3090,48 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             local_lib_name = import.using_path.to_string();
                         } else if local_lib_name != self.library_name && local_lib_name != "fidl" {
                             let span_safe = unsafe { std::mem::transmute(id.element.span()) };
-                            self.reporter.fail(
-                                crate::diagnostics::Error::ErrUnknownDependentLibrary,
-                                span_safe,
-                                &[&local_lib_name, &local_lib_name],
-                            );
+                            if id.components.len() > 2 {
+                                let fallback_lib = parts[..parts.len()-1].join(".");
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrUnknownDependentLibrary,
+                                    span_safe,
+                                    &[&local_lib_name, &fallback_lib],
+                                );
+                            } else {
+                                self.reporter.fail(
+                                    crate::diagnostics::Error::ErrNameNotFound,
+                                    span_safe,
+                                    &[&local_lib_name, &self.library_name],
+                                );
+                            }
+                            return Type::Unknown(UnknownType {
+                                common: TypeCommon {
+                                    experimental_maybe_from_alias: None,
+                                    outer_alias: None,
+                                    maybe_attributes: vec![],
+                                    field_shape: None,
+                                    maybe_size_constant_name: None,
+                                    resource: false,
+                                    deprecated: None,
+                                    type_shape: TypeShape {
+                                        inline_size: 0,
+                                        alignment: 1,
+                                        depth: 0,
+                                        max_handles: 0,
+                                        max_out_of_line: 0,
+                                        has_padding: false,
+                                        has_flexible_envelope: false,
+                                    },
+                                },
+                            });
                         }
                     }
-                    format!(
+                    let id_str = format!(
                         "{}/{}",
                         local_lib_name,
                         id.components.last().unwrap().data()
-                    )
+                    );
+                    id_str
                 } else {
                     id.to_string()
                 }

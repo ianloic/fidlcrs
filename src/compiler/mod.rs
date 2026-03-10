@@ -3089,7 +3089,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     &[&local_lib_name, &self.library_name],
                                 );
                             }
-                            return Type::Unknown(UnknownType {
+                            return Type::unknown(UnknownType {
                                 common: TypeCommon {
                                     experimental_maybe_from_alias: None,
                                     outer_alias: None,
@@ -3124,7 +3124,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             raw_ast::LayoutParameter::Literal(_) => {
                 self.reporter
                     .fail(Error::ErrExpectedType, type_ctor.element.span(), &[]);
-                return Type::Unknown(UnknownType {
+                return Type::unknown(UnknownType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: None,
                         outer_alias: None,
@@ -3427,7 +3427,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let inner_type_opt =
                     inner.map(|i| Box::new(self.resolve_type(i, library_name, naming_context)));
 
-                Type::ExperimentalPointer(ExperimentalPointerType {
+                Type::experimental_pointer(ExperimentalPointerType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: None,
                         outer_alias: None,
@@ -3475,7 +3475,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                 }
-                Type::String(StringType {
+                Type::string(StringType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: None,
                         outer_alias: None,
@@ -3522,7 +3522,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     u32::MAX
                 };
-                Type::StringArray(StringArrayType {
+                Type::string_array(StringArrayType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: None,
                         outer_alias: None,
@@ -3565,7 +3565,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if !is_bytes && inner.is_none() {
                     // Error handling?
-                    return Type::Unknown(UnknownType {
+                    return Type::unknown(UnknownType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -3634,7 +3634,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let max_handles = max_count.saturating_mul(inner_type.type_shape.max_handles);
 
-                Type::Vector(VectorType {
+                Type::vector(VectorType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: inner_alias,
                         outer_alias: None,
@@ -3676,7 +3676,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_ctor.element.start_token.span,
                         &[],
                     );
-                    return Type::Unknown(UnknownType {
+                    return Type::unknown(UnknownType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -3814,7 +3814,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let total_size = count.saturating_mul(inner_type.type_shape.inline_size);
                 let max_ool = count.saturating_mul(inner_type.type_shape.max_out_of_line);
 
-                Type::Array(ArrayType {
+                Type::array(ArrayType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: inner_alias,
                         outer_alias: None,
@@ -3931,7 +3931,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                Type::Endpoint(EndpointType {
+                Type::endpoint(EndpointType {
                     common: TypeCommon {
                         experimental_maybe_from_alias: None,
                         outer_alias: None,
@@ -3958,7 +3958,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             "box" => {
                 if type_ctor.parameters.is_empty() {
-                    return Type::Unknown(UnknownType {
+                    return Type::unknown(UnknownType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -4224,7 +4224,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                     }
 
-                    return Type::Handle(HandleType {
+                    return Type::handle(HandleType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -4382,7 +4382,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     false
                 };
                 if let Some(shape) = self.shapes.get(&full_name) {
-                    Type::Identifier(IdentifierType {
+                    Type::identifier_type(IdentifierType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -4464,7 +4464,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     } else {
                         (0, 1, false, false)
                     };
-                    Type::Identifier(IdentifierType {
+                    Type::identifier_type(IdentifierType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -4492,7 +4492,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_ctor.element.span(),
                         &[&name, &library_name],
                     );
-                    Type::Unknown(UnknownType {
+                    Type::unknown(UnknownType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,
@@ -5182,7 +5182,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::Identifier(IdentifierType {
+                        Some(Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5221,7 +5221,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::Identifier(IdentifierType {
+                        Some(Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5264,7 +5264,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::Identifier(IdentifierType {
+                        Some(Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5405,7 +5405,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::Identifier(IdentifierType {
+                        Some(Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5463,7 +5463,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::Identifier(IdentifierType {
+                        Some(Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5525,7 +5525,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             self.shapes.get(&full_synth).cloned().unwrap()
                         };
-                        Some(Type::Identifier(IdentifierType {
+                        Some(Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5672,7 +5672,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.shapes.insert(full_synth.clone(), shape.clone());
                             shape
                         };
-                        let typ = Type::Identifier(IdentifierType {
+                        let typ = Type::identifier_type(IdentifierType {
                             common: TypeCommon {
                                 experimental_maybe_from_alias: None,
                                 outer_alias: None,
@@ -5781,7 +5781,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             ordinal: 3,
                             reserved: None,
                             name: Some("framework_err".to_string()),
-                            type_: Some(Type::Identifier(IdentifierType {
+                            type_: Some(Type::identifier_type(IdentifierType {
                                 common: TypeCommon {
                                     experimental_maybe_from_alias: None,
                                     outer_alias: None,
@@ -5831,7 +5831,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.compiled_decls.insert(full_synth_union.clone());
                     }
 
-                    Some(Type::Identifier(IdentifierType {
+                    Some(Type::identifier_type(IdentifierType {
                         common: TypeCommon {
                             experimental_maybe_from_alias: None,
                             outer_alias: None,

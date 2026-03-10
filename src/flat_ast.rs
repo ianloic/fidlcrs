@@ -336,6 +336,17 @@ impl Type {
     pub fn primitive(subtype: PrimitiveSubtype) -> Self {
         Type::Primitive(PrimitiveType::new(subtype))
     }
+    pub fn string(t: StringType) -> Self { Type::String(t) }
+    pub fn string_array(t: StringArrayType) -> Self { Type::StringArray(t) }
+    pub fn unknown(t: UnknownType) -> Self { Type::Unknown(t) }
+    pub fn vector(t: VectorType) -> Self { Type::Vector(t) }
+    pub fn array(t: ArrayType) -> Self { Type::Array(t) }
+    pub fn endpoint(t: EndpointType) -> Self { Type::Endpoint(t) }
+    pub fn handle(t: HandleType) -> Self { Type::Handle(t) }
+    pub fn identifier_type(t: IdentifierType) -> Self { Type::Identifier(t) }
+    pub fn struct_type(t: StructType) -> Self { Type::Struct(t) }
+    pub fn request(t: RequestType) -> Self { Type::Request(t) }
+    pub fn experimental_pointer(t: ExperimentalPointerType) -> Self { Type::ExperimentalPointer(t) }
 
     pub fn kind(&self) -> TypeKind {
         match self {

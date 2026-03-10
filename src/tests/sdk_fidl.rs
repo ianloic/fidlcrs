@@ -838,7 +838,12 @@ mod tests {
         }
     }
 
-    fn compare_and_diff_ir(name: &str, expected_str: &str, actual_str: &str, print_diff: bool) -> bool {
+    fn compare_and_diff_ir(
+        name: &str,
+        expected_str: &str,
+        actual_str: &str,
+        print_diff: bool,
+    ) -> bool {
         if let (Ok(mut expected), Ok(mut actual)) = (
             serde_json::from_str::<serde_json::Value>(expected_str),
             serde_json::from_str::<serde_json::Value>(actual_str),
@@ -891,7 +896,8 @@ mod tests {
         let out_json_path = temp_dir.join(format!("{}_out.fidl.json", name));
         cli.json = Some(out_json_path.to_string_lossy().to_string());
 
-        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(&cli, &source_managers)));
+        let res =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(&cli, &source_managers)));
 
         let result = match res {
             Ok(Err(_e)) => None,
@@ -924,8 +930,8 @@ mod tests {
             if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
                 if let Some(actual_str) = compile_to_ir(name, cli, source_managers, &temp_dir) {
                     if !COMPARE_DENYLIST.contains(&name) {
-                        let ref_json_path = manifest_dir
-                            .join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
+                        let ref_json_path =
+                            manifest_dir.join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
 
                         if ref_json_path.exists() {
                             let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
@@ -1016,8 +1022,8 @@ mod tests {
         for name in COMPARE_DENYLIST {
             if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
                 if let Some(actual_str) = compile_to_ir(name, cli, source_managers, &temp_dir) {
-                    let ref_json_path = manifest_dir
-                        .join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
+                    let ref_json_path =
+                        manifest_dir.join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
 
                     if ref_json_path.exists() {
                         let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();

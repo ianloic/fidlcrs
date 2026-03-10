@@ -1,7 +1,6 @@
 use crate::tests::test_library::TestLibrary;
 
 #[test]
-#[ignore]
 fn bad_collision() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0035.test.fidl");
@@ -245,7 +244,6 @@ fn good_service_members() {
 }
 
 #[test]
-#[ignore]
 fn good_resource_properties() {
     let mut library = TestLibrary::new();
 
@@ -253,7 +251,7 @@ fn good_resource_properties() {
         "example.fidl",
         r#"
     library example;
-    resource_definition Example {
+    resource_definition Example : uint32 {
             properties {
                     // This property is required for compilation, but is not otherwise under test.
                     subtype flexible enum : uint32 {};
@@ -297,21 +295,15 @@ fn good_current_library() {
 }
 
 #[test]
-#[ignore]
 fn good_dependent_library() {
-    // SharedLibrary is not fully translated
-    let mut dependency = TestLibrary::new();
-
-    dependency.add_source_file(
+    let mut library = TestLibrary::new();
+    library.add_source_file(
         "foobar.fidl",
         r#"
     library foobar;
     type Something = struct {};
     "#,
     );
-    dependency.compile().expect("dep failed");
-    // ASSERT_COMPILED(dependency);
-    let mut library = TestLibrary::new();
 
     library.add_source_file(
         "example.fidl",
@@ -375,7 +367,6 @@ fn bad_attribute_arguments() {
 }
 
 #[test]
-#[ignore]
 fn bad_struct_members() {
     let mut library = TestLibrary::new();
 
@@ -394,7 +385,6 @@ fn bad_struct_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_table_members() {
     let mut library = TestLibrary::new();
 
@@ -413,7 +403,6 @@ fn bad_table_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_union_members() {
     let mut library = TestLibrary::new();
 
@@ -432,7 +421,6 @@ fn bad_union_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_enum_members() {
     let mut library = TestLibrary::new();
 
@@ -451,7 +439,6 @@ fn bad_enum_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_bits_members() {
     let mut library = TestLibrary::new();
 
@@ -470,7 +457,6 @@ fn bad_bits_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_protocol_methods() {
     let mut library = TestLibrary::new();
 
@@ -489,7 +475,6 @@ fn bad_protocol_methods() {
 }
 
 #[test]
-#[ignore]
 fn bad_method_parameters() {
     let mut library = TestLibrary::new();
 
@@ -507,7 +492,6 @@ fn bad_method_parameters() {
 }
 
 #[test]
-#[ignore]
 fn bad_method_results() {
     let mut library = TestLibrary::new();
 
@@ -525,7 +509,6 @@ fn bad_method_results() {
 }
 
 #[test]
-#[ignore]
 fn bad_service_members() {
     let mut library = TestLibrary::new();
 
@@ -545,7 +528,6 @@ fn bad_service_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_resource_properties() {
     let mut library = TestLibrary::new();
 
@@ -576,7 +558,6 @@ fn bad_member_values() {
 }
 
 #[test]
-#[ignore]
 fn bad_upper_acronym() {
     let mut library = TestLibrary::new();
 
@@ -595,19 +576,15 @@ fn bad_upper_acronym() {
 #[test]
 
 fn bad_dependent_library() {
-    // SharedLibrary is not fully translated
-    let mut dependency = TestLibrary::new();
+    let mut library = TestLibrary::new();
 
-    dependency.add_source_file(
+    library.add_source_file(
         "foobar.fidl",
         r#"
     library foobar;
     type Something = struct {};
     "#,
     );
-    dependency.compile().expect("dep failed");
-    // ASSERT_COMPILED(dependency);
-    let mut library = TestLibrary::new();
 
     library.add_source_file(
         "lib.fidl",
@@ -628,7 +605,6 @@ fn bad_various_collisions() {
 }
 
 #[test]
-#[ignore]
 fn bad_consecutive_underscores() {
     let mut library = TestLibrary::new();
 

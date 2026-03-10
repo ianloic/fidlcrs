@@ -273,28 +273,88 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
         }
 
         // Check for collisions between local names and library imports
-        let mut to_report = Vec::new();
+        let mut canonical_names = std::collections::HashMap::new();
+
+        for (local_name, import) in &compiler.library_imports {
+            let canon = crate::attribute_schema::canonicalize(local_name);
+            let span = import.element.span();
+            let site = span.position_str();
+            canonical_names.insert(canon, (local_name.clone(), "library import", site));
+        }
+
+        let mut errors_to_emit = Vec::new();
+
         for (full_name, decl) in &compiler.raw_decls {
-            if let Some((lib, local_decl_name)) = full_name.rsplit_once('/')
-                && lib == compiler.library_name
-                && compiler.library_imports.contains_key(local_decl_name)
-            {
+            if let Some((lib, local_decl_name)) = full_name.rsplit_once('/') {
+                if lib != compiler.library_name {
+                    continue;
+                }
+                
+                let is_anonymous = compiler.anonymous_structs.contains(full_name);
+                if is_anonymous {
+                    continue;
+                }
+
+                let canon = crate::attribute_schema::canonicalize(local_decl_name);
                 let span = decl.element().span();
-                to_report.push((span, local_decl_name.to_string()));
+                let site = span.position_str();
+
+                let decl_kind = match decl {
+                    RawDecl::Struct(_) => "struct",
+                    RawDecl::Enum(_) => "enum",
+                    RawDecl::Bits(_) => "bits",
+                    RawDecl::Union(_) => "union",
+                    RawDecl::Table(_) => "table",
+                    RawDecl::Protocol(_) => "protocol",
+                    RawDecl::Service(_) => "service",
+                    RawDecl::Resource(_) => "resource_definition",
+                    RawDecl::Const(_) => "const",
+                    RawDecl::Alias(_) => "alias",
+                    RawDecl::Type(_) => "type",
+                };
+
+                if let Some((prev_raw, prev_kind, prev_site)) = canonical_names.get(&canon) {
+                    let err_span = unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span) };
+                    
+                    if prev_raw == local_decl_name {
+                        if prev_kind == &"library import" {
+                             errors_to_emit.push((Error::ErrDeclNameConflictsWithLibraryImport, err_span, vec![local_decl_name.to_string()]));
+                        } else {
+                             errors_to_emit.push((
+                                 Error::ErrNameCollision,
+                                 err_span,
+                                 vec![decl_kind.to_string(), local_decl_name.to_string(), prev_kind.to_string(), prev_site.clone()]
+                             ));
+                        }
+                    } else if prev_kind == &"library import" {
+                        errors_to_emit.push((
+                            Error::ErrDeclNameConflictsWithLibraryImportCanonical,
+                            err_span,
+                            vec![local_decl_name.to_string(), canon.clone()]
+                        ));
+                    } else {
+                        errors_to_emit.push((
+                            Error::ErrNameCollisionCanonical,
+                            err_span,
+                            vec![
+                                decl_kind.to_string(),
+                                local_decl_name.to_string(),
+                                prev_kind.to_string(),
+                                prev_raw.clone(),
+                                prev_site.clone(),
+                                canon.clone()
+                            ]
+                        ));
+                    }
+                } else {
+                    canonical_names.insert(canon, (local_decl_name.to_string(), decl_kind, site));
+                }
             }
         }
-        for (span, name) in to_report {
-            let span_safe = unsafe {
-                std::mem::transmute::<
-                    crate::source_span::SourceSpan<'_>,
-                    crate::source_span::SourceSpan<'_>,
-                >(span)
-            };
-            compiler.reporter.fail(
-                Error::ErrDeclNameConflictsWithLibraryImport,
-                span_safe,
-                &[&name],
-            );
+
+        for (err, span, args) in errors_to_emit {
+            let ref_args: Vec<&dyn std::fmt::Debug> = args.iter().map(|s| s as &dyn std::fmt::Debug).collect();
+            compiler.reporter.fail(err, span, &ref_args);
         }
     }
 }

@@ -12,6 +12,37 @@ use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+struct CanonicalNames {
+    names: HashMap<String, (String, String, String)>, // canon -> (raw, kind, site)
+}
+
+impl CanonicalNames {
+    fn new() -> Self {
+        Self { names: HashMap::new() }
+    }
+
+    fn insert(
+        &mut self,
+        raw_name: String,
+        kind: &str,
+        span: SourceSpan<'_>,
+    ) -> Result<(), (bool, String, String, String)> {
+        let canonical = crate::attribute_schema::canonicalize(&raw_name);
+        let site = span.position_str();
+        if let Some((prev_raw, prev_kind, prev_site)) = self.names.get(&canonical) {
+            Err((
+                prev_raw == &raw_name,
+                prev_raw.clone(),
+                prev_kind.clone(),
+                prev_site.clone(),
+            ))
+        } else {
+            self.names.insert(canonical, (raw_name, kind.to_string(), site));
+            Ok(())
+        }
+    }
+}
+
 pub fn to_camel_case(s: &str) -> String {
     let mut camel = String::new();
     let mut capitalize_next = true;
@@ -1603,6 +1634,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
+    fn check_canonical_insert(
+        &mut self,
+        names: &mut CanonicalNames,
+        raw_name: String,
+        kind: &str,
+        span: SourceSpan<'src>,
+    ) {
+        if let Err((is_exact, prev_raw, prev_kind, prev_site)) = names.insert(raw_name.clone(), kind, span) {
+            if is_exact {
+                self.reporter.fail(
+                    Error::ErrNameCollision,
+                    span,
+                    &[&kind.to_string(), &raw_name, &prev_kind, &prev_site],
+                );
+            } else {
+                let canon = crate::attribute_schema::canonicalize(&raw_name);
+                self.reporter.fail(
+                    Error::ErrNameCollisionCanonical,
+                    span,
+                    &[&kind.to_string(), &raw_name, &prev_kind, &prev_raw, &prev_site, &canon],
+                );
+            }
+        }
+    }
+
     pub fn compile_enum(
         &mut self,
         name: &str,
@@ -1746,7 +1802,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         let mut maybe_unknown_value = None;
-        let mut member_names = std::collections::HashSet::new();
+        let mut member_names = CanonicalNames::new();
         let mut member_values = std::collections::HashMap::new();
         let mut unknown_member_span: Option<SourceSpan<'src>> = None;
         let mut max_val_spans = vec![];
@@ -1757,13 +1813,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let compiled_value = self.compile_constant(&member.value);
 
             let name_str = member.name.data().to_string();
-            if !member_names.insert(name_str.clone()) {
-                self.reporter.fail(
-                    Error::ErrNameCollision,
-                    member.name.element.span(),
-                    &[&"member", &name_str, &"member", &name_str],
-                );
-            }
+            self.check_canonical_insert(&mut member_names, name_str.clone(), "member", member.name.element.span());
 
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
                 if eval_val == max_val_u64 {
@@ -2020,20 +2070,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         let mut mask: u64 = 0;
-        let mut member_names = std::collections::HashSet::new();
+        let mut member_names = CanonicalNames::new();
 
         for member in &decl.members {
             let attributes = self.compile_attribute_list(&member.attributes);
             let compiled_value = self.compile_constant(&member.value);
 
             let name_str = member.name.data().to_string();
-            if !member_names.insert(name_str.clone()) {
-                self.reporter.fail(
-                    Error::ErrNameCollision,
-                    member.name.element.span(),
-                    &[&"member", &name_str, &"member", &name_str],
-                );
-            }
+            self.check_canonical_insert(&mut member_names, name_str.clone(), "member", member.name.element.span());
 
             // Calculate mask and validate value
             let mut valid_value = true;
@@ -2228,6 +2272,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         let mut members = vec![];
+        let mut member_names = CanonicalNames::new();
         for member in &decl.members {
             let ordinal = if let Some(ord) = &member.ordinal {
                 match &ord.kind {
@@ -2291,22 +2336,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
                 let name_str = member.name.as_ref().unwrap().data().to_string();
-                if let Some(prev) = members
-                    .iter()
-                    .find(|m: &&TableMember| m.name.as_deref() == Some(name_str.as_str()))
-                {
-                    let location_str = format!(
-                        "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename,
-                        prev.location.as_ref().unwrap().line,
-                        prev.location.as_ref().unwrap().column
-                    );
-                    self.reporter.fail(
-                        Error::ErrNameCollision,
-                        member.name.as_ref().unwrap().element.span(),
-                        &[&"table field", &name_str, &"table field", &location_str],
-                    );
-                }
+                self.check_canonical_insert(&mut member_names, name_str.clone(), "table field", member.name.as_ref().unwrap().element.span());
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     NamingContext::create(
                         name_element
@@ -2508,6 +2538,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         let mut members = vec![];
+        let mut member_names = CanonicalNames::new();
         for member in &decl.members {
             let ordinal = if let Some(ord) = &member.ordinal {
                 match &ord.kind {
@@ -2564,27 +2595,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if let Some(n_name) = &member.name {
                 let member_name = n_name.data();
-                if let Some(prev) = members
-                    .iter()
-                    .find(|m: &&UnionMember| m.name.as_deref() == Some(member_name))
-                {
-                    let location_str = format!(
-                        "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename,
-                        prev.location.as_ref().unwrap().line,
-                        prev.location.as_ref().unwrap().column
-                    );
-                    self.reporter.fail(
-                        Error::ErrNameCollision,
-                        n_name.element.span(),
-                        &[
-                            &"union member",
-                            &member_name,
-                            &"union member",
-                            &location_str,
-                        ],
-                    );
-                }
+                self.check_canonical_insert(&mut member_names, member_name.to_string(), "union member", n_name.element.span());
             }
 
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
@@ -2856,6 +2867,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let full_name = format!("{}/{}", library_name, name);
 
         let mut members = vec![];
+        let mut member_names = CanonicalNames::new();
         let mut offset: u32 = 0;
         let mut alignment: u32 = 1;
         let mut max_handles: u32 = 0;
@@ -2864,25 +2876,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         for member in &decl.members {
             let member_name = member.name.data();
-            if let Some(prev) = members
-                .iter()
-                .find(|m: &&StructMember| m.name == member_name)
-            {
-                let location_str = format!(
-                    "{}:{}:{}",
-                    prev.location.filename, prev.location.line, prev.location.column
-                );
-                self.reporter.fail(
-                    Error::ErrNameCollision,
-                    member.name.element.span(),
-                    &[
-                        &"struct member",
-                        &member_name,
-                        &"struct member",
-                        &location_str,
-                    ],
-                );
-            }
+            self.check_canonical_insert(&mut member_names, member_name.to_string(), "struct member", member.name.element.span());
 
             let ctx = naming_context.clone().unwrap_or_else(|| {
                 NamingContext::create(if let Some(id) = &decl.name {
@@ -4693,7 +4687,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let location = self.get_location(&decl.name.element);
 
         let mut properties = vec![];
-        let mut property_names = std::collections::HashSet::new();
+        let mut property_names = CanonicalNames::new();
 
         let ctx = NamingContext::create(name);
 
@@ -4752,18 +4746,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for prop in &decl.properties {
             let prop_name = prop.name.data().to_string();
 
-            if !property_names.insert(prop_name.clone()) {
-                self.reporter.fail(
-                    Error::ErrNameCollision,
-                    prop.name.element.span(),
-                    &[
-                        &"resource property",
-                        &prop_name,
-                        &"resource property",
-                        &prop.name.element.span().data,
-                    ],
-                );
-            }
+            self.check_canonical_insert(&mut property_names, prop_name.clone(), "resource property", prop.name.element.span());
 
             let prop_ctx = NamingContext::create(name).enter_member(prop_name.as_str());
             let prop_type = self.resolve_type(&prop.type_ctor, library_name, Some(prop_ctx));
@@ -4875,10 +4858,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let location = self.get_location(&decl.name.element);
 
         let mut members = vec![];
+        let mut member_names = CanonicalNames::new();
         for member in &decl.members {
             let ctx = NamingContext::create(name).enter_member(member.name.data());
             let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(ctx));
             let member_name = member.name.data().to_string();
+            self.check_canonical_insert(&mut member_names, member_name.clone(), "service member", member.name.element.span());
             let attributes = self.compile_attribute_list(&member.attributes);
 
             members.push(ServiceMember {
@@ -4940,7 +4925,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         let mut methods = vec![];
-        let mut method_names = std::collections::HashSet::new();
+        let mut method_names = CanonicalNames::new();
         let has_no_resource = decl.attributes.as_ref().is_some_and(|attrs| {
             attrs
                 .attributes
@@ -5151,13 +5136,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 );
             }
 
-            if !method_names.insert(m.name.data()) {
-                self.reporter.fail(
-                    Error::ErrNameCollision,
-                    m.name.element.span(),
-                    &[&"method", &m.name.data(), &"method", &m.name.data()],
-                );
-            }
+            self.check_canonical_insert(&mut method_names, m.name.data().to_string(), "method", m.name.element.span());
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter
                     .fail(Error::ErrUnexpectedToken, m.name.element.span(), &[]);

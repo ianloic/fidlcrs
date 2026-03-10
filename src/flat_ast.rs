@@ -336,11 +336,59 @@ impl Type {
     pub fn primitive(subtype: PrimitiveSubtype) -> Self {
         Type::Primitive(PrimitiveType::new(subtype))
     }
-    pub fn string(t: StringType) -> Self {
-        Type::String(t)
+    pub fn string(
+        maybe_element_count: Option<u32>,
+        nullable: bool,
+        maybe_size_constant_name: Option<String>,
+    ) -> Self {
+        Type::String(StringType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name,
+                resource: false,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 16,
+                    alignment: 8,
+                    depth: 1,
+                    max_handles: 0,
+                    max_out_of_line: match maybe_element_count {
+                        None => u32::MAX,
+                        Some(max_len) => (max_len + 7) & !7,
+                    },
+                    has_padding: true,
+                    has_flexible_envelope: false,
+                },
+            },
+            maybe_element_count,
+            nullable,
+        })
     }
-    pub fn string_array(t: StringArrayType) -> Self {
-        Type::StringArray(t)
+    pub fn string_array(element_count: Option<u32>) -> Self {
+        Type::StringArray(StringArrayType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: false,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: element_count.unwrap_or(u32::MAX),
+                    alignment: 1,
+                    depth: 0,
+                    max_handles: 0,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            element_count,
+        })
     }
     pub fn unknown(t: UnknownType) -> Self {
         Type::Unknown(t)

@@ -94,8 +94,7 @@ use crate::flat_ast::PartialTypeCtor;
 use crate::flat_ast::PrimitiveSubtype;
 
 use crate::flat_ast::ProtocolCompose;
-use crate::flat_ast::StringArrayType;
-use crate::flat_ast::StringType;
+
 use crate::flat_ast::Type;
 use crate::flat_ast::TypeCommon;
 use crate::flat_ast::TypeKind;
@@ -3475,44 +3474,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         );
                     }
                 }
-                Type::string(StringType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: if let Some(raw_ast::Constant::Identifier(id)) =
-                            type_ctor.constraints.first()
-                        {
-                            Some(id.identifier.to_string())
-                        } else {
-                            None
-                        },
-                        resource: false,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: 16,
-                            alignment: 8,
-                            depth: 1,
-                            max_handles: 0,
-                            max_out_of_line: {
-                                if max_len == u32::MAX {
-                                    u32::MAX
-                                } else {
-                                    (max_len + 7) & !7
-                                }
-                            },
-                            has_padding: true,
-                            has_flexible_envelope: false,
-                        },
-                    },
-                    maybe_element_count: if max_len == u32::MAX {
+                Type::string(
+                    if max_len == u32::MAX {
                         None
                     } else {
                         Some(max_len)
                     },
-                    nullable: nullable,
-                })
+                    nullable,
+                    if let Some(raw_ast::Constant::Identifier(id)) = type_ctor.constraints.first() {
+                        Some(id.identifier.to_string())
+                    } else {
+                        None
+                    },
+                )
             }
             "string_array" => {
                 let max_len = if !type_ctor.parameters.is_empty() {
@@ -3522,30 +3496,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     u32::MAX
                 };
-                Type::string_array(StringArrayType {
-                    common: TypeCommon {
-                        experimental_maybe_from_alias: None,
-                        outer_alias: None,
-                        maybe_attributes: vec![],
-                        field_shape: None,
-                        maybe_size_constant_name: None,
-                        resource: false,
-                        deprecated: None,
-                        type_shape: TypeShape {
-                            inline_size: max_len,
-                            alignment: 1,
-                            depth: 0,
-                            max_handles: 0,
-                            max_out_of_line: 0,
-                            has_padding: false,
-                            has_flexible_envelope: false,
-                        },
-                    },
-                    element_count: if max_len == u32::MAX {
-                        None
-                    } else {
-                        Some(max_len)
-                    },
+                Type::string_array(if max_len == u32::MAX {
+                    None
+                } else {
+                    Some(max_len)
                 })
             }
             "vector" | "bytes" => {

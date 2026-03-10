@@ -432,7 +432,7 @@ impl Type {
         let elem_size = element_type.type_shape.inline_size;
         let elem_ool = element_type.type_shape.max_out_of_line;
         let content_size = max_count.saturating_mul(elem_size.saturating_add(elem_ool));
-        let max_ool = if content_size % 8 == 0 {
+        let max_ool = if content_size.is_multiple_of(8) {
             content_size
         } else {
             content_size.saturating_add(8 - (content_size % 8))
@@ -454,7 +454,7 @@ impl Type {
                     depth: new_depth,
                     max_handles,
                     max_out_of_line: max_ool,
-                    has_padding: element_type.type_shape.has_padding || (elem_size % 8 != 0),
+                    has_padding: element_type.type_shape.has_padding || !elem_size.is_multiple_of(8),
                     has_flexible_envelope: element_type.type_shape.has_flexible_envelope,
                 },
             },

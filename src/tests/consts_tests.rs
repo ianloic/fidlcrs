@@ -713,7 +713,6 @@ const Result uint16 = MyBits.A | MyBits.B | MyBits.D;
 }
 
 #[test]
-#[ignore]
 fn bad_or_operator_different_types_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0065-b.test.fidl");
@@ -736,7 +735,6 @@ const two_fifty_seven uint16 = one | two_fifty_six;
 }
 
 #[test]
-#[ignore]
 fn bad_or_operator_non_primitive_types_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0061.test.fidl");

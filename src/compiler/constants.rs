@@ -671,7 +671,18 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 .fail(Error::ErrCannotResolveConstantValue, span, &[]);
                         }
                     }
-                    _ => {}
+                    raw_ast::Constant::BinaryOperator(binop) => {
+                        let span = binop.element.start_token.span;
+                        let l_type = self.infer_constant_type(&binop.left);
+                        let r_type = self.infer_constant_type(&binop.right);
+                        if l_type.unwrap_or("") != "numeric" || r_type.unwrap_or("") != "numeric" {
+                            self.reporter
+                                .fail(Error::ErrOrOperatorOnNonPrimitiveValue, span, &[]);
+                            return;
+                        }
+                        self.validate_constant(&binop.left, expected_type);
+                        self.validate_constant(&binop.right, expected_type);
+                    }
                 }
             }
             Type::String(s) => match constant {
@@ -772,7 +783,13 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         );
                     }
                 }
-                _ => {}
+                raw_ast::Constant::BinaryOperator(binop) => {
+                    self.reporter.fail(
+                        Error::ErrOrOperatorOnNonPrimitiveValue,
+                        binop.element.start_token.span,
+                        &[],
+                    );
+                }
             },
             Type::Identifier(idt) => {
                 let expected_name = idt.identifier.as_ref().unwrap_or(&"".to_string()).clone();

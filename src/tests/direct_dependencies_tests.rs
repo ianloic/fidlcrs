@@ -39,7 +39,7 @@ protocol Protocol {};
 
         let mut dep1 = TestLibrary::new();
 
-        dep1.add_source_file(
+        dep1.add_dependency_file(
             "dep2.fidl",
             r#"
 library dep2;
@@ -68,7 +68,7 @@ protocol ComposedProtocol {{
 
         let mut lib = TestLibrary::new();
 
-        lib.add_source_file(
+        lib.add_dependency_file(
             "dep2.fidl",
             r#"
 library dep2;
@@ -78,7 +78,7 @@ type Type = struct {};
 protocol Protocol {};
 "#,
         );
-        lib.add_source_file(
+        lib.add_dependency_file(
             "dep1.fidl",
             &(format!(
                 r#"
@@ -125,7 +125,7 @@ fn good_does_not_follow_alias() {
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source_file(
+    dep1.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
@@ -146,14 +146,14 @@ fn good_does_not_follow_alias() {
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
     type Foo = struct {};
     "#,
     );
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep1.fidl",
         r#"
     library dep1;
@@ -193,7 +193,7 @@ fn good_does_not_follow_nested_struct() {
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source_file(
+    dep1.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
@@ -216,14 +216,14 @@ fn good_does_not_follow_nested_struct() {
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
     type Foo = struct {};
     "#,
     );
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep1.fidl",
         r#"
     library dep1;
@@ -265,7 +265,7 @@ fn good_error_syntax_success_type() {
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source_file(
+    dep1.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
@@ -285,14 +285,14 @@ fn good_error_syntax_success_type() {
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
     type Foo = struct {};
     "#,
     );
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep1.fidl",
         r#"
     library dep1;
@@ -331,7 +331,7 @@ fn good_error_syntax_error_type() {
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source_file(
+    dep1.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
@@ -351,14 +351,14 @@ fn good_error_syntax_error_type() {
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
     type Foo = flexible enum : uint32 {};
     "#,
     );
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep1.fidl",
         r#"
     library dep1;
@@ -397,7 +397,7 @@ fn good_flexible_response() {
     );
     let _dep2_root = dep2.compile().expect("dep2 compilation failed");
     let mut dep1 = TestLibrary::new();
-    dep1.add_source_file(
+    dep1.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
@@ -417,14 +417,14 @@ fn good_flexible_response() {
     );
     let _dep1_root = dep1.compile().expect("dep1 compilation failed");
     let mut lib = TestLibrary::new();
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep2.fidl",
         r#"
     library dep2;
     type Foo = struct {};
     "#,
     );
-    lib.add_source_file(
+    lib.add_dependency_file(
         "dep1.fidl",
         r#"
     library dep1;

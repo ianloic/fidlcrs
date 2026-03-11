@@ -2,7 +2,7 @@ use crate::flat_ast::TypeKind;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
+
 fn bad_duplicate_alias() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -106,7 +106,6 @@ type Message = struct {
 }
 
 #[test]
-
 fn bad_no_optional_on_primitive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0156.test.fidl");
@@ -114,7 +113,7 @@ fn bad_no_optional_on_primitive() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_multiple_constraints_on_primitive() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -224,7 +223,7 @@ alias alias_of_vector_max_8 = vector:8;
 }
 
 #[test]
-#[ignore]
+
 fn good_vector_bounded_on_use() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -244,7 +243,7 @@ alias alias_of_vector_of_string = vector<string>;
 
     let type_ = &msg.members[0].type_;
     assert_eq!(type_.kind(), TypeKind::Vector);
-    assert_eq!(type_.element_count(), Some(8));
+    assert_eq!(type_.maybe_element_count(), Some(8));
 }
 
 #[test]
@@ -329,7 +328,7 @@ fn bad_cannot_bound_twice() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_cannot_null_twice() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0160.test.fidl");
@@ -412,7 +411,8 @@ alias foo.bar.baz = uint8;
 
 #[test]
 fn good_using_library() {
-    let mut dependency_lib = TestLibrary::new();
+    let mut shared = crate::tests::test_library::SharedAmongstLibraries::new();
+    let mut dependency_lib = TestLibrary::with_shared(&mut shared);
     dependency_lib.add_source_file(
         "dependent.fidl",
         r#"library dependent;
@@ -424,16 +424,7 @@ type Bar = struct {
     );
     dependency_lib.compile().expect("compilation failed");
 
-    let mut lib = TestLibrary::new();
-    lib.add_source_file(
-        "dependent.fidl",
-        r#"library dependent;
-
-type Bar = struct {
-    s int8;
-};
-"#,
-    ); // We need to provide the parsed AST of dependencies
+    let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_source_file(
         "example.fidl",
         r#"library example;

@@ -371,10 +371,7 @@ protocol #Decl1# {
         let root_dep = dependency.compile().unwrap();
 
         let mut library = TestLibrary::new();
-        // TODO: How does TestLibrary handle multiple libraries?
-        // Currently, TestLibrary compiles everything into one JSON root.
-        // Let's add both sources to `library`.
-        library.add_source_file("dependency.fidl", &(source_dep));
+        library.add_dependency_file("dependency.fidl", &(source_dep));
         library.add_source_file("example.fidl", &(source_ex));
 
         let root = library.compile().unwrap();

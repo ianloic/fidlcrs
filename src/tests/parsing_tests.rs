@@ -135,7 +135,7 @@ fn good_parsing_reserved_words_in_constraint() {
         r#"
 library example;
 
-alias T = uint8; // Modified from fidl.uint8 to avoid dependency logic for now
+alias T = fidl.uint8;
 type S = struct {};
 
 // Keywords

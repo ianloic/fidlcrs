@@ -3474,9 +3474,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
             resolved_name = "uint8".to_string();
         }
 
+        let is_shadowed = if name.contains('/') {
+            false
+        } else {
+            let bare = resolved_name
+                .strip_prefix("fidl/")
+                .unwrap_or(&resolved_name);
+            let local_name = format!("{}/{}", library_name, bare);
+            self.raw_decls.contains_key(&local_name) || self.raw_decls.contains_key(bare)
+        };
+
         match resolved_name.as_str() {
             "bool" | "int8" | "int16" | "int32" | "int64" | "uint8" | "uint16" | "uint32"
-            | "uint64" | "float32" | "float64" | "uchar" | "usize64" | "uintptr64" => {
+            | "uint64" | "float32" | "float64" | "uchar" | "usize64" | "uintptr64"
+                if !is_shadowed =>
+            {
                 if !type_ctor.parameters.is_empty() {
                     self.reporter.fail(
                         Error::ErrWrongNumberOfLayoutParameters,
@@ -3490,6 +3502,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         Error::ErrCannotBeOptional,
                         type_ctor.element.start_token.span,
                         &[&resolved_name],
+                    );
+                }
+
+                if !actual_constraints.is_empty() {
+                    self.reporter.fail(
+                        Error::ErrTooManyConstraints,
+                        type_ctor.element.start_token.span,
+                        &[&resolved_name, &0_usize, &actual_constraints.len()],
                     );
                 }
 
@@ -4293,7 +4313,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     if let RawDecl::Alias(a) = decl {
                         let mut has_err = false;
-                        if !actual_constraints.is_empty() && !a.type_ctor.constraints.is_empty() {
+                        let a_constraints: Vec<_> = a.type_ctor.constraints.iter().filter(|c| !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")).collect();
+
+                        if !actual_constraints.is_empty() && !a_constraints.is_empty() {
                             self.reporter.fail(
                                 Error::ErrCannotConstrainTwice,
                                 type_ctor.element.start_token.span,
@@ -4301,18 +4323,85 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             );
                             has_err = true;
                         }
+
+                        let a_nullable = a.type_ctor.constraints.iter().any(|c| matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")) || a.type_ctor.nullable;
+                        if nullable && a_nullable {
+                            self.reporter.fail(
+                                Error::ErrCannotIndicateOptionalTwice,
+                                type_ctor.element.start_token.span,
+                                &[&name],
+                            );
+                            has_err = true;
+                        }
+
                         let mut resolved_type =
                             self.resolve_type(&a.type_ctor, library_name, naming_context);
+
+                        let final_nullable = nullable || a_nullable;
+
+                        if !actual_constraints.is_empty() {
+                            if resolved_type.kind() == TypeKind::Vector
+                                || resolved_type.kind() == TypeKind::String
+                            {
+                                if let Some(c) = actual_constraints.first() {
+                                    if let Some(val) = self.eval_constant_usize(c) {
+                                        if val == 0 {
+                                            let id_str =
+                                                resolved_type.identifier().unwrap_or(String::new());
+                                            self.reporter.fail(
+                                                Error::ErrMustHaveNonZeroSize,
+                                                type_ctor.element.start_token.span,
+                                                &[&id_str],
+                                            );
+                                            has_err = true;
+                                        } else {
+                                            if resolved_type.kind() == TypeKind::Vector {
+                                                resolved_type = Type::vector(
+                                                    Box::new(
+                                                        resolved_type
+                                                            .element_type()
+                                                            .unwrap()
+                                                            .clone(),
+                                                    ),
+                                                    Some(val as u32),
+                                                    final_nullable,
+                                                    None,
+                                                );
+                                            } else {
+                                                resolved_type = Type::string(
+                                                    Some(val as u32),
+                                                    final_nullable,
+                                                    None,
+                                                );
+                                            }
+                                        }
+                                    } else {
+                                        self.reporter.fail(
+                                            Error::ErrUnexpectedConstraint,
+                                            type_ctor.element.start_token.span,
+                                            &[&name],
+                                        );
+                                        has_err = true;
+                                    }
+                                }
+                            } else if !has_err {
+                                self.reporter.fail(
+                                    Error::ErrTooManyConstraints,
+                                    type_ctor.element.start_token.span,
+                                    &[&name, &0_usize, &actual_constraints.len()],
+                                );
+                                has_err = true;
+                            }
+                        }
+
                         resolved_type.outer_alias = Some(ExperimentalMaybeFromAlias {
                             name: full_name.clone(),
                             args: vec![], // TODO handle args if any
                             nullable,
                         });
-                        if nullable {
+
+                        if final_nullable {
                             resolved_type.set_nullable(true);
-                            if resolved_type.kind() != TypeKind::Primitive {
-                                resolved_type.type_shape.depth += 1;
-                            }
                         }
                         if has_err {
                             resolved_type.resource = false;

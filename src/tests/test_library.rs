@@ -154,6 +154,11 @@ impl<'a> TestLibrary<'a> {
             .push(SourceFile::new(filename.to_string(), contents.to_string()));
     }
 
+    pub fn add_dependency_file(&mut self, filename: &str, contents: &str) {
+        self.dependency_files
+            .push(SourceFile::new(filename.to_string(), contents.to_string()));
+    }
+
     pub fn add_attribute_schema(&mut self, name: &str, schema: AttributeSchema) {
         self.custom_schemas.insert(name.to_string(), schema);
     }

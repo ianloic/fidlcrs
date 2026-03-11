@@ -766,7 +766,6 @@ mod tests {
         "fuchsia.kernel",
         "fuchsia.legacymetrics",
         "fuchsia.location.gnss",
-        "fuchsia.location.namedplace",
         "fuchsia.location.position",
         "fuchsia.lowpan",
         "fuchsia.lowpan.spinel",

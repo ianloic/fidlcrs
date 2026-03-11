@@ -610,7 +610,6 @@ const u uint8<string> = 0;
 }
 
 #[test]
-#[ignore]
 fn bad_name_collision() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0034.test.fidl");

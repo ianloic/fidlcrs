@@ -144,6 +144,18 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             compiler.library_decl = None;
         }
 
+        // Check for collisions between local names and library imports
+        let mut canonical_names: std::collections::HashMap<String, (String, String, String)> = std::collections::HashMap::new();
+
+        for (local_name, import) in &compiler.library_imports {
+            let canon = crate::attribute_schema::canonicalize(local_name);
+            let span = import.element.span();
+            let site = span.position_str();
+            canonical_names.insert(canon, (local_name.clone(), "library import".to_string(), site));
+        }
+
+        let mut errors_to_emit: Vec<(Error, SourceSpan<'src>, Vec<String>)> = Vec::new();
+
         let all_files = self.dependency_files.iter().chain(self.main_files.iter());
 
         for file in all_files {
@@ -153,52 +165,109 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 .map(|l| l.path.to_string())
                 .unwrap_or_else(|| main_library_name.clone());
 
+            let mut insert_decl = |compiler: &mut Compiler<'node, 'src>, canonical_names: &mut std::collections::HashMap<String, (String, String, String)>, name: String, local_decl_name: &str, decl: RawDecl<'node, 'src>, decl_kind: &'static str, is_anonymous: bool| {
+                if let Some((lib, _)) = name.rsplit_once('/') {
+                    // We only check for collisions in the main library!
+                    if lib == compiler.library_name && !is_anonymous {
+                        let canon = crate::attribute_schema::canonicalize(local_decl_name);
+                        let span = decl.element().span();
+                        let site = span.position_str();
+
+                        if let Some((prev_raw, prev_kind, prev_site)) = canonical_names.get(&canon) {
+                            let err_span = unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span) };
+                            if prev_raw == local_decl_name {
+                                if prev_kind == "library import" {
+                                    errors_to_emit.push((
+                                        Error::ErrDeclNameConflictsWithLibraryImport,
+                                        err_span,
+                                        vec![local_decl_name.to_string()],
+                                    ));
+                                } else {
+                                    errors_to_emit.push((
+                                        Error::ErrNameCollision,
+                                        err_span,
+                                        vec![
+                                            decl_kind.to_string(),
+                                            local_decl_name.to_string(),
+                                            prev_kind.to_string(),
+                                            prev_site.clone(),
+                                        ],
+                                    ));
+                                }
+                            } else if prev_kind == "library import" {
+                                errors_to_emit.push((
+                                    Error::ErrDeclNameConflictsWithLibraryImportCanonical,
+                                    err_span,
+                                    vec![local_decl_name.to_string(), canon.clone()],
+                                ));
+                            } else {
+                                errors_to_emit.push((
+                                    Error::ErrNameCollisionCanonical,
+                                    err_span,
+                                    vec![
+                                        decl_kind.to_string(),
+                                        local_decl_name.to_string(),
+                                        prev_kind.to_string(),
+                                        prev_raw.clone(),
+                                        prev_site.clone(),
+                                        canon.clone(),
+                                    ],
+                                ));
+                            }
+                        } else {
+                            canonical_names.insert(canon, (local_decl_name.to_string(), decl_kind.to_string(), site));
+                        }
+                    }
+                }
+                compiler.raw_decls.insert(name, decl);
+            };
+
             for decl in &file.type_decls {
-                let name = format!("{}/{}", file_library_name, decl.name.data());
-                compiler.raw_decls.insert(name, RawDecl::Type(decl));
+                let local_name = decl.name.data();
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Type(decl), "type", false);
             }
 
             for decl in &file.alias_decls {
-                let name = format!("{}/{}", file_library_name, decl.name.data());
-                compiler.raw_decls.insert(name, RawDecl::Alias(decl));
+                let local_name = decl.name.data();
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Alias(decl), "alias", false);
             }
 
             for decl in &file.struct_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Struct(decl));
+                let local_name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Struct(decl), "struct", decl.name.is_none());
             }
 
             for decl in &file.enum_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Enum(decl));
+                let local_name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Enum(decl), "enum", decl.name.is_none());
             }
 
             for decl in &file.bits_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Bits(decl));
+                let local_name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Bits(decl), "bits", decl.name.is_none());
             }
 
             for decl in &file.union_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Union(decl));
+                let local_name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Union(decl), "union", decl.name.is_none());
             }
 
             for decl in &file.table_decls {
-                let name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Table(decl));
+                let local_name = decl.name.as_ref().map(|n| n.data()).unwrap_or("anonymous");
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Table(decl), "table", decl.name.is_none());
             }
 
             for decl in &file.protocol_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler
-                    .raw_decls
-                    .insert(full_name, RawDecl::Protocol(decl));
+                let local_name = decl.name.data();
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Protocol(decl), "protocol", false);
 
                 let protocol_context = NamingContext::create(decl.name.element.span());
 
@@ -218,9 +287,10 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     };
                     if let Some(s) = req_s {
                         let ctx = protocol_context.enter_request(method.name.element.span());
-                        let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
+                        let synth_name = ctx.flattened_name();
+                        let full_synth = format!("{}/{}", file_library_name, synth_name);
                         compiler.anonymous_structs.insert(full_synth.clone());
-                        compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
+                        insert_decl(compiler, &mut canonical_names, full_synth, &synth_name, RawDecl::Struct(s), "struct", true);
                     }
 
                     let res_s = match &method.response_payload {
@@ -246,132 +316,41 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         if method.has_error {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
-                                name,
+                                local_name,
                                 method.name.data()
                             ));
                             ctx = ctx.enter_member("response");
                             ctx.set_name_override(format!(
                                 "{}_{}_Response",
-                                name,
+                                local_name,
                                 method.name.data()
                             ));
                         }
 
-                        let full_synth = format!("{}/{}", file_library_name, ctx.flattened_name());
+                        let synth_name = ctx.flattened_name();
+                        let full_synth = format!("{}/{}", file_library_name, synth_name);
                         compiler.anonymous_structs.insert(full_synth.clone());
-                        compiler.raw_decls.insert(full_synth, RawDecl::Struct(s));
+                        insert_decl(compiler, &mut canonical_names, full_synth, &synth_name, RawDecl::Struct(s), "struct", true);
                     }
                 }
             }
 
             for decl in &file.service_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Service(decl));
+                let local_name = decl.name.data();
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Service(decl), "service", false);
             }
 
             for decl in &file.resource_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler
-                    .raw_decls
-                    .insert(full_name, RawDecl::Resource(decl));
+                let local_name = decl.name.data();
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Resource(decl), "resource_definition", false);
             }
 
             for decl in &file.const_decls {
-                let name = decl.name.data();
-                let full_name = format!("{}/{}", file_library_name, name);
-                compiler.raw_decls.insert(full_name, RawDecl::Const(decl));
-            }
-        }
-
-        // Check for collisions between local names and library imports
-        let mut canonical_names = std::collections::HashMap::new();
-
-        for (local_name, import) in &compiler.library_imports {
-            let canon = crate::attribute_schema::canonicalize(local_name);
-            let span = import.element.span();
-            let site = span.position_str();
-            canonical_names.insert(canon, (local_name.clone(), "library import", site));
-        }
-
-        let mut errors_to_emit = Vec::new();
-
-        for (full_name, decl) in &compiler.raw_decls {
-            if let Some((lib, local_decl_name)) = full_name.rsplit_once('/') {
-                if lib != compiler.library_name {
-                    continue;
-                }
-
-                let is_anonymous = compiler.anonymous_structs.contains(full_name);
-                if is_anonymous {
-                    continue;
-                }
-
-                let canon = crate::attribute_schema::canonicalize(local_decl_name);
-                let span = decl.element().span();
-                let site = span.position_str();
-
-                let decl_kind = match decl {
-                    RawDecl::Struct(_) => "struct",
-                    RawDecl::Enum(_) => "enum",
-                    RawDecl::Bits(_) => "bits",
-                    RawDecl::Union(_) => "union",
-                    RawDecl::Table(_) => "table",
-                    RawDecl::Protocol(_) => "protocol",
-                    RawDecl::Service(_) => "service",
-                    RawDecl::Resource(_) => "resource_definition",
-                    RawDecl::Const(_) => "const",
-                    RawDecl::Alias(_) => "alias",
-                    RawDecl::Type(_) => "type",
-                };
-
-                if let Some((prev_raw, prev_kind, prev_site)) = canonical_names.get(&canon) {
-                    let err_span =
-                        unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span) };
-
-                    if prev_raw == local_decl_name {
-                        if prev_kind == &"library import" {
-                            errors_to_emit.push((
-                                Error::ErrDeclNameConflictsWithLibraryImport,
-                                err_span,
-                                vec![local_decl_name.to_string()],
-                            ));
-                        } else {
-                            errors_to_emit.push((
-                                Error::ErrNameCollision,
-                                err_span,
-                                vec![
-                                    decl_kind.to_string(),
-                                    local_decl_name.to_string(),
-                                    prev_kind.to_string(),
-                                    prev_site.clone(),
-                                ],
-                            ));
-                        }
-                    } else if prev_kind == &"library import" {
-                        errors_to_emit.push((
-                            Error::ErrDeclNameConflictsWithLibraryImportCanonical,
-                            err_span,
-                            vec![local_decl_name.to_string(), canon.clone()],
-                        ));
-                    } else {
-                        errors_to_emit.push((
-                            Error::ErrNameCollisionCanonical,
-                            err_span,
-                            vec![
-                                decl_kind.to_string(),
-                                local_decl_name.to_string(),
-                                prev_kind.to_string(),
-                                prev_raw.clone(),
-                                prev_site.clone(),
-                                canon.clone(),
-                            ],
-                        ));
-                    }
-                } else {
-                    canonical_names.insert(canon, (local_decl_name.to_string(), decl_kind, site));
-                }
+                let local_name = decl.name.data();
+                let name = format!("{}/{}", file_library_name, local_name);
+                insert_decl(compiler, &mut canonical_names, name, local_name, RawDecl::Const(decl), "const", false);
             }
         }
 

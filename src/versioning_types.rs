@@ -222,6 +222,14 @@ impl InheritResult {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NarrowError {
+    NotInherited,
+    LegacyRangeInvalid,
+    CannotNarrowToLegacy,
+    OutOfBounds,
+}
+
 impl Availability {
     pub fn new() -> Self {
         Self {
@@ -268,10 +276,12 @@ impl Availability {
     pub fn init(&mut self, args: InitArgs) -> bool {
         assert!(self.state == AvailabilityState::Unset);
         if self.legacy.is_some() {
-            panic!("cannot process legacy=true during Init");
+            self.state = AvailabilityState::Failed;
+            return false;
         }
         if args.replaced && args.removed.is_none() {
-            panic!("cannot set replaced without removed");
+            self.state = AvailabilityState::Failed;
+            return false;
         }
 
         self.added = args.added;
@@ -365,7 +375,10 @@ impl Availability {
                     && self.ending.is_some()
                     && self.legacy.is_some()
             );
-            assert!(self.valid_order());
+            if !self.valid_order() {
+                self.state = AvailabilityState::Failed;
+                return result;
+            }
             self.state = AvailabilityState::Inherited;
         } else {
             self.state = AvailabilityState::Failed;
@@ -380,15 +393,23 @@ impl Availability {
         self.legacy = Some(Legacy::Yes);
     }
 
-    pub fn narrow(&mut self, range: VersionRange) {
-        assert!(self.state == AvailabilityState::Inherited);
+    pub fn narrow(&mut self, range: VersionRange) -> Result<(), NarrowError> {
+        if self.state != AvailabilityState::Inherited {
+            return Err(NarrowError::NotInherited);
+        }
         let a = range.lower;
         let b = range.upper_exclusive;
         if a == Version::LEGACY {
-            assert!(b == Version::POS_INF);
-            assert!(self.legacy.unwrap() != Legacy::No);
+            if b != Version::POS_INF {
+                return Err(NarrowError::LegacyRangeInvalid);
+            }
+            if self.legacy.unwrap() == Legacy::No {
+                return Err(NarrowError::CannotNarrowToLegacy);
+            }
         } else {
-            assert!(a >= self.added.unwrap() && b <= self.removed.unwrap());
+            if a < self.added.unwrap() || b > self.removed.unwrap() {
+                return Err(NarrowError::OutOfBounds);
+            }
         }
         if b == Version::POS_INF {
             self.ending = Some(Ending::None);
@@ -410,6 +431,7 @@ impl Availability {
             self.legacy = Some(Legacy::No);
         }
         self.state = AvailabilityState::Narrowed;
+        Ok(())
     }
 
     pub fn range(&self) -> VersionRange {

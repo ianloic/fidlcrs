@@ -346,6 +346,7 @@ pub trait LookupHelpers {
     fn lookup_alias(&self, name: &str) -> Option<&AliasDeclaration>;
     fn lookup_new_type(&self, name: &str) -> Option<&NewTypeDeclaration>;
     fn lookup_service(&self, name: &str) -> Option<&ServiceDeclaration>;
+    fn lookup_constant(&self, name: &str) -> Option<&ConstDeclaration>;
 }
 
 impl LookupHelpers for JsonRoot {
@@ -382,6 +383,9 @@ impl LookupHelpers for JsonRoot {
     }
     fn lookup_service(&self, name: &str) -> Option<&ServiceDeclaration> {
         self.service_declarations.iter().find(|d| d.name == name)
+    }
+    fn lookup_constant(&self, name: &str) -> Option<&ConstDeclaration> {
+        self.const_declarations.iter().find(|d| d.name == name)
     }
 }
 

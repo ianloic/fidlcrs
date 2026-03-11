@@ -38,8 +38,10 @@ type Fruit = enum : uint64 {
 const VALUE Fruit = Fruit . A;
 "#,
     );
-    lib.compile().expect("compilation failed");
-    // TODO: assert constant value
+    let root = lib.compile().expect("compilation failed");
+    use crate::tests::test_library::LookupHelpers;
+    let value = root.lookup_constant("example/VALUE").expect("constant found");
+    assert_eq!(value.value.value.get(), "\"42\"");
 }
 
 #[test]

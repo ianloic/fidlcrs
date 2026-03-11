@@ -167,6 +167,52 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
     let json_root = match compiler.compile(main_files, dep_files, &source_refs) {
         Ok(root) => {
             reporter.print_reports();
+
+            let mut provided_libraries = std::collections::BTreeSet::new();
+            for file in dep_files {
+                if let Some(decl) = &file.library_decl {
+                    provided_libraries.insert(decl.path.to_string());
+                }
+            }
+
+            let mut reachability: std::collections::HashMap<String, std::collections::BTreeSet<String>> = std::collections::HashMap::new();
+            for file in files.iter() {
+                if let Some(decl) = &file.library_decl {
+                    let lib_name = decl.path.to_string();
+                    let entry = reachability.entry(lib_name).or_default();
+                    for using_decl in &file.using_decls {
+                        entry.insert(using_decl.using_path.to_string());
+                    }
+                }
+            }
+
+            let mut used_libraries = std::collections::BTreeSet::new();
+            let mut worklist = std::collections::VecDeque::new();
+            if let Some(main_decl) = main_files.first().and_then(|f| f.library_decl.as_ref()) {
+                worklist.push_back(main_decl.path.to_string());
+            }
+
+            while let Some(lib) = worklist.pop_front() {
+                if used_libraries.insert(lib.clone()) {
+                    if let Some(deps) = reachability.get(&lib) {
+                        for dep in deps {
+                            worklist.push_back(dep.clone());
+                        }
+                    }
+                }
+            }
+
+            let mut unused_libraries = Vec::new();
+            for provided in &provided_libraries {
+                if provided != "zx" && !used_libraries.contains(provided) {
+                    unused_libraries.push(provided.clone());
+                }
+            }
+
+            if !unused_libraries.is_empty() {
+                return Err(format!("Unused libraries provided via --files: {}", unused_libraries.join(", ")));
+            }
+
             root
         }
         Err(e) => {

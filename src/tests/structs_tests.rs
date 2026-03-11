@@ -22,7 +22,9 @@ type MyStruct = struct {
 "#,
     );
     let root = lib.compile().expect("compilation failed");
-    let struct_decl = root.lookup_struct("example/MyStruct").expect("struct not found");
+    let struct_decl = root
+        .lookup_struct("example/MyStruct")
+        .expect("struct not found");
     assert_eq!(struct_decl.members.len(), 1);
 }
 

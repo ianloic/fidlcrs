@@ -13,6 +13,7 @@ pub mod reporter;
 pub mod source_file;
 pub mod source_span;
 pub mod token;
+pub mod tree_visitor;
 pub mod versioning_types;
 
 pub mod attribute_schema;

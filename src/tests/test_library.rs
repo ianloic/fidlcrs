@@ -304,8 +304,7 @@ resource_definition handle : uint32 {
                 shared.experimental_flags = self.experimental_flags.clone();
                 shared.select_versions = self.select_versions.clone();
                 shared.custom_schemas = self.custom_schemas.clone();
-                let old_len = shared.all_source_files.len();
-                for sf in self.source_files.iter().skip(old_len) {
+                for sf in self.source_files.iter() {
                     shared.all_source_files.push(SourceFile::new(
                         sf.filename().to_string(),
                         sf.data().to_string(),

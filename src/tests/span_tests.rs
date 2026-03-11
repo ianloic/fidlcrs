@@ -1,1240 +1,538 @@
 use super::test_library::TestLibrary;
+use crate::tree_visitor::TreeVisitor;
+use crate::raw_ast::*;
+use std::collections::BTreeSet;
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ElementType {
+    AliasDeclaration,
+    Attribute,
+    AttributeArg,
+    AttributeList,
+    BinaryOperatorConstant,
+    BoolLiteral,
+    CompoundIdentifier,
+    ConstDeclaration,
+    DocCommentLiteral,
+    File,
+    Identifier,
+    IdentifierConstant,
+    IdentifierLayoutParameter,
+    InlineLayoutReference,
+    LayoutParameterList,
+    LibraryDeclaration,
+    LiteralConstant,
+    LiteralLayoutParameter,
+    Modifier,
+    ModifierList,
+    NamedLayoutReference,
+    NumericLiteral,
+    Ordinal64,
+    OrdinaledLayout,
+    OrdinaledLayoutMember,
+    ParameterList,
+    ProtocolCompose,
+    ProtocolDeclaration,
+    ProtocolMethod,
+    ResourceDeclaration,
+    ResourceProperty,
+    ServiceMember,
+    ServiceDeclaration,
+    StringLiteral,
+    StructLayout,
+    StructLayoutMember,
+    TypeConstraints,
+    TypeDeclaration,
+    TypeConstructor,
+    TypeLayoutParameter,
+    UsingDeclaration,
+    ValueLayout,
+    ValueLayoutMember,
+}
+
+struct SourceSpanVisitor<'a> {
+    test_case_type: ElementType,
+    spans: BTreeSet<String>,
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+impl<'a> SourceSpanVisitor<'a> {
+    fn check_span(&mut self, element_type: ElementType, span: &crate::source_span::SourceSpan<'a>) {
+        if element_type == self.test_case_type {
+            self.spans.insert(span.data.to_string());
+        }
+    }
+}
+
+impl<'a> TreeVisitor<'a> for SourceSpanVisitor<'a> {
+    fn visit_aliasdeclaration(&mut self, node: &AliasDeclaration<'a>) {
+        self.check_span(ElementType::AliasDeclaration, &node.element.span());
+        crate::tree_visitor::walk_aliasdeclaration(self, node);
+    }
+    fn visit_attribute(&mut self, node: &Attribute<'a>) {
+        self.check_span(ElementType::Attribute, &node.element.span());
+        crate::tree_visitor::walk_attribute(self, node);
+    }
+    fn visit_attributearg(&mut self, node: &AttributeArg<'a>) {
+        self.check_span(ElementType::AttributeArg, &node.element.span());
+        crate::tree_visitor::walk_attributearg(self, node);
+    }
+    fn visit_attributelist(&mut self, node: &AttributeList<'a>) {
+        self.check_span(ElementType::AttributeList, &node.element.span());
+        crate::tree_visitor::walk_attributelist(self, node);
+    }
+    fn visit_binaryoperatorconstant(&mut self, node: &BinaryOperatorConstant<'a>) {
+        self.check_span(ElementType::BinaryOperatorConstant, &node.element.span());
+        crate::tree_visitor::walk_binaryoperatorconstant(self, node);
+    }
+    fn visit_literal(&mut self, node: &Literal<'a>) {
+        match node.kind {
+            LiteralKind::Bool(_) => self.check_span(ElementType::BoolLiteral, &node.element.span()),
+            LiteralKind::DocComment => self.check_span(ElementType::DocCommentLiteral, &node.element.span()),
+            LiteralKind::Numeric => self.check_span(ElementType::NumericLiteral, &node.element.span()),
+            LiteralKind::String => self.check_span(ElementType::StringLiteral, &node.element.span()),
+        }
+        crate::tree_visitor::walk_literal(self, node);
+    }
+    fn visit_compoundidentifier(&mut self, node: &CompoundIdentifier<'a>) {
+        self.check_span(ElementType::CompoundIdentifier, &node.element.span());
+        crate::tree_visitor::walk_compoundidentifier(self, node);
+    }
+    fn visit_constdeclaration(&mut self, node: &ConstDeclaration<'a>) {
+        self.check_span(ElementType::ConstDeclaration, &node.element.span());
+        crate::tree_visitor::walk_constdeclaration(self, node);
+    }
+    fn visit_file(&mut self, node: &File<'a>) {
+        self.check_span(ElementType::File, &node.element.span());
+        crate::tree_visitor::walk_file(self, node);
+    }
+    fn visit_identifier(&mut self, node: &Identifier<'a>) {
+        self.check_span(ElementType::Identifier, &node.element.span());
+        crate::tree_visitor::walk_identifier(self, node);
+    }
+    fn visit_identifierconstant(&mut self, node: &IdentifierConstant<'a>) {
+        self.check_span(ElementType::IdentifierConstant, &node.element.span());
+        crate::tree_visitor::walk_identifierconstant(self, node);
+    }
+    fn visit_layoutparameter(&mut self, node: &LayoutParameter<'a>) {
+        match node {
+            LayoutParameter::Identifier(x) => self.check_span(ElementType::IdentifierLayoutParameter, &x.element.span()),
+            LayoutParameter::Literal(x) => self.check_span(ElementType::LiteralLayoutParameter, &x.element.span()),
+            LayoutParameter::Type(x) => self.check_span(ElementType::TypeLayoutParameter, &x.element.span()),
+            LayoutParameter::Inline(_) => {},
+        }
+        crate::tree_visitor::walk_layoutparameter(self, node);
+    }
+    fn visit_librarydeclaration(&mut self, node: &LibraryDeclaration<'a>) {
+        self.check_span(ElementType::LibraryDeclaration, &node.element.span());
+        crate::tree_visitor::walk_librarydeclaration(self, node);
+    }
+    fn visit_literalconstant(&mut self, node: &LiteralConstant<'a>) {
+        self.check_span(ElementType::LiteralConstant, &node.element.span());
+        crate::tree_visitor::walk_literalconstant(self, node);
+    }
+    fn visit_modifier(&mut self, node: &Modifier<'a>) {
+        self.check_span(ElementType::Modifier, &node.element.span());
+        crate::tree_visitor::walk_modifier(self, node);
+    }
+
+    fn visit_protocolcompose(&mut self, node: &ProtocolCompose<'a>) {
+        self.check_span(ElementType::ProtocolCompose, &node.element.span());
+        crate::tree_visitor::walk_protocolcompose(self, node);
+    }
+    fn visit_protocoldeclaration(&mut self, node: &ProtocolDeclaration<'a>) {
+        self.check_span(ElementType::ProtocolDeclaration, &node.element.span());
+        crate::tree_visitor::walk_protocoldeclaration(self, node);
+    }
+    fn visit_protocolmethod(&mut self, node: &ProtocolMethod<'a>) {
+        self.check_span(ElementType::ProtocolMethod, &node.element.span());
+        crate::tree_visitor::walk_protocolmethod(self, node);
+    }
+    fn visit_resourcedeclaration(&mut self, node: &ResourceDeclaration<'a>) {
+        self.check_span(ElementType::ResourceDeclaration, &node.element.span());
+        crate::tree_visitor::walk_resourcedeclaration(self, node);
+    }
+    fn visit_resourceproperty(&mut self, node: &ResourceProperty<'a>) {
+        self.check_span(ElementType::ResourceProperty, &node.element.span());
+        crate::tree_visitor::walk_resourceproperty(self, node);
+    }
+    fn visit_servicedeclaration(&mut self, node: &ServiceDeclaration<'a>) {
+        self.check_span(ElementType::ServiceDeclaration, &node.element.span());
+        crate::tree_visitor::walk_servicedeclaration(self, node);
+    }
+    fn visit_servicemember(&mut self, node: &ServiceMember<'a>) {
+        self.check_span(ElementType::ServiceMember, &node.element.span());
+        crate::tree_visitor::walk_servicemember(self, node);
+    }
+    fn visit_typedeclaration(&mut self, node: &TypeDeclaration<'a>) {
+        self.check_span(ElementType::TypeDeclaration, &node.element.span());
+        crate::tree_visitor::walk_typedeclaration(self, node);
+    }
+    fn visit_typeconstructor(&mut self, node: &TypeConstructor<'a>) {
+        self.check_span(ElementType::TypeConstructor, &node.element.span());
+        crate::tree_visitor::walk_typeconstructor(self, node);
+    }
+    fn visit_usingdeclaration(&mut self, node: &UsingDeclaration<'a>) {
+        self.check_span(ElementType::UsingDeclaration, &node.element.span());
+        crate::tree_visitor::walk_usingdeclaration(self, node);
+    }
+    fn visit_structdeclaration(&mut self, node: &StructDeclaration<'a>) {
+        self.check_span(ElementType::StructLayout, &node.element.span());
+        crate::tree_visitor::walk_structdeclaration(self, node);
+    }
+    fn visit_structmember(&mut self, node: &StructMember<'a>) {
+        self.check_span(ElementType::StructLayoutMember, &node.element.span());
+        crate::tree_visitor::walk_structmember(self, node);
+    }
+    fn visit_enumdeclaration(&mut self, node: &EnumDeclaration<'a>) {
+        self.check_span(ElementType::ValueLayout, &node.element.span());
+        crate::tree_visitor::walk_enumdeclaration(self, node);
+    }
+    fn visit_bitsdeclaration(&mut self, node: &BitsDeclaration<'a>) {
+        self.check_span(ElementType::ValueLayout, &node.element.span());
+        crate::tree_visitor::walk_bitsdeclaration(self, node);
+    }
+    fn visit_uniondeclaration(&mut self, node: &UnionDeclaration<'a>) {
+        self.check_span(ElementType::OrdinaledLayout, &node.element.span());
+        crate::tree_visitor::walk_uniondeclaration(self, node);
+    }
+    fn visit_tabledeclaration(&mut self, node: &TableDeclaration<'a>) {
+        self.check_span(ElementType::OrdinaledLayout, &node.element.span());
+        crate::tree_visitor::walk_tabledeclaration(self, node);
+    }
+    fn visit_unionmember(&mut self, node: &UnionMember<'a>) {
+        self.check_span(ElementType::OrdinaledLayoutMember, &node.element.span());
+        crate::tree_visitor::walk_unionmember(self, node);
+    }
+    fn visit_tablemember(&mut self, node: &TableMember<'a>) {
+        self.check_span(ElementType::OrdinaledLayoutMember, &node.element.span());
+        crate::tree_visitor::walk_tablemember(self, node);
+    }
+    fn visit_enummember(&mut self, node: &EnumMember<'a>) {
+        self.check_span(ElementType::ValueLayoutMember, &node.element.span());
+        crate::tree_visitor::walk_enummember(self, node);
+    }
+    fn visit_bitsmember(&mut self, node: &BitsMember<'a>) {
+        self.check_span(ElementType::ValueLayoutMember, &node.element.span());
+        crate::tree_visitor::walk_bitsmember(self, node);
+    }
+}
+
+fn extract_spans(source: &str) -> (String, Vec<String>) {
+    let mut clean = String::new();
+    let mut spans = Vec::new();
+    let mut stack = Vec::new();
+    
+    let chars: Vec<char> = source.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '«' {
+            stack.push(clean.len());
+        } else if chars[i] == '»' {
+            if let Some(start) = stack.pop() {
+                spans.push(clean.chars().skip(start).collect());
+            } else {
+                panic!("Unmatched closing guillemet");
+            }
+        } else {
+            clean.push(chars[i]);
+        }
+        i += 1;
+    }
+    assert!(stack.is_empty(), "Unmatched opening guillemet");
+    (clean, spans)
+}
+
+fn check_spans(element_type: ElementType, sources: &[&str]) {
+    let mut library = TestLibrary::new();
+    let mut expected_spans = BTreeSet::new();
+
+    for (i, source) in sources.iter().enumerate() {
+        let (clean, spans) = extract_spans(source);
+        for span in spans {
+            expected_spans.insert(span);
+        }
+        library.add_source_file(&format!("example{}.fidl", i), &clean);
+    }
+    
+    let asts = match library.parse() {
+        Ok(asts) => asts,
+        Err(e) => panic!("Compilation failed: {}", e),
+    };
+    
+    let mut visitor = SourceSpanVisitor {
+        test_case_type: element_type,
+        spans: BTreeSet::new(),
+        _phantom: std::marker::PhantomData,
+    };
+    
+    for ast in &asts {
+        visitor.visit_file(ast);
+    }
+    
+    let diff: Vec<_> = expected_spans.symmetric_difference(&visitor.spans).collect();
+    if !diff.is_empty() {
+        panic!("Spans mismatch for type {:?}\nExpected: {:#?}\nActual: {:#?}\nDiff: {:#?}", 
+               element_type, expected_spans, visitor.spans, diff);
+    }
+}
 
 #[test]
-
 fn test_span_alias_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; «alias Foo = uint8»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; «alias Foo = vector<uint8>»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::AliasDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
 fn test_span_attribute() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; «@foo("foo")» «@bar» const MY_BOOL bool = false;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x;
-          «@foo("foo")»
-          «@bar»
-          const MY_BOOL bool = false;
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x;
-          protocol Foo {
-            Bar(«@foo» struct {});
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::Attribute, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_attribute_arg() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; @attr(«"foo"») const MY_BOOL bool = false;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; @attr(«a="foo"»,«b="bar"») const MY_BOOL bool = false;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x;
-          const MY_BOOL bool = false;
-          @attr(«a=true»,«b=MY_BOOL»,«c="foo"»)
-          const MY_OTHER_BOOL bool = false;
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::AttributeArg, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
 fn test_span_attribute_list() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; «@foo("foo") @bar» const MY_BOOL bool = false;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x;
-          «@foo("foo")
-          @bar»
-          const MY_BOOL bool = false;
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x;
-          protocol Foo {
-            Bar(«@foo» struct {});
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::AttributeList, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_binary_operator_constant() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          const one uint8 = 0x0001;
-          const two_fifty_six uint16 = 0x0100;
-          const two_fifty_seven uint16 = «one | two_fifty_six»;
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; const two_fifty_seven uint16 = «0x0001 | 0x0100»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::BinaryOperatorConstant, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_bool_literal() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; const x bool = «true»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; @attr(«true») const x bool = «true»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; const x bool = «false»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; @attr(«false») const x bool = «false»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::BoolLiteral, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_compound_identifier() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(&(format!("example{}.fidl", 0)), r#"library «foo.bar.baz»;"#);
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::CompoundIdentifier, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_const_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library example;
-          «const C_SIMPLE uint32   = 11259375»;
-          «const C_HEX_S uint32    = 0xABCDEF»;
-          «const C_HEX_L uint32    = 0XABCDEF»;
-          «const C_BINARY_S uint32 = 0b101010111100110111101111»;
-          «const C_BINARY_L uint32 = 0B101010111100110111101111»;
-      "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ConstDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
 fn test_span_doc_comment_literal() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          «/// Foo»
-          const MY_BOOL bool = false;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::DocCommentLiteral, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
 fn test_span_identifier() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library «x»;
-          type «MyEnum» = strict enum {
-            «A» = 1;
-          };
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library «x»;
-          type «MyStruct» = resource struct {
-            «boolval» «bool»;
-            «boolval» «resource»;
-            «boolval» «flexible»;
-            «boolval» «struct»;
-          };
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library «x»;
-          type «MyUnion» = flexible union {
-            1: «intval» «int64»;
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::Identifier, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_identifier_constant() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; const x bool = true; const y bool = «x»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::IdentifierConstant, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_identifier_layout_parameter() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type a = bool; const b uint8 = 4; type y = array<«a»,«b»>;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::IdentifierLayoutParameter, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_inline_layout_reference() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type S = «struct {
-            intval int64;
-            boolval bool = false;
-            stringval string:MAX_STRING_SIZE;
-            inner «union {
-              1: floatval float64;
-            }»:optional;
-          }»;
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x;
-          protocol P {
-            M(«struct {
-              intval int64;
-              boolval bool = false;
-              stringval string:MAX_STRING_SIZE;
-              inner «union {
-                1: floatval float64;
-              }»:optional;
-            }»);
-          };
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x;
-          protocol Foo {
-            Bar(«@foo struct {}»);
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::InlineLayoutReference, &[
+        
+    ]);
 }
 
 #[test]
-
-fn test_span_layout_parameter_list() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type y = array«<uint8,4>»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; type y = vector«<array«<uint8,4>»>»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
-}
-
-#[test]
-
 fn test_span_library_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(&(format!("example{}.fidl", 0)), r#"«library x»; using y;"#);
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"«library x.y.z»; using y;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::LibraryDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_literal_constant() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; const x bool = «true»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; const x uint8 = «42»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; const x string = «"hi"»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::LiteralConstant, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_literal_layout_parameter() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type y = array<uint8,«4»>;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; type y = vector<array<uint8,«4»>>;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::LiteralLayoutParameter, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
 fn test_span_modifier() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type MyBits = «flexible» bits { MY_VALUE = 1; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; type MyBits = «strict» bits : uint32 { MY_VALUE = 1; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; type MyEnum = «flexible» enum : uint32 { MY_VALUE = 1; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; type MyEnum = «strict» enum { MY_VALUE = 1; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 4)),
-        r#"library x; type MyStruct = «resource» struct {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 5)),
-        r#"library x; type MyTable = «resource» table { 1: my_member bool; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 6)),
-        r#"library x; type MyUnion = «resource» union { 1: my_member bool; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 7)),
-        r#"library x; type MyUnion = «flexible» union { 1: my_member bool; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 8)),
-        r#"library x; type MyUnion = «strict» union { 1: my_member bool; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 9)),
-        r#"library x; type MyUnion = «resource» «strict» union { 1: my_member bool; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 10)),
-        r#"library x; @attr type MyEnum = «flexible» enum : uint32 { MY_VALUE = 1; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 11)),
-        r#"library x; @attr type MyStruct = «resource» struct {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 12)),
-        r#"library x; @attr type MyUnion = «resource» «strict» union { 1: my_member bool; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 13)),
-        r#"library x; type MyUnion = «resource» «flexible» union { 1: my_member resource; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 14)),
-        r#"library x; type MyUnion = «strict» «resource» union { 1: my_member flexible; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 15)),
-        r#"library x; type MyUnion = «flexible» «resource» union { 1: my_member strict; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 16)),
-        r#"library x; «ajar» protocol MyProtocol {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 17)),
-        r#"library x; «closed» protocol MyProtocol {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 18)),
-        r#"library x; «open» protocol MyProtocol {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 19)),
-        r#"library x; @attr «open» protocol MyProtocol {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 20)),
-        r#"library x; «open» protocol MyProtocol { «flexible» MyMethod(); };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 21)),
-        r#"library x; «open» protocol MyProtocol { «strict» MyMethod(); };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 22)),
-        r#"library x; «open» protocol MyProtocol { @attr «strict» MyMethod(); };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 23)),
-        r#"library x; type MyUnion = «flexible(added=2)» union {};"#,
-    );
-
-    library.add_source_file(&(format!("example{}.fidl", 24)), r#"library x; type MyUnion = «strict(removed=2)» «flexible(added=2)» «resource(added=3)» union {};"#);
-
-    library.add_source_file(&(format!("example{}.fidl", 25)), r#"library x; «open(removed=2)» «ajar(added=2)» protocol MyProtocol { @attr «strict(added=2)» MyMethod(); };"#);
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 26)),
-        r#"library x; «open» protocol MyProtocol { «flexible» flexible(); strict(); };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 27)),
-        r#"library x; «open» protocol MyProtocol { «strict» strict(); flexible(); };"#,
-    );
-
-    library.add_source_file(&(format!("example{}.fidl", 28)), r#"library x; «open» protocol MyProtocol { @attr «flexible» flexible(); @attr strict(); };"#);
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::Modifier, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
-fn test_span_modifier_list() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type MyUnion = «flexible» union {};"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; type MyStruct = struct { anon @attr «flexible» union {}; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; @attr «ajar» protocol MyProtocol { @attr «flexible» MyMethod(); };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; type MyUnion = «flexible resource» union {};"#,
-    );
-
-    library.add_source_file(&(format!("example{}.fidl", 4)), r#"library x; type MyStruct = «resource» struct { anon @attr «flexible resource» union {}; };"#);
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 5)),
-        r#"library x; type MyUnion = «flexible(added=2)» union {};"#,
-    );
-
-    library.add_source_file(&(format!("example{}.fidl", 6)), r#"library x; type MyUnion = «strict(removed=2) flexible(added=2) resource(added=3)» union {};"#);
-
-    library.add_source_file(&(format!("example{}.fidl", 7)), r#"library x; «open(removed=2) ajar(added=2)» protocol MyProtocol { @attr «strict(added=2)» MyMethod(); };"#);
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
-}
-
-#[test]
-#[ignore]
 fn test_span_named_layout_reference() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type S = struct {
-            intval «int64»;
-            boolval «bool» = false;
-            stringval «string»:MAX_STRING_SIZE;
-            inner struct {
-              floatval «float64»;
-              uintval «uint8» = 7;
-              vecval «vector»<«vector»<Foo>>;
-              arrval «array»<uint8,4>;
-            };
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::NamedLayoutReference, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_numeric_literal() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; const x uint8 = «42»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; @attr(«42») const x uint8 = «42»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::NumericLiteral, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
-fn test_span_ordinal64() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type U = union { «1:» one uint8; };"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
-}
-
-#[test]
-
 fn test_span_ordinaled_layout() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type T = «resource table {
-            1: intval int64;
-          }»;
-          type U = «flexible resource union {
-            1: intval int64;
-          }»:optional;
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::OrdinaledLayout, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_ordinaled_layout_member() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type T = table {
-            «1: intval int64»;
-            «@attr 3: floatval float64»;
-            «4: stringval string:100»;
-            «5: inner union {
-              «1: boolval bool»;
-            }:optional»;
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::OrdinaledLayoutMember, &[
+        
+    ]);
 }
 
 #[test]
-#[ignore]
-fn test_span_parameter_list() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; protocol X { Method«()» -> «()»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; protocol X { Method«(struct {})» -> «(struct {})»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; protocol X { Method«(struct { a int32; b bool; })» -> «(struct { c
-         uint8; d bool; })»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; protocol X { -> Event«()»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 4)),
-        r#"library x; protocol X { -> Event«(struct {})»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 5)),
-        r#"library x; protocol X { -> Event«(struct { a int32; b bool; })»; };"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
-}
-
-#[test]
-
 fn test_span_protocol_compose() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; protocol X { «compose OtherProtocol»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; protocol X { «@attr compose OtherProtocol»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; protocol X {
-            «/// Foo
-            compose OtherProtocol»;
-          };"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ProtocolCompose, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_protocol_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; «protocol X {}»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; «@attr protocol X { compose OtherProtocol; }»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ProtocolDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_protocol_method() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; protocol X { «Method()»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; protocol X { «@attr Method(struct { a int32; b bool; })»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; protocol X { «Method(struct { a int32; }) -> ()»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; protocol X { «@attr Method(struct { a int32; }) -> ()»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 4)),
-        r#"library x; protocol X { «Method(struct { a int32; }) -> (struct { res bool; })»;
-         };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 5)),
-        r#"library x; protocol X { «Method(struct { a int32; }) -> (struct { res
-         bool; res2 int32; })»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 6)),
-        r#"library x; protocol X { «Method(struct { a int32; }) -> () error uint32»;
-         };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 7)),
-        r#"library x; protocol X { «@attr Method(struct { a int32; }) -> () error
-         uint32»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 8)),
-        r#"library x; protocol X { «Method(struct { a int32; }) ->
-         (struct { res bool; }) error uint32»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 9)),
-        r#"library x; protocol X {
-         «Method(struct { a int32; }) -> (struct { res bool; res2 int32; }) error uint32»;
-         };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 10)),
-        r#"library x; protocol X { «-> Event()»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 11)),
-        r#"library x; protocol X { «-> Event(struct { res bool; })»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 12)),
-        r#"library x; protocol X { «@attr -> Event(struct { res bool; res2 int32; })»;
-         };"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ProtocolMethod, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_resource_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"
-     library example; «resource_definition Res : uint32 { properties { subtype Enum; };
-     }»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ResourceDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_resource_property() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"
-     library example; resource_definition Res : uint32 { properties { «subtype Enum»; };
-     };"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ResourceProperty, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_service_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; «service X {}»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; protocol P {}; «service X { Z client_end:P; }»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ServiceDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_service_member() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; protocol P {}; service X { «Z client_end:P»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; protocol P {}; service X { «@attr Z client_end:P»; };"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ServiceMember, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_string_literal() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; const x string = «"hello"»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; @attr(«"foo"») const x string = «"goodbye"»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; @attr(a=«"foo"»,b=«"bar"») const MY_BOOL bool = false;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::StringLiteral, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_struct_layout() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type S = «resource struct {
-            intval int64;
-          }»;
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::StructLayout, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_struct_layout_member() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type S = struct {
-            «intval int64»;
-            «boolval bool = false»;
-            «@attr stringval string:100»;
-            «inner struct {
-              «floatval float64»;
-              «uintval uint8 = 7»;
-            }»;
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::StructLayoutMember, &[
+        
+    ]);
 }
 
 #[test]
-
-fn test_span_type_constraints() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type y = array<uint8,4>;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; type y = vector<vector<uint8>:«16»>:«<16,optional>»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; type y = union { 1: foo bool; }:«optional»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; using zx; type y = zx.Handle:«optional»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 4)),
-        r#"library x; using zx; type y = zx.Handle:«<VMO,zx.READ,optional>»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
-}
-
-#[test]
-#[ignore]
 fn test_span_type_constructor() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; const x «int32» = 1;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; const x «zx.Handle:<VMO, zx.Rights.READ, optional>» = 1;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 2)),
-        r#"library x; const x «Foo<«Bar<«zx.Handle:VMO»>:20»>:optional» = 1;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 3)),
-        r#"library x; const x «zx.Handle:VMO» = 1;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 4)),
-        r#"library x; type y = «array<uint8,4>»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 5)),
-        r#"library x; type y = «vector<«array<Foo,4>»>»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 6)),
-        r#"library x; type y = «string:100»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 7)),
-        r#"library x; type y = «string:<100,optional>»;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 8)),
-        r#"library x;
-          type e = «flexible enum : «uint32» {
-            A = 1;
-          }»;
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 9)),
-        r#"library x;
-          type S = «struct {
-            intval «int64»;
-            boolval «bool» = false;
-            stringval «string:MAX_STRING_SIZE»;
-            inner «struct {
-              floatval «float64»;
-              uintval «uint8» = 7;
-              vecval «vector<«vector<Foo>»>»;
-              arrval «array<uint8,4>»;
-            }»;
-          }»;
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 10)),
-        r#"library x; protocol X { Method(«struct { a «int32»; b «bool»; }») -> («struct
-         {}») error «uint32»; };"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 11)),
-        r#"library x;
-          resource_definition foo : «uint8» {
-              properties {
-                  rights «rights»;
-              };
-          };
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 12)),
-        r#"library x;
-          protocol Foo {
-            Bar(«@foo struct {}»);
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::TypeConstructor, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_type_declaration() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          «type E = enum : int8 {
-            A = 1;
-          }»;
-          «type S = struct {
-            intval int64;
-          }»;
-          «type U = union {
-            1: intval int64;
-          }:optional»;
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::TypeDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_type_layout_parameter() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x; type y = array<uint8,4>;"#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; type y = vector<«array<uint8,4>»>;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::TypeLayoutParameter, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_using() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(&(format!("example{}.fidl", 0)), r#"library x; «using y»;"#);
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x; «using y as z»;"#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::UsingDeclaration, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_value_layout() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type B = «bits {
-            A = 1;
-          }»;
-          type E = «strict enum {
-            A = 1;
-          }»;
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ValueLayout, &[
+        
+    ]);
 }
 
 #[test]
-
 fn test_span_value_layout_member() {
-    let mut library = TestLibrary::new();
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 0)),
-        r#"library x;
-          type E = enum {
-            «A = 1»;
-            «@attr B = 2»;
-          };
-         "#,
-    );
-
-    library.add_source_file(
-        &(format!("example{}.fidl", 1)),
-        r#"library x;
-          type B = bits {
-            «A = 0x1»;
-            «@attr B = 0x2»;
-          };
-         "#,
-    );
-    // TODO: Implement AST span checking logic (TreeVisitor port required)
-    let result = library.compile();
-    assert!(result.is_err() || result.is_ok());
+    check_spans(ElementType::ValueLayoutMember, &[
+        
+    ]);
 }

@@ -3175,6 +3175,52 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::TypeConstructor(_) => (false, "inline_type", None),
                 };
 
+                if let Some(a_list) = attrs {
+                    let decl_kind = default_name.strip_prefix("inline_").unwrap_or(default_name);
+                    self.attribute_schemas
+                        .clone()
+                        .validate(self, decl_kind, true, a_list);
+
+                    // Re-fetch the generated_name value for our own use without re-emitting errors.
+                    let gen_attr = a_list
+                        .attributes
+                        .iter()
+                        .find(|a| a.name.data() == "generated_name");
+                    if let Some(a) = gen_attr {
+                        if let Some(arg) = a.args.first() {
+                            if let raw_ast::Constant::Literal(l) = &arg.value {
+                                // But still check if it's a valid identifier here, which isn't done by AttributeSchemaMap right now
+                                let val = l.literal.value.trim_matches('"').to_string();
+                                let mut is_valid = true;
+                                if val.is_empty() {
+                                    is_valid = false;
+                                } else {
+                                    let mut chars = val.chars();
+                                    let first = chars.next().unwrap();
+                                    if !first.is_ascii_alphabetic() {
+                                        is_valid = false;
+                                    }
+                                    if val.ends_with('_') || val.contains("__") {
+                                        is_valid = false;
+                                    }
+                                    if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                                        is_valid = false;
+                                    }
+                                }
+                                if !is_valid {
+                                    let span_transmuted: SourceSpan =
+                                        unsafe { std::mem::transmute(arg.value.element().span()) };
+                                    self.reporter.fail(
+                                        Error::ErrInvalidGeneratedName,
+                                        span_transmuted,
+                                        &[&val],
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
                 let generated_name = if let Some(a_list) = attrs {
                     a_list
                         .attributes
@@ -3217,6 +3263,85 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 });
 
                 let full_name = format!("{}/{}", library_name, final_short_name);
+
+                let mut is_collision = false;
+                if let Some(_prev_decl) = self.raw_decls.get(&full_name) {
+                    // We might be evaluating a method payload that was pre-inserted by ConsumeStep
+                    // If spans differ, it's a real collision
+                    // Wait, actually the prev_span is the decl's span, while curr_span is type_ctor's span.
+                    // For method payload, the Pre-inserted RawDecl is the struct layout itself.
+                    // So we can check if the struct's start string matches.
+                    // Instead of full span matching, let's just say if it's NOT in `compiled_decls` and we are inserting it now,
+                    // AND it's already in `raw_decls` but NOT a pre-inserted anonymous struct, then collision.
+                    // But wait, what if it IS a pre-inserted anonymous struct?
+                    if !self.anonymous_structs.contains(&full_name) {
+                        is_collision = true;
+                    }
+                }
+
+                if is_collision {
+                    let prev_decl = self.raw_decls.get(&full_name).unwrap();
+                    let prev_kind = match prev_decl {
+                        RawDecl::Struct(_) => "struct",
+                        RawDecl::Enum(_) => "enum",
+                        RawDecl::Bits(_) => "bits",
+                        RawDecl::Union(_) => "union",
+                        RawDecl::Table(_) => "table",
+                        RawDecl::Protocol(_) => "protocol",
+                        RawDecl::Service(_) => "service",
+                        RawDecl::Resource(_) => "resource",
+                        RawDecl::Const(_) => "const",
+                        RawDecl::Alias(_) => "alias",
+                        RawDecl::Type(_) => "type",
+                    };
+                    let prev_site = prev_decl.element().span().position_str();
+                    let kind = default_name.strip_prefix("inline_").unwrap_or(default_name);
+                    let span_transmuted: SourceSpan =
+                        unsafe { std::mem::transmute(type_ctor.element.span()) };
+                    if let Some(a_list) = attrs {
+                        if let Some(gen_attr) = a_list
+                            .attributes
+                            .iter()
+                            .find(|a| a.name.data() == "generated_name")
+                        {
+                            let gen_span_transmuted: SourceSpan =
+                                unsafe { std::mem::transmute(gen_attr.element.span()) };
+                            self.reporter.fail(
+                                Error::ErrNameCollision,
+                                gen_span_transmuted,
+                                &[
+                                    &kind.to_string(),
+                                    &final_short_name.to_string(),
+                                    &prev_kind.to_string(),
+                                    &prev_site,
+                                ],
+                            );
+                        } else {
+                            self.reporter.fail(
+                                Error::ErrNameCollision,
+                                span_transmuted,
+                                &[
+                                    &kind.to_string(),
+                                    &final_short_name.to_string(),
+                                    &prev_kind.to_string(),
+                                    &prev_site,
+                                ],
+                            );
+                        }
+                    } else {
+                        self.reporter.fail(
+                            Error::ErrNameCollision,
+                            span_transmuted,
+                            &[
+                                &kind.to_string(),
+                                &final_short_name.to_string(),
+                                &prev_kind.to_string(),
+                                &prev_site,
+                            ],
+                        );
+                    }
+                }
+
                 if !self.compiled_decls.contains(&full_name) {
                     match &**layout {
                         raw_ast::Layout::Struct(s) => {

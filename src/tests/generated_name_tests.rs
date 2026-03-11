@@ -450,7 +450,7 @@ service Bar {
 }
 
 #[test]
-#[ignore]
+
 fn bad_missing_argument() {
     let mut library = TestLibrary::new();
 
@@ -472,7 +472,7 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
+
 fn bad_invalid_identifier() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0146.test.fidl");
@@ -484,7 +484,7 @@ fn bad_invalid_identifier() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_name_collision() {
     let mut library = TestLibrary::new();
 
@@ -508,7 +508,7 @@ type Baz = struct {};
 }
 
 #[test]
-#[ignore]
+
 fn bad_not_string() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0104.test.fidl");
@@ -520,7 +520,7 @@ fn bad_not_string() {
 }
 
 #[test]
-#[ignore]
+
 fn bad_non_literal_argument() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0133.test.fidl");

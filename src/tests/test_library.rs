@@ -283,11 +283,7 @@ resource_definition handle : uint32 {
             all_files.push(f);
         }
 
-        let res = compiler.compile(
-            &main_asts,
-            &dep_asts,
-            &all_files,
-        );
+        let res = compiler.compile(&main_asts, &dep_asts, &all_files);
         if !self.reporter.diagnostics().is_empty() {
             for err in self.reporter.diagnostics().iter() {
                 println!("{:?}", err);

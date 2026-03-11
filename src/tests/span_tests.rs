@@ -1,8 +1,7 @@
 use super::test_library::TestLibrary;
-use crate::tree_visitor::TreeVisitor;
 use crate::raw_ast::*;
+use crate::tree_visitor::TreeVisitor;
 use std::collections::BTreeSet;
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ElementType {
@@ -89,9 +88,15 @@ impl<'a> TreeVisitor<'a> for SourceSpanVisitor<'a> {
     fn visit_literal(&mut self, node: &Literal<'a>) {
         match node.kind {
             LiteralKind::Bool(_) => self.check_span(ElementType::BoolLiteral, &node.element.span()),
-            LiteralKind::DocComment => self.check_span(ElementType::DocCommentLiteral, &node.element.span()),
-            LiteralKind::Numeric => self.check_span(ElementType::NumericLiteral, &node.element.span()),
-            LiteralKind::String => self.check_span(ElementType::StringLiteral, &node.element.span()),
+            LiteralKind::DocComment => {
+                self.check_span(ElementType::DocCommentLiteral, &node.element.span())
+            }
+            LiteralKind::Numeric => {
+                self.check_span(ElementType::NumericLiteral, &node.element.span())
+            }
+            LiteralKind::String => {
+                self.check_span(ElementType::StringLiteral, &node.element.span())
+            }
         }
         crate::tree_visitor::walk_literal(self, node);
     }
@@ -117,10 +122,16 @@ impl<'a> TreeVisitor<'a> for SourceSpanVisitor<'a> {
     }
     fn visit_layoutparameter(&mut self, node: &LayoutParameter<'a>) {
         match node {
-            LayoutParameter::Identifier(x) => self.check_span(ElementType::IdentifierLayoutParameter, &x.element.span()),
-            LayoutParameter::Literal(x) => self.check_span(ElementType::LiteralLayoutParameter, &x.element.span()),
-            LayoutParameter::Type(x) => self.check_span(ElementType::TypeLayoutParameter, &x.element.span()),
-            LayoutParameter::Inline(_) => {},
+            LayoutParameter::Identifier(x) => {
+                self.check_span(ElementType::IdentifierLayoutParameter, &x.element.span())
+            }
+            LayoutParameter::Literal(x) => {
+                self.check_span(ElementType::LiteralLayoutParameter, &x.element.span())
+            }
+            LayoutParameter::Type(x) => {
+                self.check_span(ElementType::TypeLayoutParameter, &x.element.span())
+            }
+            LayoutParameter::Inline(_) => {}
         }
         crate::tree_visitor::walk_layoutparameter(self, node);
     }
@@ -223,7 +234,7 @@ fn extract_spans(source: &str) -> (String, Vec<String>) {
     let mut clean = String::new();
     let mut spans = Vec::new();
     let mut stack = Vec::new();
-    
+
     let chars: Vec<char> = source.chars().collect();
     let mut i = 0;
     while i < chars.len() {
@@ -255,284 +266,214 @@ fn check_spans(element_type: ElementType, sources: &[&str]) {
         }
         library.add_source_file(&format!("example{}.fidl", i), &clean);
     }
-    
+
     let asts = match library.parse() {
         Ok(asts) => asts,
         Err(e) => panic!("Compilation failed: {}", e),
     };
-    
+
     let mut visitor = SourceSpanVisitor {
         test_case_type: element_type,
         spans: BTreeSet::new(),
         _phantom: std::marker::PhantomData,
     };
-    
+
     for ast in &asts {
         visitor.visit_file(ast);
     }
-    
-    let diff: Vec<_> = expected_spans.symmetric_difference(&visitor.spans).collect();
+
+    let diff: Vec<_> = expected_spans
+        .symmetric_difference(&visitor.spans)
+        .collect();
     if !diff.is_empty() {
-        panic!("Spans mismatch for type {:?}\nExpected: {:#?}\nActual: {:#?}\nDiff: {:#?}", 
-               element_type, expected_spans, visitor.spans, diff);
+        panic!(
+            "Spans mismatch for type {:?}\nExpected: {:#?}\nActual: {:#?}\nDiff: {:#?}",
+            element_type, expected_spans, visitor.spans, diff
+        );
     }
 }
 
 #[test]
 fn test_span_alias_declaration() {
-    check_spans(ElementType::AliasDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::AliasDeclaration, &[]);
 }
 
 #[test]
 fn test_span_attribute() {
-    check_spans(ElementType::Attribute, &[
-        
-    ]);
+    check_spans(ElementType::Attribute, &[]);
 }
 
 #[test]
 fn test_span_attribute_arg() {
-    check_spans(ElementType::AttributeArg, &[
-        
-    ]);
+    check_spans(ElementType::AttributeArg, &[]);
 }
 
 #[test]
 fn test_span_attribute_list() {
-    check_spans(ElementType::AttributeList, &[
-        
-    ]);
+    check_spans(ElementType::AttributeList, &[]);
 }
 
 #[test]
 fn test_span_binary_operator_constant() {
-    check_spans(ElementType::BinaryOperatorConstant, &[
-        
-    ]);
+    check_spans(ElementType::BinaryOperatorConstant, &[]);
 }
 
 #[test]
 fn test_span_bool_literal() {
-    check_spans(ElementType::BoolLiteral, &[
-        
-    ]);
+    check_spans(ElementType::BoolLiteral, &[]);
 }
 
 #[test]
 fn test_span_compound_identifier() {
-    check_spans(ElementType::CompoundIdentifier, &[
-        
-    ]);
+    check_spans(ElementType::CompoundIdentifier, &[]);
 }
 
 #[test]
 fn test_span_const_declaration() {
-    check_spans(ElementType::ConstDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::ConstDeclaration, &[]);
 }
 
 #[test]
 fn test_span_doc_comment_literal() {
-    check_spans(ElementType::DocCommentLiteral, &[
-        
-    ]);
+    check_spans(ElementType::DocCommentLiteral, &[]);
 }
 
 #[test]
 fn test_span_identifier() {
-    check_spans(ElementType::Identifier, &[
-        
-    ]);
+    check_spans(ElementType::Identifier, &[]);
 }
 
 #[test]
 fn test_span_identifier_constant() {
-    check_spans(ElementType::IdentifierConstant, &[
-        
-    ]);
+    check_spans(ElementType::IdentifierConstant, &[]);
 }
 
 #[test]
 fn test_span_identifier_layout_parameter() {
-    check_spans(ElementType::IdentifierLayoutParameter, &[
-        
-    ]);
+    check_spans(ElementType::IdentifierLayoutParameter, &[]);
 }
 
 #[test]
 fn test_span_inline_layout_reference() {
-    check_spans(ElementType::InlineLayoutReference, &[
-        
-    ]);
+    check_spans(ElementType::InlineLayoutReference, &[]);
 }
 
 #[test]
 fn test_span_library_declaration() {
-    check_spans(ElementType::LibraryDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::LibraryDeclaration, &[]);
 }
 
 #[test]
 fn test_span_literal_constant() {
-    check_spans(ElementType::LiteralConstant, &[
-        
-    ]);
+    check_spans(ElementType::LiteralConstant, &[]);
 }
 
 #[test]
 fn test_span_literal_layout_parameter() {
-    check_spans(ElementType::LiteralLayoutParameter, &[
-        
-    ]);
+    check_spans(ElementType::LiteralLayoutParameter, &[]);
 }
 
 #[test]
 fn test_span_modifier() {
-    check_spans(ElementType::Modifier, &[
-        
-    ]);
+    check_spans(ElementType::Modifier, &[]);
 }
 
 #[test]
 fn test_span_named_layout_reference() {
-    check_spans(ElementType::NamedLayoutReference, &[
-        
-    ]);
+    check_spans(ElementType::NamedLayoutReference, &[]);
 }
 
 #[test]
 fn test_span_numeric_literal() {
-    check_spans(ElementType::NumericLiteral, &[
-        
-    ]);
+    check_spans(ElementType::NumericLiteral, &[]);
 }
 
 #[test]
 fn test_span_ordinaled_layout() {
-    check_spans(ElementType::OrdinaledLayout, &[
-        
-    ]);
+    check_spans(ElementType::OrdinaledLayout, &[]);
 }
 
 #[test]
 fn test_span_ordinaled_layout_member() {
-    check_spans(ElementType::OrdinaledLayoutMember, &[
-        
-    ]);
+    check_spans(ElementType::OrdinaledLayoutMember, &[]);
 }
 
 #[test]
 fn test_span_protocol_compose() {
-    check_spans(ElementType::ProtocolCompose, &[
-        
-    ]);
+    check_spans(ElementType::ProtocolCompose, &[]);
 }
 
 #[test]
 fn test_span_protocol_declaration() {
-    check_spans(ElementType::ProtocolDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::ProtocolDeclaration, &[]);
 }
 
 #[test]
 fn test_span_protocol_method() {
-    check_spans(ElementType::ProtocolMethod, &[
-        
-    ]);
+    check_spans(ElementType::ProtocolMethod, &[]);
 }
 
 #[test]
 fn test_span_resource_declaration() {
-    check_spans(ElementType::ResourceDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::ResourceDeclaration, &[]);
 }
 
 #[test]
 fn test_span_resource_property() {
-    check_spans(ElementType::ResourceProperty, &[
-        
-    ]);
+    check_spans(ElementType::ResourceProperty, &[]);
 }
 
 #[test]
 fn test_span_service_declaration() {
-    check_spans(ElementType::ServiceDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::ServiceDeclaration, &[]);
 }
 
 #[test]
 fn test_span_service_member() {
-    check_spans(ElementType::ServiceMember, &[
-        
-    ]);
+    check_spans(ElementType::ServiceMember, &[]);
 }
 
 #[test]
 fn test_span_string_literal() {
-    check_spans(ElementType::StringLiteral, &[
-        
-    ]);
+    check_spans(ElementType::StringLiteral, &[]);
 }
 
 #[test]
 fn test_span_struct_layout() {
-    check_spans(ElementType::StructLayout, &[
-        
-    ]);
+    check_spans(ElementType::StructLayout, &[]);
 }
 
 #[test]
 fn test_span_struct_layout_member() {
-    check_spans(ElementType::StructLayoutMember, &[
-        
-    ]);
+    check_spans(ElementType::StructLayoutMember, &[]);
 }
 
 #[test]
 fn test_span_type_constructor() {
-    check_spans(ElementType::TypeConstructor, &[
-        
-    ]);
+    check_spans(ElementType::TypeConstructor, &[]);
 }
 
 #[test]
 fn test_span_type_declaration() {
-    check_spans(ElementType::TypeDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::TypeDeclaration, &[]);
 }
 
 #[test]
 fn test_span_type_layout_parameter() {
-    check_spans(ElementType::TypeLayoutParameter, &[
-        
-    ]);
+    check_spans(ElementType::TypeLayoutParameter, &[]);
 }
 
 #[test]
 fn test_span_using() {
-    check_spans(ElementType::UsingDeclaration, &[
-        
-    ]);
+    check_spans(ElementType::UsingDeclaration, &[]);
 }
 
 #[test]
 fn test_span_value_layout() {
-    check_spans(ElementType::ValueLayout, &[
-        
-    ]);
+    check_spans(ElementType::ValueLayout, &[]);
 }
 
 #[test]
 fn test_span_value_layout_member() {
-    check_spans(ElementType::ValueLayoutMember, &[
-        
-    ]);
+    check_spans(ElementType::ValueLayoutMember, &[]);
 }

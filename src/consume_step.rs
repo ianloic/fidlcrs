@@ -38,11 +38,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     let span = unsafe {
                         std::mem::transmute::<SourceSpan, SourceSpan>(decl.path.element.span())
                     };
-                    compiler.reporter.fail(
-                        Error::ErrFilesDisagreeOnLibraryName,
-                        span,
-                        &[],
-                    );
+                    compiler
+                        .reporter
+                        .fail(Error::ErrFilesDisagreeOnLibraryName, span, &[]);
                     return;
                 }
             }

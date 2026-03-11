@@ -425,8 +425,13 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             protocol_context.enter_response(method.name.element.span())
                         };
 
-                        let is_method_flexible = method.modifiers.iter().any(|m| m.element.span().data == "flexible");
-                        if method.has_error || (is_method_flexible && method.has_request && method.has_response) {
+                        let is_method_flexible = method
+                            .modifiers
+                            .iter()
+                            .any(|m| m.element.span().data == "flexible");
+                        if method.has_error
+                            || (is_method_flexible && method.has_request && method.has_response)
+                        {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
                                 local_name,

@@ -678,7 +678,7 @@ impl Type {
             nullable,
         })
     }
-    
+
     pub fn internal(subtype: String) -> Self {
         Type::Internal(InternalType {
             common: TypeCommon {

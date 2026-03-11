@@ -151,8 +151,10 @@ fn test_compare_generation() {
         let expected_json_raw = fs::read_to_string(&expected_path).unwrap_or_default();
         let actual_json_raw = fs::read_to_string(&output_json).unwrap_or_default();
 
-        let mut expected_val: serde_json::Value = serde_json::from_str(&expected_json_raw).unwrap_or(serde_json::Value::Null);
-        let mut actual_val: serde_json::Value = serde_json::from_str(&actual_json_raw).unwrap_or(serde_json::Value::Null);
+        let mut expected_val: serde_json::Value =
+            serde_json::from_str(&expected_json_raw).unwrap_or(serde_json::Value::Null);
+        let mut actual_val: serde_json::Value =
+            serde_json::from_str(&actual_json_raw).unwrap_or(serde_json::Value::Null);
 
         fn normalize_generated(val: &mut serde_json::Value) {
             match val {
@@ -179,7 +181,6 @@ fn test_compare_generation() {
 
         let expected_json = serde_json::to_string_pretty(&expected_val).unwrap();
         let actual_json = serde_json::to_string_pretty(&actual_val).unwrap();
-
 
         if expect_match {
             if expected_json != actual_json {

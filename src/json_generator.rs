@@ -70,6 +70,7 @@ pub enum TypeKind {
     Struct,
     Request,
     ExperimentalPointer,
+    Internal,
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct StructMember {
@@ -461,6 +462,7 @@ impl From<&flat_ast::Type> for Type {
                 flat_ast::Type::Primitive(t) => Some(t.subtype.to_string()),
                 flat_ast::Type::Handle(t) => t.subtype.clone(),
                 flat_ast::Type::Request(t) => t.subtype.clone(),
+                flat_ast::Type::Internal(t) => Some(t.subtype.clone()),
                 _ => None,
             },
             identifier: ast.identifier(),
@@ -606,6 +608,7 @@ impl From<&flat_ast::TypeKind> for TypeKind {
             flat_ast::TypeKind::Struct => Self::Struct,
             flat_ast::TypeKind::Request => Self::Request,
             flat_ast::TypeKind::ExperimentalPointer => Self::ExperimentalPointer,
+            flat_ast::TypeKind::Internal => Self::Internal,
         }
     }
 }

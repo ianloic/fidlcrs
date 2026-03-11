@@ -569,6 +569,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 all_names.push(decl.name.clone());
             }
         }
+        for decl in &self.table_declarations {
+            if !all_names.contains(&decl.name) {
+                all_names.push(decl.name.clone());
+            }
+        }
 
         all_names.sort();
 

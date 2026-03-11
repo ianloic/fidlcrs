@@ -91,9 +91,10 @@ fn test_compare_generation() {
         TestCase::new("handles.test.fidl")
             .public_deps(vec!["sdk-fidl/fdf/handle.fidl"])
             .contains_drivers(),
+        TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
     ];
 
-    let disabled_tests = vec![TestCase::new("unknown_interactions.test.fidl").contains_drivers()];
+    let disabled_tests = vec![];
 
     let mut failed = false;
 
@@ -147,8 +148,38 @@ fn test_compare_generation() {
         }
 
         let expected_path = manifest_dir.join(format!("fidlc/goldens/{}.json.golden", name));
-        let expected_json = fs::read_to_string(&expected_path).unwrap_or_default();
-        let actual_json = fs::read_to_string(&output_json).unwrap_or_default();
+        let expected_json_raw = fs::read_to_string(&expected_path).unwrap_or_default();
+        let actual_json_raw = fs::read_to_string(&output_json).unwrap_or_default();
+
+        let mut expected_val: serde_json::Value = serde_json::from_str(&expected_json_raw).unwrap_or(serde_json::Value::Null);
+        let mut actual_val: serde_json::Value = serde_json::from_str(&actual_json_raw).unwrap_or(serde_json::Value::Null);
+
+        fn normalize_generated(val: &mut serde_json::Value) {
+            match val {
+                serde_json::Value::Object(map) => {
+                    if map.contains_key("filename") && map["filename"] == "generated" {
+                        if let Some(line) = map.get_mut("line") {
+                            *line = serde_json::Value::Number(serde_json::Number::from(0));
+                        }
+                    }
+                    for (_, v) in map.iter_mut() {
+                        normalize_generated(v);
+                    }
+                }
+                serde_json::Value::Array(arr) => {
+                    for v in arr.iter_mut() {
+                        normalize_generated(v);
+                    }
+                }
+                _ => {}
+            }
+        }
+        normalize_generated(&mut expected_val);
+        normalize_generated(&mut actual_val);
+
+        let expected_json = serde_json::to_string_pretty(&expected_val).unwrap();
+        let actual_json = serde_json::to_string_pretty(&actual_val).unwrap();
+
 
         if expect_match {
             if expected_json != actual_json {

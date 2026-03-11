@@ -5270,7 +5270,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 None
             };
 
-            let has_response = m.has_response;
+
             let maybe_response_payload = if let Some(ref l) = m.response_payload {
                 match l {
                     raw_ast::Layout::TypeConstructor(tc) => {
@@ -5280,7 +5280,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         } else {
                             p_ctx.enter_response(m.name.element.span())
                         };
-                        if m.has_error {
+                        if m.has_error || (is_method_flexible && m.has_request && m.has_response) {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
                                 short_name,
@@ -5347,7 +5347,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             p_ctx.enter_response(m.name.element.span())
                         };
 
-                        if m.has_error {
+                        if m.has_error || (is_method_flexible && m.has_request && m.has_response) {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
                                 short_name,
@@ -5392,7 +5392,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             p_ctx.enter_response(m.name.element.span())
                         };
 
-                        if m.has_error {
+                        if m.has_error || (is_method_flexible && m.has_request && m.has_response) {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
                                 short_name,
@@ -5437,7 +5437,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             p_ctx.enter_response(m.name.element.span())
                         };
 
-                        if m.has_error {
+                        if m.has_error || (is_method_flexible && m.has_request && m.has_response) {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
                                 short_name,
@@ -5491,6 +5491,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 None
             };
 
+            let has_response = m.has_response;
+            let two_way = has_request && has_response;
+            let needs_result_union = m.has_error || (is_method_flexible && two_way);
             let mut maybe_response_success_type = maybe_response_payload.clone();
 
             let maybe_response_err_type = if let Some(ref l) = m.error_payload {
@@ -5550,9 +5553,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 None
             };
 
-            let maybe_response_payload = if m.has_error {
-                if let Some(err_type) = maybe_response_err_type.clone() {
-                    let success_type = if let Some(ref succ) = maybe_response_success_type {
+            let maybe_response_payload = if needs_result_union {
+                let success_type = if let Some(ref succ) = maybe_response_success_type {
                         succ.clone()
                     } else {
                         let p_ctx = NamingContext::create(decl.name.element.span());
@@ -5624,8 +5626,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let mut union_has_padding = false;
                     let mut union_handles = 0;
                     let mut union_depth = 0;
-                    let mut union_has_flexible_envelope = is_method_flexible;
-                    for t in [&success_type, &err_type] {
+                    let mut union_has_flexible_envelope = false;
+                    let mut member_types = vec![&success_type];
+                    if let Some(err_type) = &maybe_response_err_type {
+                        member_types.push(err_type);
+                    }
+                    for t in member_types {
                         let shape = &t.type_shape;
                         let inlined = shape.inline_size <= 4;
                         let padding = if inlined {
@@ -5689,7 +5695,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             deprecated: Some(false),
                             maybe_attributes: vec![],
                         },
-                        UnionMember {
+                    ];
+
+                    if let Some(err_type) = maybe_response_err_type.clone() {
+                        union_members.push(UnionMember {
                             ordinal: 2,
                             reserved: None,
                             name: Some("err".to_string()),
@@ -5698,8 +5707,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             location: Some(err_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
-                        },
-                    ];
+                        });
+                    }
 
                     if is_method_flexible {
                         union_members.push(UnionMember {
@@ -5707,20 +5716,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             ordinal: 3,
                             reserved: None,
                             name: Some("framework_err".to_string()),
-                            type_: Some(Type::identifier_type(
-                                Some("fidl/internal/FrameworkErr".to_string()),
-                                false,
-                                TypeShape {
-                                    inline_size: 4,
-                                    alignment: 4,
-                                    depth: 0,
-                                    max_handles: 0,
-                                    max_out_of_line: 0,
-                                    has_padding: false,
-                                    has_flexible_envelope: false,
-                                },
-                                false,
-                            )),
+                            type_: Some(Type::internal("framework_error".to_string())),
                             location: Some(_framework_err_loc),
                             deprecated: Some(false),
                             maybe_attributes: vec![],
@@ -5755,14 +5751,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         union_shape,
                         false,
                     ))
-                } else {
-                    None
-                }
             } else {
                 maybe_response_payload.clone()
             };
 
-            if !m.has_error {
+            if !needs_result_union {
                 maybe_response_success_type = None;
             }
 
@@ -5798,7 +5791,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 kind,
                 ordinal,
                 name: m.name.data().to_string(),
-                strict: true,
+                strict: !is_method_flexible,
                 location: self.get_location(&m.name.element),
                 deprecated: self.is_deprecated(m.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&m.attributes),

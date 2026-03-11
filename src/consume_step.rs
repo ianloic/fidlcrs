@@ -363,11 +363,15 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
                 for method in &decl.methods {
                     let req_s = match &method.request_payload {
-                        Some(raw_ast::Layout::Struct(s)) => Some(s),
+                        Some(raw_ast::Layout::Struct(s)) => Some(RawDecl::Struct(s)),
+                        Some(raw_ast::Layout::Table(t)) => Some(RawDecl::Table(t)),
+                        Some(raw_ast::Layout::Union(u)) => Some(RawDecl::Union(u)),
                         Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
                             raw_ast::LayoutParameter::Inline(inline_layout) => {
                                 match &**inline_layout {
-                                    raw_ast::Layout::Struct(s) => Some(s),
+                                    raw_ast::Layout::Struct(s) => Some(RawDecl::Struct(s)),
+                                    raw_ast::Layout::Table(t) => Some(RawDecl::Table(t)),
+                                    raw_ast::Layout::Union(u) => Some(RawDecl::Union(u)),
                                     _ => None,
                                 }
                             }
@@ -375,28 +379,38 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         },
                         _ => None,
                     };
-                    if let Some(s) = req_s {
+                    if let Some(decl) = req_s {
                         let ctx = protocol_context.enter_request(method.name.element.span());
                         let synth_name = ctx.flattened_name();
                         let full_synth = format!("{}/{}", file_library_name, synth_name);
                         compiler.anonymous_structs.insert(full_synth.clone());
+                        let kind = match decl {
+                            RawDecl::Struct(_) => "struct",
+                            RawDecl::Table(_) => "table",
+                            RawDecl::Union(_) => "union",
+                            _ => "unknown",
+                        };
                         insert_decl(
                             compiler,
                             &mut canonical_names,
                             full_synth,
                             &synth_name,
-                            RawDecl::Struct(s),
-                            "struct",
+                            decl,
+                            kind,
                             true,
                         );
                     }
 
                     let res_s = match &method.response_payload {
-                        Some(raw_ast::Layout::Struct(s)) => Some(s),
+                        Some(raw_ast::Layout::Struct(s)) => Some(RawDecl::Struct(s)),
+                        Some(raw_ast::Layout::Table(t)) => Some(RawDecl::Table(t)),
+                        Some(raw_ast::Layout::Union(u)) => Some(RawDecl::Union(u)),
                         Some(raw_ast::Layout::TypeConstructor(tc)) => match &tc.layout {
                             raw_ast::LayoutParameter::Inline(inline_layout) => {
                                 match &**inline_layout {
-                                    raw_ast::Layout::Struct(s) => Some(s),
+                                    raw_ast::Layout::Struct(s) => Some(RawDecl::Struct(s)),
+                                    raw_ast::Layout::Table(t) => Some(RawDecl::Table(t)),
+                                    raw_ast::Layout::Union(u) => Some(RawDecl::Union(u)),
                                     _ => None,
                                 }
                             }
@@ -404,14 +418,15 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         },
                         _ => None,
                     };
-                    if let Some(s) = res_s {
+                    if let Some(decl) = res_s {
                         let mut ctx = if !method.has_request && !method.has_error {
                             protocol_context.enter_event(method.name.element.span())
                         } else {
                             protocol_context.enter_response(method.name.element.span())
                         };
 
-                        if method.has_error {
+                        let is_method_flexible = method.modifiers.iter().any(|m| m.element.span().data == "flexible");
+                        if method.has_error || (is_method_flexible && method.has_request && method.has_response) {
                             ctx.set_name_override(format!(
                                 "{}_{}_Result",
                                 local_name,
@@ -428,13 +443,19 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         let synth_name = ctx.flattened_name();
                         let full_synth = format!("{}/{}", file_library_name, synth_name);
                         compiler.anonymous_structs.insert(full_synth.clone());
+                        let kind = match decl {
+                            RawDecl::Struct(_) => "struct",
+                            RawDecl::Table(_) => "table",
+                            RawDecl::Union(_) => "union",
+                            _ => "unknown",
+                        };
                         insert_decl(
                             compiler,
                             &mut canonical_names,
                             full_synth,
                             &synth_name,
-                            RawDecl::Struct(s),
-                            "struct",
+                            decl,
+                            kind,
                             true,
                         );
                     }

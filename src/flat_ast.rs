@@ -70,6 +70,7 @@ pub enum TypeKind {
     Struct,
     Request,
     ExperimentalPointer,
+    Internal,
 }
 
 #[derive(Clone, Debug)]
@@ -99,6 +100,7 @@ pub enum Type {
     Struct(StructType),
     Request(RequestType),
     ExperimentalPointer(ExperimentalPointerType),
+    Internal(InternalType),
 }
 
 #[derive(Clone, Debug)]
@@ -293,6 +295,12 @@ pub struct ExperimentalPointerType {
     pub nullable: bool,
 }
 
+#[derive(Clone, Debug)]
+pub struct InternalType {
+    pub common: TypeCommon,
+    pub subtype: String,
+}
+
 impl std::ops::Deref for Type {
     type Target = TypeCommon;
     fn deref(&self) -> &Self::Target {
@@ -309,6 +317,7 @@ impl std::ops::Deref for Type {
             Type::Struct(t) => &t.common,
             Type::Request(t) => &t.common,
             Type::ExperimentalPointer(t) => &t.common,
+            Type::Internal(t) => &t.common,
         }
     }
 }
@@ -328,6 +337,7 @@ impl std::ops::DerefMut for Type {
             Type::Struct(t) => &mut t.common,
             Type::Request(t) => &mut t.common,
             Type::ExperimentalPointer(t) => &mut t.common,
+            Type::Internal(t) => &mut t.common,
         }
     }
 }
@@ -668,6 +678,30 @@ impl Type {
             nullable,
         })
     }
+    
+    pub fn internal(subtype: String) -> Self {
+        Type::Internal(InternalType {
+            common: TypeCommon {
+                experimental_maybe_from_alias: None,
+                outer_alias: None,
+                maybe_attributes: vec![],
+                field_shape: None,
+                maybe_size_constant_name: None,
+                resource: false,
+                deprecated: None,
+                type_shape: TypeShape {
+                    inline_size: 4,
+                    alignment: 4,
+                    depth: 0,
+                    max_handles: 0,
+                    max_out_of_line: 0,
+                    has_padding: false,
+                    has_flexible_envelope: false,
+                },
+            },
+            subtype,
+        })
+    }
 
     pub fn kind(&self) -> TypeKind {
         match self {
@@ -683,6 +717,7 @@ impl Type {
             Type::Struct(_) => TypeKind::Struct,
             Type::Request(_) => TypeKind::Request,
             Type::ExperimentalPointer(_) => TypeKind::ExperimentalPointer,
+            Type::Internal(_) => TypeKind::Internal,
         }
     }
 

@@ -1287,6 +1287,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         args: vec![],
                         nullable: false,
                         maybe_size: None,
+                        handle_rights: None,
                     });
                 }
             } else if n == "box" || n == "array" {
@@ -1327,11 +1328,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
+        let mut handle_rights = None;
+        if name == "zx/Handle" || name == "handle" {
+            let filtered_constraints: Vec<_> = type_ctor
+                .constraints
+                .iter()
+                .filter(|c| !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional"))
+                .collect();
+            if filtered_constraints.len() > 1 {
+                handle_rights = Some(self.compile_constant(filtered_constraints[1]));
+            }
+        }
+
         PartialTypeCtor {
             nullable: type_ctor.nullable || type_ctor.constraints.iter().any(|c| matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")),
             name,
             args,
             maybe_size,
+            handle_rights,
         }
     }
     pub fn compile_decl_by_name(&mut self, name: &str) {
@@ -4066,7 +4080,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         for mem in &e.members {
                                             if mem.name.data() == ident_str {
                                                 found = true;
-                                                handle_subtype = ident_str.to_lowercase();
+                                                handle_subtype = match ident_str {
+                                                    "LOG" => "debuglog".to_string(),
+                                                    "SUSPEND_TOKEN" => "suspendtoken".to_string(),
+                                                    s => s.replace("_", "").to_lowercase(),
+                                                };
                                                 if let raw_ast::Constant::Literal(lit) = &mem.value
                                                     && let Ok(v) = lit.literal.value.parse::<u32>()
                                                 {

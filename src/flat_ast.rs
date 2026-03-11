@@ -1047,6 +1047,7 @@ pub struct PartialTypeCtor {
     pub args: Vec<PartialTypeCtor>,
     pub nullable: bool,
     pub maybe_size: Option<Constant>,
+    pub handle_rights: Option<Constant>,
 }
 
 #[derive(Clone, Debug)]

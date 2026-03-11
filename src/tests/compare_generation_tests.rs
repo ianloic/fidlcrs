@@ -88,14 +88,12 @@ fn test_compare_generation() {
         TestCase::new("driver_service.test.fidl").contains_drivers(),
         TestCase::new("consts.test.fidl"),
         TestCase::new("versions.test.fidl"),
-    ];
-
-    let disabled_tests = vec![
         TestCase::new("handles.test.fidl")
             .public_deps(vec!["sdk-fidl/fdf/handle.fidl"])
             .contains_drivers(),
-        TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
     ];
+
+    let disabled_tests = vec![TestCase::new("unknown_interactions.test.fidl").contains_drivers()];
 
     let mut failed = false;
 

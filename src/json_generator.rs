@@ -380,6 +380,8 @@ pub struct PartialTypeCtor {
     pub nullable: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_size: Option<Constant>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handle_rights: Option<Constant>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -442,6 +444,7 @@ impl From<&flat_ast::PartialTypeCtor> for PartialTypeCtor {
             args: ast.args.iter().map(Into::into).collect(),
             nullable: ast.nullable,
             maybe_size: ast.maybe_size.as_ref().map(Into::into),
+            handle_rights: ast.handle_rights.as_ref().map(Into::into),
         }
     }
 }

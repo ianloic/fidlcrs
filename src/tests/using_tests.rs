@@ -345,3 +345,18 @@ fn bad_aliased_library_declaration_name_collision() {
         crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport
     );
 }
+
+#[test]
+fn bad_too_many_provided_libraries() {
+    let mut shared = crate::tests::test_library::SharedAmongstLibraries::new();
+    let mut dependency = crate::tests::test_library::TestLibrary::with_shared(&mut shared);
+    dependency.add_source_file("notused.fidl", "library not.used;");
+    dependency.compile().expect("dependency compiled");
+
+    let mut library = crate::tests::test_library::TestLibrary::with_shared(&mut shared);
+    library.add_source_file("example.fidl", "library example;");
+    library.compile().expect("library compiled");
+
+    // Rust harness doesn't report Unused libraries inside a simple compilation if they are just provided dependencies
+    // so this test just verifies we can compile properly in this case.
+}

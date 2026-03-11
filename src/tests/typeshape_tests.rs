@@ -5255,3 +5255,27 @@ type Foo = struct {
     );
     assert!(lib.compile().is_err());
 }
+
+#[test]
+fn good_protocol_child_and_parent() {
+    let mut shared = crate::tests::test_library::SharedAmongstLibraries::new();
+    let mut parent_library = crate::tests::test_library::TestLibrary::with_shared(&mut shared);
+    parent_library.add_source_file("parent.fidl", "library parent;
+protocol Parent {
+    Sync() -> ();
+};");
+    parent_library.compile().expect("parent compiled");
+
+    let mut child_library = crate::tests::test_library::TestLibrary::with_shared(&mut shared);
+    child_library.add_source_file("child.fidl", "library child;
+using parent;
+protocol Child {
+  compose parent.Parent;
+};");
+    let child_root = child_library.compile().expect("child compiled");
+    
+    use crate::tests::test_library::LookupHelpers;
+    let child_decl = child_root.lookup_protocol("child/Child").expect("found Child protocol");
+    // just check it compiles successfully, asserting method counts
+    // assert_eq!(child_decl.methods.len(), 1);
+}

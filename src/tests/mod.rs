@@ -40,3 +40,5 @@ pub mod using_tests;
 pub mod utils_tests;
 pub mod versioning_attribute_tests;
 pub mod versioning_basic_tests;
+pub mod versioning_interleaving_tests;
+pub mod versioning_platform_tests;

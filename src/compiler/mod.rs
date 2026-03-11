@@ -3686,29 +3686,49 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let RawDecl::Protocol(p) = decl {
                             is_protocol = true;
                             if let Some(attrs) = p.attributes.as_ref() {
-                                if let Some(attr) = attrs.attributes.iter().find(|a| a.name.data() == "transport") {
-                                    if let Some(arg) = attr.args.iter().find(|a| a.name.as_ref().map_or("value", |n| n.data()) == "value") {
+                                if let Some(attr) = attrs
+                                    .attributes
+                                    .iter()
+                                    .find(|a| a.name.data() == "transport")
+                                {
+                                    if let Some(arg) = attr.args.iter().find(|a| {
+                                        a.name.as_ref().map_or("value", |n| n.data()) == "value"
+                                    }) {
                                         if let raw_ast::Constant::Literal(lit) = &arg.value {
                                             if lit.literal.kind == raw_ast::LiteralKind::String {
-                                                transport = Some(lit.literal.value.trim_matches('"').to_string());
+                                                transport = Some(
+                                                    lit.literal.value.trim_matches('"').to_string(),
+                                                );
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    } else if let Some(p) = self.protocol_declarations.iter().find(|p| p.name == protocol) {
+                    } else if let Some(p) = self
+                        .protocol_declarations
+                        .iter()
+                        .find(|p| p.name == protocol)
+                    {
                         is_protocol = true;
-                        if let Some(attr) = p.maybe_attributes.iter().find(|a| a.name == "transport") {
+                        if let Some(attr) =
+                            p.maybe_attributes.iter().find(|a| a.name == "transport")
+                        {
                             if let Some(arg) = attr.arguments.iter().find(|a| a.name == "value") {
                                 if let Some(lit) = &arg.value.literal {
                                     transport = Some(lit.value.get().trim_matches('"').to_string());
                                 }
                             }
                         }
-                    } else if let Some(p) = self.external_protocol_declarations.iter().find(|p| p.name == protocol) {
+                    } else if let Some(p) = self
+                        .external_protocol_declarations
+                        .iter()
+                        .find(|p| p.name == protocol)
+                    {
                         is_protocol = true;
-                        if let Some(attr) = p.maybe_attributes.iter().find(|a| a.name == "transport") {
+                        if let Some(attr) =
+                            p.maybe_attributes.iter().find(|a| a.name == "transport")
+                        {
                             if let Some(arg) = attr.arguments.iter().find(|a| a.name == "value") {
                                 if let Some(lit) = &arg.value.literal {
                                     transport = Some(lit.value.get().trim_matches('"').to_string());
@@ -4162,11 +4182,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         return resolved_type;
                     }
                     if let RawDecl::Service(_) = decl {
-                        self.reporter.fail(
-                            Error::ErrExpectedType,
-                            type_ctor.element.span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrExpectedType, type_ctor.element.span(), &[]);
                         return Type::unknown();
                     }
                     let is_union_or_table = match decl {
@@ -4539,15 +4556,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let attributes = self.compile_attribute_list(&member.attributes);
 
             if type_obj.kind() != TypeKind::Endpoint {
-                self.reporter.fail(Error::ErrOnlyClientEndsInServices, member.name.element.span(), &[]);
+                self.reporter.fail(
+                    Error::ErrOnlyClientEndsInServices,
+                    member.name.element.span(),
+                    &[],
+                );
             } else if let Type::Endpoint(e) = &type_obj {
                 if let Some(role) = &e.role {
                     if role != "client" {
-                        self.reporter.fail(Error::ErrOnlyClientEndsInServices, member.name.element.span(), &[]);
+                        self.reporter.fail(
+                            Error::ErrOnlyClientEndsInServices,
+                            member.name.element.span(),
+                            &[],
+                        );
                     }
                 }
                 if e.nullable {
-                    self.reporter.fail(Error::ErrOptionalServiceMember, member.name.element.span(), &[]);
+                    self.reporter.fail(
+                        Error::ErrOptionalServiceMember,
+                        member.name.element.span(),
+                        &[],
+                    );
                 }
                 let transport = e.protocol_transport.as_deref().unwrap_or("Channel");
                 if associated_transport.is_empty() {

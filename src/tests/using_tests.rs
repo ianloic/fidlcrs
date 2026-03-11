@@ -1,5 +1,5 @@
 use crate::diagnostics::Error;
-use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
+use crate::tests::test_library::TestLibrary;
 
 #[test]
 fn good_using() {

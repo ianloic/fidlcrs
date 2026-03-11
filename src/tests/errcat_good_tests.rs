@@ -1,5 +1,5 @@
 #![allow(unused_mut)]
-use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
+use crate::tests::test_library::TestLibrary;
 
 #[test]
 fn good0001() {
@@ -171,7 +171,6 @@ fn good0024() {
 
 #[test]
 fn good0025() {
-    let _shared = TestLibrary::new();
     // TODO: TestLibrary dependency(&shared, "dependent.fidl", R"FIDL(
     // TODO: library dependent;
     // TODO: type Something = struct {
@@ -287,12 +286,10 @@ fn good0037() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0038ab() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0038-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0038-b.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -300,12 +297,10 @@ fn good0038ab() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0038ac() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0038-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0038-c.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -313,12 +308,10 @@ fn good0038ac() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0039ab() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0039-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0039-b.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -326,12 +319,10 @@ fn good0039ab() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0039ac() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0039-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0039-c.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -361,12 +352,10 @@ fn good0041b() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0042() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0042-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0042-b.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -374,15 +363,13 @@ fn good0042() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0043() {
-    let _shared = TestLibrary::new();
     let mut dependency1 = TestLibrary::new();
     dependency1.add_errcat_file("good/fi-0043-a.test.fidl");
     let _ = dependency1.compile().expect("compilation failed");
     let mut dependency2 = TestLibrary::new();
     dependency2.add_errcat_file("good/fi-0043-b.test.fidl");
     let _ = dependency2.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0043-c.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -390,15 +377,13 @@ fn good0043() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0044() {
-    let _shared = TestLibrary::new();
     let mut dependency1 = TestLibrary::new();
     dependency1.add_errcat_file("good/fi-0044-a.test.fidl");
     let _ = dependency1.compile().expect("compilation failed");
     let mut dependency2 = TestLibrary::new();
     dependency2.add_errcat_file("good/fi-0044-b.test.fidl");
     let _ = dependency2.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0044-c.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -406,12 +391,10 @@ fn good0044() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0045() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0045-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0045-b.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -447,12 +430,10 @@ fn good0050() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0051() {
-    let _shared = TestLibrary::new();
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0051-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0051-b.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -503,14 +484,10 @@ fn good0055() {
 #[test]
 #[ignore] // TODO: Fix missing compiler features
 fn good0056() {
-    let mut shared = TestLibrary::new();
-    shared.select_version("foo", "HEAD");
-    shared.select_version("bar", "HEAD");
     let mut dependency = TestLibrary::new();
     dependency.add_errcat_file("good/fi-0056-a.test.fidl");
     let _ = dependency.compile().expect("compilation failed");
-    let mut shared = SharedAmongstLibraries::new();
-    let mut library = TestLibrary::with_shared(&mut shared);
+    let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0056-b.test.fidl");
     let _ = library.compile().expect("compilation failed");
 }
@@ -1364,7 +1341,6 @@ fn good0177() {
 
 #[test]
 fn good0178() {
-    let _shared = TestLibrary::new();
     // TODO: TestLibrary dependency(&shared, "dependent.fidl", R"FIDL(
     // TODO: library dependent;
     // TODO: type Bar = struct {

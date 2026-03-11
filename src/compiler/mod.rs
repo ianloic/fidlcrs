@@ -3708,25 +3708,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(decl) = self.raw_decls.get(&protocol) {
                         if let RawDecl::Protocol(p) = decl {
                             is_protocol = true;
-                            if let Some(attrs) = p.attributes.as_ref() {
-                                if let Some(attr) = attrs
+                            if let Some(attrs) = p.attributes.as_ref()
+                                && let Some(attr) = attrs
                                     .attributes
                                     .iter()
                                     .find(|a| a.name.data() == "transport")
-                                {
-                                    if let Some(arg) = attr.args.iter().find(|a| {
+                                    && let Some(arg) = attr.args.iter().find(|a| {
                                         a.name.as_ref().map_or("value", |n| n.data()) == "value"
-                                    }) {
-                                        if let raw_ast::Constant::Literal(lit) = &arg.value {
-                                            if lit.literal.kind == raw_ast::LiteralKind::String {
+                                    })
+                                        && let raw_ast::Constant::Literal(lit) = &arg.value
+                                            && lit.literal.kind == raw_ast::LiteralKind::String {
                                                 transport = Some(
                                                     lit.literal.value.trim_matches('"').to_string(),
                                                 );
                                             }
-                                        }
-                                    }
-                                }
-                            }
                         }
                     } else if let Some(p) = self
                         .protocol_declarations
@@ -3736,13 +3731,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         is_protocol = true;
                         if let Some(attr) =
                             p.maybe_attributes.iter().find(|a| a.name == "transport")
-                        {
-                            if let Some(arg) = attr.arguments.iter().find(|a| a.name == "value") {
-                                if let Some(lit) = &arg.value.literal {
+                            && let Some(arg) = attr.arguments.iter().find(|a| a.name == "value")
+                                && let Some(lit) = &arg.value.literal {
                                     transport = Some(lit.value.get().trim_matches('"').to_string());
                                 }
-                            }
-                        }
                     } else if let Some(p) = self
                         .external_protocol_declarations
                         .iter()
@@ -3751,13 +3743,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         is_protocol = true;
                         if let Some(attr) =
                             p.maybe_attributes.iter().find(|a| a.name == "transport")
-                        {
-                            if let Some(arg) = attr.arguments.iter().find(|a| a.name == "value") {
-                                if let Some(lit) = &arg.value.literal {
+                            && let Some(arg) = attr.arguments.iter().find(|a| a.name == "value")
+                                && let Some(lit) = &arg.value.literal {
                                     transport = Some(lit.value.get().trim_matches('"').to_string());
                                 }
-                            }
-                        }
                     } else {
                         is_protocol = true; // wait, if not found and not compiled?
                     }
@@ -4585,15 +4574,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     &[],
                 );
             } else if let Type::Endpoint(e) = &type_obj {
-                if let Some(role) = &e.role {
-                    if role != "client" {
+                if let Some(role) = &e.role
+                    && role != "client" {
                         self.reporter.fail(
                             Error::ErrOnlyClientEndsInServices,
                             member.name.element.span(),
                             &[],
                         );
                     }
-                }
                 if e.nullable {
                     self.reporter.fail(
                         Error::ErrOptionalServiceMember,

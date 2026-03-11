@@ -48,7 +48,6 @@ service SomeService {
 }
 
 #[test]
-#[ignore]
 fn bad_cannot_have_conflicting_members() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -68,7 +67,6 @@ service MyService {
 }
 
 #[test]
-#[ignore]
 fn bad_no_nullable_protocol_members() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0088.test.fidl");
@@ -76,7 +74,6 @@ fn bad_no_nullable_protocol_members() {
 }
 
 #[test]
-#[ignore]
 fn bad_only_protocol_members() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -95,7 +92,6 @@ service SomeService {
 }
 
 #[test]
-#[ignore]
 fn bad_no_server_ends() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0112.test.fidl");
@@ -103,7 +99,6 @@ fn bad_no_server_ends() {
 }
 
 #[test]
-#[ignore]
 fn bad_cannot_use_services_in_decls() {
     let mut lib = TestLibrary::new();
     lib.add_source_file(
@@ -122,7 +117,6 @@ type CannotUseService = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_cannot_use_more_than_one_protocol_transport_kind() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0113.test.fidl");

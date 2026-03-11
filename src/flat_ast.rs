@@ -509,7 +509,12 @@ impl Type {
             element_count,
         })
     }
-    pub fn endpoint(protocol: Option<String>, role: Option<String>, nullable: bool) -> Self {
+    pub fn endpoint(
+        protocol: Option<String>,
+        role: Option<String>,
+        nullable: bool,
+        protocol_transport: Option<String>,
+    ) -> Self {
         Type::Endpoint(EndpointType {
             common: TypeCommon {
                 experimental_maybe_from_alias: None,
@@ -532,7 +537,11 @@ impl Type {
             nullable,
             protocol,
             role,
-            protocol_transport: Some("Channel".to_string()),
+            protocol_transport: if protocol_transport.is_some() {
+                protocol_transport
+            } else {
+                Some("Channel".to_string())
+            },
         })
     }
     pub fn handle(

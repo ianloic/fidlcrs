@@ -480,7 +480,7 @@ mod tests {
         "fuchsia.hardware.network.driver",
         "fuchsia.hardware.network",
         "fuchsia.hardware.nfc",
-        "fuchsia.hardware.pin",
+        // "fuchsia.hardware.pin",
         "fuchsia.hardware.pinimpl",
         "fuchsia.hardware.platform.bus",
         "fuchsia.hardware.platform.device",

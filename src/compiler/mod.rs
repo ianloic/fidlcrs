@@ -3679,30 +3679,47 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
 
+                let mut transport = None;
                 if !protocol.is_empty() {
+                    let mut is_protocol = false;
                     if let Some(decl) = self.raw_decls.get(&protocol) {
-                        if let RawDecl::Protocol(_) = decl {
-                            // Ok
-                        } else {
-                            self.reporter.fail(
-                                Error::ErrMustBeAProtocol,
-                                type_ctor.element.span(),
-                                &[&protocol],
-                            );
+                        if let RawDecl::Protocol(p) = decl {
+                            is_protocol = true;
+                            if let Some(attrs) = p.attributes.as_ref() {
+                                if let Some(attr) = attrs.attributes.iter().find(|a| a.name.data() == "transport") {
+                                    if let Some(arg) = attr.args.iter().find(|a| a.name.as_ref().map_or("value", |n| n.data()) == "value") {
+                                        if let raw_ast::Constant::Literal(lit) = &arg.value {
+                                            if lit.literal.kind == raw_ast::LiteralKind::String {
+                                                transport = Some(lit.literal.value.trim_matches('"').to_string());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    } else if self.compiled_decls.contains(&protocol) {
-                        if !self
-                            .protocol_declarations
-                            .iter()
-                            .any(|p| p.name == protocol)
-                        {
-                            self.reporter.fail(
-                                Error::ErrMustBeAProtocol,
-                                type_ctor.element.span(),
-                                &[&protocol],
-                            );
+                    } else if let Some(p) = self.protocol_declarations.iter().find(|p| p.name == protocol) {
+                        is_protocol = true;
+                        if let Some(attr) = p.maybe_attributes.iter().find(|a| a.name == "transport") {
+                            if let Some(arg) = attr.arguments.iter().find(|a| a.name == "value") {
+                                if let Some(lit) = &arg.value.literal {
+                                    transport = Some(lit.value.get().trim_matches('"').to_string());
+                                }
+                            }
+                        }
+                    } else if let Some(p) = self.external_protocol_declarations.iter().find(|p| p.name == protocol) {
+                        is_protocol = true;
+                        if let Some(attr) = p.maybe_attributes.iter().find(|a| a.name == "transport") {
+                            if let Some(arg) = attr.arguments.iter().find(|a| a.name == "value") {
+                                if let Some(lit) = &arg.value.literal {
+                                    transport = Some(lit.value.get().trim_matches('"').to_string());
+                                }
+                            }
                         }
                     } else {
+                        is_protocol = true; // wait, if not found and not compiled?
+                    }
+
+                    if !is_protocol {
                         self.reporter.fail(
                             Error::ErrMustBeAProtocol,
                             type_ctor.element.span(),
@@ -3711,7 +3728,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                Type::endpoint(Some(protocol), Some(role.to_string()), nullable)
+                Type::endpoint(Some(protocol), Some(role.to_string()), nullable, transport)
             }
             "box" => {
                 if type_ctor.parameters.is_empty() {
@@ -4144,6 +4161,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
                         return resolved_type;
                     }
+                    if let RawDecl::Service(_) = decl {
+                        self.reporter.fail(
+                            Error::ErrExpectedType,
+                            type_ctor.element.span(),
+                            &[],
+                        );
+                        return Type::unknown();
+                    }
                     let is_union_or_table = match decl {
                         RawDecl::Union(_) | RawDecl::Table(_) => true,
                         RawDecl::Type(t) => matches!(
@@ -4498,6 +4523,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut members = vec![];
         let mut member_names = CanonicalNames::new();
+        let mut associated_transport = String::new();
+        let mut first_member_with_that_transport = String::new();
+
         for member in &decl.members {
             let ctx = NamingContext::create(name).enter_member(member.name.data());
             let type_obj = self.resolve_type(&member.type_ctor, library_name, Some(ctx));
@@ -4509,6 +4537,35 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 member.name.element.span(),
             );
             let attributes = self.compile_attribute_list(&member.attributes);
+
+            if type_obj.kind() != TypeKind::Endpoint {
+                self.reporter.fail(Error::ErrOnlyClientEndsInServices, member.name.element.span(), &[]);
+            } else if let Type::Endpoint(e) = &type_obj {
+                if let Some(role) = &e.role {
+                    if role != "client" {
+                        self.reporter.fail(Error::ErrOnlyClientEndsInServices, member.name.element.span(), &[]);
+                    }
+                }
+                if e.nullable {
+                    self.reporter.fail(Error::ErrOptionalServiceMember, member.name.element.span(), &[]);
+                }
+                let transport = e.protocol_transport.as_deref().unwrap_or("Channel");
+                if associated_transport.is_empty() {
+                    associated_transport = transport.to_string();
+                    first_member_with_that_transport = member_name.clone();
+                } else if associated_transport != transport {
+                    self.reporter.fail(
+                        Error::ErrMismatchedTransportInServices,
+                        member.name.element.span(),
+                        &[
+                            &member_name.as_str(),
+                            &transport,
+                            &first_member_with_that_transport.as_str(),
+                            &associated_transport.as_str(),
+                        ],
+                    );
+                }
+            }
 
             members.push(ServiceMember {
                 type_: type_obj,

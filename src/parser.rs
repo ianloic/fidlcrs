@@ -1414,51 +1414,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                         });
                     }
 
-                    if modifiers.iter().any(|m: &Modifier<'a>| {
-                        m.subkind == subkind && m.attributes.is_none() && modifier_attrs.is_none()
-                    }) {
-                        self.reporter.fail(
-                            Error::ErrDuplicateModifier,
-                            start_tok.span,
-                            &[&start_tok.span.data.to_string()],
-                        );
-                    } else if subkind == TokenSubkind::Strict || subkind == TokenSubkind::Flexible {
-                        if let Some(m) = modifiers.iter().find(|m| {
-                            (m.subkind == TokenSubkind::Strict
-                                || m.subkind == TokenSubkind::Flexible)
-                                && m.attributes.is_none()
-                                && modifier_attrs.is_none()
-                        }) {
-                            self.reporter.fail(
-                                Error::ErrConflictingModifier,
-                                start_tok.span,
-                                &[
-                                    &start_tok.span.data.to_string(),
-                                    &m.element.span().data.to_string(),
-                                ],
-                            );
-                        }
-                    } else if (subkind == TokenSubkind::Open
-                        || subkind == TokenSubkind::Ajar
-                        || subkind == TokenSubkind::Closed)
-                        && let Some(m) = modifiers.iter().find(|m| {
-                            (m.subkind == TokenSubkind::Open
-                                || m.subkind == TokenSubkind::Ajar
-                                || m.subkind == TokenSubkind::Closed)
-                                && m.attributes.is_none()
-                                && modifier_attrs.is_none()
-                        })
-                    {
-                        self.reporter.fail(
-                            Error::ErrConflictingModifier,
-                            start_tok.span,
-                            &[
-                                &start_tok.span.data.to_string(),
-                                &m.element.span().data.to_string(),
-                            ],
-                        );
-                    }
-
                     modifiers.push(Modifier {
                         element: SourceElement::new(
                             start_tok,

@@ -446,7 +446,6 @@ mod tests {
         "fuchsia.device.fs",
         "fuchsia.device.vsock",
         "fuchsia.diagnostics.host",
-        "fuchsia.diagnostics",
         "fuchsia.driver.crash",
         "fuchsia.driver.development",
         "fuchsia.driver.framework",

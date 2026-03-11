@@ -144,6 +144,18 @@ impl VersionSet {
     pub fn contains(&self, version: Version) -> bool {
         self.ranges.0.contains(version) || self.ranges.1.is_some_and(|r| r.contains(version))
     }
+
+    pub fn overlap(&self, other: &Self) -> bool {
+        let r1 = Some(self.ranges.0);
+        let r2 = self.ranges.1;
+        let o1 = Some(other.ranges.0);
+        let o2 = other.ranges.1;
+
+        VersionRange::intersect(r1, o1).is_some()
+            || VersionRange::intersect(r1, o2).is_some()
+            || VersionRange::intersect(r2, o1).is_some()
+            || VersionRange::intersect(r2, o2).is_some()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

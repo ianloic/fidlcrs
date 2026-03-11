@@ -153,6 +153,31 @@ impl<'node, 'src> RawDecl<'node, 'src> {
             RawDecl::Type(d) => &d.element,
         }
     }
+
+    pub fn for_each_modifier_list<F: FnMut(&'node [raw_ast::Modifier<'src>])>(&self, mut f: F) {
+        match self {
+            RawDecl::Struct(d) => f(&d.modifiers),
+            RawDecl::Enum(d) => f(&d.modifiers),
+            RawDecl::Bits(d) => f(&d.modifiers),
+            RawDecl::Union(d) => f(&d.modifiers),
+            RawDecl::Table(d) => f(&d.modifiers),
+            RawDecl::Protocol(d) => {
+                f(&d.modifiers);
+                for method in &d.methods {
+                    f(&method.modifiers);
+                }
+            }
+            RawDecl::Type(d) => match &d.layout {
+                raw_ast::Layout::Struct(l) => f(&l.modifiers),
+                raw_ast::Layout::Enum(l) => f(&l.modifiers),
+                raw_ast::Layout::Bits(l) => f(&l.modifiers),
+                raw_ast::Layout::Union(l) => f(&l.modifiers),
+                raw_ast::Layout::Table(l) => f(&l.modifiers),
+                _ => {}
+            },
+            _ => {}
+        }
+    }
 }
 
 pub struct Compiler<'node, 'src> {
@@ -1674,7 +1699,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if let Some(m) = decl
             .modifiers
             .iter()
-            .find(|m| m.subkind == TokenSubkind::Resource)
+            .find(|m| m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref()))
         {
             self.reporter.fail(
                 Error::ErrCannotSpecifyModifier,
@@ -2220,11 +2245,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         inherited_attributes: Option<&raw_ast::AttributeList<'src>>,
         naming_context: Option<std::rc::Rc<NamingContext<'src>>>,
     ) -> TableDeclaration {
-        if let Some(m) = decl
-            .modifiers
-            .iter()
-            .find(|m| m.subkind == TokenSubkind::Strict || m.subkind == TokenSubkind::Flexible)
-        {
+        if let Some(m) = decl.modifiers.iter().find(|m| {
+            (m.subkind == TokenSubkind::Strict || m.subkind == TokenSubkind::Flexible)
+                && self.is_active(m.attributes.as_ref())
+        }) {
             self.reporter.fail(
                 Error::ErrCannotSpecifyModifier,
                 m.element.span(),
@@ -2830,11 +2854,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         naming_context: Option<std::rc::Rc<NamingContext<'src>>>,
         inherited_attributes: Option<&raw_ast::AttributeList<'_>>,
     ) -> StructDeclaration {
-        if let Some(m) = decl
-            .modifiers
-            .iter()
-            .find(|m| m.subkind == TokenSubkind::Strict || m.subkind == TokenSubkind::Flexible)
-        {
+        if let Some(m) = decl.modifiers.iter().find(|m| {
+            (m.subkind == TokenSubkind::Strict || m.subkind == TokenSubkind::Flexible)
+                && self.is_active(m.attributes.as_ref())
+        }) {
             self.reporter.fail(
                 Error::ErrCannotSpecifyModifier,
                 m.element.span(),
@@ -4640,11 +4663,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let is_strict = decl
             .modifiers
             .iter()
-            .any(|m| m.subkind == TokenSubkind::Strict);
+            .any(|m| m.subkind == TokenSubkind::Strict && self.is_active(m.attributes.as_ref()));
         let is_flexible = decl
             .modifiers
             .iter()
-            .any(|m| m.subkind == TokenSubkind::Flexible);
+            .any(|m| m.subkind == TokenSubkind::Flexible && self.is_active(m.attributes.as_ref()));
         if is_strict && decl.methods.is_empty() {
             self.reporter
                 .fail(Error::ErrMustHaveOneMember, decl.name.element.span(), &[]);
@@ -4665,13 +4688,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let openness = if decl
             .modifiers
             .iter()
-            .any(|m| m.subkind == TokenSubkind::Ajar)
+            .any(|m| m.subkind == TokenSubkind::Ajar && self.is_active(m.attributes.as_ref()))
         {
             "ajar"
         } else if decl
             .modifiers
             .iter()
-            .any(|m| m.subkind == TokenSubkind::Closed)
+            .any(|m| m.subkind == TokenSubkind::Closed && self.is_active(m.attributes.as_ref()))
         {
             "closed"
         } else {
@@ -4742,13 +4765,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 composed_openness = p.openness.as_str();
                 parent_methods = p.methods.clone();
             } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
-                if p.modifiers.iter().any(|m| m.subkind == TokenSubkind::Ajar) {
+                if p.modifiers.iter().any(|m| {
+                    m.subkind == TokenSubkind::Ajar && self.is_active(m.attributes.as_ref())
+                }) {
                     composed_openness = "ajar";
-                } else if p
-                    .modifiers
-                    .iter()
-                    .any(|m| m.subkind == TokenSubkind::Closed)
-                {
+                } else if p.modifiers.iter().any(|m| {
+                    m.subkind == TokenSubkind::Closed && self.is_active(m.attributes.as_ref())
+                }) {
                     composed_openness = "closed";
                 }
             }

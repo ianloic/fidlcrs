@@ -1,4 +1,4 @@
-use crate::tests::test_library::TestLibrary;
+use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
 fn good_simple_struct() {
@@ -21,8 +21,9 @@ type MyStruct = struct {
 };
 "#,
     );
-    let _root = lib.compile().expect("compilation failed");
-    // TODO: assert type_decl members length = 1
+    let root = lib.compile().expect("compilation failed");
+    let struct_decl = root.lookup_struct("example/MyStruct").expect("struct not found");
+    assert_eq!(struct_decl.members.len(), 1);
 }
 
 #[test]

@@ -3713,15 +3713,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     .attributes
                                     .iter()
                                     .find(|a| a.name.data() == "transport")
-                                    && let Some(arg) = attr.args.iter().find(|a| {
-                                        a.name.as_ref().map_or("value", |n| n.data()) == "value"
-                                    })
-                                        && let raw_ast::Constant::Literal(lit) = &arg.value
-                                            && lit.literal.kind == raw_ast::LiteralKind::String {
-                                                transport = Some(
-                                                    lit.literal.value.trim_matches('"').to_string(),
-                                                );
-                                            }
+                                && let Some(arg) = attr.args.iter().find(|a| {
+                                    a.name.as_ref().map_or("value", |n| n.data()) == "value"
+                                })
+                                && let raw_ast::Constant::Literal(lit) = &arg.value
+                                && lit.literal.kind == raw_ast::LiteralKind::String
+                            {
+                                transport = Some(lit.literal.value.trim_matches('"').to_string());
+                            }
                         }
                     } else if let Some(p) = self
                         .protocol_declarations
@@ -3732,9 +3731,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some(attr) =
                             p.maybe_attributes.iter().find(|a| a.name == "transport")
                             && let Some(arg) = attr.arguments.iter().find(|a| a.name == "value")
-                                && let Some(lit) = &arg.value.literal {
-                                    transport = Some(lit.value.get().trim_matches('"').to_string());
-                                }
+                            && let Some(lit) = &arg.value.literal
+                        {
+                            transport = Some(lit.value.get().trim_matches('"').to_string());
+                        }
                     } else if let Some(p) = self
                         .external_protocol_declarations
                         .iter()
@@ -3744,9 +3744,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some(attr) =
                             p.maybe_attributes.iter().find(|a| a.name == "transport")
                             && let Some(arg) = attr.arguments.iter().find(|a| a.name == "value")
-                                && let Some(lit) = &arg.value.literal {
-                                    transport = Some(lit.value.get().trim_matches('"').to_string());
-                                }
+                            && let Some(lit) = &arg.value.literal
+                        {
+                            transport = Some(lit.value.get().trim_matches('"').to_string());
+                        }
                     } else {
                         is_protocol = true; // wait, if not found and not compiled?
                     }
@@ -4575,13 +4576,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 );
             } else if let Type::Endpoint(e) = &type_obj {
                 if let Some(role) = &e.role
-                    && role != "client" {
-                        self.reporter.fail(
-                            Error::ErrOnlyClientEndsInServices,
-                            member.name.element.span(),
-                            &[],
-                        );
-                    }
+                    && role != "client"
+                {
+                    self.reporter.fail(
+                        Error::ErrOnlyClientEndsInServices,
+                        member.name.element.span(),
+                        &[],
+                    );
+                }
                 if e.nullable {
                     self.reporter.fail(
                         Error::ErrOptionalServiceMember,

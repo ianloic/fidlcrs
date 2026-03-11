@@ -11,7 +11,6 @@ fn good_library_multiple_files() {
 }
 
 #[test]
-#[ignore]
 fn bad_files_disagree_on_library_name() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0040-a.test.fidl");

@@ -32,6 +32,21 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
         }
 
         for file in self.main_files {
+            if let Some(decl) = &file.library_decl {
+                let name = decl.path.to_string();
+                if name != main_library_name {
+                    let span = unsafe {
+                        std::mem::transmute::<SourceSpan, SourceSpan>(decl.path.element.span())
+                    };
+                    compiler.reporter.fail(
+                        Error::ErrFilesDisagreeOnLibraryName,
+                        span,
+                        &[],
+                    );
+                    return;
+                }
+            }
+
             let mut file_imports = std::collections::HashSet::new();
             let mut file_import_paths = std::collections::HashSet::new();
             for using_decl in &file.using_decls {

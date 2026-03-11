@@ -90,6 +90,7 @@ resource_definition handle : uint32 {
 pub struct TestLibrary<'a> {
     reporter: Reporter<'a>,
     source_files: Vec<SourceFile>,
+    dependency_files: Vec<SourceFile>,
     #[allow(dead_code)]
     generated_source_file: VirtualSourceFile,
     pub experimental_flags: Vec<String>,
@@ -109,6 +110,7 @@ impl<'a> TestLibrary<'a> {
         Self {
             reporter: Reporter::new(),
             source_files: Vec::new(),
+            dependency_files: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             experimental_flags: Vec::new(),
             select_versions: Vec::new(),
@@ -122,9 +124,8 @@ impl<'a> TestLibrary<'a> {
         lib.experimental_flags = shared.experimental_flags.clone();
         lib.select_versions = shared.select_versions.clone();
         lib.custom_schemas = shared.custom_schemas.clone();
-        // Add all previously compiled files
         for sf in &shared.all_source_files {
-            lib.source_files.push(SourceFile::new(
+            lib.dependency_files.push(SourceFile::new(
                 sf.filename().to_string(),
                 sf.data().to_string(),
             ));
@@ -201,7 +202,7 @@ resource_definition Handle : uint32 {
 "#
             .to_string(),
         );
-        self.source_files.insert(0, dummy_zx);
+        self.dependency_files.insert(0, dummy_zx);
     }
 
     pub fn use_library_fdf(&mut self) {
@@ -225,7 +226,7 @@ resource_definition handle : uint32 {
 "#
             .to_string(),
         );
-        self.source_files.insert(0, dummy_fdf);
+        self.dependency_files.insert(0, dummy_fdf);
     }
 
     pub fn compile(&'a self) -> Result<JsonRoot, String> {
@@ -251,43 +252,41 @@ resource_definition handle : uint32 {
             .attribute_schemas
             .schemas
             .extend(self.custom_schemas.clone());
-        let mut asts = Vec::new();
+        let mut main_asts = Vec::new();
 
         for file in &self.source_files {
             let mut lexer = Lexer::new(file, &self.reporter);
             let mut parser = Parser::new(&mut lexer, &self.reporter);
             if let Some(ast) = parser.parse_file() {
-                asts.push(ast);
+                main_asts.push(ast);
             } else {
                 return Err("Parsing failed".to_string());
             }
         }
 
-        let main_library_name = asts
-            .last()
-            .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
-            .unwrap_or_else(|| "unknown".to_string());
-
-        let mut main_asts = Vec::new();
         let mut dep_asts = Vec::new();
-
-        for ast in asts {
-            let file_lib = ast
-                .library_decl
-                .as_ref()
-                .map(|l| l.path.to_string())
-                .unwrap_or_else(|| "unknown".to_string());
-            if file_lib == main_library_name {
-                main_asts.push(ast);
-            } else {
+        for file in &self.dependency_files {
+            let mut lexer = Lexer::new(file, &self.reporter);
+            let mut parser = Parser::new(&mut lexer, &self.reporter);
+            if let Some(ast) = parser.parse_file() {
                 dep_asts.push(ast);
+            } else {
+                return Err("Parsing failed".to_string());
             }
+        }
+
+        let mut all_files = Vec::new();
+        for f in &self.source_files {
+            all_files.push(f);
+        }
+        for f in &self.dependency_files {
+            all_files.push(f);
         }
 
         let res = compiler.compile(
             &main_asts,
             &dep_asts,
-            &self.source_files.iter().collect::<Vec<_>>(),
+            &all_files,
         );
         if !self.reporter.diagnostics().is_empty() {
             for err in self.reporter.diagnostics().iter() {

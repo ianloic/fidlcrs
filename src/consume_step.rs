@@ -175,7 +175,14 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
                         if let Some((prev_raw, prev_kind, prev_site)) = canonical_names.get(&canon) {
                             let err_span = unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span) };
-                            if prev_raw == local_decl_name {
+                            
+                            let is_versioned = decl.attributes().map_or(false, |attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                            let prev_full_name = format!("{}/{}", lib, prev_raw);
+                            let prev_is_versioned = compiler.raw_decls.get(&prev_full_name).and_then(|d| d.attributes()).map_or(false, |attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+
+                            if is_versioned && prev_is_versioned && prev_kind != "library import" {
+                                // Assume structurally sound versioning and overlap resolution happens in availability_step.
+                            } else if prev_raw == local_decl_name {
                                 if prev_kind == "library import" {
                                     errors_to_emit.push((
                                         Error::ErrDeclNameConflictsWithLibraryImport,

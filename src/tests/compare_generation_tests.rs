@@ -16,6 +16,7 @@ fn test_compare_generation() {
         experimental_flags: Vec<&'static str>,
         available: Option<&'static str>,
         contains_drivers: bool,
+        public_deps: Vec<&'static str>,
     }
 
     impl TestCase {
@@ -25,6 +26,7 @@ fn test_compare_generation() {
                 experimental_flags: vec![],
                 available: None,
                 contains_drivers: false,
+                public_deps: vec![],
             }
         }
         fn experimental(mut self, flag: &'static str) -> Self {
@@ -37,6 +39,10 @@ fn test_compare_generation() {
         }
         fn contains_drivers(mut self) -> Self {
             self.contains_drivers = true;
+            self
+        }
+        fn public_deps<I: IntoIterator<Item = &'static str>>(mut self, deps: I) -> Self {
+            self.public_deps.extend(deps);
             self
         }
     }
@@ -80,16 +86,15 @@ fn test_compare_generation() {
         TestCase::new("new_type.test.fidl").experimental("allow_new_types"),
         TestCase::new("driver_handle.test.fidl").contains_drivers(),
         TestCase::new("driver_service.test.fidl").contains_drivers(),
+        TestCase::new("consts.test.fidl"),
+        TestCase::new("versions.test.fidl"),
     ];
 
     let disabled_tests = vec![
-        // TestCase::new("consts.test.fidl"),
-        // TODO(ianloic): Add this back when we support public deps
-        // TestCase::new("handles.test.fidl")
-        //     .public_dep("//sdk/fidl/fdf")
-        //     .contains_drivers(),
+        TestCase::new("handles.test.fidl")
+            .public_deps(vec!["sdk-fidl/fdf/handle.fidl"])
+            .contains_drivers(),
         TestCase::new("unknown_interactions.test.fidl").contains_drivers(),
-        TestCase::new("versions.test.fidl").available("test:HEAD"),
     ];
 
     let mut failed = false;
@@ -132,7 +137,10 @@ fn test_compare_generation() {
             ..Default::default()
         };
 
-        let source_managers = vec![vec![vdso1, vdso2, vdso3], vec![main_file]];
+        let mut source_managers = vec![vec![vdso1, vdso2, vdso3], vec![main_file]];
+        if !tc.public_deps.is_empty() {
+            source_managers.insert(0, tc.public_deps.iter().map(|s| s.to_string()).collect());
+        }
 
         if let Err(e) = run(&cli, &source_managers) {
             println!("fidlcrs failed for {}:", file);

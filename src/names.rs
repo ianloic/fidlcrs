@@ -1,25 +1,5 @@
 use std::fmt;
 
-/// Represents an unresolved name parsed from FIDL source.
-/// In FIDL source, references use `.` to separate both library components and declarations (e.g., `fuchsia.math.Matrix`).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParsedName {
-    pub components: Vec<String>,
-}
-
-impl ParsedName {
-    pub fn parse(name: &str) -> Self {
-        Self {
-            components: name.split('.').map(|s| s.to_string()).collect(),
-        }
-    }
-}
-
-impl fmt::Display for ParsedName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.components.join("."))
-    }
-}
 
 /// Represents a resolved library namespace.
 impl LibraryName {

@@ -11,7 +11,7 @@ use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use crate::names::{FullyQualifiedName, LibraryName, ParsedName};
+use crate::names::{FullyQualifiedName, LibraryName};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeclKind {

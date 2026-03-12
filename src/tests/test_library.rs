@@ -178,7 +178,10 @@ impl<'a> TestLibrary<'a> {
             for line in content.lines() {
                 if line.starts_with("// ") && line.ends_with(".fidl") {
                     if !current_name.is_empty() {
-                        self.source_files.push(SourceFile::new(current_name.clone(), current_content.clone()));
+                        self.source_files.push(SourceFile::new(
+                            current_name.clone(),
+                            current_content.clone(),
+                        ));
                     }
                     current_content.clear();
                     current_name = line.strip_prefix("// ").unwrap().to_string();
@@ -188,9 +191,11 @@ impl<'a> TestLibrary<'a> {
                 }
             }
             if !current_name.is_empty() {
-                self.source_files.push(SourceFile::new(current_name, current_content));
+                self.source_files
+                    .push(SourceFile::new(current_name, current_content));
             } else {
-                self.source_files.push(SourceFile::new(path.to_string(), content));
+                self.source_files
+                    .push(SourceFile::new(path.to_string(), content));
             }
         } else {
             self.source_files

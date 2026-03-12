@@ -135,7 +135,11 @@ fn bad_error_unknown_identifier() {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound)
+    );
 }
 
 #[test]
@@ -145,7 +149,11 @@ fn bad_error_wrong_primitive() {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInvalidErrorType));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrInvalidErrorType)
+    );
 }
 
 #[test]
@@ -165,7 +173,11 @@ protocol Example {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedToken));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedToken)
+    );
 }
 
 #[test]
@@ -185,7 +197,11 @@ protocol Example {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrExpectedType));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrExpectedType)
+    );
 }
 
 #[test]
@@ -205,7 +221,11 @@ protocol Example {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind)
+    );
 }
 
 #[test]
@@ -223,7 +243,11 @@ type ForgotTheSemicolon = table {}
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind)
+    );
 }
 
 #[test]
@@ -233,7 +257,11 @@ fn bad_incorrect_identifier() {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedIdentifier));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedIdentifier)
+    );
 }
 
 #[test]
@@ -244,7 +272,11 @@ fn bad_error_empty_file() {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedIdentifier));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedIdentifier)
+    );
 }
 
 #[test]
@@ -295,5 +327,9 @@ protocol Example {
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
     let errors = library.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrDeprecatedAttribute));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrDeprecatedAttribute)
+    );
 }

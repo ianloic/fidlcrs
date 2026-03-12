@@ -31,7 +31,10 @@ mod tests {
     #[test]
     fn test_name() {
         assert_eq!(ExperimentalFlag::AllowNewTypes.name(), "allow_new_types");
-        assert_eq!(ExperimentalFlag::OutputIndexJson.name(), "output_index_json");
+        assert_eq!(
+            ExperimentalFlag::OutputIndexJson.name(),
+            "output_index_json"
+        );
         assert_eq!(ExperimentalFlag::ZxCTypes.name(), "zx_c_types");
         assert_eq!(
             ExperimentalFlag::AllowArbitraryErrorTypes.name(),
@@ -46,7 +49,7 @@ mod tests {
     #[test]
     fn test_flags_operations() {
         let mut flags = ExperimentalFlags::new();
-        
+
         assert!(!flags.is_enabled(ExperimentalFlag::AllowNewTypes));
         flags.enable_flag(ExperimentalFlag::AllowNewTypes);
         assert!(flags.is_enabled(ExperimentalFlag::AllowNewTypes));
@@ -55,7 +58,7 @@ mod tests {
         flags.enable_flag(ExperimentalFlag::ZxCTypes);
         assert!(flags.is_enabled(ExperimentalFlag::ZxCTypes));
         assert!(flags.is_enabled(ExperimentalFlag::AllowNewTypes));
-        
+
         let vec = flags.into_vec();
         assert_eq!(vec.len(), 2);
         assert!(vec.contains(&"allow_new_types".to_string()));

@@ -46,7 +46,10 @@ type Fruit = enum {
 fn bad_enum_test_with_non_unique_values() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0107.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateMemberValue, &[r#""enum""#, r#""APPLE""#, r#""ORANGE""#, r#""ORANGE""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateMemberValue,
+        &[r#""enum""#, r#""APPLE""#, r#""ORANGE""#, r#""ORANGE""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -67,7 +70,10 @@ const FOUR uint32 = 4;
 const TWO_SQUARED uint32 = 4;
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateMemberValue, &[r#""enum""#, r#""APPLE""#, r#""ORANGE""#, r#""ORANGE""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateMemberValue,
+        &[r#""enum""#, r#""APPLE""#, r#""ORANGE""#, r#""ORANGE""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -85,7 +91,10 @@ type Fruit = enum : uint64 {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrConstantOverflowsType, &[r#""-2""#, r#""uint64""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrConstantOverflowsType,
+        &[r#""-2""#, r#""uint64""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -103,7 +112,10 @@ type Fruit = enum {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrConstantOverflowsType, &[r#""-2""#, r#""uint32""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrConstantOverflowsType,
+        &[r#""-2""#, r#""uint32""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -121,7 +133,10 @@ type Fruit = enum : uint8 {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrConstantOverflowsType, &[r#""256""#, r#""uint8""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrConstantOverflowsType,
+        &[r#""256""#, r#""uint8""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -130,7 +145,10 @@ type Fruit = enum : uint8 {
 fn bad_enum_test_float_type() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0070.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrEnumTypeMustBeIntegralPrimitive, &[r#""float64""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrEnumTypeMustBeIntegralPrimitive,
+        &[r#""float64""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -149,7 +167,15 @@ type Fruit = flexible enum {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrNameCollision, &[r#""member""#, r#""ORANGE""#, r#""member""#, r#""example.fidl:4:5""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameCollision,
+        &[
+            r#""member""#,
+            r#""ORANGE""#,
+            r#""member""#,
+            r#""example.fidl:4:5""#,
+        ],
+    );
     assert!(lib.check_compile());
 }
 
@@ -223,7 +249,10 @@ type Struct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrCannotBeOptional, &[r#""NotNullable""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrCannotBeOptional,
+        &[r#""NotNullable""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -244,7 +273,10 @@ type Struct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrTooManyConstraints, &[r#""NotNullable""#, "0", "3"]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrTooManyConstraints,
+        &[r#""NotNullable""#, "0", "3"],
+    );
     assert!(lib.check_compile());
 }
 

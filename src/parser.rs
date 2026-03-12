@@ -1463,23 +1463,24 @@ impl<'a, 'b> Parser<'a, 'b> {
         let end = self.previous_token.as_ref().unwrap().clone();
 
         if let Layout::TypeConstructor(tc) = &layout
-            && let LayoutParameter::Inline(lay) = &tc.layout {
-                let has_attrs = match &**lay {
-                    Layout::Struct(s) => s.attributes.is_some(),
-                    Layout::Union(u) => u.attributes.is_some(),
-                    Layout::Table(t) => t.attributes.is_some(),
-                    Layout::Enum(e) => e.attributes.is_some(),
-                    Layout::Bits(b) => b.attributes.is_some(),
-                    _ => false,
-                };
-                if has_attrs {
-                    self.reporter.fail(
-                        crate::diagnostics::Error::ErrAttributeInsideTypeDeclaration,
-                        tc.element.span(),
-                        &[],
-                    );
-                }
+            && let LayoutParameter::Inline(lay) = &tc.layout
+        {
+            let has_attrs = match &**lay {
+                Layout::Struct(s) => s.attributes.is_some(),
+                Layout::Union(u) => u.attributes.is_some(),
+                Layout::Table(t) => t.attributes.is_some(),
+                Layout::Enum(e) => e.attributes.is_some(),
+                Layout::Bits(b) => b.attributes.is_some(),
+                _ => false,
+            };
+            if has_attrs {
+                self.reporter.fail(
+                    crate::diagnostics::Error::ErrAttributeInsideTypeDeclaration,
+                    tc.element.span(),
+                    &[],
+                );
             }
+        }
 
         Some(TypeDeclaration {
             element: SourceElement::new(start, end),

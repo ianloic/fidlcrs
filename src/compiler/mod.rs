@@ -3202,35 +3202,36 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .find(|a| a.name.data() == "generated_name");
                     if let Some(a) = gen_attr
                         && let Some(arg) = a.args.first()
-                            && let raw_ast::Constant::Literal(l) = &arg.value {
-                                // But still check if it's a valid identifier here, which isn't done by AttributeSchemaMap right now
-                                let val = l.literal.value.trim_matches('"').to_string();
-                                let mut is_valid = true;
-                                if val.is_empty() {
-                                    is_valid = false;
-                                } else {
-                                    let mut chars = val.chars();
-                                    let first = chars.next().unwrap();
-                                    if !first.is_ascii_alphabetic() {
-                                        is_valid = false;
-                                    }
-                                    if val.ends_with('_') || val.contains("__") {
-                                        is_valid = false;
-                                    }
-                                    if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
-                                        is_valid = false;
-                                    }
-                                }
-                                if !is_valid {
-                                    let span_transmuted: SourceSpan =
-                                        unsafe { std::mem::transmute(arg.value.element().span()) };
-                                    self.reporter.fail(
-                                        Error::ErrInvalidGeneratedName,
-                                        span_transmuted,
-                                        &[&val],
-                                    );
-                                }
+                        && let raw_ast::Constant::Literal(l) = &arg.value
+                    {
+                        // But still check if it's a valid identifier here, which isn't done by AttributeSchemaMap right now
+                        let val = l.literal.value.trim_matches('"').to_string();
+                        let mut is_valid = true;
+                        if val.is_empty() {
+                            is_valid = false;
+                        } else {
+                            let mut chars = val.chars();
+                            let first = chars.next().unwrap();
+                            if !first.is_ascii_alphabetic() {
+                                is_valid = false;
                             }
+                            if val.ends_with('_') || val.contains("__") {
+                                is_valid = false;
+                            }
+                            if !chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                                is_valid = false;
+                            }
+                        }
+                        if !is_valid {
+                            let span_transmuted: SourceSpan =
+                                unsafe { std::mem::transmute(arg.value.element().span()) };
+                            self.reporter.fail(
+                                Error::ErrInvalidGeneratedName,
+                                span_transmuted,
+                                &[&val],
+                            );
+                        }
+                    }
                 }
 
                 let generated_name = if let Some(a_list) = attrs {
@@ -4373,10 +4374,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         } else if resolved_type.kind() == TypeKind::Vector {
                                             resolved_type = Type::vector(
                                                 Box::new(
-                                                    resolved_type
-                                                        .element_type()
-                                                        .unwrap()
-                                                        .clone(),
+                                                    resolved_type.element_type().unwrap().clone(),
                                                 ),
                                                 Some(val as u32),
                                                 final_nullable,

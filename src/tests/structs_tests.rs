@@ -34,7 +34,11 @@ fn bad_primitive_default_value_no_annotation() {
     lib.add_errcat_file("bad/fi-0050.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrDeprecatedStructDefaults));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrDeprecatedStructDefaults)
+    );
 }
 
 #[test]
@@ -141,7 +145,11 @@ fn bad_default_value_primitive_in_enum() {
     lib.add_errcat_file("bad/fi-0103.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrTypeCannotBeConvertedToType));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrTypeCannotBeConvertedToType)
+    );
 }
 
 #[test]
@@ -250,7 +258,11 @@ fn bad_default_value_nullable_string() {
     lib.add_errcat_file("bad/fi-0091.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrTypeCannotBeConvertedToType));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrTypeCannotBeConvertedToType)
+    );
 }
 
 #[test]
@@ -292,7 +304,11 @@ fn bad_inline_size_exceeds_64k() {
     lib.add_errcat_file("bad/fi-0111.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInlineSizeExceedsLimit));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrInlineSizeExceedsLimit)
+    );
 }
 
 #[test]
@@ -301,7 +317,11 @@ fn bad_mutually_recursive() {
     lib.add_errcat_file("bad/fi-0057-a.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle)
+    );
 }
 
 #[test]
@@ -310,7 +330,11 @@ fn bad_self_recursive() {
     lib.add_errcat_file("bad/fi-0057-c.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle)
+    );
 }
 
 #[test]
@@ -432,7 +456,11 @@ fn bad_box_cannot_be_optional() {
     lib.add_errcat_file("bad/fi-0169.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrBoxCannotBeOptional));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrBoxCannotBeOptional)
+    );
 }
 
 #[test]
@@ -441,7 +469,11 @@ fn bad_struct_cannot_be_optional() {
     lib.add_errcat_file("bad/fi-0159.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrStructCannotBeOptional));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrStructCannotBeOptional)
+    );
 }
 
 #[test]
@@ -468,7 +500,11 @@ fn bad_cannot_box_primitive() {
     lib.add_errcat_file("bad/fi-0193.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrCannotBeBoxedNorOptional));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrCannotBeBoxedNorOptional)
+    );
 }
 
 #[test]
@@ -496,7 +532,11 @@ fn cannot_refer_to_int_member() {
     lib.add_errcat_file("bad/fi-0053-a.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound)
+    );
 }
 
 #[test]
@@ -505,7 +545,11 @@ fn cannot_refer_to_struct_member() {
     lib.add_errcat_file("bad/fi-0053-b.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound)
+    );
 }
 
 // Type param tests omitted as they require dynamic evaluation to fully loop through array of names

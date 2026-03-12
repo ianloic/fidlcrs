@@ -175,7 +175,10 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
                 }
             }
 
-            let mut reachability: std::collections::HashMap<String, std::collections::BTreeSet<String>> = std::collections::HashMap::new();
+            let mut reachability: std::collections::HashMap<
+                String,
+                std::collections::BTreeSet<String>,
+            > = std::collections::HashMap::new();
             for file in files.iter() {
                 if let Some(decl) = &file.library_decl {
                     let lib_name = decl.path.to_string();
@@ -194,11 +197,12 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
 
             while let Some(lib) = worklist.pop_front() {
                 if used_libraries.insert(lib.clone())
-                    && let Some(deps) = reachability.get(&lib) {
-                        for dep in deps {
-                            worklist.push_back(dep.clone());
-                        }
+                    && let Some(deps) = reachability.get(&lib)
+                {
+                    for dep in deps {
+                        worklist.push_back(dep.clone());
                     }
+                }
             }
 
             let mut unused_libraries = Vec::new();
@@ -209,7 +213,10 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
             }
 
             if !unused_libraries.is_empty() {
-                return Err(format!("Unused libraries provided via --files: {}", unused_libraries.join(", ")));
+                return Err(format!(
+                    "Unused libraries provided via --files: {}",
+                    unused_libraries.join(", ")
+                ));
             }
 
             root

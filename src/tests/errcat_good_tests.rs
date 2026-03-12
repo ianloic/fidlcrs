@@ -1,5 +1,5 @@
 #![allow(unused_mut)]
-use crate::tests::test_library::{TestLibrary, SharedAmongstLibraries};
+use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
 
 #[test]
 fn good0001() {

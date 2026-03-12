@@ -89,7 +89,11 @@ strict protocol Empty {};
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember)
+    );
 }
 
 #[test]
@@ -105,7 +109,11 @@ flexible protocol Empty {};
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember)
+    );
 }
 
 #[test]
@@ -121,7 +129,11 @@ open Empty {};
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrExpectedDeclaration));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrExpectedDeclaration)
+    );
 }
 
 #[test]
@@ -139,7 +151,11 @@ protocol Example {
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInvalidProtocolMember));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrInvalidProtocolMember)
+    );
 }
 
 #[test]
@@ -239,7 +255,11 @@ closed protocol Composing {
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrComposedProtocolTooOpen));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrComposedProtocolTooOpen)
+    );
 }
 
 #[test]
@@ -259,7 +279,11 @@ protocol B {
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrCannotSpecifyModifier));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrCannotSpecifyModifier)
+    );
 }
 
 #[test]
@@ -315,7 +339,11 @@ protocol MyProtocol {
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameCollision));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrNameCollision)
+    );
 }
 
 #[test]
@@ -325,7 +353,11 @@ fn bad_request_must_be_protocol() {
     lib.add_errcat_file("bad/fi-0157.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrMustBeAProtocol));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrMustBeAProtocol)
+    );
 }
 
 #[test]
@@ -335,7 +367,11 @@ fn bad_request_must_be_parameterized() {
     lib.add_errcat_file("bad/fi-0168.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters)
+    );
 }
 
 #[test]
@@ -402,7 +438,11 @@ fn bad_method_empty_payload_struct() {
     lib.add_errcat_file("bad/fi-0077-a.test.fidl");
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrEmptyPayloadStructs));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrEmptyPayloadStructs)
+    );
 }
 
 #[test]
@@ -527,7 +567,11 @@ protocol MyProtocol {
     );
     assert!(lib.compile().is_err(), "expected compilation to fail");
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind)
+    );
 }
 
 #[test]
@@ -537,7 +581,11 @@ fn bad_disallowed_request_type() {
     lib.add_errcat_file("bad/fi-0075.test.fidl");
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass)
+    );
 }
 
 #[test]
@@ -555,5 +603,9 @@ protocol MyProtocol {
     );
     assert!(lib.compile().is_err());
     let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass));
+    assert!(
+        errors
+            .iter()
+            .any(|e| e.def == crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass)
+    );
 }

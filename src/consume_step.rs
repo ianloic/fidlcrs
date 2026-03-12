@@ -169,85 +169,90 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 .map(|l| l.path.to_string())
                 .unwrap_or_else(|| main_library_name.clone());
 
-            let insert_decl = |compiler: &mut Compiler<'node, 'src>,
-                                   canonical_names: &mut std::collections::HashMap<
-                String,
-                (String, String, String),
-            >,
-                                   name: String,
-                                   local_decl_name: &str,
-                                   decl: RawDecl<'node, 'src>,
-                                   decl_kind: &'static str,
-                                   is_anonymous: bool,
-                                   errors_to_emit: &mut Vec<(Error, SourceSpan<'src>, Vec<String>)>| {
-                if let Some((lib, _)) = name.rsplit_once('/') {
-                    // We only check for collisions in the main library!
-                    if lib == compiler.library_name && !is_anonymous {
-                        let canon = crate::attribute_schema::canonicalize(local_decl_name);
-                        let span = decl.element().span();
-                        let site = span.position_str();
+            let insert_decl =
+                |compiler: &mut Compiler<'node, 'src>,
+                 canonical_names: &mut std::collections::HashMap<
+                    String,
+                    (String, String, String),
+                >,
+                 name: String,
+                 local_decl_name: &str,
+                 decl: RawDecl<'node, 'src>,
+                 decl_kind: &'static str,
+                 is_anonymous: bool,
+                 errors_to_emit: &mut Vec<(Error, SourceSpan<'src>, Vec<String>)>| {
+                    if let Some((lib, _)) = name.rsplit_once('/') {
+                        // We only check for collisions in the main library!
+                        if lib == compiler.library_name && !is_anonymous {
+                            let canon = crate::attribute_schema::canonicalize(local_decl_name);
+                            let span = decl.element().span();
+                            let site = span.position_str();
 
-                        if let Some((prev_raw, prev_kind, prev_site)) = canonical_names.get(&canon)
-                        {
-                            let err_span = unsafe {
-                                std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span)
-                            };
+                            if let Some((prev_raw, prev_kind, prev_site)) =
+                                canonical_names.get(&canon)
+                            {
+                                let err_span = unsafe {
+                                    std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span)
+                                };
 
-                            let is_versioned = decl.attributes().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
-                            let prev_full_name = format!("{}/{}", lib, prev_raw);
-                            let prev_is_versioned = compiler.raw_decls.get(&prev_full_name).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                                let is_versioned = decl.attributes().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                                let prev_full_name = format!("{}/{}", lib, prev_raw);
+                                let prev_is_versioned = compiler.raw_decls.get(&prev_full_name).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
 
-                            if is_versioned && prev_is_versioned && prev_kind != "library import" {
-                                // Assume structurally sound versioning and overlap resolution happens in availability_step.
-                            } else if prev_raw == local_decl_name {
-                                if prev_kind == "library import" {
+                                if is_versioned
+                                    && prev_is_versioned
+                                    && prev_kind != "library import"
+                                {
+                                    // Assume structurally sound versioning and overlap resolution happens in availability_step.
+                                } else if prev_raw == local_decl_name {
+                                    if prev_kind == "library import" {
+                                        errors_to_emit.push((
+                                            Error::ErrDeclNameConflictsWithLibraryImport,
+                                            err_span,
+                                            vec![local_decl_name.to_string()],
+                                        ));
+                                    } else {
+                                        errors_to_emit.push((
+                                            Error::ErrNameCollision,
+                                            err_span,
+                                            vec![
+                                                decl_kind.to_string(),
+                                                local_decl_name.to_string(),
+                                                prev_kind.to_string(),
+                                                prev_site.clone(),
+                                            ],
+                                        ));
+                                    }
+                                } else if prev_kind == "library import" {
                                     errors_to_emit.push((
-                                        Error::ErrDeclNameConflictsWithLibraryImport,
+                                        Error::ErrDeclNameConflictsWithLibraryImportCanonical,
                                         err_span,
-                                        vec![local_decl_name.to_string()],
+                                        vec![local_decl_name.to_string(), canon.clone()],
                                     ));
                                 } else {
                                     errors_to_emit.push((
-                                        Error::ErrNameCollision,
+                                        Error::ErrNameCollisionCanonical,
                                         err_span,
                                         vec![
                                             decl_kind.to_string(),
                                             local_decl_name.to_string(),
                                             prev_kind.to_string(),
+                                            prev_raw.clone(),
                                             prev_site.clone(),
+                                            canon.clone(),
                                         ],
                                     ));
                                 }
-                            } else if prev_kind == "library import" {
-                                errors_to_emit.push((
-                                    Error::ErrDeclNameConflictsWithLibraryImportCanonical,
-                                    err_span,
-                                    vec![local_decl_name.to_string(), canon.clone()],
-                                ));
                             } else {
-                                errors_to_emit.push((
-                                    Error::ErrNameCollisionCanonical,
-                                    err_span,
-                                    vec![
-                                        decl_kind.to_string(),
-                                        local_decl_name.to_string(),
-                                        prev_kind.to_string(),
-                                        prev_raw.clone(),
-                                        prev_site.clone(),
-                                        canon.clone(),
-                                    ],
-                                ));
+                                canonical_names.insert(
+                                    canon,
+                                    (local_decl_name.to_string(), decl_kind.to_string(), site),
+                                );
                             }
-                        } else {
-                            canonical_names.insert(
-                                canon,
-                                (local_decl_name.to_string(), decl_kind.to_string(), site),
-                            );
                         }
                     }
-                }
-                compiler.raw_decls.insert(name, decl);
-            };
+                    compiler.raw_decls.insert(name, decl);
+                };
 
             for decl in &file.type_decls {
                 let local_name = decl.name.data();

@@ -12,11 +12,59 @@ use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-struct CanonicalNames {
-    names: HashMap<String, (String, String, String)>, // canon -> (raw, kind, site)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DeclKind {
+    EnumValue,
+    Member,
+    TableField,
+    UnionMember,
+    StructMember,
+    ResourceProperty,
+    ServiceMember,
+    Method,
 }
 
-impl CanonicalNames {
+impl std::fmt::Display for DeclKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::EnumValue => "enum value",
+            Self::Member => "member",
+            Self::TableField => "table field",
+            Self::UnionMember => "union member",
+            Self::StructMember => "struct member",
+            Self::ResourceProperty => "resource property",
+            Self::ServiceMember => "service member",
+            Self::Method => "method",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Site<'src> {
+    Span(SourceSpan<'src>),
+}
+
+impl<'src> std::fmt::Display for Site<'src> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Span(s) => write!(f, "{}", s.position_str()),
+        }
+    }
+}
+
+struct CanonicalNameEntry<'src> {
+    raw: String,
+    kind: DeclKind,
+    site: Site<'src>,
+    is_versioned: bool,
+}
+
+struct CanonicalNames<'src> {
+    names: HashMap<String, CanonicalNameEntry<'src>>,
+}
+
+impl<'src> CanonicalNames<'src> {
     fn new() -> Self {
         Self {
             names: HashMap::new(),
@@ -26,21 +74,32 @@ impl CanonicalNames {
     fn insert(
         &mut self,
         raw_name: String,
-        kind: &str,
-        span: SourceSpan<'_>,
-    ) -> Result<(), (bool, String, String, String)> {
+        kind: DeclKind,
+        span: SourceSpan<'src>,
+        is_versioned: bool,
+    ) -> Result<(), (bool, String, DeclKind, Site<'src>)> {
         let canonical = crate::attribute_schema::canonicalize(&raw_name);
-        let site = span.position_str();
-        if let Some((prev_raw, prev_kind, prev_site)) = self.names.get(&canonical) {
-            Err((
-                prev_raw == &raw_name,
-                prev_raw.clone(),
-                prev_kind.clone(),
-                prev_site.clone(),
-            ))
+        if let Some(prev) = self.names.get(&canonical) {
+            if is_versioned && prev.is_versioned {
+                Ok(())
+            } else {
+                Err((
+                    prev.raw == raw_name,
+                    prev.raw.clone(),
+                    prev.kind,
+                    prev.site,
+                ))
+            }
         } else {
-            self.names
-                .insert(canonical, (raw_name, kind.to_string(), site));
+            self.names.insert(
+                canonical,
+                CanonicalNameEntry {
+                    raw: raw_name,
+                    kind,
+                    site: Site::Span(span),
+                    is_versioned,
+                },
+            );
             Ok(())
         }
     }
@@ -1669,19 +1728,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
     fn check_canonical_insert(
         &mut self,
-        names: &mut CanonicalNames,
+        names: &mut CanonicalNames<'src>,
         raw_name: String,
-        kind: &str,
+        kind: DeclKind,
         span: SourceSpan<'src>,
+        is_versioned: bool,
     ) {
         if let Err((is_exact, prev_raw, prev_kind, prev_site)) =
-            names.insert(raw_name.clone(), kind, span)
+            names.insert(raw_name.clone(), kind, span, is_versioned)
         {
+            let kind_str = kind.to_string();
+            let prev_kind_str = prev_kind.to_string();
+            let prev_site_str = prev_site.to_string();
+            
             if is_exact {
                 self.reporter.fail(
                     Error::ErrNameCollision,
                     span,
-                    &[&kind.to_string(), &raw_name, &prev_kind, &prev_site],
+                    &[&kind_str, &raw_name, &prev_kind_str, &prev_site_str],
                 );
             } else {
                 let canon = crate::attribute_schema::canonicalize(&raw_name);
@@ -1689,11 +1753,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     Error::ErrNameCollisionCanonical,
                     span,
                     &[
-                        &kind.to_string(),
+                        &kind_str,
                         &raw_name,
-                        &prev_kind,
+                        &prev_kind_str,
                         &prev_raw,
-                        &prev_site,
+                        &prev_site_str,
                         &canon,
                     ],
                 );
@@ -1839,8 +1903,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 name_str.clone(),
-                "member",
+                DeclKind::EnumValue,
                 member.name.element.span(),
+                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
             );
 
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
@@ -2108,8 +2173,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 name_str.clone(),
-                "member",
+                DeclKind::Member,
                 member.name.element.span(),
+                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
             );
 
             // Calculate mask and validate value
@@ -2327,17 +2393,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some(prev) = members.iter().find(|m: &&TableMember| m.ordinal == ordinal)
                 && ordinal != 0
             {
-                let location_str = format!(
-                    "{}:{}:{}",
-                    prev.location.as_ref().unwrap().filename,
-                    prev.location.as_ref().unwrap().line,
-                    prev.location.as_ref().unwrap().column
-                );
-                self.reporter.fail(
-                    Error::ErrDuplicateTableFieldOrdinal,
-                    member.ordinal.as_ref().unwrap().element.span(),
-                    &[&location_str],
-                );
+                let is_versioned = member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                let prev_versioned = prev.maybe_attributes.iter().any(|a| a.name == "available");
+                if !(is_versioned && prev_versioned) {
+                    let location_str = format!(
+                        "{}:{}:{}",
+                        prev.location.as_ref().unwrap().filename,
+                        prev.location.as_ref().unwrap().line,
+                        prev.location.as_ref().unwrap().column
+                    );
+                    self.reporter.fail(
+                        Error::ErrDuplicateTableFieldOrdinal,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[&location_str],
+                    );
+                }
             }
 
             let (type_, name, reserved, alias) = if let Some(type_ctor) = &member.type_ctor {
@@ -2345,8 +2415,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.check_canonical_insert(
                     &mut member_names,
                     name_str.clone(),
-                    "table field",
+                    DeclKind::TableField,
                     member.name.as_ref().unwrap().element.span(),
+                    member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
                 );
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     NamingContext::create(
@@ -2591,17 +2662,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some(prev) = members.iter().find(|m: &&UnionMember| m.ordinal == ordinal)
                 && ordinal != 0
             {
-                let location_str = format!(
-                    "{}:{}:{}",
-                    prev.location.as_ref().unwrap().filename,
-                    prev.location.as_ref().unwrap().line,
-                    prev.location.as_ref().unwrap().column
-                );
-                self.reporter.fail(
-                    Error::ErrDuplicateUnionMemberOrdinal,
-                    member.ordinal.as_ref().unwrap().element.span(),
-                    &[&location_str],
-                );
+                let is_versioned = member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                let prev_versioned = prev.maybe_attributes.iter().any(|a| a.name == "available");
+                if !(is_versioned && prev_versioned) {
+                    let location_str = format!(
+                        "{}:{}:{}",
+                        prev.location.as_ref().unwrap().filename,
+                        prev.location.as_ref().unwrap().line,
+                        prev.location.as_ref().unwrap().column
+                    );
+                    self.reporter.fail(
+                        Error::ErrDuplicateUnionMemberOrdinal,
+                        member.ordinal.as_ref().unwrap().element.span(),
+                        &[&location_str],
+                    );
+                }
             }
 
             if let Some(n_name) = &member.name {
@@ -2609,8 +2684,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.check_canonical_insert(
                     &mut member_names,
                     member_name.to_string(),
-                    "union member",
+                    DeclKind::UnionMember,
                     n_name.element.span(),
+                    member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
                 );
             }
 
@@ -2894,8 +2970,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 member_name.to_string(),
-                "struct member",
+                DeclKind::StructMember,
                 member.name.element.span(),
+                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
             );
 
             let ctx = naming_context.clone().unwrap_or_else(|| {
@@ -4664,8 +4741,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut property_names,
                 prop_name.clone(),
-                "resource property",
+                DeclKind::ResourceProperty,
                 prop.name.element.span(),
+                prop.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
             );
 
             let prop_ctx = NamingContext::create(name).enter_member(prop_name.as_str());
@@ -4789,8 +4867,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 member_name.clone(),
-                "service member",
+                DeclKind::ServiceMember,
                 member.name.element.span(),
+                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
             );
             let attributes = self.compile_attribute_list(&member.attributes);
 
@@ -5108,8 +5187,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut method_names,
                 m.name.data().to_string(),
-                "method",
+                DeclKind::Method,
                 m.name.element.span(),
+                m.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
             );
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter

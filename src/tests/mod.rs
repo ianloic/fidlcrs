@@ -3,6 +3,7 @@ pub mod array_tests;
 pub mod attributes_tests;
 pub mod bits_tests;
 pub mod canonical_names_tests;
+pub mod cli_tests;
 pub mod compare_generation_tests;
 pub mod consts_tests;
 pub mod declaration_order_tests;

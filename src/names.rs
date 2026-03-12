@@ -322,13 +322,13 @@ impl PartialEq<str> for LibraryName<'_> {
 
 impl PartialEq<&str> for LibraryName<'_> {
     fn eq(&self, other: &&str) -> bool {
-        self.to_string() == *other
+        self.name == *other
     }
 }
 
 impl PartialEq<String> for LibraryName<'_> {
     fn eq(&self, other: &String) -> bool {
-        self.to_string() == *other
+        self.name == *other
     }
 }
 
@@ -340,13 +340,13 @@ impl PartialEq<str> for OwnedQualifiedName {
 
 impl PartialEq<&str> for OwnedQualifiedName {
     fn eq(&self, other: &&str) -> bool {
-        self.to_string() == *other
+        self.full_name == *other
     }
 }
 
 impl PartialEq<String> for OwnedQualifiedName {
     fn eq(&self, other: &String) -> bool {
-        self.to_string() == *other
+        self.full_name == *other
     }
 }
 
@@ -358,13 +358,13 @@ impl PartialEq<str> for QualifiedName<'_> {
 
 impl PartialEq<&str> for QualifiedName<'_> {
     fn eq(&self, other: &&str) -> bool {
-        self.to_string() == *other
+        self.full_name == *other
     }
 }
 
 impl PartialEq<String> for QualifiedName<'_> {
     fn eq(&self, other: &String) -> bool {
-        self.to_string() == *other
+        self.full_name == *other
     }
 }
 

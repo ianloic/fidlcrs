@@ -96,6 +96,7 @@ pub struct TestLibrary<'a> {
     pub experimental_flags: Vec<String>,
     pub select_versions: Vec<(String, String)>,
     pub custom_schemas: std::collections::HashMap<String, AttributeSchema>,
+    pub expected_diagnostics: Vec<String>,
     pub shared: Option<RefCell<&'a mut SharedAmongstLibraries>>,
 }
 
@@ -115,6 +116,7 @@ impl<'a> TestLibrary<'a> {
             experimental_flags: Vec::new(),
             select_versions: Vec::new(),
             custom_schemas: std::collections::HashMap::new(),
+            expected_diagnostics: Vec::new(),
             shared: None,
         }
     }
@@ -130,6 +132,7 @@ impl<'a> TestLibrary<'a> {
                 sf.data().to_string(),
             ));
         }
+        lib.expected_diagnostics = Vec::new();
         lib.shared = Some(RefCell::new(shared));
         lib
     }
@@ -314,8 +317,10 @@ resource_definition handle : uint32 {
 
         let res = compiler.compile(&main_asts, &dep_asts, &all_files);
         if !self.reporter.diagnostics().is_empty() {
-            for err in self.reporter.diagnostics().iter() {
-                println!("{:?}", err);
+            if self.expected_diagnostics.is_empty() {
+                for err in self.reporter.diagnostics().iter() {
+                    println!("{:?}", err);
+                }
             }
             return Err("Compilation failed".to_string());
         }
@@ -357,6 +362,41 @@ resource_definition handle : uint32 {
 
     pub fn reporter(&self) -> &Reporter<'a> {
         &self.reporter
+    }
+
+    pub fn expect_fail(&mut self, def: crate::diagnostics::Error, args: &[&str]) {
+        let mut msg = def.msg().to_string();
+        for arg in args {
+            msg = msg.replacen("{}", arg, 1);
+        }
+        self.expected_diagnostics.push(msg);
+    }
+
+    pub fn expect_warn(&mut self, def: crate::diagnostics::Error, args: &[&str]) {
+        let mut msg = def.msg().to_string();
+        for arg in args {
+            msg = msg.replacen("{}", arg, 1);
+        }
+        self.expected_diagnostics.push(msg);
+    }
+
+    pub fn check_compile(&'a self) -> bool {
+        let _ = self.compile();
+        let diagnostics = self.reporter.diagnostics();
+        let actual_messages: Vec<String> = diagnostics.iter().map(|d| d.message.clone()).collect();
+        if self.expected_diagnostics != actual_messages {
+            println!("Diagnostics mismatch:");
+            println!("Expected:");
+            for e in &self.expected_diagnostics {
+                println!("  {}", e);
+            }
+            println!("Actual:");
+            for a in &actual_messages {
+                println!("  {}", a);
+            }
+            return false;
+        }
+        true
     }
 }
 

@@ -46,9 +46,8 @@ type Fruit = enum {
 fn bad_enum_test_with_non_unique_values() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0107.test.fidl");
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrDuplicateMemberValue));
+    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateMemberValue, &[r#""enum""#, r#""APPLE""#, r#""ORANGE""#, r#""ORANGE""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -68,9 +67,8 @@ const FOUR uint32 = 4;
 const TWO_SQUARED uint32 = 4;
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrDuplicateMemberValue));
+    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateMemberValue, &[r#""enum""#, r#""APPLE""#, r#""ORANGE""#, r#""ORANGE""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -87,9 +85,8 @@ type Fruit = enum : uint64 {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrCouldNotResolveMember || e.def == crate::diagnostics::Error::ErrConstantOverflowsType));
+    lib.expect_fail(crate::diagnostics::Error::ErrConstantOverflowsType, &[r#""-2""#, r#""uint64""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -106,9 +103,8 @@ type Fruit = enum {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrCouldNotResolveMember || e.def == crate::diagnostics::Error::ErrConstantOverflowsType));
+    lib.expect_fail(crate::diagnostics::Error::ErrConstantOverflowsType, &[r#""-2""#, r#""uint32""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -125,9 +121,8 @@ type Fruit = enum : uint8 {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrConstantOverflowsType));
+    lib.expect_fail(crate::diagnostics::Error::ErrConstantOverflowsType, &[r#""256""#, r#""uint8""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -135,9 +130,8 @@ type Fruit = enum : uint8 {
 fn bad_enum_test_float_type() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0070.test.fidl");
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrEnumTypeMustBeIntegralPrimitive));
+    lib.expect_fail(crate::diagnostics::Error::ErrEnumTypeMustBeIntegralPrimitive, &[r#""float64""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -155,9 +149,8 @@ type Fruit = flexible enum {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameCollision));
+    lib.expect_fail(crate::diagnostics::Error::ErrNameCollision, &[r#""member""#, r#""ORANGE""#, r#""member""#, r#""example.fidl:4:5""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -192,9 +185,8 @@ fn good_enum_test_strict_with_members() {
 fn bad_enum_test_no_members_when_strict() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0019.test.fidl");
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember));
+    lib.expect_fail(crate::diagnostics::Error::ErrMustHaveOneMember, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -231,9 +223,8 @@ type Struct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrCannotBeOptional));
+    lib.expect_fail(crate::diagnostics::Error::ErrCannotBeOptional, &[r#""NotNullable""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -253,9 +244,8 @@ type Struct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
-    let errors = lib.reporter().diagnostics();
-    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrTooManyConstraints));
+    lib.expect_fail(crate::diagnostics::Error::ErrTooManyConstraints, &[r#""NotNullable""#, "0", "3"]);
+    assert!(lib.check_compile());
 }
 
 #[test]

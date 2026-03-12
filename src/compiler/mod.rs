@@ -11,7 +11,7 @@ use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use crate::names::{QualifiedName, LibraryName};
+use crate::names::{QualifiedName, OwnedLibraryName};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeclKind {
@@ -247,7 +247,7 @@ pub struct Compiler<'node, 'src> {
     pub reporter: &'src Reporter<'src>,
 
     // State
-    pub library_name: LibraryName,
+    pub library_name: OwnedLibraryName,
     pub library_decl: Option<LibraryDeclaration<'src>>,
     pub raw_decls: HashMap<QualifiedName, RawDecl<'node, 'src>>,
     pub decl_kinds: HashMap<QualifiedName, &'static str>,
@@ -294,7 +294,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             shapes: HashMap::new(),
             source_files: Vec::new(),
             reporter,
-            library_name: LibraryName::new("unknown".to_string()),
+            library_name: OwnedLibraryName::new("unknown".to_string()),
             library_decl: None,
             raw_decls: HashMap::new(),
             decl_kinds: HashMap::new(),
@@ -4093,7 +4093,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .collect();
 
                     let res_library_name = if full_name.contains('/') {
-                        crate::names::QualifiedName::parse(&full_name).library().as_string()
+                        crate::names::QualifiedName::parse(&full_name).library().to_string()
                     } else {
                         library_name.to_string()
                     };

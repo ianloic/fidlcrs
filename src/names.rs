@@ -1,18 +1,17 @@
 use std::fmt;
 
 
-/// Represents a resolved library namespace.
-impl LibraryName {
+impl OwnedLibraryName {
     pub fn as_string(&self) -> String {
         self.to_string()
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct LibraryName {
+pub struct OwnedLibraryName {
     name: String,
 }
 
-impl LibraryName {
+impl OwnedLibraryName {
     pub fn new(name: String) -> Self {
         Self { name }
     }
@@ -20,23 +19,70 @@ impl LibraryName {
     pub fn versioning_platform(&self) -> &str {
         self.name.split('.').next().unwrap_or(&self.name)
     }
+    
+    pub fn as_borrowed(&self) -> LibraryName<'_> {
+        LibraryName::new(&self.name)
+    }
 }
 
-impl fmt::Display for LibraryName {
+impl fmt::Display for OwnedLibraryName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 
-impl From<String> for LibraryName {
+impl From<String> for OwnedLibraryName {
     fn from(name: String) -> Self {
         Self { name }
     }
 }
 
-impl From<&str> for LibraryName {
+impl From<&str> for OwnedLibraryName {
     fn from(name: &str) -> Self {
         Self { name: name.to_string() }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct LibraryName<'a> {
+    name: &'a str,
+}
+
+impl<'a> LibraryName<'a> {
+    pub fn new(name: &'a str) -> Self {
+        Self { name }
+    }
+
+    pub fn versioning_platform(&self) -> &'a str {
+        self.name.split('.').next().unwrap_or(self.name)
+    }
+
+    pub fn to_owned(&self) -> OwnedLibraryName {
+        OwnedLibraryName::new(self.name.to_string())
+    }
+}
+
+impl<'a> fmt::Display for LibraryName<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl<'a> From<&'a str> for LibraryName<'a> {
+    fn from(name: &'a str) -> Self {
+        Self { name }
+    }
+}
+
+impl<'a> From<LibraryName<'a>> for OwnedLibraryName {
+    fn from(lib: LibraryName<'a>) -> Self {
+        Self { name: lib.name.to_string() }
+    }
+}
+
+impl<'a> From<&'a OwnedLibraryName> for LibraryName<'a> {
+    fn from(lib: &'a OwnedLibraryName) -> Self {
+        Self { name: &lib.name }
     }
 }
 
@@ -48,13 +94,13 @@ impl QualifiedName {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct QualifiedName {
-    library: LibraryName,
+    library: OwnedLibraryName,
     declaration: String,
     member: Option<String>,
 }
 
 impl QualifiedName {
-    pub fn new(library: LibraryName, declaration: String, member: Option<String>) -> Self {
+    pub fn new(library: OwnedLibraryName, declaration: String, member: Option<String>) -> Self {
         Self {
             library,
             declaration,
@@ -62,8 +108,8 @@ impl QualifiedName {
         }
     }
 
-    pub fn library(&self) -> &LibraryName {
-        &self.library
+    pub fn library(&self) -> LibraryName<'_> {
+        self.library.as_borrowed()
     }
 
     pub fn declaration(&self) -> &str {
@@ -80,7 +126,7 @@ impl QualifiedName {
     /// - "library/Declaration.member"
     pub fn parse(s: &str) -> Self {
         let (lib_part, rest) = s.rsplit_once('/').unwrap_or(("", s));
-        let library = LibraryName::new(lib_part.to_string());
+        let library = OwnedLibraryName::new(lib_part.to_string());
 
         let (declaration, member) = if let Some((decl, mem)) = rest.split_once('.') {
             (decl.to_string(), Some(mem.to_string()))
@@ -106,19 +152,19 @@ impl fmt::Display for QualifiedName {
     }
 }
 
-impl PartialEq<str> for LibraryName {
+impl PartialEq<str> for LibraryName<'_> {
     fn eq(&self, other: &str) -> bool {
         self.to_string() == other
     }
 }
 
-impl PartialEq<&str> for LibraryName {
+impl PartialEq<&str> for LibraryName<'_> {
     fn eq(&self, other: &&str) -> bool {
         self.to_string() == *other
     }
 }
 
-impl PartialEq<String> for LibraryName {
+impl PartialEq<String> for LibraryName<'_> {
     fn eq(&self, other: &String) -> bool {
         self.to_string() == *other
     }

@@ -19,7 +19,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
-        compiler.library_name = crate::names::LibraryName::from(main_library_name.clone());
+        compiler.library_name = crate::names::OwnedLibraryName::from(main_library_name.clone());
 
         let mut all_library_attributes = Vec::new();
         let mut main_library_decl: Option<raw_ast::LibraryDeclaration> = None;

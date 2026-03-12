@@ -442,7 +442,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         pub(crate) fn visit<'a, 'b>(
             name: &str,
             decls: &HashMap<crate::names::QualifiedName, RawDecl<'a, 'b>>,
-            library_name: &crate::names::LibraryName,
+            library_name: &crate::names::OwnedLibraryName,
             visited: &mut HashSet<String>,
             temp_path: &mut Vec<String>,
             sorted: &mut Vec<String>,

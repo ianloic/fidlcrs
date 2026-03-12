@@ -236,7 +236,7 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
     };
 
     if let Some(expected_name) = _expected_library_name
-        && &compiler.library_name != expected_name
+        && compiler.library_name.as_string() != *expected_name
     {
         return Err(format!(
             "Library name '{}' does not match the expected name '{}'\n",

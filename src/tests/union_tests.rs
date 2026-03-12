@@ -98,13 +98,15 @@ fn good_strict_union() {
 fn bad_must_have_explicit_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0016-b.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrMissingOrdinalBeforeMember)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrMissingOrdinalBeforeMember,
+        &[],
     );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrMissingOrdinalBeforeMember,
+        &[],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -177,13 +179,8 @@ type Foo = strict union {
 fn bad_ordinal_out_of_bounds_negative() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0017-b.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrOrdinalOutOfBound)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrOrdinalOutOfBound, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -199,13 +196,8 @@ type Foo = union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrOrdinalOutOfBound)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrOrdinalOutOfBound, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -213,13 +205,11 @@ type Foo = union {
 fn bad_ordinals_must_be_unique() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0097.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrDuplicateUnionMemberOrdinal)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateUnionMemberOrdinal,
+        &["\"bad/fi-0097.test.fidl:7:8\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -236,13 +226,16 @@ type MyUnion = strict union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrNameCollision)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameCollision,
+        &[
+            "\"union member\"",
+            "\"my_variant\"",
+            "\"union member\"",
+            "\"example.fidl:4:8\"",
+        ],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -250,13 +243,8 @@ type MyUnion = strict union {
 fn bad_cannot_start_at_zero() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0018.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrOrdinalsMustStartAtOne)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrOrdinalsMustStartAtOne, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -272,13 +260,8 @@ type Foo = strict union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedToken)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrUnexpectedToken, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -317,13 +300,8 @@ type Example = strict union {
 fn bad_no_nullable_members() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0049.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrOptionalUnionMember)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrOptionalUnionMember, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -339,13 +317,11 @@ type Value = strict union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &["\"union 'Value' -> union 'Value'\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -377,13 +353,8 @@ fn bad_empty_strict_union() {
 type Value = strict union {};
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrMustHaveOneMember, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -422,11 +393,13 @@ type Foo = strict union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrInvalidAttributePlacement)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrInvalidAttributePlacement,
+        &["\"selector\""],
     );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrInvalidAttributePlacement,
+        &["\"selector\""],
+    );
+    assert!(lib.check_compile());
 }

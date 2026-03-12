@@ -32,13 +32,8 @@ type MyStruct = struct {
 fn bad_primitive_default_value_no_annotation() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0050.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrDeprecatedStructDefaults)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrDeprecatedStructDefaults, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -143,13 +138,11 @@ type MyStruct = struct {
 fn bad_default_value_primitive_in_enum() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0103.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrTypeCannotBeConvertedToType)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+        &["\"1\"", "\"literal\"", "\"test.bad.fi0103/MyEnum\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -256,13 +249,11 @@ type MyStruct = struct {
 fn bad_default_value_nullable_string() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0091.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrTypeCannotBeConvertedToType)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+        &["\"\\\"\\\"\"", "\"string\"", "\"string:optional\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -302,39 +293,37 @@ type MyStruct = struct {
 fn bad_inline_size_exceeds_64k() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0111.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrInlineSizeExceedsLimit)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrInlineSizeExceedsLimit,
+        &["\"MyStruct\"", "\"65536\"", "\"65535\""],
     );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrInlineSizeExceedsLimit,
+        &["\"MyStruct\"", "65536", "65535"],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_mutually_recursive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-a.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &["\"struct 'Yang' -> struct 'Yin' -> struct 'Yang'\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_self_recursive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-c.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &["\"struct 'MySelf' -> struct 'MySelf'\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -454,26 +443,19 @@ type Intersection = struct {
 fn bad_box_cannot_be_optional() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0169.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrBoxCannotBeOptional)
-    );
+    lib.expect_fail(crate::diagnostics::Error::ErrBoxCannotBeOptional, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_struct_cannot_be_optional() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0159.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrStructCannotBeOptional)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrStructCannotBeOptional,
+        &["\"Date\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -498,13 +480,11 @@ type Foo = resource struct {
 fn bad_cannot_box_primitive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0193.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrCannotBeBoxedNorOptional)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrCannotBeBoxedNorOptional,
+        &["\"bool\""],
     );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -530,26 +510,32 @@ const BAR bool = "not a bool";
 fn cannot_refer_to_int_member() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0053-a.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &[
+            "\"Person\"",
+            "OwnedLibraryName { name: \"test.bad.fi0053a\" }",
+        ],
     );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrInvalidConstantType,
+        &["\"Person\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn cannot_refer_to_struct_member() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0053-b.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert!(
-        errors
-            .iter()
-            .any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound)
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &[
+            "\"Person\"",
+            "OwnedLibraryName { name: \"test.bad.fi0053b\" }",
+        ],
     );
+    assert!(lib.check_compile());
 }
 
 // Type param tests omitted as they require dynamic evaluation to fully loop through array of names

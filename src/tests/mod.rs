@@ -12,6 +12,7 @@ pub mod errcat;
 pub mod errcat_docs_tests;
 pub mod errcat_good_tests;
 pub mod errors_tests;
+pub mod experimental_flags_tests;
 pub mod flat_ast_tests;
 pub mod flexible_tests;
 pub mod generated_name_tests;

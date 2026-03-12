@@ -100,31 +100,6 @@ pub struct QualifiedName {
 }
 
 impl QualifiedName {
-    pub fn new(library: OwnedLibraryName, declaration: String, member: Option<String>) -> Self {
-        let mut full_name = String::new();
-        let lib_str = library.to_string();
-        if !lib_str.is_empty() {
-            full_name.push_str(&lib_str);
-            full_name.push('/');
-        }
-        let decl_start = full_name.len();
-        full_name.push_str(&declaration);
-
-        let member_start = if let Some(mem) = &member {
-            let start = full_name.len() + 1;
-            full_name.push('.');
-            full_name.push_str(mem);
-            Some(start)
-        } else {
-            None
-        };
-
-        Self {
-            full_name,
-            decl_start,
-            member_start,
-        }
-    }
 
     pub fn library(&self) -> LibraryName<'_> {
         let lib_part = if self.decl_start > 0 {

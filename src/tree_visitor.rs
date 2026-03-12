@@ -118,8 +118,8 @@ pub trait TreeVisitor<'a> {
 }
 
 pub fn walk_sourceelement<'a, V: TreeVisitor<'a> + ?Sized>(
-    visitor: &mut V,
-    node: &SourceElement<'a>,
+    _visitor: &mut V,
+    _node: &SourceElement<'a>,
 ) {
 }
 
@@ -143,7 +143,7 @@ pub fn walk_librarydeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_compoundidentifier(&node.path);
 }
@@ -205,8 +205,8 @@ pub fn walk_binaryoperatorconstant<'a, V: TreeVisitor<'a> + ?Sized>(
     node: &BinaryOperatorConstant<'a>,
 ) {
     visitor.visit_sourceelement(&node.element);
-    visitor.visit_constant(&*node.left);
-    visitor.visit_constant(&*node.right);
+    visitor.visit_constant(&node.left);
+    visitor.visit_constant(&node.right);
 }
 
 pub fn walk_literal<'a, V: TreeVisitor<'a> + ?Sized>(visitor: &mut V, node: &Literal<'a>) {
@@ -219,7 +219,7 @@ pub fn walk_constdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     visitor.visit_typeconstructor(&node.type_ctor);
@@ -243,7 +243,7 @@ pub fn walk_typeconstructor<'a, V: TreeVisitor<'a> + ?Sized>(
 pub fn walk_file<'a, V: TreeVisitor<'a> + ?Sized>(visitor: &mut V, node: &File<'a>) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.library_decl {
-        visitor.visit_librarydeclaration(&**item);
+        visitor.visit_librarydeclaration(item);
     }
     for item in &node.const_decls {
         visitor.visit_constdeclaration(item);
@@ -289,7 +289,7 @@ pub fn walk_usingdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_compoundidentifier(&node.using_path);
     if let Some(item) = &node.maybe_alias {
@@ -303,7 +303,7 @@ pub fn walk_resourceproperty<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_typeconstructor(&node.type_ctor);
     visitor.visit_identifier(&node.name);
@@ -315,7 +315,7 @@ pub fn walk_resourcedeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     if let Some(item) = &node.type_ctor {
@@ -332,7 +332,7 @@ pub fn walk_typedeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     visitor.visit_layout(&node.layout);
@@ -344,7 +344,7 @@ pub fn walk_structdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -363,7 +363,7 @@ pub fn walk_structmember<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_typeconstructor(&node.type_ctor);
     visitor.visit_identifier(&node.name);
@@ -378,7 +378,7 @@ pub fn walk_enumdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -397,7 +397,7 @@ pub fn walk_enumdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 pub fn walk_enummember<'a, V: TreeVisitor<'a> + ?Sized>(visitor: &mut V, node: &EnumMember<'a>) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     visitor.visit_constant(&node.value);
@@ -409,7 +409,7 @@ pub fn walk_bitsdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -428,7 +428,7 @@ pub fn walk_bitsdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 pub fn walk_bitsmember<'a, V: TreeVisitor<'a> + ?Sized>(visitor: &mut V, node: &BitsMember<'a>) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     visitor.visit_constant(&node.value);
@@ -440,7 +440,7 @@ pub fn walk_uniondeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -456,7 +456,7 @@ pub fn walk_uniondeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 pub fn walk_unionmember<'a, V: TreeVisitor<'a> + ?Sized>(visitor: &mut V, node: &UnionMember<'a>) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     if let Some(item) = &node.ordinal {
         visitor.visit_literal(item);
@@ -478,7 +478,7 @@ pub fn walk_tabledeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -494,7 +494,7 @@ pub fn walk_tabledeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 pub fn walk_tablemember<'a, V: TreeVisitor<'a> + ?Sized>(visitor: &mut V, node: &TableMember<'a>) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     if let Some(item) = &node.ordinal {
         visitor.visit_literal(item);
@@ -513,7 +513,7 @@ pub fn walk_protocoldeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -533,7 +533,7 @@ pub fn walk_protocolcompose<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_compoundidentifier(&node.protocol_name);
 }
@@ -544,7 +544,7 @@ pub fn walk_protocolmethod<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     for item in &node.modifiers {
         visitor.visit_modifier(item);
@@ -570,7 +570,7 @@ pub fn walk_servicedeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     for item in &node.members {
@@ -584,7 +584,7 @@ pub fn walk_servicemember<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_typeconstructor(&node.type_ctor);
     visitor.visit_identifier(&node.name);
@@ -596,7 +596,7 @@ pub fn walk_aliasdeclaration<'a, V: TreeVisitor<'a> + ?Sized>(
 ) {
     visitor.visit_sourceelement(&node.element);
     if let Some(item) = &node.attributes {
-        visitor.visit_attributelist(&**item);
+        visitor.visit_attributelist(item);
     }
     visitor.visit_identifier(&node.name);
     visitor.visit_typeconstructor(&node.type_ctor);
@@ -617,8 +617,8 @@ pub fn walk_layoutparameter<'a, V: TreeVisitor<'a> + ?Sized>(
     match node {
         LayoutParameter::Identifier(item) => visitor.visit_compoundidentifier(item),
         LayoutParameter::Literal(item) => visitor.visit_literalconstant(item),
-        LayoutParameter::Type(item) => visitor.visit_typeconstructor(&**item),
-        LayoutParameter::Inline(item) => visitor.visit_layout(&**item),
+        LayoutParameter::Type(item) => visitor.visit_typeconstructor(item),
+        LayoutParameter::Inline(item) => visitor.visit_layout(item),
     }
 }
 

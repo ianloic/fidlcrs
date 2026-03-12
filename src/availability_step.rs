@@ -82,11 +82,10 @@ impl AvailabilityStep {
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(crate::diagnostics::Error::ErrInvalidModifierAvailableArgument, arg.element.span(), &[]);
                 }
-            } else if arg_name == "note" || arg_name == "legacy" {
-                if decl_kind == "modifier" {
+            } else if (arg_name == "note" || arg_name == "legacy")
+                && decl_kind == "modifier" {
                     compiler.reporter.fail(crate::diagnostics::Error::ErrInvalidModifierAvailableArgument, arg.element.span(), &[]);
                 }
-            }
         }
 
         if decl_kind == "library" {
@@ -117,7 +116,7 @@ impl AvailabilityStep {
             } else if replaced.is_some() {
                 msg.push_str(" < replaced");
             }
-            let span = unsafe { std::mem::transmute(attr.element.span()) };
+            let span = unsafe { std::mem::transmute::<crate::source_span::SourceSpan<'_>, crate::source_span::SourceSpan<'_>>(attr.element.span()) };
             compiler
                 .reporter
                 .fail(crate::diagnostics::Error::ErrInvalidAvailabilityOrder, span, &[&msg]);
@@ -126,7 +125,7 @@ impl AvailabilityStep {
 
         let result = initial.inherit(parent_avail);
 
-        let mut report = |arg: Option<(&str, String, crate::source_span::SourceSpan)>,
+        let report = |arg: Option<(&str, String, crate::source_span::SourceSpan)>,
                           status: InheritStatus| {
             if status == InheritStatus::Ok {
                 return;
@@ -148,7 +147,7 @@ impl AvailabilityStep {
                 let parent_val = "unknown"; // We omit finding the actual parent value for simplicity
                 let parent_span = "unknown_location";
 
-                let span = unsafe { std::mem::transmute(child_span) };
+                let span = unsafe { std::mem::transmute::<crate::source_span::SourceSpan<'_>, crate::source_span::SourceSpan<'_>>(child_span) };
                 compiler.reporter.fail(
                     crate::diagnostics::Error::ErrAvailabilityConflictsWithParent,
                     span,
@@ -209,7 +208,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         // We can just get it from `compiler.library_decl` and `compiler.all_files`?
         // Wait, `all_files` isn't accessible. But `all_ast_files` is in `Compiler`? No it is not.
         // Let's just avoid failing on dependencies and use unbounded for them.
-        let main_lib_prefix = compiler.library_decl.as_ref().map(|l| format!("{}/", l.path)).unwrap_or_else(|| "".to_string());
+        let main_lib_prefix = compiler.library_decl.as_ref().map(|l| format!("{}/", l.path)).unwrap_or_default();
         
         // Wait, we can extract the library prefix from the declaration's name string!
         // We'll just define the main library availability.
@@ -258,7 +257,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             // What if we don't compile availability for dependencies?
             // Actually, we must. But we don't have their lib_avail so they might fail if they inherit.
             // unbounded() allows them to pass inherit.
-            let item_name = name.split('/').last().unwrap_or(name);
+            let item_name = name.split('/').next_back().unwrap_or(name);
             let avail = if is_main { 
                 Self::extract_availability(compiler, decl.attributes(), parent_avail, "declaration", has_library_avail, item_name)
             } else {
@@ -346,50 +345,50 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
 
             match decl {
                 crate::compiler::RawDecl::Struct(d) => {
-                    for m in &d.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                    for m in &d.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                 }
                 crate::compiler::RawDecl::Table(d) => {
                     for m in &d.members {
-                        visit_member(m.attributes.as_ref().map(|v| &**v), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
+                        visit_member(m.attributes.as_deref(), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
                     }
                 }
                 crate::compiler::RawDecl::Union(d) => {
                     for m in &d.members {
-                        visit_member(m.attributes.as_ref().map(|v| &**v), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
+                        visit_member(m.attributes.as_deref(), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
                     }
                 }
                 crate::compiler::RawDecl::Enum(d) => {
-                    for m in &d.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                    for m in &d.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                 }
                 crate::compiler::RawDecl::Bits(d) => {
-                    for m in &d.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                    for m in &d.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                 }
                 crate::compiler::RawDecl::Protocol(d) => {
-                    for m in &d.methods { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                    for m in &d.methods { visit_member(m.attributes.as_deref(), m.name.data()); }
                 }
                 crate::compiler::RawDecl::Service(d) => {
-                    for m in &d.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                    for m in &d.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                 }
                 crate::compiler::RawDecl::Type(d) => {
                     match &d.layout {
                         crate::raw_ast::Layout::Struct(l) => {
-                            for m in &l.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                            for m in &l.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                         }
                         crate::raw_ast::Layout::Table(l) => {
                             for m in &l.members {
-                                visit_member(m.attributes.as_ref().map(|v| &**v), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
+                                visit_member(m.attributes.as_deref(), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
                             }
                         }
                         crate::raw_ast::Layout::Union(l) => {
                             for m in &l.members {
-                                visit_member(m.attributes.as_ref().map(|v| &**v), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
+                                visit_member(m.attributes.as_deref(), m.name.as_ref().map(|n| n.data()).unwrap_or(""));
                             }
                         }
                         crate::raw_ast::Layout::Enum(l) => {
-                            for m in &l.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                            for m in &l.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                         }
                         crate::raw_ast::Layout::Bits(l) => {
-                            for m in &l.members { visit_member(m.attributes.as_ref().map(|v| &**v), m.name.data()); }
+                            for m in &l.members { visit_member(m.attributes.as_deref(), m.name.data()); }
                         }
                         _ => {}
                     }

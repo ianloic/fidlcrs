@@ -423,10 +423,8 @@ impl Availability {
             if self.legacy.unwrap() == Legacy::No {
                 return Err(NarrowError::CannotNarrowToLegacy);
             }
-        } else {
-            if a < self.added.unwrap() || b > self.removed.unwrap() {
-                return Err(NarrowError::OutOfBounds);
-            }
+        } else if a < self.added.unwrap() || b > self.removed.unwrap() {
+            return Err(NarrowError::OutOfBounds);
         }
         if b == Version::POS_INF {
             self.ending = Some(Ending::None);

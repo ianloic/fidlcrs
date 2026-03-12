@@ -1462,8 +1462,8 @@ impl<'a, 'b> Parser<'a, 'b> {
         self.consume_token(TokenKind::Semicolon)?;
         let end = self.previous_token.as_ref().unwrap().clone();
 
-        if let Layout::TypeConstructor(tc) = &layout {
-            if let LayoutParameter::Inline(lay) = &tc.layout {
+        if let Layout::TypeConstructor(tc) = &layout
+            && let LayoutParameter::Inline(lay) = &tc.layout {
                 let has_attrs = match &**lay {
                     Layout::Struct(s) => s.attributes.is_some(),
                     Layout::Union(u) => u.attributes.is_some(),
@@ -1480,7 +1480,6 @@ impl<'a, 'b> Parser<'a, 'b> {
                     );
                 }
             }
-        }
 
         Some(TypeDeclaration {
             element: SourceElement::new(start, end),

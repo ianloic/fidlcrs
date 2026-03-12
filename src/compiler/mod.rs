@@ -3200,9 +3200,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .attributes
                         .iter()
                         .find(|a| a.name.data() == "generated_name");
-                    if let Some(a) = gen_attr {
-                        if let Some(arg) = a.args.first() {
-                            if let raw_ast::Constant::Literal(l) = &arg.value {
+                    if let Some(a) = gen_attr
+                        && let Some(arg) = a.args.first()
+                            && let raw_ast::Constant::Literal(l) = &arg.value {
                                 // But still check if it's a valid identifier here, which isn't done by AttributeSchemaMap right now
                                 let val = l.literal.value.trim_matches('"').to_string();
                                 let mut is_valid = true;
@@ -3231,8 +3231,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     );
                                 }
                             }
-                        }
-                    }
                 }
 
                 let generated_name = if let Some(a_list) = attrs {
@@ -4365,33 +4363,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     if let Some(val) = self.eval_constant_usize(c) {
                                         if val == 0 {
                                             let id_str =
-                                                resolved_type.identifier().unwrap_or(String::new());
+                                                resolved_type.identifier().unwrap_or_default();
                                             self.reporter.fail(
                                                 Error::ErrMustHaveNonZeroSize,
                                                 type_ctor.element.start_token.span,
                                                 &[&id_str],
                                             );
                                             has_err = true;
+                                        } else if resolved_type.kind() == TypeKind::Vector {
+                                            resolved_type = Type::vector(
+                                                Box::new(
+                                                    resolved_type
+                                                        .element_type()
+                                                        .unwrap()
+                                                        .clone(),
+                                                ),
+                                                Some(val as u32),
+                                                final_nullable,
+                                                None,
+                                            );
                                         } else {
-                                            if resolved_type.kind() == TypeKind::Vector {
-                                                resolved_type = Type::vector(
-                                                    Box::new(
-                                                        resolved_type
-                                                            .element_type()
-                                                            .unwrap()
-                                                            .clone(),
-                                                    ),
-                                                    Some(val as u32),
-                                                    final_nullable,
-                                                    None,
-                                                );
-                                            } else {
-                                                resolved_type = Type::string(
-                                                    Some(val as u32),
-                                                    final_nullable,
-                                                    None,
-                                                );
-                                            }
+                                            resolved_type = Type::string(
+                                                Some(val as u32),
+                                                final_nullable,
+                                                None,
+                                            );
                                         }
                                     } else {
                                         self.reporter.fail(

@@ -193,13 +193,12 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
             }
 
             while let Some(lib) = worklist.pop_front() {
-                if used_libraries.insert(lib.clone()) {
-                    if let Some(deps) = reachability.get(&lib) {
+                if used_libraries.insert(lib.clone())
+                    && let Some(deps) = reachability.get(&lib) {
                         for dep in deps {
                             worklist.push_back(dep.clone());
                         }
                     }
-                }
             }
 
             let mut unused_libraries = Vec::new();

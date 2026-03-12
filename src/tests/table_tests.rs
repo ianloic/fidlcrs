@@ -55,20 +55,16 @@ type Foo = table {};
 fn bad_missing_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0016-a.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrMissingOrdinalBeforeMember);
+    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_ordinal_out_of_bounds_negative() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0017-a.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrOrdinalOutOfBound);
+    lib.expect_fail(Error::ErrOrdinalOutOfBound, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -84,10 +80,8 @@ type Foo = union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrOrdinalOutOfBound);
+    lib.expect_fail(Error::ErrOrdinalOutOfBound, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -104,20 +98,27 @@ type MyTable = table {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrNameCollision);
+    lib.expect_fail(
+        Error::ErrNameCollision,
+        &[
+            "\"table field\"",
+            "\"my_field\"",
+            "\"table field\"",
+            "\"example.fidl:5:8\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_duplicate_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0094.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrDuplicateTableFieldOrdinal);
+    lib.expect_fail(
+        Error::ErrDuplicateTableFieldOrdinal,
+        &["\"bad/fi-0094.test.fidl:7:8\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -198,10 +199,8 @@ type OptionalTableContainer = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotBeOptional);
+    lib.expect_fail(Error::ErrCannotBeOptional, &["\"Foo\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -221,10 +220,8 @@ type OptionalTableContainer = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTooManyConstraints);
+    lib.expect_fail(Error::ErrTooManyConstraints, &["\"Foo\"", "0", "3"]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -244,10 +241,8 @@ type OptionalTableContainer = union {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotBeOptional);
+    lib.expect_fail(Error::ErrCannotBeOptional, &["\"Foo\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -294,10 +289,8 @@ type OptionalTableContainer = flexible union {
 fn bad_optional_table_member() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0048.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrOptionalTableMember);
+    lib.expect_fail(Error::ErrOptionalTableMember, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -314,10 +307,8 @@ type Foo = table {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotBeOptional);
+    lib.expect_fail(Error::ErrCannotBeOptional, &["\"int64\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -333,11 +324,9 @@ type Foo = table {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 2);
-    assert_eq!(errors[0].def, Error::ErrUnexpectedTokenOfKind);
-    assert_eq!(errors[1].def, Error::ErrMissingOrdinalBeforeMember);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind, &["\"=\"", "\";\""]);
+    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -384,10 +373,8 @@ fn good64_ordinals_max_is_table() {
 fn bad_max_ordinal_not_table() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0093.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrMaxOrdinalNotTable);
+    lib.expect_fail(Error::ErrMaxOrdinalNotTable, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -468,28 +455,25 @@ type Example = table {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrMaxOrdinalNotTable);
+    lib.expect_fail(Error::ErrMaxOrdinalNotTable, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_too_many_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0092.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTableOrdinalTooLarge);
+    lib.expect_fail(Error::ErrTableOrdinalTooLarge, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_recursion_disallowed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-d.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrIncludeCycle);
+    lib.expect_fail(
+        Error::ErrIncludeCycle,
+        &["\"table 'MySelf' -> table 'MySelf'\""],
+    );
+    assert!(lib.check_compile());
 }

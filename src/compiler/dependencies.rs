@@ -48,7 +48,7 @@ pub(crate) fn collect_deps_from_attributes(
 pub(crate) fn get_dependencies<'node, 'src>(
     decl: &RawDecl<'node, 'src>,
     library_name: &str,
-    _decl_kinds: &HashMap<String, &str>,
+    _decl_kinds: &HashMap<crate::names::FullyQualifiedName, &'static str>,
     skip_optional: bool,
     inline_names: &HashMap<usize, String>,
 ) -> Vec<String> {
@@ -435,18 +435,18 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         let mut sorted = vec![];
         let mut temp_path = vec![]; // for cycle detection
 
-        let mut keys: Vec<&String> = self.raw_decls.keys().collect();
+        let mut keys: Vec<String> = self.raw_decls.keys().map(|k| k.to_string()).collect();
         keys.sort();
 
         #[allow(clippy::too_many_arguments)]
         pub(crate) fn visit<'a, 'b>(
             name: &str,
-            decls: &HashMap<String, RawDecl<'a, 'b>>,
-            library_name: &str,
+            decls: &HashMap<crate::names::FullyQualifiedName, RawDecl<'a, 'b>>,
+            library_name: &crate::names::LibraryName,
             visited: &mut HashSet<String>,
             temp_path: &mut Vec<String>,
             sorted: &mut Vec<String>,
-            decl_kinds: &HashMap<String, &str>,
+            decl_kinds: &HashMap<crate::names::FullyQualifiedName, &'static str>,
             skip_optional: bool,
             inline_names: &HashMap<usize, String>,
             reporter: &Reporter<'b>,
@@ -458,15 +458,15 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let cycle_names = &temp_path[idx..];
                 let mut cycle_str = String::new();
                 for cname in cycle_names {
-                    let ckind = decl_kinds.get(cname).unwrap_or(&"unknown");
+                    let ckind = decl_kinds.get(&crate::names::FullyQualifiedName::from(cname.clone())).unwrap_or(&"unknown");
                     let short_name = cname.split('/').next_back().unwrap_or(cname);
                     cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
                 }
-                let kind = decl_kinds.get(name).unwrap_or(&"unknown");
+                let kind = decl_kinds.get(&crate::names::FullyQualifiedName::from(name)).unwrap_or(&"unknown");
                 let short_name = name.split('/').next_back().unwrap_or(name);
                 cycle_str.push_str(&format!("{} '{}'", kind, short_name));
 
-                let span = if let Some(decl) = decls.get(name) {
+                let span = if let Some(decl) = decls.get(&crate::names::FullyQualifiedName::from(name)) {
                     decl.element().span()
                 } else {
                     let first_decl = decls.values().next().unwrap();
@@ -478,9 +478,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             }
             temp_path.push(name.to_string());
 
-            if let Some(decl) = decls.get(name) {
+            if let Some(decl) = decls.get(&crate::names::FullyQualifiedName::from(name)) {
                 let deps =
-                    get_dependencies(decl, library_name, decl_kinds, skip_optional, inline_names);
+                    get_dependencies(decl, &library_name.to_string(), decl_kinds, skip_optional, inline_names);
                 // Sort dependencies by name to ensure deterministic order if needed, but they are in AST order
                 for dep in deps {
                     visit(
@@ -500,14 +500,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
             temp_path.pop();
             visited.insert(name.to_string());
-            if decls.contains_key(name) {
+            if decls.contains_key(&crate::names::FullyQualifiedName::from(name)) {
                 sorted.push(name.to_string());
             }
         }
 
         for name in keys {
             visit(
-                name,
+                &name,
                 &self.raw_decls,
                 &self.library_name,
                 &mut visited,
@@ -555,9 +555,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
 
         let mut all_names = Vec::new();
-        let keys: Vec<&String> = self.raw_decls.keys().collect();
+        let keys: Vec<crate::names::FullyQualifiedName> = self.raw_decls.keys().map(|x| x.clone()).collect();
         for k in &keys {
-            all_names.push((*k).clone());
+            all_names.push(k.to_string());
         }
         for decl in &self.union_declarations {
             if !all_names.contains(&decl.name) {
@@ -661,10 +661,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             // `CalcDependencies` recurses on BinaryOperator!
             // Wait, `get_dependencies` DOES recurse `RawDecl::Const` and gets all operands!
             // Instead of solely relying on JSON, we can UNION the dependencies with what `get_dependencies` extracts!
-            if let Some(raw) = self.raw_decls.get(name) {
+            if let Some(raw) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(name.clone())) {
                 d.extend(get_dependencies(
                     raw,
-                    &self.library_name,
+                    &self.library_name.to_string(),
                     &self.decl_kinds,
                     true, // skip_optional = true!
                     &self.inline_names,
@@ -699,7 +699,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
 
         for name in &all_names {
-            visit(name, &deps, &mut visited, &mut order, &self.library_name);
+            visit(name, &deps, &mut visited, &mut order, &self.library_name.to_string());
         }
 
         self.declaration_order = order;

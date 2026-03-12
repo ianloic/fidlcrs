@@ -7,6 +7,7 @@ pub mod flat_ast;
 pub mod json_generator;
 pub mod lexer;
 pub mod name;
+pub mod names;
 pub mod parser;
 pub mod raw_ast;
 pub mod reporter;

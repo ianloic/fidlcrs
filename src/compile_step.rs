@@ -7,10 +7,10 @@ impl<'node, 'src> Step<'node, 'src> for CompileStep {
     fn run(&mut self, compiler: &mut Compiler<'node, 'src>) {
         let sorted_names = compiler.sorted_names.clone();
         for name in &sorted_names {
-            if compiler.anonymous_structs.contains(name) {
+            if compiler.anonymous_structs.contains(&name.to_string()) {
                 continue;
             }
-            compiler.compile_decl_by_name(name);
+            compiler.compile_decl_by_name(&name.to_string());
         }
     }
 }

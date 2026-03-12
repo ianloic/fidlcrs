@@ -11,6 +11,7 @@ use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
+use crate::names::{FullyQualifiedName, LibraryName, ParsedName};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeclKind {
@@ -27,7 +28,7 @@ pub enum DeclKind {
 impl std::fmt::Display for DeclKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::EnumValue => "enum value",
+            Self::EnumValue => "member",
             Self::Member => "member",
             Self::TableField => "table field",
             Self::UnionMember => "union member",
@@ -246,11 +247,11 @@ pub struct Compiler<'node, 'src> {
     pub reporter: &'src Reporter<'src>,
 
     // State
-    pub library_name: String,
+    pub library_name: LibraryName,
     pub library_decl: Option<LibraryDeclaration<'src>>,
-    pub raw_decls: HashMap<String, RawDecl<'node, 'src>>,
-    pub decl_kinds: HashMap<String, &'static str>,
-    pub sorted_names: Vec<String>,
+    pub raw_decls: HashMap<FullyQualifiedName, RawDecl<'node, 'src>>,
+    pub decl_kinds: HashMap<FullyQualifiedName, &'static str>,
+    pub sorted_names: Vec<FullyQualifiedName>,
 
     // Outputs
     pub alias_declarations: Vec<AliasDeclaration>,
@@ -293,7 +294,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             shapes: HashMap::new(),
             source_files: Vec::new(),
             reporter,
-            library_name: "unknown".to_string(),
+            library_name: LibraryName::new(vec!["unknown".to_string()]),
             library_decl: None,
             raw_decls: HashMap::new(),
             decl_kinds: HashMap::new(),
@@ -346,15 +347,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
     pub fn resolve_constant_decl<'a>(
         &'a self,
         name: &'a str,
-    ) -> Option<(&'a str, Option<&'a str>)> {
+    ) -> Option<(String, Option<String>)> {
         // returns (full_decl_name, maybe_member_name)
         let mut full_name = name.to_string();
         if !full_name.contains('/') {
             full_name = format!("{}/{}", self.library_name, name);
         }
-        if self.raw_decls.contains_key(&full_name) {
+        if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(full_name.clone())) {
             return Some((
-                self.raw_decls.get_key_value(&full_name).unwrap().0.as_str(),
+                full_name,
                 None,
             ));
         }
@@ -363,7 +364,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let mut type_full_name = type_name.to_string();
             if !type_full_name.contains('/') {
                 let local_fqn = format!("{}/{}", self.library_name, type_name);
-                if self.raw_decls.contains_key(&local_fqn) {
+                if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(local_fqn.clone())) {
                     type_full_name = local_fqn;
                 } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
                     let mut actual_lib = lib_prefix.to_string();
@@ -374,39 +375,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         actual_lib = import.using_path.to_string();
                     }
                     let dep_fqn = format!("{}/{}", actual_lib, rest);
-                    if self.raw_decls.contains_key(&dep_fqn) {
+                    if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(dep_fqn.clone())) {
                         type_full_name = dep_fqn;
                     }
                 } else if let Some(import) = self.library_imports.get(type_name) {
                     self.used_imports.borrow_mut().insert(type_name.to_string());
                     let dep_fqn = format!("{}/{}", import.using_path, member_name);
-                    if self.raw_decls.contains_key(&dep_fqn) {
+                    if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(dep_fqn.clone())) {
                         return Some((
-                            self.raw_decls.get_key_value(&dep_fqn).unwrap().0.as_str(),
+                            dep_fqn,
                             None,
                         ));
                     }
                 }
             }
-            if self.raw_decls.contains_key(&type_full_name) {
+            if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(type_full_name.clone())) {
                 return Some((
-                    self.raw_decls
-                        .get_key_value(&type_full_name)
-                        .unwrap()
-                        .0
-                        .as_str(),
-                    Some(member_name),
+                    type_full_name,
+                    Some(member_name.to_string()),
                 ));
             }
 
             let imported_name = format!("{}/{}", type_name, member_name);
-            if self.raw_decls.contains_key(&imported_name) {
+            if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(imported_name.clone())) {
                 return Some((
-                    self.raw_decls
-                        .get_key_value(&imported_name)
-                        .unwrap()
-                        .0
-                        .as_str(),
+                    imported_name,
                     None,
                 ));
             }
@@ -574,10 +567,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         let platform = if self.is_versioned_library() {
+            let binding = self.library_name.to_string();
             self.library_name
-                .split('.')
-                .next()
-                .unwrap_or(&self.library_name)
+                .components
+                .first()
+                .unwrap_or(&binding)
                 .to_string()
         } else {
             "unversioned".to_string()
@@ -596,7 +590,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(pos) = id.find('/')
             {
                 let d = id[..pos].to_string();
-                if d != compiler.library_name {
+                if compiler.library_name.to_string() != *d {
                     deps.insert(d.clone());
                 }
 
@@ -620,7 +614,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(pos) = proto.find('/')
             {
                 let d = proto[..pos].to_string();
-                if d != compiler.library_name {
+                if compiler.library_name.to_string() != *d {
                     deps.insert(d);
                 }
             }
@@ -628,19 +622,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(pos) = res.find('/')
             {
                 let d = res[..pos].to_string();
-                if d != compiler.library_name {
+                if compiler.library_name.to_string() != *d {
                     deps.insert(d);
                 }
             }
             if let Some(c_name) = &ty.maybe_size_constant_name {
                 if let Some(pos) = c_name.find('/') {
                     let d = c_name[..pos].to_string();
-                    if d != compiler.library_name {
+                    if compiler.library_name.to_string() != *d {
                         deps.insert(d);
                     }
                 } else if c_name.contains('.') {
                     let d = c_name.split('.').next().unwrap().to_string();
-                    if d != compiler.library_name {
+                    if compiler.library_name.to_string() != *d {
                         deps.insert(d);
                     }
                 }
@@ -661,7 +655,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let id = &a.partial_type_ctor.name;
                 if let Some(pos) = id.find('/') {
                     let d = id[..pos].to_string();
-                    if d != self.library_name {
+                    if d != self.library_name.to_string() {
                         used_deps.insert(d);
                     }
                 }
@@ -690,7 +684,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(pos) = id.find('/')
             {
                 let d = id[..pos].to_string();
-                if d != compiler.library_name {
+                if compiler.library_name.to_string() != *d {
                     deps.insert(d.clone());
                 }
 
@@ -714,7 +708,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(pos) = proto.find('/')
             {
                 let d = proto[..pos].to_string();
-                if d != compiler.library_name {
+                if compiler.library_name.to_string() != *d {
                     deps.insert(d);
                 }
             }
@@ -722,19 +716,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(pos) = res.find('/')
             {
                 let d = res[..pos].to_string();
-                if d != compiler.library_name {
+                if compiler.library_name.to_string() != *d {
                     deps.insert(d);
                 }
             }
             if let Some(c_name) = val.get("maybe_size_constant_name").and_then(|m| m.as_str()) {
                 if let Some(pos) = c_name.find('/') {
                     let d = c_name[..pos].to_string();
-                    if d != compiler.library_name {
+                    if compiler.library_name.to_string() != *d {
                         deps.insert(d);
                     }
                 } else if c_name.contains('.') {
                     let d = c_name.split('.').next().unwrap().to_string();
-                    if d != compiler.library_name {
+                    if compiler.library_name.to_string() != *d {
                         deps.insert(d);
                     }
                 }
@@ -823,7 +817,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if used_deps.contains(name)
                 || main_files.iter().any(|f| {
                     f.library_decl.as_ref().map(|l| l.path.to_string())
-                        == Some(self.library_name.clone())
+                        == Some(self.library_name.to_string())
                         && f.element
                             .start_token
                             .span
@@ -868,14 +862,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
         let json_root = JsonRoot {
-            name: self.library_name.clone(),
+            name: self.library_name.to_string(),
             platform,
             available: Some(self.version_selection.as_available_map()),
             maybe_attributes: main_files
                 .iter()
                 .filter(|f| {
                     f.library_decl.as_ref().map(|l| l.path.to_string())
-                        == Some(self.library_name.clone())
+                        == Some(self.library_name.to_string())
                 })
                 .find_map(|f| f.library_decl.as_ref())
                 .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
@@ -941,11 +935,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for (name, decl) in &self.raw_decls {
             match decl {
                 RawDecl::Struct(_) => {
-                    struct_names.insert(name.clone());
+                    struct_names.insert(name.to_string());
                 }
                 RawDecl::Type(t) => {
                     if let raw_ast::Layout::Struct(_) = t.layout {
-                        struct_names.insert(name.clone());
+                        struct_names.insert(name.to_string());
                     }
                 }
                 _ => {}
@@ -954,7 +948,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for decls in self.dependency_declarations.values() {
             for (name, val) in decls {
                 if val.get("kind").and_then(|k| k.as_str()) == Some("struct") {
-                    struct_names.insert(name.clone());
+                    struct_names.insert(name.to_string());
                 }
             }
         }
@@ -1013,7 +1007,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let maybe_offset = offset.checked_add(padding_before);
                 if maybe_offset.is_none() && !overflowed {
                     overflowed = true;
-                    if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                    if let Some(raw_decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(decl.name.clone())) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
                             Error::ErrTypeShapeIntegerOverflow,
@@ -1029,7 +1023,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let maybe_offset2 = offset.checked_add(size);
                 if maybe_offset2.is_none() && !overflowed {
                     overflowed = true;
-                    if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                    if let Some(raw_decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(decl.name.clone())) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
                             Error::ErrTypeShapeIntegerOverflow,
@@ -1050,7 +1044,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let maybe_total = offset.checked_add(final_padding);
                 if maybe_total.is_none() && !overflowed {
                     overflowed = true;
-                    if let Some(raw_decl) = self.raw_decls.get(&decl.name) {
+                    if let Some(raw_decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(decl.name.clone())) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
                             Error::ErrTypeShapeIntegerOverflow,
@@ -1087,7 +1081,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if !overflowed
                 && total_size > 65535
-                && let Some(raw_decl) = self.raw_decls.get(&decl.name)
+                && let Some(raw_decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(decl.name.clone()))
             {
                 let span = raw_decl.element().span();
                 let display_name = decl
@@ -1294,7 +1288,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if !n.contains('/') {
                     let full = format!("{}/{}", library_name, n);
                     if self.declarations.contains_key(&full)
-                        || self.decl_kinds.contains_key(&full)
+                        || self.decl_kinds.contains_key(&crate::names::FullyQualifiedName::from(full.clone()))
                         || self.shapes.contains_key(&n)
                     {
                         n = full.clone();
@@ -1305,7 +1299,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Only primitive types are substituted back in PartialTypeCtor output
                 if let Some(RawDecl::Alias(a)) = self
                     .raw_decls
-                    .get(&n)
+                    .get(&crate::names::FullyQualifiedName::from(n.clone()))
                     .or_else(|| self.get_underlying_decl(&n))
                 {
                     let resolved = self.resolve_type(&a.type_ctor, library_name, None);
@@ -1408,7 +1402,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
     pub fn compile_decl_by_name(&mut self, name: &str) {
-        if self.compiled_decls.contains(name) || self.compiling_shapes.contains(name) {
+        if self.compiled_decls.contains(name.clone()) || self.compiling_shapes.contains(name.clone()) {
             return;
         }
 
@@ -1425,7 +1419,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             return;
         }
 
-        let decl = if let Some(d) = self.raw_decls.get(name) {
+        let decl = if let Some(d) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(name.clone())) {
             d.clone()
         } else {
             return;
@@ -1436,7 +1430,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut parts = name.splitn(2, '/');
         let library_name = parts.next().unwrap_or("unknown").to_string();
         let short_name_from_key = parts.next().unwrap_or("unknown");
-        let is_main_library = library_name == self.library_name;
+        let is_main_library = library_name == self.library_name.to_string();
 
         match decl {
             RawDecl::Type(t) => {
@@ -1690,7 +1684,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         if !is_main_library {
-            let kind = self.decl_kinds.get(name).cloned().unwrap_or("unknown");
+            let kind = self.decl_kinds.get(&crate::names::FullyQualifiedName::from(name.clone())).cloned().unwrap_or("unknown");
             let mut obj = serde_json::Map::new();
             obj.insert(
                 "kind".to_string(),
@@ -1830,11 +1824,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut full_name = current.clone();
                 if !full_name.contains('/') {
                     let fqn = format!("{}/{}", library_name, current);
-                    if self.raw_decls.contains_key(&fqn) {
+                    if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(fqn.clone())) {
                         full_name = fqn;
                     } else if let Some((lib, name)) = current.rsplit_once('.') {
                         let dep_fqn = format!("{}/{}", lib, name);
-                        if self.raw_decls.contains_key(&dep_fqn) {
+                        if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(dep_fqn.clone())) {
                             full_name = dep_fqn;
                         } else {
                             full_name = fqn;
@@ -1843,7 +1837,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         full_name = fqn;
                     }
                 }
-                if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name)
+                if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone()))
                     && let raw_ast::LayoutParameter::Identifier(ref inner_id) =
                         alias.type_ctor.layout
                 {
@@ -2102,11 +2096,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let mut full_name = current.clone();
                     if !full_name.contains('/') && !self.shapes.contains_key(&current) {
                         let fqn = format!("{}/{}", library_name, current);
-                        if self.raw_decls.contains_key(&fqn) {
+                        if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(fqn.clone())) {
                             full_name = fqn;
                         } else if let Some((lib, name)) = current.rsplit_once('.') {
                             let dep_fqn = format!("{}/{}", lib, name);
-                            if self.raw_decls.contains_key(&dep_fqn) {
+                            if self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(dep_fqn.clone())) {
                                 full_name = dep_fqn;
                             } else {
                                 full_name = fqn;
@@ -2115,7 +2109,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             full_name = fqn;
                         }
                     }
-                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&full_name)
+                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone()))
                         && let raw_ast::LayoutParameter::Identifier(ref inner_id) =
                             alias.type_ctor.layout
                     {
@@ -2448,7 +2442,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if ordinal == 64 {
                     let is_table = if let Some(decl) = self
                         .raw_decls
-                        .get(type_obj.identifier().as_deref().unwrap_or(""))
+                        .get(&crate::names::FullyQualifiedName::from(type_obj.identifier().as_deref().unwrap_or("").to_string()))
                     {
                         match decl {
                             RawDecl::Table(_) => true,
@@ -3167,13 +3161,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         parts.push(c.data());
                     }
                     let mut local_lib_name = parts.join(".");
-                    if library_name == self.library_name {
+                    if library_name == self.library_name.to_string() {
                         if let Some(import) = self.library_imports.get(&local_lib_name) {
                             self.used_imports
                                 .borrow_mut()
                                 .insert(local_lib_name.clone());
                             local_lib_name = import.using_path.to_string();
-                        } else if local_lib_name != self.library_name && local_lib_name != "fidl" {
+                        } else if local_lib_name != self.library_name.to_string() && local_lib_name != "fidl" {
                             let span_safe = unsafe {
                                 std::mem::transmute::<
                                     crate::source_span::SourceSpan<'_>,
@@ -3355,7 +3349,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let full_name = format!("{}/{}", library_name, final_short_name);
 
                 let mut is_collision = false;
-                if let Some(_prev_decl) = self.raw_decls.get(&full_name) {
+                if let Some(_prev_decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone())) {
                     // We might be evaluating a method payload that was pre-inserted by ConsumeStep
                     // If spans differ, it's a real collision
                     // Wait, actually the prev_span is the decl's span, while curr_span is type_ctor's span.
@@ -3370,7 +3364,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 if is_collision {
-                    let prev_decl = self.raw_decls.get(&full_name).unwrap();
+                    let prev_decl = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone())).unwrap();
                     let prev_kind = match prev_decl {
                         RawDecl::Struct(_) => "struct",
                         RawDecl::Enum(_) => "enum",
@@ -3444,7 +3438,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                             );
                             self.struct_declarations.push(compiled);
-                            self.raw_decls.insert(full_name.clone(), RawDecl::Struct(s));
+                            self.raw_decls.insert(crate::names::FullyQualifiedName::from(full_name.clone()), RawDecl::Struct(s));
                         }
                         raw_ast::Layout::Enum(e) => {
                             let compiled = self.compile_enum(
@@ -3456,7 +3450,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             self.enum_declarations.push(compiled);
-                            self.raw_decls.insert(full_name.clone(), RawDecl::Enum(e));
+                            self.raw_decls.insert(crate::names::FullyQualifiedName::from(full_name.clone()), RawDecl::Enum(e));
                         }
                         raw_ast::Layout::Bits(b) => {
                             let compiled = self.compile_bits(
@@ -3468,7 +3462,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             self.bits_declarations.push(compiled);
-                            self.raw_decls.insert(full_name.clone(), RawDecl::Bits(b));
+                            self.raw_decls.insert(crate::names::FullyQualifiedName::from(full_name.clone()), RawDecl::Bits(b));
                         }
                         raw_ast::Layout::Union(u) => {
                             let compiled = self.compile_union(
@@ -3484,7 +3478,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             } else {
                                 self.union_declarations.push(compiled);
                             }
-                            self.raw_decls.insert(full_name.clone(), RawDecl::Union(u));
+                            self.raw_decls.insert(crate::names::FullyQualifiedName::from(full_name.clone()), RawDecl::Union(u));
                         }
                         raw_ast::Layout::Table(t) => {
                             let compiled = self.compile_table(
@@ -3496,7 +3490,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             self.table_declarations.push(compiled);
-                            self.raw_decls.insert(full_name.clone(), RawDecl::Table(t));
+                            self.raw_decls.insert(crate::names::FullyQualifiedName::from(full_name.clone()), RawDecl::Table(t));
                         }
                         _ => {}
                     }
@@ -3505,7 +3499,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         full_name.clone(),
                     );
 
-                    if library_name == self.library_name {
+                    if library_name == self.library_name.to_string() {
                         self.declaration_order.push(full_name.clone());
                         self.compiled_decls.insert(full_name.clone());
                     }
@@ -3571,7 +3565,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .strip_prefix("fidl/")
                 .unwrap_or(&resolved_name);
             let local_name = format!("{}/{}", library_name, bare);
-            self.raw_decls.contains_key(&local_name) || self.raw_decls.contains_key(bare)
+            self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(local_name.clone())) || self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(bare.clone()))
         };
 
         match resolved_name.as_str() {
@@ -3828,10 +3822,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     | "request"
                                     | "client_end"
                                     | "server_end"
-                            ) || self.raw_decls.contains_key(&inner_name)
+                            ) || self.raw_decls.contains_key(&crate::names::FullyQualifiedName::from(inner_name.clone()))
                                 || self
                                     .raw_decls
-                                    .contains_key(&format!("{}/{}", library_name, inner_name))
+                                    .contains_key(&crate::names::FullyQualifiedName::from(format!("{}/{}", library_name, inner_name)))
                         }
                         _ => false,
                     };
@@ -3940,7 +3934,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut transport = None;
                 if !protocol.is_empty() {
                     let mut is_protocol = false;
-                    if let Some(decl) = self.raw_decls.get(&protocol) {
+                    if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(protocol.clone())) {
                         if let RawDecl::Protocol(p) = decl {
                             is_protocol = true;
                             if let Some(attrs) = p.attributes.as_ref()
@@ -4260,7 +4254,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
 
-                if let Some(decl) = self.raw_decls.get(&full_name) {
+                if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone())) {
                     let is_user_decl_no_params = match decl {
                         RawDecl::Bits(_)
                         | RawDecl::Enum(_)
@@ -4310,7 +4304,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                if nullable && let Some(decl) = self.raw_decls.get(&full_name) {
+                if nullable && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone())) {
                     let is_struct = match decl {
                         RawDecl::Struct(_) => true,
                         RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Struct(_)),
@@ -4355,7 +4349,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                let is_resource = if let Some(decl) = self.raw_decls.get(&full_name) {
+                let is_resource = if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone())) {
                     match decl {
                         RawDecl::Struct(s) => s
                             .modifiers
@@ -4397,7 +4391,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         shape.clone(),
                         is_resource,
                     )
-                } else if let Some(decl) = self.raw_decls.get(&full_name) {
+                } else if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone())) {
                     if !type_ctor.parameters.is_empty() {
                         self.reporter.fail(
                             Error::ErrWrongNumberOfLayoutParameters,
@@ -4641,7 +4635,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     fn get_underlying_decl(&self, id: &str) -> Option<&RawDecl<'node, 'src>> {
         let mut curr = id.to_string();
         for _ in 0..100 {
-            if let Some(decl) = self.raw_decls.get(&curr) {
+            if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(curr.clone())) {
                 if let RawDecl::Alias(a) = decl {
                     match &a.type_ctor.layout {
                         raw_ast::LayoutParameter::Identifier(id) => {
@@ -4698,7 +4692,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     is_uint32 = true;
                     break;
                 }
-                if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&curr) {
+                if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(curr.clone())) {
                     match &a.type_ctor.layout {
                         raw_ast::LayoutParameter::Identifier(inner_id) => {
                             let next = inner_id.to_string();
@@ -4789,7 +4783,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             is_uint32_prop = true;
                             break;
                         }
-                        if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&curr) {
+                        if let Some(RawDecl::Alias(a)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(curr.clone())) {
                             match &a.type_ctor.layout {
                                 raw_ast::LayoutParameter::Identifier(inner_id) => {
                                     let next = inner_id.to_string();
@@ -4905,7 +4899,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         Error::ErrMismatchedTransportInServices,
                         member.name.element.span(),
                         &[
-                            &member_name.as_str(),
+                            &member_name,
                             &transport,
                             &first_member_with_that_transport.as_str(),
                             &associated_transport.as_str(),
@@ -5026,7 +5020,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 {
                     composed_has_no_resource =
                         p.maybe_attributes.iter().any(|a| a.name == "no_resource");
-                } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
+                } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_composed_name.clone())) {
                     if let Some(attrs) = p.attributes.as_ref() {
                         composed_has_no_resource = attrs
                             .attributes
@@ -5059,7 +5053,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             {
                 composed_openness = p.openness.as_str();
                 parent_methods = p.methods.clone();
-            } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&full_composed_name) {
+            } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_composed_name.clone())) {
                 if p.modifiers.iter().any(|m| {
                     m.subkind == TokenSubkind::Ajar && self.is_active(m.attributes.as_ref())
                 }) {
@@ -5206,7 +5200,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let is_allowed = if resolved_type.kind() != TypeKind::Identifier {
                             false
                         } else if let Some(id) = &resolved_type.identifier() {
-                            if let Some(kind) = self.decl_kinds.get(id) {
+                            if let Some(kind) = self.decl_kinds.get(&crate::names::FullyQualifiedName::from(id.clone())) {
                                 *kind == "struct"
                                     || *kind == "table"
                                     || *kind == "union"
@@ -5263,7 +5257,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                                 None,
                             );
-                            if library_name == self.library_name {
+                            if library_name == self.library_name.to_string() {
                                 self.struct_declarations.push(compiled);
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
@@ -5292,7 +5286,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                             );
                             self.table_declarations.push(compiled);
-                            if library_name == self.library_name {
+                            if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }
@@ -5317,7 +5311,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 Some(ctx.clone()),
                             );
-                            if library_name == self.library_name {
+                            if library_name == self.library_name.to_string() {
                                 if u.is_overlay {
                                     self.overlay_declarations.push(compiled);
                                 } else {
@@ -5372,7 +5366,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let is_allowed = if resolved_type.kind() != TypeKind::Identifier {
                             false
                         } else if let Some(id) = &resolved_type.identifier() {
-                            if let Some(kind) = self.decl_kinds.get(id) {
+                            if let Some(kind) = self.decl_kinds.get(&crate::names::FullyQualifiedName::from(id.clone())) {
                                 *kind == "struct"
                                     || *kind == "table"
                                     || *kind == "union"
@@ -5449,7 +5443,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                             );
                             self.struct_declarations.push(compiled);
-                            if library_name == self.library_name {
+                            if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }
@@ -5494,7 +5488,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                             );
                             self.table_declarations.push(compiled);
-                            if library_name == self.library_name {
+                            if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }
@@ -5543,7 +5537,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             } else {
                                 self.union_declarations.push(compiled);
                             }
-                            if library_name == self.library_name {
+                            if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls.insert(full_synth.clone());
                             }
@@ -5678,7 +5672,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             maybe_attributes: vec![],
                         };
                         self.struct_declarations.push(decl);
-                        if library_name == self.library_name {
+                        if library_name == self.library_name.to_string() {
                             self.declaration_order.push(full_synth.clone());
                             self.compiled_decls.insert(full_synth.clone());
                         }
@@ -5809,7 +5803,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     maybe_attributes: vec![],
                 };
                 self.union_declarations.push(union_decl);
-                if library_name == self.library_name {
+                if library_name == self.library_name.to_string() {
                     self.declaration_order.push(full_synth_union.clone());
                     self.compiled_decls.insert(full_synth_union.clone());
                 }

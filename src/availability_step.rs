@@ -339,7 +339,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         let selected_version = compiler.version_selection.lookup(&platform);
 
         for (name, decl) in &compiler.raw_decls {
-            let is_main = name.starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
+            let is_main = name.to_string().starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
             let parent_avail = if is_main {
                 &final_lib_avail
             } else {
@@ -351,7 +351,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             // What if we don't compile availability for dependencies?
             // Actually, we must. But we don't have their lib_avail so they might fail if they inherit.
             // unbounded() allows them to pass inherit.
-            let item_name = name.split('/').next_back().unwrap_or(name);
+            let item_name = name.declaration.as_str();
             let avail = if is_main {
                 Self::extract_availability(
                     compiler,
@@ -371,14 +371,14 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                     item_name,
                 )
             };
-            decl_availability.insert(name.clone(), avail);
+            decl_availability.insert(name.to_string(), avail);
         }
         compiler.decl_availability = decl_availability.clone();
 
         let mut any_decl_removed = false;
 
         compiler.raw_decls.retain(|name, _| {
-            if let Some(avail) = decl_availability.get(name)
+            if let Some(avail) = decl_availability.get(&name.to_string())
                 && !avail.set().contains(selected_version)
             {
                 any_decl_removed = true;
@@ -393,7 +393,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
 
         // Validate modifiers
         for (name, decl) in &compiler.raw_decls {
-            let decl_avail = decl_availability.get(name).unwrap();
+            let decl_avail = decl_availability.get(&name.to_string()).unwrap();
             decl.for_each_modifier_list(|modifiers| {
                 let mut by_kind: std::collections::HashMap<
                     u8,
@@ -403,7 +403,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                 for modifier in modifiers {
                     // Only extract availability for main library modifiers so we don't report errors twice
                     let decl_is_main =
-                        name.starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
+                        name.to_string().starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
                     let kind_str = if decl_is_main {
                         "modifier"
                     } else {
@@ -458,7 +458,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             // Visit struct / table / union / enum / bits / protocol members and extract availability
             let visit_member = |attributes: Option<&raw_ast::AttributeList<'src>>,
                                 item_name: &str| {
-                let decl_is_main = name.starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
+                let decl_is_main = name.to_string().starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
                 let kind_str = if decl_is_main {
                     "member"
                 } else {

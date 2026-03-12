@@ -58,8 +58,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("\"4294967295\"".to_string());
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
-                    && let Some(decl) = self.raw_decls.get(type_full_name)
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                    && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone()))
                 {
                     if let Some(member_name) = maybe_member {
                         return match decl {
@@ -116,8 +116,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("numeric");
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
-                    && let Some(decl) = self.raw_decls.get(type_full_name)
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                    && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone()))
                 {
                     if maybe_member.is_some() {
                         return match decl {
@@ -185,8 +185,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some(u32::MAX as u64); // Approximation
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
-                    && let Some(decl) = self.raw_decls.get(type_full_name)
+                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                    && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone()))
                 {
                     if let Some(member_name) = maybe_member {
                         return match decl {
@@ -404,9 +404,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             Type::String(s) => !s.nullable,
             Type::Primitive(_) => true,
             Type::Identifier(i) => {
+                let id_str = i.identifier.as_ref().unwrap_or(&"".to_string()).clone();
                 let Some(decl_kind) = self
                     .decl_kinds
-                    .get(i.identifier.as_ref().unwrap_or(&"".to_string()))
+                    .get(&crate::names::FullyQualifiedName::from(id_str))
                 else {
                     return false;
                 };
@@ -518,7 +519,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                         let mut full_name = name.clone();
                         if let Some((type_full_name, maybe_member)) =
-                            self.resolve_constant_decl(&name)
+                            self.resolve_constant_decl(&name.to_string())
                         {
                             if let Some(member) = maybe_member {
                                 full_name = format!("{}.{}", type_full_name, member);
@@ -531,7 +532,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                         let decl_info = self
                             .raw_decls
-                            .get(&full_name)
+                            .get(&crate::names::FullyQualifiedName::from(full_name.clone()))
                             .or_else(|| self.get_underlying_decl(&name));
                         let mut c_layout_str = None;
                         let mut is_other = false;
@@ -559,7 +560,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             if !type_full_name.contains('/') {
                                 type_full_name = format!("{}/{}", self.library_name, type_name);
                             }
-                            if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                            if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone())) {
                                 match decl {
                                     RawDecl::Bits(b) => {
                                         if b.members.iter().any(|m| m.name.data() == member_name) {
@@ -758,7 +759,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let span = id.element.start_token.span;
                     let name = id.identifier.to_string();
                     let mut full_name = name.clone();
-                    if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name)
+                    if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
                     {
                         if let Some(member) = maybe_member {
                             full_name = format!("{}.{}", type_full_name, member);
@@ -770,7 +771,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     }
 
                     let mut valid = false;
-                    if let Some(RawDecl::Const(c)) = self.raw_decls.get(&full_name)
+                    if let Some(RawDecl::Const(c)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone()))
                         && c.type_ctor.element.start_token.span.data == "string"
                     {
                         valid = true;
@@ -793,7 +794,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             },
             Type::Identifier(idt) => {
                 let expected_name = idt.identifier.as_ref().unwrap_or(&"".to_string()).clone();
-                let Some(expected_decl_kind) = self.decl_kinds.get(&expected_name).cloned() else {
+                let Some(expected_decl_kind) = self.decl_kinds.get(&crate::names::FullyQualifiedName::from(expected_name.clone())).cloned() else {
                     return;
                 };
 
@@ -816,15 +817,15 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         let span = id.element.start_token.span;
                         let name = id.identifier.to_string();
                         let mut type_full_name = "".to_string();
-                        let mut member_name_str = "";
-                        if let Some((type_full, maybe_member)) = self.resolve_constant_decl(&name) {
+                        let mut member_name_str = "".to_string();
+                        if let Some((type_full, maybe_member)) = self.resolve_constant_decl(&name.to_string()) {
                             type_full_name = type_full.to_string();
                             if let Some(m) = maybe_member {
                                 member_name_str = m;
                             }
                         } else if let Some((t_name, m_name)) = name.rsplit_once('.') {
                             type_full_name = format!("{}/{}", self.library_name, t_name);
-                            member_name_str = m_name;
+                            member_name_str = m_name.to_string();
                         }
 
                         if !type_full_name.is_empty() {
@@ -836,7 +837,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 );
                             } else {
                                 let mut found_member = false;
-                                if let Some(decl) = self.raw_decls.get(&type_full_name) {
+                                if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone())) {
                                     match decl {
                                         RawDecl::Bits(b) => {
                                             found_member = b
@@ -884,7 +885,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                             let decl_info = self
                                 .raw_decls
-                                .get(&full_name)
+                                .get(&crate::names::FullyQualifiedName::from(full_name.clone()))
                                 .or_else(|| self.get_underlying_decl(&name));
                             let mut c_layout_str = None;
                             let mut err_reason = None;

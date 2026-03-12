@@ -196,11 +196,19 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
             }
 
             while let Some(lib) = worklist.pop_front() {
-                if used_libraries.insert(lib.clone())
-                    && let Some(deps) = reachability.get(&lib)
-                {
-                    for dep in deps {
-                        worklist.push_back(dep.clone());
+                if used_libraries.insert(lib.clone()) {
+                    let is_root =
+                        lib.split('.').count() == 1 && lib.split('.').next().is_some_and(|c| c == "fuchsia");
+
+                    let mut res_path = Vec::new();
+                    for component in lib.split('.') {
+                        res_path.push(component);
+                    }
+                    if let Some(deps) = reachability.get(&lib)
+                    {
+                        for dep in deps {
+                            worklist.push_back(dep.clone());
+                        }
                     }
                 }
             }
@@ -245,10 +253,7 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
         }
         let actual_platform = compiler
             .library_name
-            .split('.')
-            .next()
-            .unwrap_or(&compiler.library_name)
-            .to_string();
+            .components.first().cloned().unwrap_or_else(|| compiler.library_name.to_string());
         if actual_platform != expected_platform {
             return Err(format!(
                 "Library platform '{}' does not match the expected platform '{}'\n",

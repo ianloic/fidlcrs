@@ -19,7 +19,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
-        compiler.library_name = main_library_name.clone();
+        compiler.library_name = crate::names::LibraryName::from(main_library_name.clone());
 
         let mut all_library_attributes = Vec::new();
         let mut main_library_decl: Option<raw_ast::LibraryDeclaration> = None;
@@ -183,7 +183,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                  errors_to_emit: &mut Vec<(Error, SourceSpan<'src>, Vec<String>)>| {
                     if let Some((lib, _)) = name.rsplit_once('/') {
                         // We only check for collisions in the main library!
-                        if lib == compiler.library_name && !is_anonymous {
+                        if lib == compiler.library_name.to_string() && !is_anonymous {
                             let canon = crate::attribute_schema::canonicalize(local_decl_name);
                             let span = decl.element().span();
                             let site = span.position_str();
@@ -197,7 +197,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
                                 let is_versioned = decl.attributes().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
                                 let prev_full_name = format!("{}/{}", lib, prev_raw);
-                                let prev_is_versioned = compiler.raw_decls.get(&prev_full_name).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                                let prev_is_versioned = compiler.raw_decls.get(&crate::names::FullyQualifiedName::from(prev_full_name)).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
 
                                 if is_versioned
                                     && prev_is_versioned
@@ -251,7 +251,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             }
                         }
                     }
-                    compiler.raw_decls.insert(name, decl);
+                    compiler.raw_decls.insert(crate::names::FullyQualifiedName::from(name.to_string()), decl);
                 };
 
             for decl in &file.type_decls {

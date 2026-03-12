@@ -557,7 +557,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
 
         let mut all_names = Vec::new();
-        let keys: Vec<crate::names::OwnedQualifiedName> = self.raw_decls.keys().map(|x| x.clone()).collect();
+        let keys: Vec<crate::names::OwnedQualifiedName> = self.raw_decls.keys().cloned().collect();
         for k in &keys {
             all_names.push(k.to_string());
         }

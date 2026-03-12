@@ -373,7 +373,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             };
             decl_availability.insert(name.to_string(), avail);
         }
-        compiler.decl_availability = decl_availability.clone();
+        compiler.decl_availability = decl_availability.clone().into_iter().map(|(k, v)| (crate::names::OwnedQualifiedName::from(k), v)).collect();
 
         let mut any_decl_removed = false;
 

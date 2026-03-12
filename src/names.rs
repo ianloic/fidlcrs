@@ -267,9 +267,15 @@ impl<'a> From<&'a OwnedQualifiedName> for QualifiedName<'a> {
     }
 }
 
+impl std::borrow::Borrow<str> for OwnedLibraryName {
+    fn borrow(&self) -> &str {
+        &self.name
+    }
+}
+
 impl PartialEq<str> for LibraryName<'_> {
     fn eq(&self, other: &str) -> bool {
-        self.to_string() == other
+        *self == other
     }
 }
 
@@ -287,7 +293,7 @@ impl PartialEq<String> for LibraryName<'_> {
 
 impl PartialEq<str> for OwnedQualifiedName {
     fn eq(&self, other: &str) -> bool {
-        self.to_string() == other
+        *self == other
     }
 }
 
@@ -316,3 +322,9 @@ impl From<String> for OwnedQualifiedName {
 }
 
 
+
+impl AsRef<str> for OwnedQualifiedName {
+    fn as_ref(&self) -> &str {
+        &self.full_name
+    }
+}

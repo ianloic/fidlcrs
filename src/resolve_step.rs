@@ -29,6 +29,6 @@ impl<'node, 'src> Step<'node, 'src> for ResolveStep {
             };
             compiler.decl_kinds.insert(name.clone(), kind);
         }
-        compiler.sorted_names = compiler.topological_sort(true).into_iter().map(|n| crate::names::OwnedQualifiedName::from(n)).collect();
+        compiler.sorted_names = compiler.topological_sort(true).into_iter().map(crate::names::OwnedQualifiedName::from).collect();
     }
 }

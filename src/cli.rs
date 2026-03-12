@@ -197,7 +197,7 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
 
             while let Some(lib) = worklist.pop_front() {
                 if used_libraries.insert(lib.clone()) {
-                    let is_root =
+                    let _is_root =
                         lib.split('.').count() == 1 && lib.split('.').next().is_some_and(|c| c == "fuchsia");
 
                     let mut res_path = Vec::new();

@@ -94,61 +94,87 @@ impl QualifiedName {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct QualifiedName {
-    library: OwnedLibraryName,
-    declaration: String,
-    member: Option<String>,
+    full_name: String,
+    decl_start: usize,
+    member_start: Option<usize>,
 }
 
 impl QualifiedName {
     pub fn new(library: OwnedLibraryName, declaration: String, member: Option<String>) -> Self {
+        let mut full_name = String::new();
+        let lib_str = library.to_string();
+        if !lib_str.is_empty() {
+            full_name.push_str(&lib_str);
+            full_name.push('/');
+        }
+        let decl_start = full_name.len();
+        full_name.push_str(&declaration);
+
+        let member_start = if let Some(mem) = &member {
+            let start = full_name.len() + 1;
+            full_name.push('.');
+            full_name.push_str(mem);
+            Some(start)
+        } else {
+            None
+        };
+
         Self {
-            library,
-            declaration,
-            member,
+            full_name,
+            decl_start,
+            member_start,
         }
     }
 
     pub fn library(&self) -> LibraryName<'_> {
-        self.library.as_borrowed()
+        let lib_part = if self.decl_start > 0 {
+            &self.full_name[0..self.decl_start - 1]
+        } else {
+            ""
+        };
+        LibraryName::new(lib_part)
     }
 
     pub fn declaration(&self) -> &str {
-        &self.declaration
+        if let Some(m_start) = self.member_start {
+            &self.full_name[self.decl_start..m_start - 1]
+        } else {
+            &self.full_name[self.decl_start..]
+        }
     }
 
     pub fn member(&self) -> Option<&str> {
-        self.member.as_deref()
+        self.member_start.map(|idx| &self.full_name[idx..])
     }
 
-    /// Parses a string into a FullyQualifiedName.
+    /// Parses a string into a QualifiedName.
     /// Expected formats:
     /// - "library/Declaration"
     /// - "library/Declaration.member"
     pub fn parse(s: &str) -> Self {
-        let (lib_part, rest) = s.rsplit_once('/').unwrap_or(("", s));
-        let library = OwnedLibraryName::new(lib_part.to_string());
+        let full_name = s.to_string();
+        let slash_idx = full_name.rfind('/');
 
-        let (declaration, member) = if let Some((decl, mem)) = rest.split_once('.') {
-            (decl.to_string(), Some(mem.to_string()))
+        let decl_start = if let Some(idx) = slash_idx {
+            idx + 1
         } else {
-            (rest.to_string(), None)
+            0
         };
 
+        let dot_idx = full_name[decl_start..].find('.');
+        let member_start = dot_idx.map(|idx| decl_start + idx + 1);
+
         Self {
-            library,
-            declaration,
-            member,
+            full_name,
+            decl_start,
+            member_start,
         }
     }
 }
 
 impl fmt::Display for QualifiedName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}/{}", self.library, self.declaration)?;
-        if let Some(m) = &self.member {
-            write!(f, ".{}", m)?;
-        }
-        Ok(())
+        write!(f, "{}", self.full_name)
     }
 }
 

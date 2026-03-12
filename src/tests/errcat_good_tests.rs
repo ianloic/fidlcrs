@@ -915,11 +915,10 @@ fn good0117a() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0117b() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0117-b.test.fidl");
-    // library.UseLibraryFdf();
+    library.use_library_fdf();
     let _ = library.compile().expect("compilation failed");
 }
 
@@ -1347,11 +1346,10 @@ fn good0178() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0179() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0179.test.fidl");
-    // library.EnableFlag(ExperimentalFlag::kAllowNewTypes);
+    library.enable_flag("allow_new_types");
     let _ = library.compile().expect("compilation failed");
 }
 
@@ -1456,7 +1454,6 @@ fn good0203a() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0203b() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0203-b.test.fidl");
@@ -1473,7 +1470,6 @@ fn good0204() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0205a() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0205-a.test.fidl");
@@ -1490,7 +1486,6 @@ fn good0205b() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0205c() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0205-c.test.fidl");
@@ -1507,7 +1502,6 @@ fn good0206a() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0206b() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0206-b.test.fidl");
@@ -1585,7 +1579,6 @@ fn good0212b() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0213a() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0213-a.test.fidl");
@@ -1594,7 +1587,6 @@ fn good0213a() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0213b() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0213-b.test.fidl");
@@ -1643,7 +1635,6 @@ fn good0216b() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0217a() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0217-a.test.fidl");
@@ -1660,7 +1651,6 @@ fn good0217b() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0217c() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0217-c.test.fidl");
@@ -1685,7 +1675,6 @@ fn good0219a() {
 }
 
 #[test]
-#[ignore] // TODO: Fix missing compiler features
 fn good0219b() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0219-b.test.fidl");

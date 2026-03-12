@@ -197,7 +197,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
                                 let is_versioned = decl.attributes().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
                                 let prev_full_name = format!("{}/{}", lib, prev_raw);
-                                let prev_is_versioned = compiler.raw_decls.get(&crate::names::QualifiedName::from(prev_full_name)).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                                let prev_is_versioned = compiler.raw_decls.get::<str>(prev_full_name.as_ref()).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
 
                                 if is_versioned
                                     && prev_is_versioned
@@ -251,7 +251,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             }
                         }
                     }
-                    compiler.raw_decls.insert(crate::names::QualifiedName::from(name.to_string()), decl);
+                    compiler.raw_decls.insert(crate::names::OwnedQualifiedName::from(name.to_string()), decl);
                 };
 
             for decl in &file.type_decls {

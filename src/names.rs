@@ -87,20 +87,19 @@ impl<'a> From<&'a OwnedLibraryName> for LibraryName<'a> {
 }
 
 /// Represents a fully resolved name that unambiguously identifies a declaration or a member.
-impl QualifiedName {
+impl OwnedQualifiedName {
     pub fn as_string(&self) -> String {
         self.to_string()
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct QualifiedName {
+#[derive(Debug, Clone)]
+pub struct OwnedQualifiedName {
     full_name: String,
     decl_start: usize,
     member_start: Option<usize>,
 }
 
-impl QualifiedName {
-
+impl OwnedQualifiedName {
     pub fn library(&self) -> LibraryName<'_> {
         let lib_part = if self.decl_start > 0 {
             &self.full_name[0..self.decl_start - 1]
@@ -121,8 +120,16 @@ impl QualifiedName {
     pub fn member(&self) -> Option<&str> {
         self.member_start.map(|idx| &self.full_name[idx..])
     }
+    
+    pub fn as_borrowed(&self) -> QualifiedName<'_> {
+        QualifiedName {
+            full_name: &self.full_name,
+            decl_start: self.decl_start,
+            member_start: self.member_start,
+        }
+    }
 
-    /// Parses a string into a QualifiedName.
+    /// Parses a string into an OwnedQualifiedName.
     /// Expected formats:
     /// - "library/Declaration"
     /// - "library/Declaration.member"
@@ -147,9 +154,116 @@ impl QualifiedName {
     }
 }
 
-impl fmt::Display for QualifiedName {
+impl fmt::Display for OwnedQualifiedName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.full_name)
+    }
+}
+
+impl std::hash::Hash for OwnedQualifiedName {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.full_name.hash(state);
+    }
+}
+
+impl PartialEq for OwnedQualifiedName {
+    fn eq(&self, other: &Self) -> bool {
+        self.full_name == other.full_name
+    }
+}
+
+impl Eq for OwnedQualifiedName {}
+
+impl PartialOrd for OwnedQualifiedName {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OwnedQualifiedName {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.full_name.cmp(&other.full_name)
+    }
+}
+
+impl std::borrow::Borrow<str> for OwnedQualifiedName {
+    fn borrow(&self) -> &str {
+        &self.full_name
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct QualifiedName<'a> {
+    full_name: &'a str,
+    decl_start: usize,
+    member_start: Option<usize>,
+}
+
+impl<'a> QualifiedName<'a> {
+    pub fn library(&self) -> LibraryName<'a> {
+        let lib_part = if self.decl_start > 0 {
+            &self.full_name[0..self.decl_start - 1]
+        } else {
+            ""
+        };
+        LibraryName::new(lib_part)
+    }
+
+    pub fn declaration(&self) -> &'a str {
+        if let Some(m_start) = self.member_start {
+            &self.full_name[self.decl_start..m_start - 1]
+        } else {
+            &self.full_name[self.decl_start..]
+        }
+    }
+
+    pub fn member(&self) -> Option<&'a str> {
+        self.member_start.map(|idx| &self.full_name[idx..])
+    }
+
+    pub fn to_owned(&self) -> OwnedQualifiedName {
+        OwnedQualifiedName {
+            full_name: self.full_name.to_string(),
+            decl_start: self.decl_start,
+            member_start: self.member_start,
+        }
+    }
+
+    pub fn parse(s: &'a str) -> Self {
+        let slash_idx = s.rfind('/');
+
+        let decl_start = if let Some(idx) = slash_idx {
+            idx + 1
+        } else {
+            0
+        };
+
+        let dot_idx = s[decl_start..].find('.');
+        let member_start = dot_idx.map(|idx| decl_start + idx + 1);
+
+        Self {
+            full_name: s,
+            decl_start,
+            member_start,
+        }
+    }
+}
+
+impl<'a> fmt::Display for QualifiedName<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.full_name)
+    }
+}
+
+impl<'a> From<QualifiedName<'a>> for OwnedQualifiedName {
+    fn from(name: QualifiedName<'a>) -> Self {
+        name.to_owned()
+    }
+}
+
+impl<'a> From<&'a OwnedQualifiedName> for QualifiedName<'a> {
+    fn from(name: &'a OwnedQualifiedName) -> Self {
+        name.as_borrowed()
     }
 }
 
@@ -171,31 +285,31 @@ impl PartialEq<String> for LibraryName<'_> {
     }
 }
 
-impl PartialEq<str> for QualifiedName {
+impl PartialEq<str> for OwnedQualifiedName {
     fn eq(&self, other: &str) -> bool {
         self.to_string() == other
     }
 }
 
-impl PartialEq<&str> for QualifiedName {
+impl PartialEq<&str> for OwnedQualifiedName {
     fn eq(&self, other: &&str) -> bool {
         self.to_string() == *other
     }
 }
 
-impl PartialEq<String> for QualifiedName {
+impl PartialEq<String> for OwnedQualifiedName {
     fn eq(&self, other: &String) -> bool {
         self.to_string() == *other
     }
 }
 
-impl From<&str> for QualifiedName {
+impl From<&str> for OwnedQualifiedName {
     fn from(s: &str) -> Self {
         Self::parse(s)
     }
 }
 
-impl From<String> for QualifiedName {
+impl From<String> for OwnedQualifiedName {
     fn from(s: String) -> Self {
         Self::parse(&s)
     }

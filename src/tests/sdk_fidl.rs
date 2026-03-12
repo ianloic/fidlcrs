@@ -576,7 +576,6 @@ mod tests {
         "fuchsia.recovery.android",
         "fuchsia.sensors.types",
         "fuchsia.sensors",
-        "fuchsia.session.scene",
         "fuchsia.session.window",
         "fuchsia.session",
         "fuchsia.settings.policy",

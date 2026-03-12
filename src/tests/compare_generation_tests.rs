@@ -33,6 +33,7 @@ fn test_compare_generation() {
             self.experimental_flags.push(flag);
             self
         }
+        #[allow(dead_code)]
         fn available(mut self, avail: &'static str) -> Self {
             self.available = Some(avail);
             self

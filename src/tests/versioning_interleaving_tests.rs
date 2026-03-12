@@ -7,7 +7,8 @@ fn error0056() {
     let mut dep = TestLibrary::with_shared(&mut shared);
     dep.add_source_file(
         "dep.fidl",
-        "library dependent;
+        "@available(added=1)
+library dependent;
 @available(added=1)
 type Bar = struct {};",
     );
@@ -16,7 +17,8 @@ type Bar = struct {};",
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_source_file(
         "example.fidl",
-        "library example;
+        "@available(added=2)
+library example;
 using dependent;
 @available(added=2)
 type Foo = struct { b dependent.Bar; };",

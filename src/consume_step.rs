@@ -169,7 +169,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 .map(|l| l.path.to_string())
                 .unwrap_or_else(|| main_library_name.clone());
 
-            let mut insert_decl = |compiler: &mut Compiler<'node, 'src>,
+            let insert_decl = |compiler: &mut Compiler<'node, 'src>,
                                    canonical_names: &mut std::collections::HashMap<
                 String,
                 (String, String, String),
@@ -178,7 +178,8 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                    local_decl_name: &str,
                                    decl: RawDecl<'node, 'src>,
                                    decl_kind: &'static str,
-                                   is_anonymous: bool| {
+                                   is_anonymous: bool,
+                                   errors_to_emit: &mut Vec<(Error, SourceSpan<'src>, Vec<String>)>| {
                 if let Some((lib, _)) = name.rsplit_once('/') {
                     // We only check for collisions in the main library!
                     if lib == compiler.library_name && !is_anonymous {
@@ -259,6 +260,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Type(decl),
                     "type",
                     false,
+                    &mut errors_to_emit,
                 );
             }
 
@@ -273,6 +275,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Alias(decl),
                     "alias",
                     false,
+                    &mut errors_to_emit,
                 );
             }
 
@@ -287,6 +290,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Struct(decl),
                     "struct",
                     decl.name.is_none(),
+                    &mut errors_to_emit,
                 );
             }
 
@@ -301,6 +305,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Enum(decl),
                     "enum",
                     decl.name.is_none(),
+                    &mut errors_to_emit,
                 );
             }
 
@@ -315,6 +320,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Bits(decl),
                     "bits",
                     decl.name.is_none(),
+                    &mut errors_to_emit,
                 );
             }
 
@@ -329,6 +335,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Union(decl),
                     "union",
                     decl.name.is_none(),
+                    &mut errors_to_emit,
                 );
             }
 
@@ -343,6 +350,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Table(decl),
                     "table",
                     decl.name.is_none(),
+                    &mut errors_to_emit,
                 );
             }
 
@@ -357,6 +365,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Protocol(decl),
                     "protocol",
                     false,
+                    &mut errors_to_emit,
                 );
 
                 let protocol_context = NamingContext::create(decl.name.element.span());
@@ -398,6 +407,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             decl,
                             kind,
                             true,
+                            &mut errors_to_emit,
                         );
                     }
 
@@ -418,6 +428,27 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         },
                         _ => None,
                     };
+                    let is_method_flexible = method
+                        .modifiers
+                        .iter()
+                        .any(|m| m.element.span().data == "flexible");
+
+                    if method.has_request && method.has_response && !method.has_error {
+                        let has_complex_modifiers = method.modifiers.len() > 1
+                            || (method.modifiers.len() == 1
+                                && method.modifiers[0].attributes.is_some());
+                        if has_complex_modifiers {
+                            let span = method.modifiers.first().unwrap().element.span();
+                            errors_to_emit.push((
+                                Error::ErrCannotChangeMethodStrictness,
+                                unsafe {
+                                    std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span)
+                                },
+                                vec![],
+                            ));
+                        }
+                    }
+
                     if let Some(decl) = res_s {
                         let mut ctx = if !method.has_request && !method.has_error {
                             protocol_context.enter_event(method.name.element.span())
@@ -425,10 +456,6 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             protocol_context.enter_response(method.name.element.span())
                         };
 
-                        let is_method_flexible = method
-                            .modifiers
-                            .iter()
-                            .any(|m| m.element.span().data == "flexible");
                         if method.has_error
                             || (is_method_flexible && method.has_request && method.has_response)
                         {
@@ -462,6 +489,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             decl,
                             kind,
                             true,
+                            &mut errors_to_emit,
                         );
                     }
                 }
@@ -478,6 +506,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Service(decl),
                     "service",
                     false,
+                    &mut errors_to_emit,
                 );
             }
 
@@ -492,6 +521,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Resource(decl),
                     "resource_definition",
                     false,
+                    &mut errors_to_emit,
                 );
             }
 
@@ -506,6 +536,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     RawDecl::Const(decl),
                     "const",
                     false,
+                    &mut errors_to_emit,
                 );
             }
         }

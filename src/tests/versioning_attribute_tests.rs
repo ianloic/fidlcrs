@@ -1,4 +1,5 @@
 use super::test_library::TestLibrary;
+use crate::diagnostics::Error;
 
 #[test]
 
@@ -21,9 +22,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrDuplicateAttribute);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrDuplicateAttribute);
 }
 
 #[test]
@@ -47,9 +48,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrDuplicateAttribute);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrDuplicateAttribute);
 }
 
 #[test]
@@ -73,9 +74,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrDuplicateAttribute);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrDuplicateAttribute);
 }
 
 #[test]
@@ -163,9 +164,9 @@ library example;
 type Foo = @available(added=2) struct {};
 "#,
     );
-    // library.expect_fail(Error::ErrAttributeInsideTypeDeclaration);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrAttributeInsideTypeDeclaration);
 }
 
 #[test]
@@ -187,9 +188,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidVersion);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -237,9 +238,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidVersion);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -255,9 +256,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidVersion);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -337,9 +338,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidVersion);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -355,9 +356,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidVersion);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -373,10 +374,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrCouldNotResolveAttributeArg);
-    // library.expect_fail(Error::ErrConstantOverflowsType);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -392,10 +392,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrCouldNotResolveAttributeArg);
-    // library.expect_fail(Error::ErrConstantOverflowsType);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
 }
 
 #[test]
@@ -408,9 +407,9 @@ fn bad_no_arguments() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0147.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrAvailableMissingArguments);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrAvailableMissingArguments);
 }
 
 #[test]
@@ -423,9 +422,9 @@ fn bad_library_missing_added_only_removed() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-a.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrLibraryAvailabilityMissingAdded);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrLibraryAvailabilityMissingAdded);
 }
 
 #[test]
@@ -438,9 +437,9 @@ fn bad_library_missing_added_only_platform() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0150-b.test.fidl").unwrap()),
     );
     library.select_version("foo", "HEAD");
-    // library.expect_fail(Error::ErrLibraryAvailabilityMissingAdded);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrLibraryAvailabilityMissingAdded);
 }
 
 #[test]
@@ -453,9 +452,9 @@ fn bad_library_replaced() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0204.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrLibraryReplaced);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrLibraryReplaced);
 }
 
 #[test]
@@ -471,9 +470,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrCannotBeRenamed);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrCannotBeRenamed);
 }
 
 #[test]
@@ -486,9 +485,9 @@ fn bad_decl_renamed() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0211.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrCannotBeRenamed);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrCannotBeRenamed);
 }
 
 #[test]
@@ -548,9 +547,9 @@ fn bad_note_without_deprecation_removed_or_replaced() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0148.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrNoteWithoutDeprecationOrRemoval);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrNoteWithoutDeprecationOrRemoval);
 }
 
 #[test]
@@ -563,9 +562,9 @@ fn bad_renamed_without_replaced() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0212.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrRenamedWithoutReplacedOrRemoved);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrRenamedWithoutReplacedOrRemoved);
 }
 
 #[test]
@@ -578,9 +577,9 @@ fn bad_renamed_to_same_name() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0213.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrRenamedToSameName);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrRenamedToSameName);
 }
 
 #[test]
@@ -593,9 +592,9 @@ fn bad_removed_and_replaced() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0203.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrRemovedAndReplaced);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrRemovedAndReplaced);
 }
 
 #[test]
@@ -614,9 +613,9 @@ type Foo = struct {};
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrPlatformNotOnLibrary);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrPlatformNotOnLibrary);
 }
 
 #[test]
@@ -629,9 +628,9 @@ fn bad_invalid_argument_on_modifier() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0218.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrInvalidModifierAvailableArgument);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidModifierAvailableArgument);
 }
 
 #[test]
@@ -644,9 +643,9 @@ fn bad_strictness_two_way_method_without_error() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0219.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrCannotChangeMethodStrictness);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrCannotChangeMethodStrictness);
 }
 
 #[test]
@@ -659,9 +658,9 @@ fn bad_use_in_unversioned_library() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0151.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrMissingLibraryAvailability);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrMissingLibraryAvailability);
 }
 
 #[test]
@@ -680,9 +679,9 @@ fn bad_added_equals_removed() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-a.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -701,9 +700,9 @@ type Foo = struct {};
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -719,9 +718,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -740,9 +739,9 @@ type Foo = struct {};
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -774,9 +773,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -789,9 +788,9 @@ fn bad_deprecated_equals_removed() {
         &(std::fs::read_to_string("fidlc/tests/fidl/bad/fi-0154-b.test.fidl").unwrap()),
     );
     library.select_version("test", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -810,9 +809,9 @@ type Foo = struct {};
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -828,9 +827,9 @@ library example;
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }
 
 #[test]
@@ -849,7 +848,7 @@ type Foo = struct {};
 "#,
     );
     library.select_version("example", "HEAD");
-    // library.expect_fail(Error::ErrInvalidAvailabilityOrder);
-    let _ = library.compile();
-    // library.assert_diagnostics();
+    assert!(library.compile().is_err());
+    let errors = library.reporter().diagnostics();
+    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
 }

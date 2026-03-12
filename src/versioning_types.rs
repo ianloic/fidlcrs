@@ -62,7 +62,24 @@ impl Version {
             "NEXT" => Some(Self::NEXT),
             "HEAD" => Some(Self::HEAD),
             "LEGACY" => Some(Self::LEGACY),
-            _ => s.parse::<u32>().ok().and_then(Self::from_number),
+            _ => {
+                let parsed_val = if s.starts_with("0x") || s.starts_with("0X") {
+                    u32::from_str_radix(&s[2..], 16).ok()
+                } else if s.starts_with("0b") || s.starts_with("0B") {
+                    u32::from_str_radix(&s[2..], 2).ok()
+                } else if s.starts_with("0") && s.len() > 1 {
+                    u32::from_str_radix(&s[1..], 8).ok()
+                } else {
+                    s.parse::<u32>().ok()
+                };
+                parsed_val.and_then(|v| {
+                    if v > 0 && v < (1 << 31) || v == Self::NEXT.0 || v == Self::HEAD.0 {
+                        Some(Version(v))
+                    } else {
+                        None
+                    }
+                })
+            }
         }
     }
 

@@ -167,8 +167,32 @@ impl<'a> TestLibrary<'a> {
         use crate::tests::errcat::Errcat;
         let content = Errcat::get_fidl(path)
             .unwrap_or_else(|| panic!("failed to read errcat FIDL: {}", path));
-        self.source_files
-            .push(SourceFile::new(path.to_string(), content));
+
+        // Attempt to split into multiple files if there are `// something.fidl` comments
+        if content.contains("// ") && content.contains(".fidl") {
+            let mut current_name = String::new();
+            let mut current_content = String::new();
+            for line in content.lines() {
+                if line.starts_with("// ") && line.ends_with(".fidl") {
+                    if !current_name.is_empty() {
+                        self.source_files.push(SourceFile::new(current_name.clone(), current_content.clone()));
+                    }
+                    current_content.clear();
+                    current_name = line.strip_prefix("// ").unwrap().to_string();
+                } else {
+                    current_content.push_str(line);
+                    current_content.push('\n');
+                }
+            }
+            if !current_name.is_empty() {
+                self.source_files.push(SourceFile::new(current_name, current_content));
+            } else {
+                self.source_files.push(SourceFile::new(path.to_string(), content));
+            }
+        } else {
+            self.source_files
+                .push(SourceFile::new(path.to_string(), content));
+        }
     }
 
     pub fn use_library_zx(&mut self) {

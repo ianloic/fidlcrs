@@ -5281,7 +5281,7 @@ protocol Child {
     let child_root = child_library.compile().expect("child compiled");
 
     use crate::tests::test_library::LookupHelpers;
-    let child_decl = child_root
+    let _child_decl = child_root
         .lookup_protocol("child/Child")
         .expect("found Child protocol");
     // just check it compiles successfully, asserting method counts

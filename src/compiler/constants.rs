@@ -59,7 +59,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
-                    && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone()))
+                    && let Some(decl) = self.raw_decls.get(&crate::names::QualifiedName::from(type_full_name.clone()))
                 {
                     if let Some(member_name) = maybe_member {
                         return match decl {
@@ -117,7 +117,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
-                    && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone()))
+                    && let Some(decl) = self.raw_decls.get(&crate::names::QualifiedName::from(type_full_name.clone()))
                 {
                     if maybe_member.is_some() {
                         return match decl {
@@ -186,7 +186,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
-                    && let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone()))
+                    && let Some(decl) = self.raw_decls.get(&crate::names::QualifiedName::from(type_full_name.clone()))
                 {
                     if let Some(member_name) = maybe_member {
                         return match decl {
@@ -407,7 +407,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let id_str = i.identifier.as_ref().unwrap_or(&"".to_string()).clone();
                 let Some(decl_kind) = self
                     .decl_kinds
-                    .get(&crate::names::FullyQualifiedName::from(id_str))
+                    .get(&crate::names::QualifiedName::from(id_str))
                 else {
                     return false;
                 };
@@ -532,7 +532,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                         let decl_info = self
                             .raw_decls
-                            .get(&crate::names::FullyQualifiedName::from(full_name.clone()))
+                            .get(&crate::names::QualifiedName::from(full_name.clone()))
                             .or_else(|| self.get_underlying_decl(&name));
                         let mut c_layout_str = None;
                         let mut is_other = false;
@@ -560,7 +560,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             if !type_full_name.contains('/') {
                                 type_full_name = format!("{}/{}", self.library_name, type_name);
                             }
-                            if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone())) {
+                            if let Some(decl) = self.raw_decls.get(&crate::names::QualifiedName::from(type_full_name.clone())) {
                                 match decl {
                                     RawDecl::Bits(b) => {
                                         if b.members.iter().any(|m| m.name.data() == member_name) {
@@ -771,7 +771,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     }
 
                     let mut valid = false;
-                    if let Some(RawDecl::Const(c)) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(full_name.clone()))
+                    if let Some(RawDecl::Const(c)) = self.raw_decls.get(&crate::names::QualifiedName::from(full_name.clone()))
                         && c.type_ctor.element.start_token.span.data == "string"
                     {
                         valid = true;
@@ -794,7 +794,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             },
             Type::Identifier(idt) => {
                 let expected_name = idt.identifier.as_ref().unwrap_or(&"".to_string()).clone();
-                let Some(expected_decl_kind) = self.decl_kinds.get(&crate::names::FullyQualifiedName::from(expected_name.clone())).cloned() else {
+                let Some(expected_decl_kind) = self.decl_kinds.get(&crate::names::QualifiedName::from(expected_name.clone())).cloned() else {
                     return;
                 };
 
@@ -837,7 +837,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 );
                             } else {
                                 let mut found_member = false;
-                                if let Some(decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(type_full_name.clone())) {
+                                if let Some(decl) = self.raw_decls.get(&crate::names::QualifiedName::from(type_full_name.clone())) {
                                     match decl {
                                         RawDecl::Bits(b) => {
                                             found_member = b
@@ -885,7 +885,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                             let decl_info = self
                                 .raw_decls
-                                .get(&crate::names::FullyQualifiedName::from(full_name.clone()))
+                                .get(&crate::names::QualifiedName::from(full_name.clone()))
                                 .or_else(|| self.get_underlying_decl(&name));
                             let mut c_layout_str = None;
                             let mut err_reason = None;

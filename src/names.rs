@@ -41,19 +41,19 @@ impl From<&str> for LibraryName {
 }
 
 /// Represents a fully resolved name that unambiguously identifies a declaration or a member.
-impl FullyQualifiedName {
+impl QualifiedName {
     pub fn as_string(&self) -> String {
         self.to_string()
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct FullyQualifiedName {
+pub struct QualifiedName {
     library: LibraryName,
     declaration: String,
     member: Option<String>,
 }
 
-impl FullyQualifiedName {
+impl QualifiedName {
     pub fn new(library: LibraryName, declaration: String, member: Option<String>) -> Self {
         Self {
             library,
@@ -96,7 +96,7 @@ impl FullyQualifiedName {
     }
 }
 
-impl fmt::Display for FullyQualifiedName {
+impl fmt::Display for QualifiedName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}/{}", self.library, self.declaration)?;
         if let Some(m) = &self.member {
@@ -124,31 +124,31 @@ impl PartialEq<String> for LibraryName {
     }
 }
 
-impl PartialEq<str> for FullyQualifiedName {
+impl PartialEq<str> for QualifiedName {
     fn eq(&self, other: &str) -> bool {
         self.to_string() == other
     }
 }
 
-impl PartialEq<&str> for FullyQualifiedName {
+impl PartialEq<&str> for QualifiedName {
     fn eq(&self, other: &&str) -> bool {
         self.to_string() == *other
     }
 }
 
-impl PartialEq<String> for FullyQualifiedName {
+impl PartialEq<String> for QualifiedName {
     fn eq(&self, other: &String) -> bool {
         self.to_string() == *other
     }
 }
 
-impl From<&str> for FullyQualifiedName {
+impl From<&str> for QualifiedName {
     fn from(s: &str) -> Self {
         Self::parse(s)
     }
 }
 
-impl From<String> for FullyQualifiedName {
+impl From<String> for QualifiedName {
     fn from(s: String) -> Self {
         Self::parse(&s)
     }

@@ -48,9 +48,9 @@ impl FullyQualifiedName {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct FullyQualifiedName {
-    pub library: LibraryName,
-    pub declaration: String,
-    pub member: Option<String>,
+    library: LibraryName,
+    declaration: String,
+    member: Option<String>,
 }
 
 impl FullyQualifiedName {
@@ -60,6 +60,18 @@ impl FullyQualifiedName {
             declaration,
             member,
         }
+    }
+
+    pub fn library(&self) -> &LibraryName {
+        &self.library
+    }
+
+    pub fn declaration(&self) -> &str {
+        &self.declaration
+    }
+
+    pub fn member(&self) -> Option<&str> {
+        self.member.as_deref()
     }
 
     /// Parses a string into a FullyQualifiedName.

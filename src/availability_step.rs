@@ -351,7 +351,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             // What if we don't compile availability for dependencies?
             // Actually, we must. But we don't have their lib_avail so they might fail if they inherit.
             // unbounded() allows them to pass inherit.
-            let item_name = name.declaration.as_str();
+            let item_name = name.declaration();
             let avail = if is_main {
                 Self::extract_availability(
                     compiler,

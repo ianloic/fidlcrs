@@ -150,10 +150,10 @@ protocol at {
     );
     let root = library.compile().expect("compilation failed");
 
-    let _proto = root
+    let proto = root
         .lookup_protocol("not.important/at")
         .expect("Protocol not found");
-    // TODO: Need actual expected ordinal hash check here, just compiling for now!
+    assert_eq!(proto.methods[0].ordinal, 4257738365359108720);
 }
 
 #[test]

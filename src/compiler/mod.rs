@@ -3,6 +3,7 @@ use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
 use crate::flat_ast::*;
 use crate::json_generator;
+use crate::names::{OwnedLibraryName, OwnedQualifiedName};
 use crate::raw_ast;
 use crate::reporter::Reporter;
 use crate::resolve_step::ResolveStep;
@@ -11,7 +12,6 @@ use crate::step::Step;
 use indexmap::IndexMap;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use crate::names::{OwnedQualifiedName, OwnedLibraryName};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeclKind {
@@ -84,12 +84,7 @@ impl<'src> CanonicalNames<'src> {
             if is_versioned && prev.is_versioned {
                 Ok(())
             } else {
-                Err((
-                    prev.raw == raw_name,
-                    prev.raw.clone(),
-                    prev.kind,
-                    prev.site,
-                ))
+                Err((prev.raw == raw_name, prev.raw.clone(), prev.kind, prev.site))
             }
         } else {
             self.names.insert(
@@ -344,20 +339,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-    pub fn resolve_constant_decl<'a>(
-        &'a self,
-        name: &'a str,
-    ) -> Option<(String, Option<String>)> {
+    pub fn resolve_constant_decl<'a>(&'a self, name: &'a str) -> Option<(String, Option<String>)> {
         // returns (full_decl_name, maybe_member_name)
         let mut full_name = name.to_string();
         if !full_name.contains('/') {
             full_name = format!("{}/{}", self.library_name, name);
         }
         if self.raw_decls.contains_key::<str>(full_name.as_ref()) {
-            return Some((
-                full_name,
-                None,
-            ));
+            return Some((full_name, None));
         }
 
         if let Some((type_name, member_name)) = name.rsplit_once('.') {
@@ -374,34 +363,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .insert(crate::names::OwnedLibraryName::new(lib_prefix.to_string()));
                         actual_lib = import.using_path.to_string();
                     }
-                    let dep_fqn = crate::names::OwnedLibraryName::new(actual_lib).with_declaration(rest);
+                    let dep_fqn =
+                        crate::names::OwnedLibraryName::new(actual_lib).with_declaration(rest);
                     if self.raw_decls.contains_key(&dep_fqn) {
                         type_full_name = dep_fqn.as_string();
                     }
                 } else if let Some(import) = self.library_imports.get(type_name) {
-                    self.used_imports.borrow_mut().insert(crate::names::OwnedLibraryName::new(type_name.to_string()));
-                    let dep_fqn = crate::names::OwnedLibraryName::new(import.using_path.to_string()).with_declaration(member_name);
+                    self.used_imports
+                        .borrow_mut()
+                        .insert(crate::names::OwnedLibraryName::new(type_name.to_string()));
+                    let dep_fqn =
+                        crate::names::OwnedLibraryName::new(import.using_path.to_string())
+                            .with_declaration(member_name);
                     if self.raw_decls.contains_key(&dep_fqn) {
-                        return Some((
-                            dep_fqn.as_string(),
-                            None,
-                        ));
+                        return Some((dep_fqn.as_string(), None));
                     }
                 }
             }
             if self.raw_decls.contains_key::<str>(type_full_name.as_ref()) {
-                return Some((
-                    type_full_name,
-                    Some(member_name.to_string()),
-                ));
+                return Some((type_full_name, Some(member_name.to_string())));
             }
 
-            let imported_name = crate::names::OwnedLibraryName::new(type_name.to_string()).with_declaration(member_name);
+            let imported_name = crate::names::OwnedLibraryName::new(type_name.to_string())
+                .with_declaration(member_name);
             if self.raw_decls.contains_key(&imported_name) {
-                return Some((
-                    imported_name.as_string(),
-                    None,
-                ));
+                return Some((imported_name.as_string(), None));
             }
         }
         None
@@ -574,7 +560,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut used_deps = HashSet::new();
 
-        fn extract_deps_from_type(ty: &Type, deps: &mut HashSet<crate::names::OwnedLibraryName>, compiler: &Compiler) {
+        fn extract_deps_from_type(
+            ty: &Type,
+            deps: &mut HashSet<crate::names::OwnedLibraryName>,
+            compiler: &Compiler,
+        ) {
             let identifier = ty.identifier();
             let mut target_id = identifier.as_deref();
             if let Some(alias) = &ty.experimental_maybe_from_alias {
@@ -1278,7 +1268,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if n.contains('.') {
                     n = n.replace('.', "/");
                 } else if !n.contains('/') {
-                    let full = crate::names::OwnedLibraryName::new(library_name.to_string()).with_declaration(&n);
+                    let full = crate::names::OwnedLibraryName::new(library_name.to_string())
+                        .with_declaration(&n);
                     if self.declarations.contains_key::<str>(full.as_ref())
                         || self.decl_kinds.contains_key(&full)
                         || self.shapes.contains_key::<str>(n.as_str())
@@ -1394,7 +1385,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
     pub fn compile_decl_by_name(&mut self, name: &str) {
-        if self.compiled_decls.contains::<str>(name) || self.compiling_shapes.contains::<str>(name) {
+        if self.compiled_decls.contains::<str>(name) || self.compiling_shapes.contains::<str>(name)
+        {
             return;
         }
 
@@ -1421,7 +1413,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
             return;
         };
 
-        self.compiling_shapes.insert(crate::names::OwnedQualifiedName::from(name.to_string()));
+        self.compiling_shapes
+            .insert(crate::names::OwnedQualifiedName::from(name.to_string()));
 
         let mut parts = name.splitn(2, '/');
         let library_name = parts.next().unwrap_or("unknown").to_string();
@@ -1680,7 +1673,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         if !is_main_library {
-            let kind = self.decl_kinds.get::<str>(name.as_ref()).cloned().unwrap_or("unknown");
+            let kind = self
+                .decl_kinds
+                .get::<str>(name.as_ref())
+                .cloned()
+                .unwrap_or("unknown");
             let mut obj = serde_json::Map::new();
             obj.insert(
                 "kind".to_string(),
@@ -1709,7 +1706,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         self.compiling_shapes.remove::<str>(name.as_ref());
-        self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(name.to_string()));
+        self.compiled_decls
+            .insert(crate::names::OwnedQualifiedName::from(name.to_string()));
 
         if is_main_library {
             self.declaration_order.push(name.to_string());
@@ -1730,7 +1728,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let kind_str = kind.to_string();
             let prev_kind_str = prev_kind.to_string();
             let prev_site_str = prev_site.to_string();
-            
+
             if is_exact {
                 self.reporter.fail(
                     Error::ErrNameCollision,
@@ -1819,11 +1817,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 let mut full_name = current.clone();
                 if !full_name.contains('/') {
-                    let fqn = crate::names::OwnedLibraryName::new(library_name.to_string()).with_declaration(&current);
+                    let fqn = crate::names::OwnedLibraryName::new(library_name.to_string())
+                        .with_declaration(&current);
                     if self.raw_decls.contains_key(&fqn) {
                         full_name = fqn.as_string();
                     } else if let Some((lib, name)) = current.rsplit_once('.') {
-                        let dep_fqn = crate::names::OwnedLibraryName::new(lib.to_string()).with_declaration(name);
+                        let dep_fqn = crate::names::OwnedLibraryName::new(lib.to_string())
+                            .with_declaration(name);
                         if self.raw_decls.contains_key(&dep_fqn) {
                             full_name = dep_fqn.as_string();
                         } else {
@@ -1895,7 +1895,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 name_str.clone(),
                 DeclKind::EnumValue,
                 member.name.element.span(),
-                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                member.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                }),
             );
 
             if let Some(eval_val) = self.eval_constant_value(&member.value) {
@@ -2091,11 +2097,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     let mut full_name = current.clone();
                     if !full_name.contains('/') && !self.shapes.contains_key::<str>(&current) {
-                        let fqn = crate::names::OwnedLibraryName::new(library_name.to_string()).with_declaration(&current);
+                        let fqn = crate::names::OwnedLibraryName::new(library_name.to_string())
+                            .with_declaration(&current);
                         if self.raw_decls.contains_key(&fqn) {
                             full_name = fqn.as_string();
                         } else if let Some((lib, name)) = current.rsplit_once('.') {
-                            let dep_fqn = crate::names::OwnedLibraryName::new(lib.to_string()).with_declaration(name);
+                            let dep_fqn = crate::names::OwnedLibraryName::new(lib.to_string())
+                                .with_declaration(name);
                             if self.raw_decls.contains_key(&dep_fqn) {
                                 full_name = dep_fqn.as_string();
                             } else {
@@ -2105,7 +2113,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             full_name = fqn.as_string();
                         }
                     }
-                    if let Some(RawDecl::Alias(alias)) = self.raw_decls.get::<str>(full_name.as_ref())
+                    if let Some(RawDecl::Alias(alias)) =
+                        self.raw_decls.get::<str>(full_name.as_ref())
                         && let raw_ast::LayoutParameter::Identifier(ref inner_id) =
                             alias.type_ctor.layout
                     {
@@ -2165,7 +2174,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 name_str.clone(),
                 DeclKind::Member,
                 member.name.element.span(),
-                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                member.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                }),
             );
 
             // Calculate mask and validate value
@@ -2280,8 +2295,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let subtype = subtype_name.parse().unwrap_or(PrimitiveSubtype::Uint32);
         let primitive = Type::primitive(subtype);
 
-        self.shapes
-            .insert(crate::names::OwnedQualifiedName::from(full_name.clone()), primitive.type_shape.clone());
+        self.shapes.insert(
+            crate::names::OwnedQualifiedName::from(full_name.clone()),
+            primitive.type_shape.clone(),
+        );
 
         BitsDeclaration {
             name: full_name,
@@ -2383,7 +2400,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some(prev) = members.iter().find(|m: &&TableMember| m.ordinal == ordinal)
                 && ordinal != 0
             {
-                let is_versioned = member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                let is_versioned = member.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                });
                 let prev_versioned = prev.maybe_attributes.iter().any(|a| a.name == "available");
                 if !(is_versioned && prev_versioned) {
                     let location_str = format!(
@@ -2407,7 +2430,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     name_str.clone(),
                     DeclKind::TableField,
                     member.name.as_ref().unwrap().element.span(),
-                    member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                    member.attributes.as_ref().is_some_and(|attrs| {
+                        attrs.attributes.iter().any(|a| {
+                            a.name.data() == "available"
+                                || a.provenance
+                                    == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                        })
+                    }),
                 );
                 let ctx = naming_context.clone().unwrap_or_else(|| {
                     NamingContext::create(
@@ -2436,10 +2465,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
                 }
                 if ordinal == 64 {
-                    let is_table = if let Some(decl) = self
-                        .raw_decls
-                        .get(&crate::names::OwnedQualifiedName::from(type_obj.identifier().as_deref().unwrap_or("").to_string()))
-                    {
+                    let is_table = if let Some(decl) =
+                        self.raw_decls.get(&crate::names::OwnedQualifiedName::from(
+                            type_obj.identifier().as_deref().unwrap_or("").to_string(),
+                        )) {
                         match decl {
                             RawDecl::Table(_) => true,
                             RawDecl::Type(t) => matches!(t.layout, raw_ast::Layout::Table(_)),
@@ -2565,7 +2594,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             type_shape.max_handles = u32::MAX;
         }
 
-        self.shapes.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), type_shape.clone());
+        self.shapes.insert(
+            crate::names::OwnedQualifiedName::from(full_name.clone()),
+            type_shape.clone(),
+        );
 
         TableDeclaration {
             name: full_name,
@@ -2652,7 +2684,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if let Some(prev) = members.iter().find(|m: &&UnionMember| m.ordinal == ordinal)
                 && ordinal != 0
             {
-                let is_versioned = member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                let is_versioned = member.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                });
                 let prev_versioned = prev.maybe_attributes.iter().any(|a| a.name == "available");
                 if !(is_versioned && prev_versioned) {
                     let location_str = format!(
@@ -2676,7 +2714,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     member_name.to_string(),
                     DeclKind::UnionMember,
                     n_name.element.span(),
-                    member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                    member.attributes.as_ref().is_some_and(|attrs| {
+                        attrs.attributes.iter().any(|a| {
+                            a.name.data() == "available"
+                                || a.provenance
+                                    == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                        })
+                    }),
                 );
             }
 
@@ -2896,7 +2940,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             type_shape.max_handles = u32::MAX;
         }
 
-        self.shapes.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), type_shape.clone());
+        self.shapes.insert(
+            crate::names::OwnedQualifiedName::from(full_name.clone()),
+            type_shape.clone(),
+        );
 
         UnionDeclaration {
             name: full_name,
@@ -2962,7 +3009,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 member_name.to_string(),
                 DeclKind::StructMember,
                 member.name.element.span(),
-                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                member.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                }),
             );
 
             let ctx = naming_context.clone().unwrap_or_else(|| {
@@ -3098,7 +3151,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         };
 
         // Register shape
-        self.shapes.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), type_shape.clone());
+        self.shapes.insert(
+            crate::names::OwnedQualifiedName::from(full_name.clone()),
+            type_shape.clone(),
+        );
 
         let location = if let Some(elem) = name_element {
             self.get_location(elem)
@@ -3158,12 +3214,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     let mut local_lib_name = parts.join(".");
                     if library_name == self.library_name.to_string() {
-                        if let Some(import) = self.library_imports.get::<str>(local_lib_name.as_str()) {
-                            self.used_imports
-                                .borrow_mut()
-                                .insert(crate::names::OwnedLibraryName::new(local_lib_name.clone()));
+                        if let Some(import) =
+                            self.library_imports.get::<str>(local_lib_name.as_str())
+                        {
+                            self.used_imports.borrow_mut().insert(
+                                crate::names::OwnedLibraryName::new(local_lib_name.clone()),
+                            );
                             local_lib_name = import.using_path.to_string();
-                        } else if local_lib_name != self.library_name.to_string() && local_lib_name != "fidl" {
+                        } else if local_lib_name != self.library_name.to_string()
+                            && local_lib_name != "fidl"
+                        {
                             let span_safe = unsafe {
                                 std::mem::transmute::<
                                     crate::source_span::SourceSpan<'_>,
@@ -3434,7 +3494,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                             );
                             self.struct_declarations.push(compiled);
-                            self.raw_decls.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), RawDecl::Struct(s));
+                            self.raw_decls.insert(
+                                crate::names::OwnedQualifiedName::from(full_name.clone()),
+                                RawDecl::Struct(s),
+                            );
                         }
                         raw_ast::Layout::Enum(e) => {
                             let compiled = self.compile_enum(
@@ -3446,7 +3509,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             self.enum_declarations.push(compiled);
-                            self.raw_decls.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), RawDecl::Enum(e));
+                            self.raw_decls.insert(
+                                crate::names::OwnedQualifiedName::from(full_name.clone()),
+                                RawDecl::Enum(e),
+                            );
                         }
                         raw_ast::Layout::Bits(b) => {
                             let compiled = self.compile_bits(
@@ -3458,7 +3524,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             self.bits_declarations.push(compiled);
-                            self.raw_decls.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), RawDecl::Bits(b));
+                            self.raw_decls.insert(
+                                crate::names::OwnedQualifiedName::from(full_name.clone()),
+                                RawDecl::Bits(b),
+                            );
                         }
                         raw_ast::Layout::Union(u) => {
                             let compiled = self.compile_union(
@@ -3474,7 +3543,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             } else {
                                 self.union_declarations.push(compiled);
                             }
-                            self.raw_decls.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), RawDecl::Union(u));
+                            self.raw_decls.insert(
+                                crate::names::OwnedQualifiedName::from(full_name.clone()),
+                                RawDecl::Union(u),
+                            );
                         }
                         raw_ast::Layout::Table(t) => {
                             let compiled = self.compile_table(
@@ -3486,7 +3558,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             self.table_declarations.push(compiled);
-                            self.raw_decls.insert(crate::names::OwnedQualifiedName::from(full_name.clone()), RawDecl::Table(t));
+                            self.raw_decls.insert(
+                                crate::names::OwnedQualifiedName::from(full_name.clone()),
+                                RawDecl::Table(t),
+                            );
                         }
                         _ => {}
                     }
@@ -3497,7 +3572,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                     if library_name == self.library_name.to_string() {
                         self.declaration_order.push(full_name.clone());
-                        self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_name.clone()));
+                        self.compiled_decls
+                            .insert(crate::names::OwnedQualifiedName::from(full_name.clone()));
                     }
                 }
 
@@ -3561,7 +3637,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .strip_prefix("fidl/")
                 .unwrap_or(&resolved_name);
             let local_name = format!("{}/{}", library_name, bare);
-            self.raw_decls.contains_key::<str>(local_name.as_ref()) || self.raw_decls.contains_key::<str>(bare.as_ref())
+            self.raw_decls.contains_key::<str>(local_name.as_ref())
+                || self.raw_decls.contains_key::<str>(bare.as_ref())
         };
 
         match resolved_name.as_str() {
@@ -3819,9 +3896,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     | "client_end"
                                     | "server_end"
                             ) || self.raw_decls.contains_key::<str>(inner_name.as_ref())
-                                || self
-                                    .raw_decls
-                                    .contains_key(&crate::names::OwnedQualifiedName::from(format!("{}/{}", library_name, inner_name)))
+                                || self.raw_decls.contains_key(
+                                    &crate::names::OwnedQualifiedName::from(format!(
+                                        "{}/{}",
+                                        library_name, inner_name
+                                    )),
+                                )
                         }
                         _ => false,
                     };
@@ -3889,9 +3969,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some((lib_prefix, rest)) = proto_name.split_once('.') {
                             let mut actual_lib = lib_prefix.to_string();
                             if let Some(import) = self.library_imports.get(lib_prefix) {
-                                self.used_imports
-                                    .borrow_mut()
-                                    .insert(crate::names::OwnedLibraryName::new(lib_prefix.to_string()));
+                                self.used_imports.borrow_mut().insert(
+                                    crate::names::OwnedLibraryName::new(lib_prefix.to_string()),
+                                );
                                 actual_lib = import.using_path.to_string();
                             }
                             protocol = format!("{}/{}", actual_lib, rest);
@@ -3907,9 +3987,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if let Some((lib_prefix, rest)) = proto_name.split_once('.') {
                             let mut actual_lib = lib_prefix.to_string();
                             if let Some(import) = self.library_imports.get(lib_prefix) {
-                                self.used_imports
-                                    .borrow_mut()
-                                    .insert(crate::names::OwnedLibraryName::new(lib_prefix.to_string()));
+                                self.used_imports.borrow_mut().insert(
+                                    crate::names::OwnedLibraryName::new(lib_prefix.to_string()),
+                                );
                                 actual_lib = import.using_path.to_string();
                             }
                             protocol = format!("{}/{}", actual_lib, rest);
@@ -4097,7 +4177,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .collect();
 
                     let res_library_name = if full_name.contains('/') {
-                        crate::names::OwnedQualifiedName::parse(&full_name).library().to_string()
+                        crate::names::OwnedQualifiedName::parse(&full_name)
+                            .library()
+                            .to_string()
                     } else {
                         library_name.to_string()
                     };
@@ -4345,7 +4427,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                let is_resource = if let Some(decl) = self.raw_decls.get::<str>(full_name.as_ref()) {
+                let is_resource = if let Some(decl) = self.raw_decls.get::<str>(full_name.as_ref())
+                {
                     match decl {
                         RawDecl::Struct(s) => s
                             .modifiers
@@ -4735,7 +4818,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 prop_name.clone(),
                 DeclKind::ResourceProperty,
                 prop.name.element.span(),
-                prop.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                prop.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                }),
             );
 
             let prop_ctx = NamingContext::create(name).enter_member(prop_name.as_str());
@@ -4789,11 +4878,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         is_uint32_prop = true;
                                         break;
                                     }
-                                    curr = if next.contains('/') || self.shapes.contains_key::<str>(&next)
+                                    curr = if next.contains('/')
+                                        || self.shapes.contains_key::<str>(&next)
                                     {
                                         next
                                     } else {
-                                        let curr_fqn = crate::names::OwnedQualifiedName::parse(&curr);
+                                        let curr_fqn =
+                                            crate::names::OwnedQualifiedName::parse(&curr);
                                         format!("{}/{}", curr_fqn.library(), next)
                                     };
                                 }
@@ -4862,7 +4953,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 member_name.clone(),
                 DeclKind::ServiceMember,
                 member.name.element.span(),
-                member.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                member.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                }),
             );
             let attributes = self.compile_attribute_list(&member.attributes);
 
@@ -5019,7 +5116,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 {
                     composed_has_no_resource =
                         p.maybe_attributes.iter().any(|a| a.name == "no_resource");
-                } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get::<str>(full_composed_name.as_ref()) {
+                } else if let Some(RawDecl::Protocol(p)) =
+                    self.raw_decls.get::<str>(full_composed_name.as_ref())
+                {
                     if let Some(attrs) = p.attributes.as_ref() {
                         composed_has_no_resource = attrs
                             .attributes
@@ -5052,7 +5151,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             {
                 composed_openness = p.openness.as_str();
                 parent_methods = p.methods.clone();
-            } else if let Some(RawDecl::Protocol(p)) = self.raw_decls.get::<str>(full_composed_name.as_ref()) {
+            } else if let Some(RawDecl::Protocol(p)) =
+                self.raw_decls.get::<str>(full_composed_name.as_ref())
+            {
                 if p.modifiers.iter().any(|m| {
                     m.subkind == TokenSubkind::Ajar && self.is_active(m.attributes.as_ref())
                 }) {
@@ -5182,7 +5283,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 m.name.data().to_string(),
                 DeclKind::Method,
                 m.name.element.span(),
-                m.attributes.as_ref().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability)),
+                m.attributes.as_ref().is_some_and(|attrs| {
+                    attrs.attributes.iter().any(|a| {
+                        a.name.data() == "available"
+                            || a.provenance
+                                == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    })
+                }),
             );
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter
@@ -5246,7 +5353,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
 
                         let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         } else {
                             let compiled = self.compile_struct(
                                 &synth_name,
@@ -5259,11 +5369,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if library_name == self.library_name.to_string() {
                                 self.struct_declarations.push(compiled);
                                 self.declaration_order.push(full_synth.clone());
-                                self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                                self.compiled_decls
+                                    .insert(crate::names::OwnedQualifiedName::from(
+                                        full_synth.clone(),
+                                    ));
                             } else {
                                 self.external_struct_declarations.push(compiled);
                             }
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         };
                         Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
@@ -5274,7 +5390,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
 
                         let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         } else {
                             let compiled = self.compile_table(
                                 &synth_name,
@@ -5287,9 +5406,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.table_declarations.push(compiled);
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
-                                self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                                self.compiled_decls
+                                    .insert(crate::names::OwnedQualifiedName::from(
+                                        full_synth.clone(),
+                                    ));
                             }
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         };
                         Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
@@ -5300,7 +5425,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
 
                         let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         } else {
                             let compiled = self.compile_union(
                                 &synth_name,
@@ -5317,9 +5445,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     self.union_declarations.push(compiled);
                                 }
                                 self.declaration_order.push(full_synth.clone());
-                                self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                                self.compiled_decls
+                                    .insert(crate::names::OwnedQualifiedName::from(
+                                        full_synth.clone(),
+                                    ));
                             }
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         };
                         Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
@@ -5431,7 +5565,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
 
                         let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         } else {
                             let compiled = self.compile_struct(
                                 &synth_name,
@@ -5444,9 +5581,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.struct_declarations.push(compiled);
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
-                                self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                                self.compiled_decls
+                                    .insert(crate::names::OwnedQualifiedName::from(
+                                        full_synth.clone(),
+                                    ));
                             }
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         };
                         Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
@@ -5476,7 +5619,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
 
                         let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         } else {
                             let compiled = self.compile_table(
                                 &synth_name,
@@ -5489,9 +5635,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.table_declarations.push(compiled);
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
-                                self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                                self.compiled_decls
+                                    .insert(crate::names::OwnedQualifiedName::from(
+                                        full_synth.clone(),
+                                    ));
                             }
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         };
                         Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
@@ -5521,7 +5673,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let full_synth = format!("{}/{}", library_name, synth_name);
 
                         let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         } else {
                             let compiled = self.compile_union(
                                 &synth_name,
@@ -5538,9 +5693,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
-                                self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                                self.compiled_decls
+                                    .insert(crate::names::OwnedQualifiedName::from(
+                                        full_synth.clone(),
+                                    ));
                             }
-                            self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                            self.shapes
+                                .get::<str>(full_synth.as_str())
+                                .cloned()
+                                .unwrap()
                         };
                         Some(Type::identifier_type(Some(full_synth), false, shape, false))
                     }
@@ -5632,7 +5793,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let full_synth = format!("{}/{}", library_name, synth_name);
 
                     let shape = if self.compiled_decls.contains::<str>(full_synth.as_str()) {
-                        self.shapes.get::<str>(full_synth.as_str()).cloned().unwrap()
+                        self.shapes
+                            .get::<str>(full_synth.as_str())
+                            .cloned()
+                            .unwrap()
                     } else {
                         let shape = TypeShape {
                             inline_size: 1,
@@ -5673,9 +5837,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.struct_declarations.push(decl);
                         if library_name == self.library_name.to_string() {
                             self.declaration_order.push(full_synth.clone());
-                            self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                            self.compiled_decls
+                                .insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
                         }
-                        self.shapes.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()), shape.clone());
+                        self.shapes.insert(
+                            crate::names::OwnedQualifiedName::from(full_synth.clone()),
+                            shape.clone(),
+                        );
                         shape
                     };
                     let typ = Type::identifier_type(Some(full_synth.clone()), false, shape, false);
@@ -5804,7 +5972,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.union_declarations.push(union_decl);
                 if library_name == self.library_name.to_string() {
                     self.declaration_order.push(full_synth_union.clone());
-                    self.compiled_decls.insert(crate::names::OwnedQualifiedName::from(full_synth_union.clone()));
+                    self.compiled_decls
+                        .insert(crate::names::OwnedQualifiedName::from(
+                            full_synth_union.clone(),
+                        ));
                 }
 
                 Some(Type::identifier_type(

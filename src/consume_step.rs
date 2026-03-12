@@ -114,9 +114,10 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     // If multiple files import the same library with different aliases,
                     // we add them all; but our resolve_type is currently global.
                     // This is sufficient for the tests.
-                    compiler
-                        .library_imports
-                        .insert(crate::names::OwnedLibraryName::new(local_name.clone()), using_decl.clone());
+                    compiler.library_imports.insert(
+                        crate::names::OwnedLibraryName::new(local_name.clone()),
+                        using_decl.clone(),
+                    );
                 }
             }
             if let Some(decl) = &file.library_decl {
@@ -251,7 +252,10 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             }
                         }
                     }
-                    compiler.raw_decls.insert(crate::names::OwnedQualifiedName::from(name.to_string()), decl);
+                    compiler.raw_decls.insert(
+                        crate::names::OwnedQualifiedName::from(name.to_string()),
+                        decl,
+                    );
                 };
 
             for decl in &file.type_decls {
@@ -397,7 +401,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         let ctx = protocol_context.enter_request(method.name.element.span());
                         let synth_name = ctx.flattened_name();
                         let full_synth = format!("{}/{}", file_library_name, synth_name);
-                        compiler.anonymous_structs.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                        compiler
+                            .anonymous_structs
+                            .insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
                         let kind = match decl {
                             RawDecl::Struct(_) => "struct",
                             RawDecl::Table(_) => "table",
@@ -479,7 +485,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
 
                         let synth_name = ctx.flattened_name();
                         let full_synth = format!("{}/{}", file_library_name, synth_name);
-                        compiler.anonymous_structs.insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                        compiler
+                            .anonymous_structs
+                            .insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
                         let kind = match decl {
                             RawDecl::Struct(_) => "struct",
                             RawDecl::Table(_) => "table",

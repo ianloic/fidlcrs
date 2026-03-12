@@ -58,7 +58,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("\"4294967295\"".to_string());
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                if let Some((type_full_name, maybe_member)) =
+                    self.resolve_constant_decl(&name.to_string())
                     && let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref())
                 {
                     if let Some(member_name) = maybe_member {
@@ -116,7 +117,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some("numeric");
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                if let Some((type_full_name, maybe_member)) =
+                    self.resolve_constant_decl(&name.to_string())
                     && let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref())
                 {
                     if maybe_member.is_some() {
@@ -185,7 +187,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     return Some(u32::MAX as u64); // Approximation
                 }
 
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                if let Some((type_full_name, maybe_member)) =
+                    self.resolve_constant_decl(&name.to_string())
                     && let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref())
                 {
                     if let Some(member_name) = maybe_member {
@@ -405,10 +408,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             Type::Primitive(_) => true,
             Type::Identifier(i) => {
                 let id_str = i.identifier.as_ref().unwrap_or(&"".to_string()).clone();
-                let Some(decl_kind) = self
-                    .decl_kinds
-                    .get::<str>(id_str.as_ref())
-                else {
+                let Some(decl_kind) = self.decl_kinds.get::<str>(id_str.as_ref()) else {
                     return false;
                 };
                 *decl_kind == "enum" || *decl_kind == "bits"
@@ -759,7 +759,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let span = id.element.start_token.span;
                     let name = id.identifier.to_string();
                     let mut full_name = name.clone();
-                    if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&name.to_string())
+                    if let Some((type_full_name, maybe_member)) =
+                        self.resolve_constant_decl(&name.to_string())
                     {
                         if let Some(member) = maybe_member {
                             full_name = format!("{}.{}", type_full_name, member);
@@ -794,7 +795,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             },
             Type::Identifier(idt) => {
                 let expected_name = idt.identifier.as_ref().unwrap_or(&"".to_string()).clone();
-                let Some(expected_decl_kind) = self.decl_kinds.get::<str>(expected_name.as_ref()).cloned() else {
+                let Some(expected_decl_kind) =
+                    self.decl_kinds.get::<str>(expected_name.as_ref()).cloned()
+                else {
                     return;
                 };
 
@@ -818,7 +821,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         let name = id.identifier.to_string();
                         let mut type_full_name = "".to_string();
                         let mut member_name_str = "".to_string();
-                        if let Some((type_full, maybe_member)) = self.resolve_constant_decl(&name.to_string()) {
+                        if let Some((type_full, maybe_member)) =
+                            self.resolve_constant_decl(&name.to_string())
+                        {
                             type_full_name = type_full.to_string();
                             if let Some(m) = maybe_member {
                                 member_name_str = m;
@@ -837,7 +842,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 );
                             } else {
                                 let mut found_member = false;
-                                if let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref()) {
+                                if let Some(decl) =
+                                    self.raw_decls.get::<str>(type_full_name.as_ref())
+                                {
                                     match decl {
                                         RawDecl::Bits(b) => {
                                             found_member = b

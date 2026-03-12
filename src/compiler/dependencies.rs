@@ -481,8 +481,13 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             temp_path.push(name.to_string());
 
             if let Some(decl) = decls.get::<str>(name.as_ref()) {
-                let deps =
-                    get_dependencies(decl, &library_name.to_string(), decl_kinds, skip_optional, inline_names);
+                let deps = get_dependencies(
+                    decl,
+                    &library_name.to_string(),
+                    decl_kinds,
+                    skip_optional,
+                    inline_names,
+                );
                 // Sort dependencies by name to ensure deterministic order if needed, but they are in AST order
                 for dep in deps {
                     visit(
@@ -702,7 +707,13 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
 
         for name in &all_names {
-            visit(name, &deps, &mut visited, &mut order, &self.library_name.to_string());
+            visit(
+                name,
+                &deps,
+                &mut visited,
+                &mut order,
+                &self.library_name.to_string(),
+            );
         }
 
         self.declaration_order = order;

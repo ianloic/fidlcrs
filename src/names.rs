@@ -1,6 +1,5 @@
 use std::fmt;
 
-
 impl OwnedLibraryName {
     pub fn as_string(&self) -> String {
         self.to_string()
@@ -19,7 +18,7 @@ impl OwnedLibraryName {
     pub fn versioning_platform(&self) -> &str {
         self.name.split('.').next().unwrap_or(&self.name)
     }
-    
+
     pub fn as_borrowed(&self) -> LibraryName<'_> {
         LibraryName::new(&self.name)
     }
@@ -43,7 +42,9 @@ impl From<String> for OwnedLibraryName {
 
 impl From<&str> for OwnedLibraryName {
     fn from(name: &str) -> Self {
-        Self { name: name.to_string() }
+        Self {
+            name: name.to_string(),
+        }
     }
 }
 
@@ -80,7 +81,9 @@ impl<'a> From<&'a str> for LibraryName<'a> {
 
 impl<'a> From<LibraryName<'a>> for OwnedLibraryName {
     fn from(lib: LibraryName<'a>) -> Self {
-        Self { name: lib.name.to_string() }
+        Self {
+            name: lib.name.to_string(),
+        }
     }
 }
 
@@ -124,7 +127,7 @@ impl OwnedQualifiedName {
     pub fn member(&self) -> Option<&str> {
         self.member_start.map(|idx| &self.full_name[idx..])
     }
-    
+
     pub fn as_borrowed(&self) -> QualifiedName<'_> {
         QualifiedName {
             full_name: &self.full_name,
@@ -377,8 +380,6 @@ impl From<String> for OwnedQualifiedName {
     }
 }
 
-
-
 impl AsRef<str> for OwnedQualifiedName {
     fn as_ref(&self) -> &str {
         &self.full_name
@@ -432,7 +433,7 @@ mod tests {
         assert_eq!(fqn_mem.library().to_string(), "fuchsia.math");
         assert_eq!(fqn_mem.declaration(), "Matrix");
         assert_eq!(fqn_mem.member(), Some("m00"));
-        
+
         // Empty library
         let fqn_empty_lib = OwnedQualifiedName::new("", "Int32", None);
         assert_eq!(fqn_empty_lib.to_string(), "Int32");
@@ -478,7 +479,7 @@ mod tests {
     fn test_qualified_name_borrowed() {
         let owned = OwnedQualifiedName::parse("fuchsia.math/Matrix.m00");
         let borrowed = owned.as_borrowed();
-        
+
         assert_eq!(borrowed, "fuchsia.math/Matrix.m00");
         assert_eq!(borrowed.library(), "fuchsia.math");
         assert_eq!(borrowed.declaration(), "Matrix");
@@ -492,7 +493,7 @@ mod tests {
     fn test_qualified_name_parse() {
         let fqn_str = "fuchsia.math/Matrix.m00";
         let borrowed = QualifiedName::parse(fqn_str);
-        
+
         assert_eq!(borrowed, "fuchsia.math/Matrix.m00");
         assert_eq!(borrowed.library(), "fuchsia.math");
         assert_eq!(borrowed.declaration(), "Matrix");

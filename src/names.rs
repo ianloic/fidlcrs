@@ -347,6 +347,24 @@ impl PartialEq<String> for OwnedQualifiedName {
     }
 }
 
+impl PartialEq<str> for QualifiedName<'_> {
+    fn eq(&self, other: &str) -> bool {
+        *self == other
+    }
+}
+
+impl PartialEq<&str> for QualifiedName<'_> {
+    fn eq(&self, other: &&str) -> bool {
+        self.to_string() == *other
+    }
+}
+
+impl PartialEq<String> for QualifiedName<'_> {
+    fn eq(&self, other: &String) -> bool {
+        self.to_string() == *other
+    }
+}
+
 impl From<&str> for OwnedQualifiedName {
     fn from(s: &str) -> Self {
         Self::parse(s)
@@ -364,5 +382,143 @@ impl From<String> for OwnedQualifiedName {
 impl AsRef<str> for OwnedQualifiedName {
     fn as_ref(&self) -> &str {
         &self.full_name
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_owned_library_name() {
+        let lib = OwnedLibraryName::new("fuchsia.math".to_string());
+        assert_eq!(lib.as_string(), "fuchsia.math");
+        assert_eq!(lib.versioning_platform(), "fuchsia");
+        assert_eq!(lib.to_string(), "fuchsia.math");
+
+        let borrowed = lib.as_borrowed();
+        assert_eq!(borrowed.to_string(), "fuchsia.math");
+        assert_eq!(borrowed.versioning_platform(), "fuchsia");
+
+        let from_str: OwnedLibraryName = "fuchsia.io".into();
+        assert_eq!(from_str.to_string(), "fuchsia.io");
+
+        let fqn = lib.with_declaration("Matrix");
+        assert_eq!(fqn.to_string(), "fuchsia.math/Matrix");
+    }
+
+    #[test]
+    fn test_library_name() {
+        let lib = LibraryName::new("fuchsia.math");
+        assert_eq!(lib.to_string(), "fuchsia.math");
+        assert_eq!(lib.versioning_platform(), "fuchsia");
+
+        let owned = lib.to_owned();
+        assert_eq!(owned.to_string(), "fuchsia.math");
+    }
+
+    #[test]
+    fn test_owned_qualified_name_new() {
+        // Without member
+        let fqn = OwnedQualifiedName::new("fuchsia.math", "Matrix", None);
+        assert_eq!(fqn.to_string(), "fuchsia.math/Matrix");
+        assert_eq!(fqn.library().to_string(), "fuchsia.math");
+        assert_eq!(fqn.declaration(), "Matrix");
+        assert_eq!(fqn.member(), None);
+
+        // With member
+        let fqn_mem = OwnedQualifiedName::new("fuchsia.math", "Matrix", Some("m00"));
+        assert_eq!(fqn_mem.to_string(), "fuchsia.math/Matrix.m00");
+        assert_eq!(fqn_mem.library().to_string(), "fuchsia.math");
+        assert_eq!(fqn_mem.declaration(), "Matrix");
+        assert_eq!(fqn_mem.member(), Some("m00"));
+        
+        // Empty library
+        let fqn_empty_lib = OwnedQualifiedName::new("", "Int32", None);
+        assert_eq!(fqn_empty_lib.to_string(), "Int32");
+        assert_eq!(fqn_empty_lib.library().to_string(), "");
+        assert_eq!(fqn_empty_lib.declaration(), "Int32");
+    }
+
+    #[test]
+    fn test_owned_qualified_name_parse() {
+        // Without member
+        let fqn = OwnedQualifiedName::parse("fuchsia.math/Matrix");
+        assert_eq!(fqn, "fuchsia.math/Matrix");
+        assert_eq!(fqn.library(), "fuchsia.math");
+        assert_eq!(fqn.declaration(), "Matrix");
+        assert_eq!(fqn.member(), None);
+
+        // With member
+        let fqn_mem = OwnedQualifiedName::parse("fuchsia.math/Matrix.m00");
+        assert_eq!(fqn_mem, "fuchsia.math/Matrix.m00");
+        assert_eq!(fqn_mem.library(), "fuchsia.math");
+        assert_eq!(fqn_mem.declaration(), "Matrix");
+        assert_eq!(fqn_mem.member(), Some("m00"));
+
+        // Builtin/Primitive (no library)
+        let fqn_builtin = OwnedQualifiedName::parse("uint32");
+        assert_eq!(fqn_builtin, "uint32");
+        assert_eq!(fqn_builtin.library(), "");
+        assert_eq!(fqn_builtin.declaration(), "uint32");
+        assert_eq!(fqn_builtin.member(), None);
+    }
+
+    #[test]
+    fn test_owned_qualified_name_with_member() {
+        let fqn = OwnedQualifiedName::new("fuchsia.math", "Matrix", None);
+        let fqn_mem = fqn.with_member("m00");
+        assert_eq!(fqn_mem, "fuchsia.math/Matrix.m00");
+        assert_eq!(fqn_mem.member(), Some("m00"));
+        assert_eq!(fqn_mem.declaration(), "Matrix");
+        assert_eq!(fqn_mem.library(), "fuchsia.math");
+    }
+
+    #[test]
+    fn test_qualified_name_borrowed() {
+        let owned = OwnedQualifiedName::parse("fuchsia.math/Matrix.m00");
+        let borrowed = owned.as_borrowed();
+        
+        assert_eq!(borrowed, "fuchsia.math/Matrix.m00");
+        assert_eq!(borrowed.library(), "fuchsia.math");
+        assert_eq!(borrowed.declaration(), "Matrix");
+        assert_eq!(borrowed.member(), Some("m00"));
+
+        let owned_again = borrowed.to_owned();
+        assert_eq!(owned_again, "fuchsia.math/Matrix.m00");
+    }
+
+    #[test]
+    fn test_qualified_name_parse() {
+        let fqn_str = "fuchsia.math/Matrix.m00";
+        let borrowed = QualifiedName::parse(fqn_str);
+        
+        assert_eq!(borrowed, "fuchsia.math/Matrix.m00");
+        assert_eq!(borrowed.library(), "fuchsia.math");
+        assert_eq!(borrowed.declaration(), "Matrix");
+        assert_eq!(borrowed.member(), Some("m00"));
+    }
+
+    #[test]
+    fn test_eq_and_cmp() {
+        // LibraryName
+        let lib1 = LibraryName::new("fuchsia.math");
+        let lib2 = OwnedLibraryName::new("fuchsia.math".to_string());
+        assert_eq!(lib1, "fuchsia.math");
+        assert!(lib1 == *"fuchsia.math");
+        assert!(lib1 == "fuchsia.math".to_string());
+        assert_eq!(lib2.to_string(), "fuchsia.math");
+
+        // OwnedQualifiedName
+        let fqn1 = OwnedQualifiedName::parse("fuchsia.math/Matrix");
+        assert_eq!(fqn1, "fuchsia.math/Matrix");
+        assert!(fqn1 == *"fuchsia.math/Matrix");
+        assert!(fqn1 == "fuchsia.math/Matrix".to_string());
+
+        // QualifiedName
+        let fqn2 = QualifiedName::parse("fuchsia.math/Matrix.m00");
+        assert_eq!(fqn2, "fuchsia.math/Matrix.m00");
+        assert!(fqn2 == *"fuchsia.math/Matrix.m00");
+        assert!(fqn2 == "fuchsia.math/Matrix.m00".to_string());
     }
 }

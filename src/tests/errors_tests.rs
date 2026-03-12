@@ -134,6 +134,8 @@ fn bad_error_unknown_identifier() {
     library.add_errcat_file("bad/fi-0052.test.fidl");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameNotFound));
 }
 
 #[test]
@@ -142,6 +144,8 @@ fn bad_error_wrong_primitive() {
     library.add_errcat_file("bad/fi-0141.test.fidl");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInvalidErrorType));
 }
 
 #[test]
@@ -160,6 +164,8 @@ protocol Example {
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedToken));
 }
 
 #[test]
@@ -178,6 +184,8 @@ protocol Example {
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrExpectedType));
 }
 
 #[test]
@@ -196,6 +204,8 @@ protocol Example {
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind));
 }
 
 #[test]
@@ -212,6 +222,8 @@ type ForgotTheSemicolon = table {}
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedTokenOfKind));
 }
 
 #[test]
@@ -220,6 +232,8 @@ fn bad_incorrect_identifier() {
     library.add_errcat_file("bad/fi-0009.noformat.test.fidl");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedIdentifier));
 }
 
 #[test]
@@ -229,6 +243,8 @@ fn bad_error_empty_file() {
     library.add_source_file("example0.fidl", "");
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedIdentifier));
 }
 
 #[test]
@@ -278,4 +294,6 @@ protocol Example {
     );
     let result = library.compile();
     assert!(result.is_err(), "expected compilation to fail");
+    let errors = library.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrDeprecatedAttribute));
 }

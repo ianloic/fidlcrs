@@ -99,6 +99,8 @@ fn bad_must_have_explicit_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0016-b.noformat.test.fidl");
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrMissingOrdinalBeforeMember));
 }
 
 #[test]
@@ -172,6 +174,8 @@ fn bad_ordinal_out_of_bounds_negative() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0017-b.noformat.test.fidl");
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrOrdinalOutOfBound));
 }
 
 #[test]
@@ -188,6 +192,8 @@ type Foo = union {
 "#,
     );
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrOrdinalOutOfBound));
 }
 
 #[test]
@@ -196,6 +202,8 @@ fn bad_ordinals_must_be_unique() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0097.test.fidl");
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrDuplicateUnionMemberOrdinal));
 }
 
 #[test]
@@ -213,6 +221,8 @@ type MyUnion = strict union {
 "#,
     );
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrNameCollision));
 }
 
 #[test]
@@ -221,6 +231,8 @@ fn bad_cannot_start_at_zero() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0018.noformat.test.fidl");
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrOrdinalsMustStartAtOne));
 }
 
 #[test]
@@ -237,6 +249,8 @@ type Foo = strict union {
 "#,
     );
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrUnexpectedToken));
 }
 
 #[test]
@@ -276,6 +290,8 @@ fn bad_no_nullable_members() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0049.test.fidl");
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrOptionalUnionMember));
 }
 
 #[test]
@@ -292,6 +308,8 @@ type Value = strict union {
 "#,
     );
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrIncludeCycle));
 }
 
 #[test]
@@ -324,6 +342,8 @@ type Value = strict union {};
 "#,
     );
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrMustHaveOneMember));
 }
 
 #[test]
@@ -363,4 +383,6 @@ type Foo = strict union {
 "#,
     );
     assert!(lib.compile().is_err());
+    let errors = lib.reporter().diagnostics();
+    assert!(errors.iter().any(|e| e.def == crate::diagnostics::Error::ErrInvalidAttributePlacement));
 }

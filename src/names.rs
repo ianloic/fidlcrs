@@ -129,6 +129,36 @@ impl OwnedQualifiedName {
         }
     }
 
+    /// Constructs a new OwnedQualifiedName from components
+    pub fn new(library: &str, declaration: &str, member: Option<&str>) -> Self {
+        let mut full_name = String::with_capacity(
+            library.len() + 1 + declaration.len() + member.map_or(0, |m| m.len() + 1),
+        );
+
+        if !library.is_empty() {
+            full_name.push_str(library);
+            full_name.push('/');
+        }
+
+        let decl_start = full_name.len();
+        full_name.push_str(declaration);
+
+        let member_start = if let Some(m) = member {
+            let start = full_name.len() + 1;
+            full_name.push('.');
+            full_name.push_str(m);
+            Some(start)
+        } else {
+            None
+        };
+
+        Self {
+            full_name,
+            decl_start,
+            member_start,
+        }
+    }
+
     /// Parses a string into an OwnedQualifiedName.
     /// Expected formats:
     /// - "library/Declaration"

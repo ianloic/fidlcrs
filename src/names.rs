@@ -29,18 +29,34 @@ impl LibraryName {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LibraryName {
-    pub components: Vec<String>,
+    name: String,
 }
 
 impl LibraryName {
-    pub fn new(components: Vec<String>) -> Self {
-        Self { components }
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
+
+    pub fn versioning_platform(&self) -> &str {
+        self.name.split('.').next().unwrap_or(&self.name)
     }
 }
 
 impl fmt::Display for LibraryName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.components.join("."))
+        write!(f, "{}", self.name)
+    }
+}
+
+impl From<String> for LibraryName {
+    fn from(name: String) -> Self {
+        Self { name }
+    }
+}
+
+impl From<&str> for LibraryName {
+    fn from(name: &str) -> Self {
+        Self { name: name.to_string() }
     }
 }
 
@@ -72,7 +88,7 @@ impl FullyQualifiedName {
     /// - "library/Declaration.member"
     pub fn parse(s: &str) -> Self {
         let (lib_part, rest) = s.rsplit_once('/').unwrap_or(("", s));
-        let library = LibraryName::new(lib_part.split('.').map(|c| c.to_string()).collect());
+        let library = LibraryName::new(lib_part.to_string());
 
         let (declaration, member) = if let Some((decl, mem)) = rest.split_once('.') {
             (decl.to_string(), Some(mem.to_string()))
@@ -146,14 +162,4 @@ impl From<String> for FullyQualifiedName {
     }
 }
 
-impl From<&str> for LibraryName {
-    fn from(s: &str) -> Self {
-        Self::new(s.split('.').map(|c| c.to_string()).collect())
-    }
-}
 
-impl From<String> for LibraryName {
-    fn from(s: String) -> Self {
-        Self::new(s.split('.').map(|c| c.to_string()).collect())
-    }
-}

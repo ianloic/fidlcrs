@@ -253,7 +253,7 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
         }
         let actual_platform = compiler
             .library_name
-            .components.first().cloned().unwrap_or_else(|| compiler.library_name.to_string());
+            .versioning_platform().to_string();
         if actual_platform != expected_platform {
             return Err(format!(
                 "Library platform '{}' does not match the expected platform '{}'\n",

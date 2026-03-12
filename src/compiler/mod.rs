@@ -294,7 +294,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             shapes: HashMap::new(),
             source_files: Vec::new(),
             reporter,
-            library_name: LibraryName::new(vec!["unknown".to_string()]),
+            library_name: LibraryName::new("unknown".to_string()),
             library_decl: None,
             raw_decls: HashMap::new(),
             decl_kinds: HashMap::new(),
@@ -567,12 +567,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         let platform = if self.is_versioned_library() {
-            let binding = self.library_name.to_string();
-            self.library_name
-                .components
-                .first()
-                .unwrap_or(&binding)
-                .to_string()
+            self.library_name.versioning_platform().to_string()
         } else {
             "unversioned".to_string()
         };

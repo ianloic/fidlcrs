@@ -459,11 +459,13 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let mut cycle_str = String::new();
                 for cname in cycle_names {
                     let ckind = decl_kinds.get(&crate::names::FullyQualifiedName::from(cname.clone())).unwrap_or(&"unknown");
-                    let short_name = cname.split('/').next_back().unwrap_or(cname);
+                    let cname_fqn = crate::names::FullyQualifiedName::parse(cname);
+                    let short_name = cname_fqn.declaration();
                     cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
                 }
                 let kind = decl_kinds.get(&crate::names::FullyQualifiedName::from(name)).unwrap_or(&"unknown");
-                let short_name = name.split('/').next_back().unwrap_or(name);
+                let name_fqn = crate::names::FullyQualifiedName::parse(name);
+                let short_name = name_fqn.declaration();
                 cycle_str.push_str(&format!("{} '{}'", kind, short_name));
 
                 let span = if let Some(decl) = decls.get(&crate::names::FullyQualifiedName::from(name)) {
@@ -644,7 +646,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         d.extend(get_type_dependencies(req));
                     }
                     if m.has_error {
-                        let decl_name_short = name.split('/').next_back().unwrap();
+                        let name_fqn = crate::names::FullyQualifiedName::parse(name);
+                        let decl_name_short = name_fqn.declaration();
                         let union_name = format!(
                             "{}/{}_{}_Result",
                             self.library_name, decl_name_short, m.name

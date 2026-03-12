@@ -1079,11 +1079,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(raw_decl) = self.raw_decls.get(&crate::names::FullyQualifiedName::from(decl.name.clone()))
             {
                 let span = raw_decl.element().span();
-                let display_name = decl
-                    .name
-                    .rsplit_once('/')
-                    .map(|x| x.1)
-                    .unwrap_or(&decl.name);
+                let decl_fqn = crate::names::FullyQualifiedName::parse(&decl.name);
+                let display_name = decl_fqn.declaration();
                 self.reporter.fail(
                     Error::ErrInlineSizeExceedsLimit,
                     span,
@@ -4096,9 +4093,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .collect();
 
                     let res_library_name = if full_name.contains('/') {
-                        full_name.split('/').next().unwrap_or(library_name)
+                        crate::names::FullyQualifiedName::parse(&full_name).library().as_string()
                     } else {
-                        library_name
+                        library_name.to_string()
                     };
 
                     if filtered_constraints.len() > res_decl.properties.len() {
@@ -4638,7 +4635,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             curr = if next.contains('/') || self.shapes.contains_key(&next) {
                                 next
                             } else {
-                                format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                let curr_fqn = crate::names::FullyQualifiedName::parse(&curr);
+                                format!("{}/{}", curr_fqn.library(), next)
                             };
                             continue;
                         }
@@ -4698,7 +4696,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             curr = if next.contains('/') || self.shapes.contains_key(&next) {
                                 next
                             } else {
-                                format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                let curr_fqn = crate::names::FullyQualifiedName::parse(&curr);
+                                format!("{}/{}", curr_fqn.library(), next)
                             };
                         }
                         _ => break,
@@ -4790,7 +4789,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     {
                                         next
                                     } else {
-                                        format!("{}/{}", curr.split('/').next().unwrap_or(""), next)
+                                        let curr_fqn = crate::names::FullyQualifiedName::parse(&curr);
+                                        format!("{}/{}", curr_fqn.library(), next)
                                     };
                                 }
                                 _ => break,

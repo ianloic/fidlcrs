@@ -363,7 +363,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if let Some((type_name, member_name)) = name.rsplit_once('.') {
             let mut type_full_name = type_name.to_string();
             if !type_full_name.contains('/') {
-                let local_fqn = crate::names::OwnedQualifiedName::new(&self.library_name.to_string(), type_name, None);
+                let local_fqn = self.library_name.with_declaration(type_name);
                 if self.raw_decls.contains_key(&local_fqn) {
                     type_full_name = local_fqn.as_string();
                 } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
@@ -374,13 +374,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .insert(crate::names::OwnedLibraryName::new(lib_prefix.to_string()));
                         actual_lib = import.using_path.to_string();
                     }
-                    let dep_fqn = crate::names::OwnedQualifiedName::new(&actual_lib, rest, None);
+                    let dep_fqn = crate::names::OwnedLibraryName::new(actual_lib).with_declaration(rest);
                     if self.raw_decls.contains_key(&dep_fqn) {
                         type_full_name = dep_fqn.as_string();
                     }
                 } else if let Some(import) = self.library_imports.get(type_name) {
                     self.used_imports.borrow_mut().insert(crate::names::OwnedLibraryName::new(type_name.to_string()));
-                    let dep_fqn = crate::names::OwnedQualifiedName::new(&import.using_path.to_string(), member_name, None);
+                    let dep_fqn = crate::names::OwnedLibraryName::new(import.using_path.to_string()).with_declaration(member_name);
                     if self.raw_decls.contains_key(&dep_fqn) {
                         return Some((
                             dep_fqn.as_string(),
@@ -396,7 +396,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 ));
             }
 
-            let imported_name = crate::names::OwnedQualifiedName::new(type_name, member_name, None);
+            let imported_name = crate::names::OwnedLibraryName::new(type_name.to_string()).with_declaration(member_name);
             if self.raw_decls.contains_key(&imported_name) {
                 return Some((
                     imported_name.as_string(),
@@ -1278,7 +1278,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if n.contains('.') {
                     n = n.replace('.', "/");
                 } else if !n.contains('/') {
-                    let full = crate::names::OwnedQualifiedName::new(library_name, &n, None);
+                    let full = crate::names::OwnedLibraryName::new(library_name.to_string()).with_declaration(&n);
                     if self.declarations.contains_key::<str>(full.as_ref())
                         || self.decl_kinds.contains_key(&full)
                         || self.shapes.contains_key::<str>(n.as_str())
@@ -1819,11 +1819,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 let mut full_name = current.clone();
                 if !full_name.contains('/') {
-                    let fqn = crate::names::OwnedQualifiedName::new(library_name, &current, None);
+                    let fqn = crate::names::OwnedLibraryName::new(library_name.to_string()).with_declaration(&current);
                     if self.raw_decls.contains_key(&fqn) {
                         full_name = fqn.as_string();
                     } else if let Some((lib, name)) = current.rsplit_once('.') {
-                        let dep_fqn = crate::names::OwnedQualifiedName::new(lib, name, None);
+                        let dep_fqn = crate::names::OwnedLibraryName::new(lib.to_string()).with_declaration(name);
                         if self.raw_decls.contains_key(&dep_fqn) {
                             full_name = dep_fqn.as_string();
                         } else {
@@ -2091,11 +2091,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     let mut full_name = current.clone();
                     if !full_name.contains('/') && !self.shapes.contains_key::<str>(&current) {
-                        let fqn = crate::names::OwnedQualifiedName::new(library_name, &current, None);
+                        let fqn = crate::names::OwnedLibraryName::new(library_name.to_string()).with_declaration(&current);
                         if self.raw_decls.contains_key(&fqn) {
                             full_name = fqn.as_string();
                         } else if let Some((lib, name)) = current.rsplit_once('.') {
-                            let dep_fqn = crate::names::OwnedQualifiedName::new(lib, name, None);
+                            let dep_fqn = crate::names::OwnedLibraryName::new(lib.to_string()).with_declaration(name);
                             if self.raw_decls.contains_key(&dep_fqn) {
                                 full_name = dep_fqn.as_string();
                             } else {

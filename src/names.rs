@@ -23,6 +23,10 @@ impl OwnedLibraryName {
     pub fn as_borrowed(&self) -> LibraryName<'_> {
         LibraryName::new(&self.name)
     }
+
+    pub fn with_declaration(&self, declaration: &str) -> OwnedQualifiedName {
+        OwnedQualifiedName::new(&self.name, declaration, None)
+    }
 }
 
 impl fmt::Display for OwnedLibraryName {
@@ -129,8 +133,12 @@ impl OwnedQualifiedName {
         }
     }
 
+    pub fn with_member(&self, member: &str) -> Self {
+        Self::new(self.library().name, self.declaration(), Some(member))
+    }
+
     /// Constructs a new OwnedQualifiedName from components
-    pub fn new(library: &str, declaration: &str, member: Option<&str>) -> Self {
+    fn new(library: &str, declaration: &str, member: Option<&str>) -> Self {
         let mut full_name = String::with_capacity(
             library.len() + 1 + declaration.len() + member.map_or(0, |m| m.len() + 1),
         );

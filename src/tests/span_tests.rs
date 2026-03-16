@@ -60,7 +60,11 @@ struct SourceSpanVisitor<'a> {
 impl<'a> SourceSpanVisitor<'a> {
     fn check_span(&mut self, element_type: ElementType, span: &crate::source_span::SourceSpan<'a>) {
         if element_type == self.test_case_type {
-            self.spans.insert(span.data.to_string());
+            let mut s = span.data.trim_end();
+            while s.ends_with(';') {
+                s = s[..s.len() - 1].trim_end();
+            }
+            self.spans.insert(s.to_string());
         }
     }
 }
@@ -326,7 +330,25 @@ fn test_span_alias_declaration(pad_left: &str, pad_right: &str, exclude: &[Eleme
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_attribute(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::Attribute, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::Attribute,
+        pad_left,
+        pad_right,
+        exclude,
+        &[
+            r#"library x; «@foo("foo")» «@bar» const MY_BOOL bool = false;"#,
+            r#"library x;
+          «@foo("foo")»
+          «@bar»
+          const MY_BOOL bool = false;
+         "#,
+            r#"library x;
+          protocol Foo {
+            Bar(«@foo» struct {});
+          };
+         "#,
+        ],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]
@@ -334,7 +356,21 @@ fn test_span_attribute(pad_left: &str, pad_right: &str, exclude: &[ElementType])
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_attribute_arg(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::AttributeArg, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::AttributeArg,
+        pad_left,
+        pad_right,
+        exclude,
+        &[
+            r#"library x; @attr(«"foo"») const MY_BOOL bool = false;"#,
+            r#"library x; @attr(«a="foo"»,«b="bar"») const MY_BOOL bool = false;"#,
+            r#"library x;
+          const MY_BOOL bool = false;
+          @attr(«a=true»,«b=MY_BOOL»,«c="foo"»)
+          const MY_OTHER_BOOL bool = false;
+         "#,
+        ],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]
@@ -370,7 +406,18 @@ fn test_span_binary_operator_constant(pad_left: &str, pad_right: &str, exclude: 
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_bool_literal(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::BoolLiteral, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::BoolLiteral,
+        pad_left,
+        pad_right,
+        exclude,
+        &[
+            r#"library x; const x bool = «true»;"#,
+            r#"library x; @attr(«true») const x bool = «true»;"#,
+            r#"library x; const x bool = «false»;"#,
+            r#"library x; @attr(«false») const x bool = «false»;"#,
+        ],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]
@@ -420,7 +467,32 @@ fn test_span_doc_comment_literal(pad_left: &str, pad_right: &str, exclude: &[Ele
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_identifier(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::Identifier, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::Identifier,
+        pad_left,
+        pad_right,
+        exclude,
+        &[
+            r#"library «x»;
+          type «MyEnum» = strict enum {
+            «A» = 1;
+          };
+         "#,
+            r#"library «x»;
+          type «MyStruct» = resource struct {
+            «boolval» «bool»;
+            «boolval» «resource»;
+            «boolval» «flexible»;
+            «boolval» «struct»;
+          };
+         "#,
+            r#"library «x»;
+          type «MyUnion» = flexible union {
+            1: «intval» «int64»;
+          };
+         "#,
+        ],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]
@@ -512,7 +584,43 @@ fn test_span_literal_layout_parameter(pad_left: &str, pad_right: &str, exclude: 
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_modifier(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::Modifier, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::Modifier,
+        pad_left,
+        pad_right,
+        exclude,
+        &[
+            r#"library x; type MyBits = «flexible» bits { MY_VALUE = 1; };"#,
+            r#"library x; type MyBits = «strict» bits : uint32 { MY_VALUE = 1; };"#,
+            r#"library x; type MyEnum = «flexible» enum : uint32 { MY_VALUE = 1; };"#,
+            r#"library x; type MyEnum = «strict» enum { MY_VALUE = 1; };"#,
+            r#"library x; type MyStruct = «resource» struct {};"#,
+            r#"library x; type MyTable = «resource» table { 1: my_member bool; };"#,
+            r#"library x; type MyUnion = «resource» union { 1: my_member bool; };"#,
+            r#"library x; type MyUnion = «flexible» union { 1: my_member bool; };"#,
+            r#"library x; type MyUnion = «strict» union { 1: my_member bool; };"#,
+            r#"library x; type MyUnion = «resource» «strict» union { 1: my_member bool; };"#,
+            r#"library x; @attr type MyEnum = «flexible» enum : uint32 { MY_VALUE = 1; };"#,
+            r#"library x; @attr type MyStruct = «resource» struct {};"#,
+            r#"library x; @attr type MyUnion = «resource» «strict» union { 1: my_member bool; };"#,
+            r#"library x; type MyUnion = «resource» «flexible» union { 1: my_member resource; };"#,
+            r#"library x; type MyUnion = «strict» «resource» union { 1: my_member flexible; };"#,
+            r#"library x; type MyUnion = «flexible» «resource» union { 1: my_member strict; };"#,
+            r#"library x; «ajar» protocol MyProtocol {};"#,
+            r#"library x; «closed» protocol MyProtocol {};"#,
+            r#"library x; «open» protocol MyProtocol {};"#,
+            r#"library x; @attr «open» protocol MyProtocol {};"#,
+            r#"library x; «open» protocol MyProtocol { «flexible» MyMethod(); };"#,
+            r#"library x; «open» protocol MyProtocol { «strict» MyMethod(); };"#,
+            r#"library x; «open» protocol MyProtocol { @attr «strict» MyMethod(); };"#,
+            r#"library x; type MyUnion = «flexible(added=2)» union {};"#,
+            r#"library x; type MyUnion = «strict(removed=2)» «flexible(added=2)» «resource(added=3)» union {};"#,
+            r#"library x; «open(removed=2)» «ajar(added=2)» protocol MyProtocol { @attr «strict(added=2)» MyMethod(); };"#,
+            r#"library x; «open» protocol MyProtocol { «flexible» flexible(); strict(); };"#,
+            r#"library x; «open» protocol MyProtocol { «strict» strict(); flexible(); };"#,
+            r#"library x; «open» protocol MyProtocol { @attr «flexible» flexible(); @attr strict(); };"#,
+        ],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]
@@ -688,7 +796,17 @@ fn test_span_string_literal(pad_left: &str, pad_right: &str, exclude: &[ElementT
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_struct_layout(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::StructLayout, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::StructLayout,
+        pad_left,
+        pad_right,
+        exclude,
+        &[r#"library x;
+          type S = «resource struct {
+            intval int64;
+          }»;
+         "#],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]
@@ -766,7 +884,20 @@ fn test_span_using(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
 #[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
 #[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
 fn test_span_value_layout(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
-    check_spans(ElementType::ValueLayout, pad_left, pad_right, exclude, &[]);
+    check_spans(
+        ElementType::ValueLayout,
+        pad_left,
+        pad_right,
+        exclude,
+        &[r#"library x;
+          type B = «bits {
+            A = 1;
+          }»;
+          type E = «strict enum {
+            A = 1;
+          }»;
+         "#],
+    );
 }
 
 #[test_case("", "", &[] ; "good_no_padding")]

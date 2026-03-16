@@ -69,7 +69,8 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrCannotResolveConstantValue, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -131,7 +132,8 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrMismatchedNameTypeAssignment, &[r#""example/MyEnum""#, r#""example/OtherEnum""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -204,7 +206,8 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrMismatchedNameTypeAssignment, &[r#""example/MyBits""#, r#""example/OtherBits""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -223,7 +226,8 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, &[r#""1""#, r#""literal""#, r#""example/MyBits""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -242,7 +246,8 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrCannotResolveConstantValue, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -270,7 +275,8 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrNameCollision, &[r#""struct member""#, r#""my_struct_member""#, r#""struct member""#, r#""example.fidl:5:5""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -346,7 +352,8 @@ type MySelf = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'MySelf' -> struct 'MySelf'""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -386,7 +393,8 @@ type Leaf = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Yin' -> struct 'Yang' -> struct 'Yin'""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -411,7 +419,8 @@ type Leaf = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Yang' -> struct 'Yin' -> struct 'Yang'""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -436,7 +445,9 @@ type Intersection = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Intersection' -> struct 'Yin' -> struct 'Intersection'""#]);
+    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Intersection' -> struct 'Yang' -> struct 'Intersection'""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -473,7 +484,9 @@ type Foo = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.use_library_zx();
+    lib.expect_fail(crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional, &[r#""zx.Handle""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -503,7 +516,8 @@ type Foo = struct {
 const BAR bool = "not a bool";
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, &[r#""string""#, r#""string""#, r#""bool""#]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -560,7 +574,10 @@ type MyStruct = struct {{
                 boxed_name
             )),
         );
-        assert!(lib.compile().is_err());
+        let b_name = format!("\"{}\"", boxed_name);
+        lib.expect_fail(crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional, &[&b_name]);
+        lib.expect_fail(crate::diagnostics::Error::ErrTypeMustBeResource, &[r#""struct""#, r#""MyStruct""#, r#""foo""#, r#""struct""#, r#""struct""#, r#""MyStruct""#]);
+        assert!(lib.check_compile());
     }
 }
 
@@ -582,6 +599,8 @@ type MyStruct = struct {{
                 boxed_name
             )),
         );
-        assert!(lib.compile().is_err());
+        let b_name = format!("\"{}\"", boxed_name);
+        lib.expect_fail(crate::diagnostics::Error::ErrCannotBeBoxedNorOptional, &[&b_name]);
+        assert!(lib.check_compile());
     }
 }

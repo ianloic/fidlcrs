@@ -43,7 +43,7 @@ const VALUE Fruit = Fruit . A;
     let value = root
         .lookup_constant("example/VALUE")
         .expect("constant found");
-    assert_eq!(value.value.value.get(), "\"42\"");
+    assert_eq!(value.value.value, "\"42\"");
 }
 
 #[test]

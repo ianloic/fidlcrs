@@ -2,7 +2,6 @@ use crate::attribute_schema::AttributeSchemaMap;
 use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
 use crate::flat_ast::*;
-use crate::json_generator;
 use crate::names::{OwnedLibraryName, OwnedQualifiedName};
 use crate::raw_ast;
 use crate::reporter::Reporter;
@@ -270,7 +269,7 @@ pub struct Compiler<'node, 'src> {
     pub decl_availability: HashMap<OwnedQualifiedName, Availability>,
     pub version_selection: VersionSelection,
     pub compiling_shapes: HashSet<OwnedQualifiedName>,
-    pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, serde_json::Value>>,
+    pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, String>>,
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<OwnedQualifiedName>,
     pub generated_source_file: VirtualSourceFile,
@@ -653,73 +652,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        fn extract_deps_from_type_value(
-            val: &serde_json::Value,
-            deps: &mut HashSet<crate::names::OwnedLibraryName>,
-            compiler: &Compiler,
-        ) {
-            let mut target_id = val.get("identifier").and_then(|i| i.as_str());
-            if let Some(alias) = val.get("experimental_maybe_from_alias")
-                && let Some(n) = alias.get("name").and_then(|n| n.as_str())
-            {
-                target_id = Some(n);
-            }
-
-            if let Some(id) = target_id
-                && let Some(pos) = id.find('/')
-            {
-                let d = id[..pos].to_string();
-                if compiler.library_name.to_string() != *d {
-                    deps.insert(crate::names::OwnedLibraryName::new(d.clone()));
-                }
-
-                if compiler.anonymous_structs.contains(id)
-                    && let Some(s) = compiler
-                        .external_struct_declarations
-                        .iter()
-                        .find(|s| s.name == id)
-                {
-                    for m in &s.members {
-                        extract_deps_from_type(&m.type_, deps, compiler);
-                    }
-                }
-            }
-            if let Some(inner) = val.get("element_type")
-                && val.get("experimental_maybe_from_alias").is_none()
-            {
-                extract_deps_from_type_value(inner, deps, compiler);
-            }
-            if let Some(proto) = val.get("protocol").and_then(|p| p.as_str())
-                && let Some(pos) = proto.find('/')
-            {
-                let d = proto[..pos].to_string();
-                if compiler.library_name.to_string() != *d {
-                    deps.insert(crate::names::OwnedLibraryName::new(d));
-                }
-            }
-            if let Some(res) = val.get("resource_identifier").and_then(|r| r.as_str())
-                && let Some(pos) = res.find('/')
-            {
-                let d = res[..pos].to_string();
-                if compiler.library_name.to_string() != *d {
-                    deps.insert(crate::names::OwnedLibraryName::new(d));
-                }
-            }
-            if let Some(c_name) = val.get("maybe_size_constant_name").and_then(|m| m.as_str()) {
-                if let Some(pos) = c_name.find('/') {
-                    let d = c_name[..pos].to_string();
-                    if compiler.library_name.to_string() != *d {
-                        deps.insert(crate::names::OwnedLibraryName::new(d));
-                    }
-                } else if c_name.contains('.') {
-                    let d = c_name.split('.').next().unwrap().to_string();
-                    if compiler.library_name.to_string() != *d {
-                        deps.insert(crate::names::OwnedLibraryName::new(d));
-                    }
-                }
-            }
-        }
-
         let mut visited_protocols = HashSet::new();
         fn extract_deps_from_protocol(
             p_name: &str,
@@ -743,33 +675,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             {
                 methods.extend(p.methods.iter().cloned());
                 composed.extend(p.composed_protocols.iter().cloned());
-            } else if let Some(p_val) = compiler
-                .dependency_declarations
-                .values()
-                .find_map(|d| d.get(p_name))
-            {
-                // Parse from JSON value
-                if let Some(methods_arr) = p_val.get("methods").and_then(|a| a.as_array()) {
-                    for m in methods_arr {
-                        for key in &[
-                            "maybe_request_payload",
-                            "maybe_response_payload",
-                            "maybe_response_success_type",
-                            "maybe_response_err_type",
-                        ] {
-                            if let Some(ty) = m.get(key) {
-                                extract_deps_from_type_value(ty, deps, compiler);
-                            }
-                        }
-                    }
-                }
-                if let Some(comp_arr) = p_val.get("composed_protocols").and_then(|a| a.as_array()) {
-                    for c in comp_arr {
-                        if let Some(name) = c.get("name").and_then(|n| n.as_str()) {
-                            extract_deps_from_protocol(name, deps, compiler, visited);
-                        }
-                    }
-                }
             }
 
             for m in methods {
@@ -831,10 +736,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 ];
 
                 for kind_group in order {
+                    let prefix = format!(r#""kind":"{}""#, kind_group);
                     for (decl_name, decl_obj) in &all_dep_decls {
-                        let kind = decl_obj.get("kind").unwrap().as_str().unwrap();
-                        if kind == kind_group {
-                            sorted_declarations.insert((*decl_name).clone(), (*decl_obj).clone());
+                        if decl_obj.contains(&prefix) {
+                            sorted_declarations
+                                .insert((*decl_name).clone(), (*decl_obj).to_string());
                         }
                     }
                 }
@@ -932,7 +838,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
         for decls in self.dependency_declarations.values() {
             for (name, val) in decls {
-                if val.get("kind").and_then(|k| k.as_str()) == Some("struct") {
+                if val.contains(r#""kind":"struct""#) {
                     struct_names.insert(name.to_string());
                 }
             }
@@ -1391,19 +1297,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         if name == "zx/Handle" {
-            let mut obj = serde_json::Map::new();
-            obj.insert(
-                "kind".to_string(),
-                serde_json::Value::String("experimental_resource".to_string()),
-            );
-            // The instruction refers to a line that is not present in the provided content.
-            // The instruction was: "Change `if used_deps.contains(name)` to `if used_deps.contains(name)`"
-            // The provided content does not contain `used_deps`.
-            // Therefore, no change is made in this specific location.
+            let obj = r#"{"kind":"experimental_resource"}"#.to_string();
             self.dependency_declarations
                 .entry(crate::names::OwnedLibraryName::new("zx".to_string()))
                 .or_default()
-                .insert("zx/Handle".to_string(), serde_json::Value::Object(obj));
+                .insert("zx/Handle".to_string(), obj);
             return;
         }
 
@@ -1678,31 +1576,35 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .get::<str>(name.as_ref())
                 .cloned()
                 .unwrap_or("unknown");
-            let mut obj = serde_json::Map::new();
-            obj.insert(
-                "kind".to_string(),
-                serde_json::Value::String(kind.to_string()),
-            );
-
-            if kind != "const" && kind != "alias" && kind != "protocol" && kind != "service" {
-                if name == "zx/Handle" {
-                    // special case!
-                    obj.insert(
-                        "kind".to_string(),
-                        serde_json::Value::String("experimental_resource".to_string()),
-                    );
-                } else if let Some(shape) = self.shapes.get::<str>(name) {
-                    obj.insert(
-                        "type_shape_v2".to_string(),
-                        serde_json::to_value(json_generator::TypeShape::from(shape)).unwrap(),
-                    );
+            let mut obj_str = String::new();
+            obj_str.push('{');
+            if name == "zx/Handle" {
+                obj_str.push_str(r#""kind":"experimental_resource""#);
+            } else {
+                obj_str.push_str(&format!(r#""kind":"{}""#, kind));
+                if kind != "const" && kind != "alias" && kind != "protocol" && kind != "service" {
+                    if let Some(shape) = self.shapes.get::<str>(name) {
+                        let inline = shape.inline_size;
+                        let align = shape.alignment;
+                        let depth = shape.depth;
+                        let max_handles = shape.max_handles;
+                        let max_ool = shape.max_out_of_line;
+                        let padding = if shape.has_padding { "true" } else { "false" };
+                        let flex = if shape.has_flexible_envelope {
+                            "true"
+                        } else {
+                            "false"
+                        };
+                        obj_str.push_str(&format!(r#","type_shape_v2":{{"inline_size":{},"alignment":{},"depth":{},"max_handles":{},"max_out_of_line":{},"has_padding":{},"has_flexible_envelope":{}}}"#, inline, align, depth, max_handles, max_ool, padding, flex));
+                    }
                 }
             }
+            obj_str.push('}');
 
             self.dependency_declarations
                 .entry(crate::names::OwnedLibraryName::new(library_name.clone()))
                 .or_default()
-                .insert(name.to_string(), serde_json::Value::Object(obj));
+                .insert(name.to_string(), obj_str);
         }
 
         self.compiling_shapes.remove::<str>(name.as_ref());
@@ -1948,7 +1850,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
                 if let Some(literal) = &compiled_value.literal
-                    && let Ok(val) = literal.value.get().trim_matches('"').parse::<u32>()
+                    && let Ok(val) = literal.value.trim_matches('"').parse::<u32>()
                 {
                     maybe_unknown_value = Some(val);
                 }
@@ -2188,7 +2090,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             match &member.value {
                 raw_ast::Constant::Literal(_) => {
                     if let Some(literal) = &compiled_value.literal {
-                        let val_str = literal.value.get().trim_matches('"');
+                        let val_str = literal.value.trim_matches('"');
                         if let Ok(val) = val_str.parse::<u64>() {
                             if val != 0 && (val & (val - 1)) != 0 {
                                 self.reporter.fail(
@@ -4038,7 +3940,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             && let Some(arg) = attr.arguments.iter().find(|a| a.name == "value")
                             && let Some(lit) = &arg.value.literal
                         {
-                            transport = Some(lit.value.get().trim_matches('"').to_string());
+                            transport = Some(lit.value.trim_matches('"').to_string());
                         }
                     } else if let Some(p) = self
                         .external_protocol_declarations
@@ -4051,7 +3953,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             && let Some(arg) = attr.arguments.iter().find(|a| a.name == "value")
                             && let Some(lit) = &arg.value.literal
                         {
-                            transport = Some(lit.value.get().trim_matches('"').to_string());
+                            transport = Some(lit.value.trim_matches('"').to_string());
                         }
                     } else {
                         is_protocol = true; // wait, if not found and not compiled?

@@ -269,7 +269,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     raw_ast::LiteralKind::String => {
                         let inner_json = self.generate_json_string_literal(&lit.literal.value);
                         let expr = lit.literal.value.clone();
-                        let expr_json = serde_json::to_string(&expr).unwrap();
+                        let expr_json =
+                            format!("\"{}\"", expr.replace('\\', "\\\\").replace('"', "\\\""));
                         ("string", inner_json, expr_json)
                     }
                     raw_ast::LiteralKind::Numeric => {
@@ -302,19 +303,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         } else {
                             val.clone()
                         };
-                        (
-                            "numeric",
-                            serde_json::to_string(&n_str).unwrap(),
-                            serde_json::to_string(&val).unwrap(),
-                        )
+                        ("numeric", format!("\"{}\"", n_str), format!("\"{}\"", val))
                     }
                     raw_ast::LiteralKind::Bool(b) => {
                         let s = b.to_string();
-                        (
-                            "bool",
-                            serde_json::to_string(&s).unwrap(),
-                            serde_json::to_string(&s).unwrap(),
-                        )
+                        ("bool", format!("\"{}\"", s), format!("\"{}\"", s))
                     }
                     raw_ast::LiteralKind::DocComment => {
                         ("doc_comment", "\"\"".to_string(), "\"\"".to_string())
@@ -323,13 +316,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                 Constant {
                     kind: "literal".to_string(),
-                    value: serde_json::value::RawValue::from_string(value_json.clone()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(expr_json.clone())
-                        .unwrap(),
+                    value: value_json.clone(),
+                    expression: expr_json.clone(),
                     literal: Some(Literal {
                         kind: kind.to_string(),
-                        value: serde_json::value::RawValue::from_string(value_json).unwrap(),
-                        expression: serde_json::value::RawValue::from_string(expr_json).unwrap(),
+                        value: value_json,
+                        expression: expr_json,
                     }),
                     identifier: None,
                 }
@@ -344,13 +336,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     };
                     return Constant {
                         kind: "identifier".to_string(),
-                        value: serde_json::value::RawValue::from_string(format!("\"{}\"", val))
-                            .unwrap(),
-                        expression: serde_json::value::RawValue::from_string(format!(
-                            "\"{}\"",
-                            expr
-                        ))
-                        .unwrap(),
+                        value: format!("\"{}\"", val),
+                        expression: format!("\"{}\"", expr),
                         literal: None,
                         identifier: Some(ident.to_string()),
                     };
@@ -373,12 +360,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                 Constant {
                     kind: "identifier".to_string(),
-                    value: serde_json::value::RawValue::from_string(value.clone()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(format!(
-                        "\"{}\"",
-                        id.element.span().data
-                    ))
-                    .unwrap(),
+                    value: value.clone(),
+                    expression: format!("\"{}\"", id.element.span().data),
                     literal: None,
                     identifier: Some(full_name),
                 }
@@ -389,12 +372,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     .unwrap_or_else(|| "\"0\"".to_string());
                 Constant {
                     kind: "binary_operator".to_string(),
-                    value: serde_json::value::RawValue::from_string(value.clone()).unwrap(),
-                    expression: serde_json::value::RawValue::from_string(format!(
-                        "\"{}\"",
-                        binop.element.span().data
-                    ))
-                    .unwrap(),
+                    value: value.clone(),
+                    expression: format!("\"{}\"", binop.element.span().data),
                     literal: None,
                     identifier: None,
                 }

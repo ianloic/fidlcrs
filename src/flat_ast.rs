@@ -28,7 +28,7 @@ pub struct JsonRoot {
 #[derive(Clone, Debug)]
 pub struct LibraryDependency {
     pub name: String,
-    pub declarations: indexmap::IndexMap<String, serde_json::Value>,
+    pub declarations: indexmap::IndexMap<String, String>,
 }
 
 #[derive(Clone, Debug)]
@@ -898,44 +898,20 @@ pub struct EnumMember {
     pub maybe_attributes: Vec<Attribute>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Constant {
     pub kind: String,
-    pub value: Box<serde_json::value::RawValue>,
-    pub expression: Box<serde_json::value::RawValue>,
+    pub value: String,
+    pub expression: String,
     pub identifier: Option<String>,
     pub literal: Option<Literal>,
 }
 
-impl Clone for Constant {
-    fn clone(&self) -> Self {
-        Self {
-            kind: self.kind.clone(),
-            value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
-                .unwrap(),
-            identifier: self.identifier.clone(),
-            literal: self.literal.clone(),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Literal {
     pub kind: String,
-    pub value: Box<serde_json::value::RawValue>,
-    pub expression: Box<serde_json::value::RawValue>,
-}
-
-impl Clone for Literal {
-    fn clone(&self) -> Self {
-        Self {
-            kind: self.kind.clone(),
-            value: serde_json::value::RawValue::from_string(self.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(self.expression.get().to_string())
-                .unwrap(),
-        }
-    }
+    pub value: String,
+    pub expression: String,
 }
 
 #[derive(Clone, Debug)]

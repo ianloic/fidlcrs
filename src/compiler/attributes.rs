@@ -141,6 +141,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         );
         let loc = self.get_location(&synthetic_element);
 
+        let json_value = self.generate_json_string_literal(&combined_value);
+        let json_expr = self.generate_json_string_literal(&combined_expression);
+
         Attribute {
             name: "doc".to_string(),
             arguments: vec![AttributeArg {
@@ -148,24 +151,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 type_: "string".to_string(),
                 value: Constant {
                     kind: "literal".to_string(),
-                    value: serde_json::value::RawValue::from_string(
-                        serde_json::to_string(&combined_value).unwrap(),
-                    )
-                    .unwrap(),
-                    expression: serde_json::value::RawValue::from_string(
-                        serde_json::to_string(&combined_expression).unwrap(),
-                    )
-                    .unwrap(),
+                    value: json_value.clone(),
+                    expression: json_expr.clone(),
                     literal: Some(Literal {
                         kind: "string".to_string(),
-                        value: serde_json::value::RawValue::from_string(
-                            serde_json::to_string(&combined_value).unwrap(),
-                        )
-                        .unwrap(),
-                        expression: serde_json::value::RawValue::from_string(
-                            serde_json::to_string(&combined_expression).unwrap(),
-                        )
-                        .unwrap(),
+                        value: json_value,
+                        expression: json_expr,
                     }),
                     identifier: None,
                 },

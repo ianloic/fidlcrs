@@ -554,7 +554,16 @@ impl From<&flat_ast::LibraryDependency> for LibraryDependency {
     fn from(ast: &flat_ast::LibraryDependency) -> Self {
         Self {
             name: ast.name.clone(),
-            declarations: ast.declarations.clone(),
+            declarations: ast
+                .declarations
+                .iter()
+                .map(|(k, v)| {
+                    (
+                        k.clone(),
+                        serde_json::from_str(v).unwrap_or(serde_json::Value::Null),
+                    )
+                })
+                .collect(),
         }
     }
 }
@@ -726,9 +735,8 @@ impl From<&flat_ast::Constant> for Constant {
     fn from(ast: &flat_ast::Constant) -> Self {
         Self {
             kind: ast.kind.clone(),
-            value: serde_json::value::RawValue::from_string(ast.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string())
-                .unwrap(),
+            value: serde_json::value::RawValue::from_string(ast.value.clone()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(ast.expression.clone()).unwrap(),
             identifier: ast.identifier.clone(),
             literal: ast.literal.as_ref().map(Into::into),
         }
@@ -739,9 +747,8 @@ impl From<&flat_ast::Literal> for Literal {
     fn from(ast: &flat_ast::Literal) -> Self {
         Self {
             kind: ast.kind.clone(),
-            value: serde_json::value::RawValue::from_string(ast.value.get().to_string()).unwrap(),
-            expression: serde_json::value::RawValue::from_string(ast.expression.get().to_string())
-                .unwrap(),
+            value: serde_json::value::RawValue::from_string(ast.value.clone()).unwrap(),
+            expression: serde_json::value::RawValue::from_string(ast.expression.clone()).unwrap(),
         }
     }
 }

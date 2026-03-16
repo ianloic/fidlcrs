@@ -160,10 +160,11 @@ fn test_compare_generation() {
         fn normalize_generated(val: &mut serde_json::Value) {
             match val {
                 serde_json::Value::Object(map) => {
-                    if map.contains_key("filename") && map["filename"] == "generated" {
-                        if let Some(line) = map.get_mut("line") {
-                            *line = serde_json::Value::Number(serde_json::Number::from(0));
-                        }
+                    if map.contains_key("filename")
+                        && map["filename"] == "generated"
+                        && let Some(line) = map.get_mut("line")
+                    {
+                        *line = serde_json::Value::Number(serde_json::Number::from(0));
                     }
                     for (_, v) in map.iter_mut() {
                         normalize_generated(v);
@@ -195,14 +196,12 @@ fn test_compare_generation() {
                 println!("{}", String::from_utf8_lossy(&diff_output.stdout));
                 return false;
             }
-        } else {
-            if expected_json == actual_json {
-                println!(
-                    "Error: Disabled test {} matches golden output. It should be moved from disabled_tests to active_tests.",
-                    file
-                );
-                return false;
-            }
+        } else if expected_json == actual_json {
+            println!(
+                "Error: Disabled test {} matches golden output. It should be moved from disabled_tests to active_tests.",
+                file
+            );
+            return false;
         }
         true
     };

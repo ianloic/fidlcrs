@@ -22,6 +22,12 @@ pub struct SdkFidl {
     pub libs: std::collections::HashMap<String, FidlBuild>,
 }
 
+impl Default for SdkFidl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SdkFidl {
     pub fn new() -> Self {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -369,26 +375,25 @@ mod tests {
         for entry in entries {
             let entry = entry.unwrap();
             let path = entry.path();
-            if path.is_dir() {
-                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    if name.starts_with("fuchsia.") {
-                        let build_gn_path = path.join("BUILD.gn");
-                        if build_gn_path.exists() {
-                            let content = std::fs::read_to_string(&build_gn_path).unwrap();
-                            let parsed = parse_build_gn(&path, &content);
-                            assert!(
-                                parsed.is_some(),
-                                "Failed to parse BUILD.gn at {:?}",
-                                build_gn_path
-                            );
-                            let parsed = parsed.unwrap();
-                            assert!(
-                                !parsed.sources.is_empty() || content.contains("sources = []"),
-                                "Parsed no sources for {:?} (or ensure it's manually empty)",
-                                build_gn_path
-                            );
-                        }
-                    }
+            if path.is_dir()
+                && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                && name.starts_with("fuchsia.")
+            {
+                let build_gn_path = path.join("BUILD.gn");
+                if build_gn_path.exists() {
+                    let content = std::fs::read_to_string(&build_gn_path).unwrap();
+                    let parsed = parse_build_gn(&path, &content);
+                    assert!(
+                        parsed.is_some(),
+                        "Failed to parse BUILD.gn at {:?}",
+                        build_gn_path
+                    );
+                    let parsed = parsed.unwrap();
+                    assert!(
+                        !parsed.sources.is_empty() || content.contains("sources = []"),
+                        "Parsed no sources for {:?} (or ensure it's manually empty)",
+                        build_gn_path
+                    );
                 }
             }
         }
@@ -445,6 +450,7 @@ mod tests {
         "fuchsia.device.fs",
         "fuchsia.device.vsock",
         "fuchsia.diagnostics.host",
+        "fuchsia.diagnostics.types",
         "fuchsia.driver.crash",
         "fuchsia.driver.development",
         "fuchsia.driver.framework",
@@ -481,7 +487,6 @@ mod tests {
         "fuchsia.hardware.pinimpl",
         "fuchsia.hardware.platform.bus",
         "fuchsia.hardware.platform.device",
-        "fuchsia.hardware.power.statecontrol",
         "fuchsia.hardware.pty",
         "fuchsia.hardware.qcom.hvdcpopti",
         "fuchsia.hardware.ramdisk",
@@ -504,7 +509,6 @@ mod tests {
         "fuchsia.identity.internal",
         "fuchsia.images",
         "fuchsia.input.injection",
-        "fuchsia.input.report",
         "fuchsia.inspect",
         "fuchsia.io.test",
         "fuchsia.location.sensor",
@@ -521,11 +525,11 @@ mod tests {
         "fuchsia.media.target",
         "fuchsia.media",
         "fuchsia.mediacodec",
+        "fuchsia.mediastreams",
         "fuchsia.memory.attribution.plugin",
         "fuchsia.memory.attribution",
         "fuchsia.memory.heapdump.process",
         "fuchsia.metrics.test",
-        "fuchsia.metrics",
         "fuchsia.migration",
         "fuchsia.nand",
         "fuchsia.net.debug",
@@ -573,6 +577,7 @@ mod tests {
         "fuchsia.recovery.android",
         "fuchsia.sensors.types",
         "fuchsia.sensors",
+        "fuchsia.session.scene",
         "fuchsia.session.window",
         "fuchsia.session",
         "fuchsia.settings.policy",
@@ -592,10 +597,12 @@ mod tests {
         "fuchsia.tracing.controller",
         "fuchsia.tracing.perfetto",
         "fuchsia.tracing.provider",
+        "fuchsia.ui.app",
         "fuchsia.ui.composition.internal",
         "fuchsia.ui.composition",
         "fuchsia.ui.gfx",
         "fuchsia.ui.input.accessibility",
+        "fuchsia.ui.input",
         "fuchsia.ui.observation.scope",
         "fuchsia.ui.observation.test",
         "fuchsia.ui.pointer.augment",
@@ -621,7 +628,6 @@ mod tests {
         "fuchsia.wlan.device.service",
         "fuchsia.wlan.device",
         "fuchsia.wlan.fullmac",
-        "fuchsia.wlan.ieee80211",
         "fuchsia.wlan.minstrel",
         "fuchsia.wlan.mlme",
         "fuchsia.wlan.phyimpl",
@@ -636,43 +642,12 @@ mod tests {
     ];
 
     const COMPARE_DENYLIST: &[&str] = &[
-        // missing .fidl.json
         "fdf",
-        "fuchsia.acpi.chromeos",
-        "fuchsia.device.test",
-        "fuchsia.firebase.messaging",
-        "fuchsia.hardware.amlogiccanvas",
-        "fuchsia.hardware.block.verified",
-        "fuchsia.hardware.ethernet.board",
-        "fuchsia.hardware.google.ec",
-        "fuchsia.hardware.gpu.amlogic",
-        "fuchsia.hardware.gpu.mali",
-        "fuchsia.hardware.hidctl",
-        "fuchsia.hardware.input.focaltech",
-        "fuchsia.hardware.lightsensor",
-        "fuchsia.hardware.nvram",
-        "fuchsia.hardware.powersource.test",
-        "fuchsia.hardware.securemem",
-        "fuchsia.hardware.telephony.transport",
-        "fuchsia.hardware.ti.metadata",
-        "fuchsia.hardware.usb.hcitest",
-        "fuchsia.hardware.usb.tester",
-        "fuchsia.hardware.vsi",
-        "fuchsia.identity.authentication",
-        "fuchsia.identity.credential",
-        "fuchsia.identity.ctap",
-        "fuchsia.input.interaction.observation",
-        "fuchsia.kms",
-        "fuchsia.opencl.loader",
-        "fuchsia.perfmon.cpu",
-        "fuchsia.telephony.ril",
-        "fuchsia.telephony.snoop",
-        "fuchsia.testing.runner",
-        // mismatched output
         "fuchsia.accessibility.gesture",
         "fuchsia.accessibility.scene",
         "fuchsia.accessibility.tts",
         "fuchsia.accessibility.virtualkeyboard",
+        "fuchsia.acpi.chromeos",
         "fuchsia.acpi.tables",
         "fuchsia.auth",
         "fuchsia.bluetooth.deviceid",
@@ -688,6 +663,7 @@ mod tests {
         "fuchsia.data",
         "fuchsia.developer.ffx.speedtest",
         "fuchsia.developer.ffxdaemonlifecycle",
+        "fuchsia.device.test",
         "fuchsia.device",
         "fuchsia.diagnostics.system",
         "fuchsia.diagnostics.types",
@@ -701,6 +677,7 @@ mod tests {
         "fuchsia.fdomain",
         "fuchsia.feedback",
         "fuchsia.fido.report",
+        "fuchsia.firebase.messaging",
         "fuchsia.fonts",
         "fuchsia.fs",
         "fuchsia.gpu.agis",
@@ -710,10 +687,12 @@ mod tests {
         "fuchsia.hardware.adc",
         "fuchsia.hardware.adcimpl",
         "fuchsia.hardware.amlogic.metadata",
+        "fuchsia.hardware.amlogiccanvas",
         "fuchsia.hardware.audio.signalprocessing",
         "fuchsia.hardware.backlight",
         "fuchsia.hardware.block.driver",
         "fuchsia.hardware.block.encrypted",
+        "fuchsia.hardware.block.verified",
         "fuchsia.hardware.block",
         "fuchsia.hardware.clock.measure",
         "fuchsia.hardware.clock",
@@ -721,26 +700,36 @@ mod tests {
         "fuchsia.hardware.cpu.ctrl",
         "fuchsia.hardware.display.types",
         "fuchsia.hardware.dsp",
+        "fuchsia.hardware.ethernet.board",
         "fuchsia.hardware.fastboot",
         "fuchsia.hardware.gnss",
         "fuchsia.hardware.goldfish.pipe",
         "fuchsia.hardware.goldfish",
+        "fuchsia.hardware.google.ec",
         "fuchsia.hardware.gpio",
+        "fuchsia.hardware.gpu.amlogic",
+        "fuchsia.hardware.gpu.mali",
         "fuchsia.hardware.haptics",
         "fuchsia.hardware.hidbus",
+        "fuchsia.hardware.hidctl",
         "fuchsia.hardware.i2c",
         "fuchsia.hardware.inlineencryption",
+        "fuchsia.hardware.input.focaltech",
         "fuchsia.hardware.interconnect",
         "fuchsia.hardware.interrupt",
         "fuchsia.hardware.light",
+        "fuchsia.hardware.lightsensor",
         "fuchsia.hardware.mailbox",
         "fuchsia.hardware.midi",
         "fuchsia.hardware.nand",
+        "fuchsia.hardware.nvram",
         "fuchsia.hardware.pci",
         "fuchsia.hardware.pin",
         "fuchsia.hardware.power.sensor",
+        "fuchsia.hardware.power.statecontrol",
         "fuchsia.hardware.power.suspend",
         "fuchsia.hardware.power",
+        "fuchsia.hardware.powersource.test",
         "fuchsia.hardware.pwm",
         "fuchsia.hardware.qualcomm.fastrpc",
         "fuchsia.hardware.qualcomm.router",
@@ -751,30 +740,42 @@ mod tests {
         "fuchsia.hardware.rpmb",
         "fuchsia.hardware.rtc",
         "fuchsia.hardware.scsi",
+        "fuchsia.hardware.securemem",
         "fuchsia.hardware.serial",
         "fuchsia.hardware.serialimpl",
         "fuchsia.hardware.sharedmemory",
         "fuchsia.hardware.sockettunnel",
         "fuchsia.hardware.spi",
         "fuchsia.hardware.spiimpl",
+        "fuchsia.hardware.telephony.transport",
+        "fuchsia.hardware.ti.metadata",
         "fuchsia.hardware.tpmimpl",
         "fuchsia.hardware.trippoint",
         "fuchsia.hardware.ufs",
         "fuchsia.hardware.usb.descriptor",
         "fuchsia.hardware.usb.device",
+        "fuchsia.hardware.usb.hcitest",
         "fuchsia.hardware.usb.peripheral",
         "fuchsia.hardware.usb.request",
+        "fuchsia.hardware.usb.tester",
         "fuchsia.hardware.uwb",
         "fuchsia.hardware.virtio.pmem",
         "fuchsia.hardware.vreg",
+        "fuchsia.hardware.vsi",
         "fuchsia.hardware.vsock",
         "fuchsia.hwinfo",
+        "fuchsia.identity.authentication",
+        "fuchsia.identity.credential",
+        "fuchsia.identity.ctap",
         "fuchsia.images2",
+        "fuchsia.input.interaction.observation",
+        "fuchsia.input.report",
         "fuchsia.input.virtualkeyboard",
         "fuchsia.input",
         "fuchsia.intl",
         "fuchsia.io",
         "fuchsia.kernel",
+        "fuchsia.kms",
         "fuchsia.legacymetrics",
         "fuchsia.lightsensor",
         "fuchsia.location.gnss",
@@ -788,10 +789,13 @@ mod tests {
         "fuchsia.memory.debug",
         "fuchsia.memory.heapdump.client",
         "fuchsia.memory.inspection",
+        "fuchsia.metrics",
         "fuchsia.net.reachability",
         "fuchsia.net.stackmigrationdeprecated",
         "fuchsia.net",
+        "fuchsia.opencl.loader",
         "fuchsia.paver",
+        "fuchsia.perfmon.cpu",
         "fuchsia.pkg.garbagecollector",
         "fuchsia.pkg.rewrite",
         "fuchsia.power.broker",
@@ -819,7 +823,10 @@ mod tests {
         "fuchsia.sysmem2",
         "fuchsia.system.state",
         "fuchsia.tee",
+        "fuchsia.telephony.ril",
+        "fuchsia.telephony.snoop",
         "fuchsia.test",
+        "fuchsia.testing.runner",
         "fuchsia.time.external",
         "fuchsia.time.test",
         "fuchsia.tpm",
@@ -843,6 +850,7 @@ mod tests {
         "fuchsia.update",
         "fuchsia.vsock",
         "fuchsia.vulkan.loader",
+        "fuchsia.wlan.ieee80211",
     ];
 
     fn strip_filename(value: &mut serde_json::Value) {
@@ -1054,17 +1062,17 @@ mod tests {
         let mut unexpectedly_matched = Vec::new();
 
         for name in COMPARE_DENYLIST {
-            if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name) {
-                if let Some(actual_str) = compile_to_ir(name, cli, source_managers, &temp_dir) {
-                    let ref_json_path =
-                        manifest_dir.join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
+            if let Some((cli, source_managers)) = sdk_fidl.cli_for_library(name)
+                && let Some(actual_str) = compile_to_ir(name, cli, source_managers, &temp_dir)
+            {
+                let ref_json_path =
+                    manifest_dir.join(format!("sdk-fidl-gen/{}/{}.fidl.json", name, name));
 
-                    if ref_json_path.exists() {
-                        let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
+                if ref_json_path.exists() {
+                    let expected_str = std::fs::read_to_string(&ref_json_path).unwrap();
 
-                        if compare_and_diff_ir(name, &expected_str, &actual_str, false) {
-                            unexpectedly_matched.push(*name);
-                        }
+                    if compare_and_diff_ir(name, &expected_str, &actual_str, false) {
+                        unexpectedly_matched.push(*name);
                     }
                 }
             }

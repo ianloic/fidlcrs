@@ -278,9 +278,13 @@ resource_definition handle : uint32 {
         for (platform, version) in &self.select_versions {
             use crate::versioning_types::{Platform, Version};
             if let Some(p) = Platform::parse(platform) {
-                if let Some(v) = Version::parse(version) {
-                    let mut versions = std::collections::BTreeSet::new();
-                    versions.insert(v);
+                let mut versions = std::collections::BTreeSet::new();
+                for v_str in version.split(',') {
+                    if let Some(v) = Version::parse(v_str.trim()) {
+                        versions.insert(v);
+                    }
+                }
+                if !versions.is_empty() {
                     compiler.version_selection.insert(p, versions);
                 }
             }
@@ -333,18 +337,18 @@ resource_definition handle : uint32 {
         // Check for warnings? TestLibrary doesn't do warnings as errors unless flag set, but here we can just update shared.
 
         // Actually, update shared with OUR new files so next time they are dependencies!
-        if res.is_ok() {
-            if let Some(shared_cell) = &self.shared {
-                let mut shared = shared_cell.borrow_mut();
-                shared.experimental_flags = self.experimental_flags.clone();
-                shared.select_versions = self.select_versions.clone();
-                shared.custom_schemas = self.custom_schemas.clone();
-                for sf in self.source_files.iter() {
-                    shared.all_source_files.push(SourceFile::new(
-                        sf.filename().to_string(),
-                        sf.data().to_string(),
-                    ));
-                }
+        if res.is_ok()
+            && let Some(shared_cell) = &self.shared
+        {
+            let mut shared = shared_cell.borrow_mut();
+            shared.experimental_flags = self.experimental_flags.clone();
+            shared.select_versions = self.select_versions.clone();
+            shared.custom_schemas = self.custom_schemas.clone();
+            for sf in self.source_files.iter() {
+                shared.all_source_files.push(SourceFile::new(
+                    sf.filename().to_string(),
+                    sf.data().to_string(),
+                ));
             }
         }
 
@@ -420,7 +424,16 @@ pub trait LookupHelpers {
 
 impl LookupHelpers for JsonRoot {
     fn lookup_struct(&self, name: &str) -> Option<&StructDeclaration> {
-        self.struct_declarations.iter().find(|d| d.name == name)
+        {
+            println!(
+                "structs: {:?}",
+                self.struct_declarations
+                    .iter()
+                    .map(|s| s.name.clone())
+                    .collect::<Vec<_>>()
+            );
+            self.struct_declarations.iter().find(|d| d.name == name)
+        }
     }
     fn lookup_protocol(&self, name: &str) -> Option<&ProtocolDeclaration> {
         self.protocol_declarations.iter().find(|d| d.name == name)

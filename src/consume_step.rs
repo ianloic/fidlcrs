@@ -182,6 +182,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                  decl_kind: &'static str,
                  is_anonymous: bool,
                  errors_to_emit: &mut Vec<(Error, SourceSpan<'src>, Vec<String>)>| {
+                    if !compiler.is_active(decl.attributes()) {
+                        return;
+                    }
                     if let Some((lib, _)) = name.rsplit_once('/') {
                         // We only check for collisions in the main library!
                         if lib == compiler.library_name.to_string() && !is_anonymous {

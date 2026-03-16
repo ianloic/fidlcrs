@@ -392,9 +392,12 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             true
         });
 
+        let mut allow_unused_imports = false;
         if any_decl_removed || !final_lib_avail.set().contains(selected_version) {
-            compiler.allow_unused_imports = true;
+            allow_unused_imports = true;
         }
+
+        let mut member_availability_additions = std::collections::HashMap::new();
 
         // Validate modifiers
         for (name, decl) in &compiler.raw_decls {
@@ -461,8 +464,9 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             });
 
             // Visit struct / table / union / enum / bits / protocol members and extract availability
-            let visit_member = |attributes: Option<&raw_ast::AttributeList<'src>>,
-                                item_name: &str| {
+            let mut visit_member = |attributes: Option<&raw_ast::AttributeList<'src>>,
+                                    item_name: &str,
+                                    member_ptr: usize| {
                 let decl_is_main =
                     name.to_string().starts_with(&main_lib_prefix) || main_lib_prefix.is_empty();
                 let kind_str = if decl_is_main {
@@ -470,7 +474,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                 } else {
                     "dependency_member"
                 };
-                Self::extract_availability(
+                let avail = Self::extract_availability(
                     compiler,
                     attributes,
                     decl_avail,
@@ -478,12 +482,27 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                     has_library_avail,
                     item_name,
                 );
+                let platform = crate::versioning_types::Platform::parse(
+                    compiler.library_name.versioning_platform(),
+                )
+                .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                if !avail
+                    .set()
+                    .contains(compiler.version_selection.lookup(&platform))
+                {
+                    allow_unused_imports = true;
+                }
+                member_availability_additions.insert(member_ptr, avail);
             };
 
             match decl {
                 crate::compiler::RawDecl::Struct(d) => {
                     for m in &d.members {
-                        visit_member(m.attributes.as_deref(), m.name.data());
+                        visit_member(
+                            m.attributes.as_deref(),
+                            m.name.data(),
+                            m.element.span().data.as_ptr() as usize,
+                        );
                     }
                 }
                 crate::compiler::RawDecl::Table(d) => {
@@ -491,6 +510,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         visit_member(
                             m.attributes.as_deref(),
                             m.name.as_ref().map(|n| n.data()).unwrap_or(""),
+                            m.element.span().data.as_ptr() as usize,
                         );
                     }
                 }
@@ -499,33 +519,54 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         visit_member(
                             m.attributes.as_deref(),
                             m.name.as_ref().map(|n| n.data()).unwrap_or(""),
+                            m.element.span().data.as_ptr() as usize,
                         );
                     }
                 }
                 crate::compiler::RawDecl::Enum(d) => {
                     for m in &d.members {
-                        visit_member(m.attributes.as_deref(), m.name.data());
+                        visit_member(
+                            m.attributes.as_deref(),
+                            m.name.data(),
+                            m.element.span().data.as_ptr() as usize,
+                        );
                     }
                 }
                 crate::compiler::RawDecl::Bits(d) => {
                     for m in &d.members {
-                        visit_member(m.attributes.as_deref(), m.name.data());
+                        visit_member(
+                            m.attributes.as_deref(),
+                            m.name.data(),
+                            m.element.span().data.as_ptr() as usize,
+                        );
                     }
                 }
                 crate::compiler::RawDecl::Protocol(d) => {
                     for m in &d.methods {
-                        visit_member(m.attributes.as_deref(), m.name.data());
+                        visit_member(
+                            m.attributes.as_deref(),
+                            m.name.data(),
+                            m.element.span().data.as_ptr() as usize,
+                        );
                     }
                 }
                 crate::compiler::RawDecl::Service(d) => {
                     for m in &d.members {
-                        visit_member(m.attributes.as_deref(), m.name.data());
+                        visit_member(
+                            m.attributes.as_deref(),
+                            m.name.data(),
+                            m.element.span().data.as_ptr() as usize,
+                        );
                     }
                 }
                 crate::compiler::RawDecl::Type(d) => match &d.layout {
                     crate::raw_ast::Layout::Struct(l) => {
                         for m in &l.members {
-                            visit_member(m.attributes.as_deref(), m.name.data());
+                            visit_member(
+                                m.attributes.as_deref(),
+                                m.name.data(),
+                                m.element.span().data.as_ptr() as usize,
+                            );
                         }
                     }
                     crate::raw_ast::Layout::Table(l) => {
@@ -533,6 +574,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             visit_member(
                                 m.attributes.as_deref(),
                                 m.name.as_ref().map(|n| n.data()).unwrap_or(""),
+                                m.element.span().data.as_ptr() as usize,
                             );
                         }
                     }
@@ -541,23 +583,40 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             visit_member(
                                 m.attributes.as_deref(),
                                 m.name.as_ref().map(|n| n.data()).unwrap_or(""),
+                                m.element.span().data.as_ptr() as usize,
                             );
                         }
                     }
                     crate::raw_ast::Layout::Enum(l) => {
                         for m in &l.members {
-                            visit_member(m.attributes.as_deref(), m.name.data());
+                            visit_member(
+                                m.attributes.as_deref(),
+                                m.name.data(),
+                                m.element.span().data.as_ptr() as usize,
+                            );
                         }
                     }
                     crate::raw_ast::Layout::Bits(l) => {
                         for m in &l.members {
-                            visit_member(m.attributes.as_deref(), m.name.data());
+                            visit_member(
+                                m.attributes.as_deref(),
+                                m.name.data(),
+                                m.element.span().data.as_ptr() as usize,
+                            );
                         }
                     }
                     _ => {}
                 },
                 _ => {}
             }
+        }
+
+        if allow_unused_imports {
+            compiler.allow_unused_imports = true;
+        }
+
+        for (k, v) in member_availability_additions {
+            compiler.member_availability.insert(k, v);
         }
     }
 }

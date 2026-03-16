@@ -1615,6 +1615,113 @@ impl<'a, 'b> Parser<'a, 'b> {
     }
 }
 
+impl<'a, 'b> Parser<'a, 'b> {
+    pub fn parse_alias_declaration(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<AliasDeclaration<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+        self.consume_token_with_subkind(TokenSubkind::Alias)?;
+        let name = self.parse_identifier()?;
+        self.consume_token(TokenKind::Equal)?;
+        let type_ctor = self.parse_type_constructor()?;
+        self.consume_token(TokenKind::Semicolon)?;
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(AliasDeclaration {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            name,
+            type_ctor,
+        })
+    }
+
+    pub fn parse_using_declaration(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<UsingDeclaration<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+        self.consume_token_with_subkind(TokenSubkind::Using)?;
+        let using_path = self.parse_compound_identifier()?;
+
+        let maybe_alias = if self.last_token.subkind == TokenSubkind::As {
+            self.consume_token_with_subkind(TokenSubkind::As)?;
+            Some(self.parse_identifier()?)
+        } else {
+            None
+        };
+
+        self.consume_token(TokenKind::Semicolon)?;
+        let end = self.previous_token.as_ref().unwrap().clone();
+
+        Some(UsingDeclaration {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            using_path,
+            maybe_alias,
+        })
+    }
+
+    pub fn parse_resource_declaration(
+        &mut self,
+        attributes: Option<AttributeList<'a>>,
+    ) -> Option<ResourceDeclaration<'a>> {
+        let start = attributes
+            .as_ref()
+            .map(|a| a.element.start_token.clone())
+            .unwrap_or_else(|| self.last_token.clone());
+        self.consume_token_with_subkind(TokenSubkind::ResourceDefinition)?;
+        let name = self.parse_identifier()?;
+
+        let mut type_ctor = None;
+        if self.last_token.kind == TokenKind::Colon {
+            self.consume_token(TokenKind::Colon)?;
+            type_ctor = Some(self.parse_type_constructor()?);
+        }
+
+        self.consume_token(TokenKind::LeftCurly)?;
+
+        // properties
+        self.consume_token_with_subkind(TokenSubkind::Properties)?;
+        self.consume_token(TokenKind::LeftCurly)?;
+
+        let mut properties = vec![];
+        while self.last_token.kind != TokenKind::RightCurly
+            && self.last_token.kind != TokenKind::EndOfFile
+        {
+            let prop_start = self.last_token.clone();
+            let prop_name = self.parse_identifier()?;
+            let prop_type = self.parse_type_constructor()?;
+            self.consume_token(TokenKind::Semicolon)?;
+            let prop_end = self.previous_token.as_ref().unwrap().clone();
+            properties.push(ResourceProperty {
+                element: SourceElement::new(prop_start, prop_end),
+                attributes: None,
+                type_ctor: prop_type,
+                name: prop_name,
+            });
+        }
+        self.consume_token(TokenKind::RightCurly)?;
+        self.consume_token(TokenKind::Semicolon)?;
+        self.consume_token(TokenKind::RightCurly)?;
+        self.consume_token(TokenKind::Semicolon)?;
+
+        let end = self.previous_token.as_ref().unwrap().clone();
+        Some(ResourceDeclaration {
+            element: SourceElement::new(start, end),
+            attributes: attributes.map(Box::new),
+            name,
+            type_ctor,
+            properties,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1816,112 +1923,5 @@ struct MyStruct {
         } else {
             panic!("expected struct layout");
         }
-    }
-}
-
-impl<'a, 'b> Parser<'a, 'b> {
-    pub fn parse_alias_declaration(
-        &mut self,
-        attributes: Option<AttributeList<'a>>,
-    ) -> Option<AliasDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
-            .unwrap_or_else(|| self.last_token.clone());
-        self.consume_token_with_subkind(TokenSubkind::Alias)?;
-        let name = self.parse_identifier()?;
-        self.consume_token(TokenKind::Equal)?;
-        let type_ctor = self.parse_type_constructor()?;
-        self.consume_token(TokenKind::Semicolon)?;
-        let end = self.previous_token.as_ref().unwrap().clone();
-        Some(AliasDeclaration {
-            element: SourceElement::new(start, end),
-            attributes: attributes.map(Box::new),
-            name,
-            type_ctor,
-        })
-    }
-
-    pub fn parse_using_declaration(
-        &mut self,
-        attributes: Option<AttributeList<'a>>,
-    ) -> Option<UsingDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
-            .unwrap_or_else(|| self.last_token.clone());
-        self.consume_token_with_subkind(TokenSubkind::Using)?;
-        let using_path = self.parse_compound_identifier()?;
-
-        let maybe_alias = if self.last_token.subkind == TokenSubkind::As {
-            self.consume_token_with_subkind(TokenSubkind::As)?;
-            Some(self.parse_identifier()?)
-        } else {
-            None
-        };
-
-        self.consume_token(TokenKind::Semicolon)?;
-        let end = self.previous_token.as_ref().unwrap().clone();
-
-        Some(UsingDeclaration {
-            element: SourceElement::new(start, end),
-            attributes: attributes.map(Box::new),
-            using_path,
-            maybe_alias,
-        })
-    }
-
-    pub fn parse_resource_declaration(
-        &mut self,
-        attributes: Option<AttributeList<'a>>,
-    ) -> Option<ResourceDeclaration<'a>> {
-        let start = attributes
-            .as_ref()
-            .map(|a| a.element.start_token.clone())
-            .unwrap_or_else(|| self.last_token.clone());
-        self.consume_token_with_subkind(TokenSubkind::ResourceDefinition)?;
-        let name = self.parse_identifier()?;
-
-        let mut type_ctor = None;
-        if self.last_token.kind == TokenKind::Colon {
-            self.consume_token(TokenKind::Colon)?;
-            type_ctor = Some(self.parse_type_constructor()?);
-        }
-
-        self.consume_token(TokenKind::LeftCurly)?;
-
-        // properties
-        self.consume_token_with_subkind(TokenSubkind::Properties)?;
-        self.consume_token(TokenKind::LeftCurly)?;
-
-        let mut properties = vec![];
-        while self.last_token.kind != TokenKind::RightCurly
-            && self.last_token.kind != TokenKind::EndOfFile
-        {
-            let prop_start = self.last_token.clone();
-            let prop_name = self.parse_identifier()?;
-            let prop_type = self.parse_type_constructor()?;
-            self.consume_token(TokenKind::Semicolon)?;
-            let prop_end = self.previous_token.as_ref().unwrap().clone();
-            properties.push(ResourceProperty {
-                element: SourceElement::new(prop_start, prop_end),
-                attributes: None,
-                type_ctor: prop_type,
-                name: prop_name,
-            });
-        }
-        self.consume_token(TokenKind::RightCurly)?;
-        self.consume_token(TokenKind::Semicolon)?;
-        self.consume_token(TokenKind::RightCurly)?;
-        self.consume_token(TokenKind::Semicolon)?;
-
-        let end = self.previous_token.as_ref().unwrap().clone();
-        Some(ResourceDeclaration {
-            element: SourceElement::new(start, end),
-            attributes: attributes.map(Box::new),
-            name,
-            type_ctor,
-            properties,
-        })
     }
 }

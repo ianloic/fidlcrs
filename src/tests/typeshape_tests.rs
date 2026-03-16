@@ -32,12 +32,12 @@ type Empty = struct {};
         empty.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for empty"
     );
-    assert_eq!(
-        empty.type_shape.has_padding, false,
+    assert!(
+        !empty.type_shape.has_padding,
         "has_padding mismatch for empty"
     );
-    assert_eq!(
-        empty.type_shape.has_flexible_envelope, false,
+    assert!(
+        !empty.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for empty"
     );
 }
@@ -108,12 +108,12 @@ type EmptyWithOtherThings = struct {
         empty_with_other_things.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for empty_with_other_things"
     );
-    assert_eq!(
-        empty_with_other_things.type_shape.has_padding, true,
+    assert!(
+        empty_with_other_things.type_shape.has_padding,
         "has_padding mismatch for empty_with_other_things"
     );
-    assert_eq!(
-        empty_with_other_things.type_shape.has_flexible_envelope, false,
+    assert!(
+        !empty_with_other_things.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for empty_with_other_things"
     );
     let member_empty_with_other_things_0 = empty_with_other_things.members[0].clone();
@@ -261,16 +261,15 @@ type NewUnionOfThings = UnionOfThings;
         new_bool_and_u32_struct.type_.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for new_bool_and_u32_struct"
     );
-    assert_eq!(
-        new_bool_and_u32_struct.type_.type_shape.has_padding, true,
+    assert!(
+        new_bool_and_u32_struct.type_.type_shape.has_padding,
         "has_padding mismatch for new_bool_and_u32_struct"
     );
-    assert_eq!(
-        new_bool_and_u32_struct
+    assert!(
+        !new_bool_and_u32_struct
             .type_
             .type_shape
             .has_flexible_envelope,
-        false,
         "has_flexible_envelope mismatch for new_bool_and_u32_struct"
     );
     assert_eq!(
@@ -293,12 +292,12 @@ type NewUnionOfThings = UnionOfThings;
         new_bits_implicit.type_.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for new_bits_implicit"
     );
-    assert_eq!(
-        new_bits_implicit.type_.type_shape.has_padding, false,
+    assert!(
+        !new_bits_implicit.type_.type_shape.has_padding,
         "has_padding mismatch for new_bits_implicit"
     );
-    assert_eq!(
-        new_bits_implicit.type_.type_shape.has_flexible_envelope, false,
+    assert!(
+        !new_bits_implicit.type_.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for new_bits_implicit"
     );
     assert_eq!(
@@ -321,16 +320,15 @@ type NewUnionOfThings = UnionOfThings;
         new_bool_and_u32_table.type_.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for new_bool_and_u32_table"
     );
-    assert_eq!(
-        new_bool_and_u32_table.type_.type_shape.has_padding, true,
+    assert!(
+        new_bool_and_u32_table.type_.type_shape.has_padding,
         "has_padding mismatch for new_bool_and_u32_table"
     );
-    assert_eq!(
+    assert!(
         new_bool_and_u32_table
             .type_
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for new_bool_and_u32_table"
     );
     assert_eq!(
@@ -353,12 +351,12 @@ type NewUnionOfThings = UnionOfThings;
         new_union.type_.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for new_union"
     );
-    assert_eq!(
-        new_union.type_.type_shape.has_padding, true,
+    assert!(
+        new_union.type_.type_shape.has_padding,
         "has_padding mismatch for new_union"
     );
-    assert_eq!(
-        new_union.type_.type_shape.has_flexible_envelope, false,
+    assert!(
+        !new_union.type_.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for new_union"
     );
 }
@@ -421,12 +419,12 @@ type BoolAndU64 = struct {
         one_bool.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_padding, false,
+    assert!(
+        !one_bool.type_shape.has_padding,
         "has_padding mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_flexible_envelope, false,
+    assert!(
+        !one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_bool"
     );
     assert_eq!(
@@ -449,12 +447,12 @@ type BoolAndU64 = struct {
         two_bools.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_padding, false,
+    assert!(
+        !two_bools.type_shape.has_padding,
         "has_padding mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_flexible_envelope, false,
+    assert!(
+        !two_bools.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for two_bools"
     );
     assert_eq!(
@@ -477,12 +475,12 @@ type BoolAndU64 = struct {
         bool_and_u32.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_padding, true,
+    assert!(
+        bool_and_u32.type_shape.has_padding,
         "has_padding mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_flexible_envelope, false,
+    assert!(
+        !bool_and_u32.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u32"
     );
     assert_eq!(
@@ -505,12 +503,12 @@ type BoolAndU64 = struct {
         bool_and_u64.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_padding, true,
+    assert!(
+        bool_and_u64.type_shape.has_padding,
         "has_padding mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_flexible_envelope, false,
+    assert!(
+        !bool_and_u64.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u64"
     );
     let member_one_bool_0 = one_bool.members[0].clone();
@@ -635,12 +633,12 @@ type ThreeHandlesOneOptional = resource struct {
         one_handle.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for one_handle"
     );
-    assert_eq!(
-        one_handle.type_shape.has_padding, false,
+    assert!(
+        !one_handle.type_shape.has_padding,
         "has_padding mismatch for one_handle"
     );
-    assert_eq!(
-        one_handle.type_shape.has_flexible_envelope, false,
+    assert!(
+        !one_handle.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_handle"
     );
     assert_eq!(
@@ -663,12 +661,12 @@ type ThreeHandlesOneOptional = resource struct {
         two_handles.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for two_handles"
     );
-    assert_eq!(
-        two_handles.type_shape.has_padding, false,
+    assert!(
+        !two_handles.type_shape.has_padding,
         "has_padding mismatch for two_handles"
     );
-    assert_eq!(
-        two_handles.type_shape.has_flexible_envelope, false,
+    assert!(
+        !two_handles.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for two_handles"
     );
     assert_eq!(
@@ -691,12 +689,12 @@ type ThreeHandlesOneOptional = resource struct {
         three_handles_one_optional.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for three_handles_one_optional"
     );
-    assert_eq!(
-        three_handles_one_optional.type_shape.has_padding, false,
+    assert!(
+        !three_handles_one_optional.type_shape.has_padding,
         "has_padding mismatch for three_handles_one_optional"
     );
-    assert_eq!(
-        three_handles_one_optional.type_shape.has_flexible_envelope, false,
+    assert!(
+        !three_handles_one_optional.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for three_handles_one_optional"
     );
     let member_one_handle_0 = one_handle.members[0].clone();
@@ -799,12 +797,12 @@ type BitsImplicit = strict bits {
         bits16.type_.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for bits16"
     );
-    assert_eq!(
-        bits16.type_.type_shape.has_padding, false,
+    assert!(
+        !bits16.type_.type_shape.has_padding,
         "has_padding mismatch for bits16"
     );
-    assert_eq!(
-        bits16.type_.type_shape.has_flexible_envelope, false,
+    assert!(
+        !bits16.type_.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bits16"
     );
     assert_eq!(
@@ -827,12 +825,12 @@ type BitsImplicit = strict bits {
         bits_implicit.type_.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for bits_implicit"
     );
-    assert_eq!(
-        bits_implicit.type_.type_shape.has_padding, false,
+    assert!(
+        !bits_implicit.type_.type_shape.has_padding,
         "has_padding mismatch for bits_implicit"
     );
-    assert_eq!(
-        bits_implicit.type_.type_shape.has_flexible_envelope, false,
+    assert!(
+        !bits_implicit.type_.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bits_implicit"
     );
 }
@@ -903,12 +901,12 @@ type TableWithBoolAndU64 = table {
         no_members.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for no_members"
     );
-    assert_eq!(
-        no_members.type_shape.has_padding, false,
+    assert!(
+        !no_members.type_shape.has_padding,
         "has_padding mismatch for no_members"
     );
-    assert_eq!(
-        no_members.type_shape.has_flexible_envelope, true,
+    assert!(
+        no_members.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for no_members"
     );
     assert_eq!(
@@ -928,12 +926,12 @@ type TableWithBoolAndU64 = table {
         one_bool.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_padding, true,
+    assert!(
+        one_bool.type_shape.has_padding,
         "has_padding mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_flexible_envelope, true,
+    assert!(
+        one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_bool"
     );
     assert_eq!(
@@ -956,12 +954,12 @@ type TableWithBoolAndU64 = table {
         two_bools.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_padding, true,
+    assert!(
+        two_bools.type_shape.has_padding,
         "has_padding mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_flexible_envelope, true,
+    assert!(
+        two_bools.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for two_bools"
     );
     assert_eq!(
@@ -984,12 +982,12 @@ type TableWithBoolAndU64 = table {
         bool_and_u32.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_padding, true,
+    assert!(
+        bool_and_u32.type_shape.has_padding,
         "has_padding mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_flexible_envelope, true,
+    assert!(
+        bool_and_u32.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u32"
     );
     assert_eq!(
@@ -1012,12 +1010,12 @@ type TableWithBoolAndU64 = table {
         bool_and_u64.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_padding, true,
+    assert!(
+        bool_and_u64.type_shape.has_padding,
         "has_padding mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_flexible_envelope, true,
+    assert!(
+        bool_and_u64.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u64"
     );
 }
@@ -1067,12 +1065,12 @@ type GapAtStart = table {
         some_reserved.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for some_reserved"
     );
-    assert_eq!(
-        some_reserved.type_shape.has_padding, true,
+    assert!(
+        some_reserved.type_shape.has_padding,
         "has_padding mismatch for some_reserved"
     );
-    assert_eq!(
-        some_reserved.type_shape.has_flexible_envelope, true,
+    assert!(
+        some_reserved.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for some_reserved"
     );
     assert_eq!(
@@ -1095,12 +1093,12 @@ type GapAtStart = table {
         last_non_reserved.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for last_non_reserved"
     );
-    assert_eq!(
-        last_non_reserved.type_shape.has_padding, true,
+    assert!(
+        last_non_reserved.type_shape.has_padding,
         "has_padding mismatch for last_non_reserved"
     );
-    assert_eq!(
-        last_non_reserved.type_shape.has_flexible_envelope, true,
+    assert!(
+        last_non_reserved.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for last_non_reserved"
     );
 }
@@ -1145,12 +1143,12 @@ type TableWithOneHandle = resource table {
         one_handle.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for one_handle"
     );
-    assert_eq!(
-        one_handle.type_shape.has_padding, false,
+    assert!(
+        !one_handle.type_shape.has_padding,
         "has_padding mismatch for one_handle"
     );
-    assert_eq!(
-        one_handle.type_shape.has_flexible_envelope, true,
+    assert!(
+        one_handle.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_handle"
     );
 }
@@ -1229,12 +1227,12 @@ type OptionalBoolAndU64 = struct {
         one_bool.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_padding, true,
+    assert!(
+        one_bool.type_shape.has_padding,
         "has_padding mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_flexible_envelope, false,
+    assert!(
+        !one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_bool"
     );
     assert_eq!(
@@ -1257,12 +1255,12 @@ type OptionalBoolAndU64 = struct {
         two_bools.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_padding, true,
+    assert!(
+        two_bools.type_shape.has_padding,
         "has_padding mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_flexible_envelope, false,
+    assert!(
+        !two_bools.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for two_bools"
     );
     assert_eq!(
@@ -1285,12 +1283,12 @@ type OptionalBoolAndU64 = struct {
         bool_and_u32.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_padding, true,
+    assert!(
+        bool_and_u32.type_shape.has_padding,
         "has_padding mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_flexible_envelope, false,
+    assert!(
+        !bool_and_u32.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u32"
     );
     assert_eq!(
@@ -1313,12 +1311,12 @@ type OptionalBoolAndU64 = struct {
         bool_and_u64.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_padding, true,
+    assert!(
+        bool_and_u64.type_shape.has_padding,
         "has_padding mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_flexible_envelope, false,
+    assert!(
+        !bool_and_u64.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u64"
     );
 }
@@ -1444,12 +1442,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         one_bool.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_padding, true,
+    assert!(
+        one_bool.type_shape.has_padding,
         "has_padding mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_flexible_envelope, true,
+    assert!(
+        one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_bool"
     );
     assert_eq!(
@@ -1472,12 +1470,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         table_with_one_bool.type_shape.max_out_of_line, 32,
         "max_out_of_line mismatch for table_with_one_bool"
     );
-    assert_eq!(
-        table_with_one_bool.type_shape.has_padding, true,
+    assert!(
+        table_with_one_bool.type_shape.has_padding,
         "has_padding mismatch for table_with_one_bool"
     );
-    assert_eq!(
-        table_with_one_bool.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_one_bool"
     );
     assert_eq!(
@@ -1500,12 +1498,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         two_bools.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_padding, true,
+    assert!(
+        two_bools.type_shape.has_padding,
         "has_padding mismatch for two_bools"
     );
-    assert_eq!(
-        two_bools.type_shape.has_flexible_envelope, true,
+    assert!(
+        two_bools.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for two_bools"
     );
     assert_eq!(
@@ -1528,12 +1526,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         table_with_two_bools.type_shape.max_out_of_line, 40,
         "max_out_of_line mismatch for table_with_two_bools"
     );
-    assert_eq!(
-        table_with_two_bools.type_shape.has_padding, true,
+    assert!(
+        table_with_two_bools.type_shape.has_padding,
         "has_padding mismatch for table_with_two_bools"
     );
-    assert_eq!(
-        table_with_two_bools.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_two_bools.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_two_bools"
     );
     assert_eq!(
@@ -1556,12 +1554,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         bool_and_u32.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_padding, true,
+    assert!(
+        bool_and_u32.type_shape.has_padding,
         "has_padding mismatch for bool_and_u32"
     );
-    assert_eq!(
-        bool_and_u32.type_shape.has_flexible_envelope, true,
+    assert!(
+        bool_and_u32.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u32"
     );
     assert_eq!(
@@ -1584,12 +1582,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         table_with_bool_and_u32.type_shape.max_out_of_line, 40,
         "max_out_of_line mismatch for table_with_bool_and_u32"
     );
-    assert_eq!(
-        table_with_bool_and_u32.type_shape.has_padding, true,
+    assert!(
+        table_with_bool_and_u32.type_shape.has_padding,
         "has_padding mismatch for table_with_bool_and_u32"
     );
-    assert_eq!(
-        table_with_bool_and_u32.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_bool_and_u32.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_bool_and_u32"
     );
     assert_eq!(
@@ -1612,12 +1610,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         bool_and_u64.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_padding, true,
+    assert!(
+        bool_and_u64.type_shape.has_padding,
         "has_padding mismatch for bool_and_u64"
     );
-    assert_eq!(
-        bool_and_u64.type_shape.has_flexible_envelope, true,
+    assert!(
+        bool_and_u64.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for bool_and_u64"
     );
     assert_eq!(
@@ -1640,12 +1638,12 @@ type TableWithOptionalTableWithBoolAndU64 = table {
         table_with_bool_and_u64.type_shape.max_out_of_line, 48,
         "max_out_of_line mismatch for table_with_bool_and_u64"
     );
-    assert_eq!(
-        table_with_bool_and_u64.type_shape.has_padding, true,
+    assert!(
+        table_with_bool_and_u64.type_shape.has_padding,
         "has_padding mismatch for table_with_bool_and_u64"
     );
-    assert_eq!(
-        table_with_bool_and_u64.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_bool_and_u64.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_bool_and_u64"
     );
 }
@@ -1722,12 +1720,12 @@ type TableWithOptionalUnion = table {
         union_with_out_of_line.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for union_with_out_of_line"
     );
-    assert_eq!(
-        union_with_out_of_line.type_shape.has_padding, true,
+    assert!(
+        union_with_out_of_line.type_shape.has_padding,
         "has_padding mismatch for union_with_out_of_line"
     );
-    assert_eq!(
-        union_with_out_of_line.type_shape.has_flexible_envelope, false,
+    assert!(
+        !union_with_out_of_line.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for union_with_out_of_line"
     );
     assert_eq!(
@@ -1747,12 +1745,12 @@ type TableWithOptionalUnion = table {
         a_union.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for a_union"
     );
-    assert_eq!(
-        a_union.type_shape.has_padding, true,
+    assert!(
+        a_union.type_shape.has_padding,
         "has_padding mismatch for a_union"
     );
-    assert_eq!(
-        a_union.type_shape.has_flexible_envelope, false,
+    assert!(
+        !a_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for a_union"
     );
     assert_eq!(
@@ -1775,12 +1773,12 @@ type TableWithOptionalUnion = table {
         optional_union.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for optional_union"
     );
-    assert_eq!(
-        optional_union.type_shape.has_padding, true,
+    assert!(
+        optional_union.type_shape.has_padding,
         "has_padding mismatch for optional_union"
     );
-    assert_eq!(
-        optional_union.type_shape.has_flexible_envelope, false,
+    assert!(
+        !optional_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for optional_union"
     );
     assert_eq!(
@@ -1803,12 +1801,12 @@ type TableWithOptionalUnion = table {
         table_with_optional_union.type_shape.max_out_of_line, 40,
         "max_out_of_line mismatch for table_with_optional_union"
     );
-    assert_eq!(
-        table_with_optional_union.type_shape.has_padding, true,
+    assert!(
+        table_with_optional_union.type_shape.has_padding,
         "has_padding mismatch for table_with_optional_union"
     );
-    assert_eq!(
-        table_with_optional_union.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_optional_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_optional_union"
     );
 }
@@ -1864,12 +1862,12 @@ type ManyHandleUnion = strict resource union {
         one_handle_union.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for one_handle_union"
     );
-    assert_eq!(
-        one_handle_union.type_shape.has_padding, true,
+    assert!(
+        one_handle_union.type_shape.has_padding,
         "has_padding mismatch for one_handle_union"
     );
-    assert_eq!(
-        one_handle_union.type_shape.has_flexible_envelope, false,
+    assert!(
+        !one_handle_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_handle_union"
     );
     assert_eq!(
@@ -1892,12 +1890,12 @@ type ManyHandleUnion = strict resource union {
         many_handle_union.type_shape.max_out_of_line, 48,
         "max_out_of_line mismatch for many_handle_union"
     );
-    assert_eq!(
-        many_handle_union.type_shape.has_padding, true,
+    assert!(
+        many_handle_union.type_shape.has_padding,
         "has_padding mismatch for many_handle_union"
     );
-    assert_eq!(
-        many_handle_union.type_shape.has_flexible_envelope, false,
+    assert!(
+        !many_handle_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for many_handle_union"
     );
 }
@@ -1972,12 +1970,12 @@ type BoolOverlayAndUint8Struct = struct {
         u64_bool_struct.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for u64_bool_struct"
     );
-    assert_eq!(
-        u64_bool_struct.type_shape.has_padding, true,
+    assert!(
+        u64_bool_struct.type_shape.has_padding,
         "has_padding mismatch for u64_bool_struct"
     );
-    assert_eq!(
-        u64_bool_struct.type_shape.has_flexible_envelope, false,
+    assert!(
+        !u64_bool_struct.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for u64_bool_struct"
     );
     let member_bool_overlay_struct_0 = bool_overlay_struct.members[0].clone();
@@ -2090,12 +2088,12 @@ type TableWithUnboundedVectors = table {
         padded_vector.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for padded_vector"
     );
-    assert_eq!(
-        padded_vector.type_shape.has_padding, true,
+    assert!(
+        padded_vector.type_shape.has_padding,
         "has_padding mismatch for padded_vector"
     );
-    assert_eq!(
-        padded_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !padded_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for padded_vector"
     );
     assert_eq!(
@@ -2118,12 +2116,12 @@ type TableWithUnboundedVectors = table {
         no_padding_vector.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for no_padding_vector"
     );
-    assert_eq!(
-        no_padding_vector.type_shape.has_padding, false,
+    assert!(
+        !no_padding_vector.type_shape.has_padding,
         "has_padding mismatch for no_padding_vector"
     );
-    assert_eq!(
-        no_padding_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !no_padding_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for no_padding_vector"
     );
     assert_eq!(
@@ -2147,12 +2145,12 @@ type TableWithUnboundedVectors = table {
         u32::MAX,
         "max_out_of_line mismatch for unbounded_vector"
     );
-    assert_eq!(
-        unbounded_vector.type_shape.has_padding, true,
+    assert!(
+        unbounded_vector.type_shape.has_padding,
         "has_padding mismatch for unbounded_vector"
     );
-    assert_eq!(
-        unbounded_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !unbounded_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for unbounded_vector"
     );
     assert_eq!(
@@ -2176,12 +2174,12 @@ type TableWithUnboundedVectors = table {
         u32::MAX,
         "max_out_of_line mismatch for unbounded_vectors"
     );
-    assert_eq!(
-        unbounded_vectors.type_shape.has_padding, true,
+    assert!(
+        unbounded_vectors.type_shape.has_padding,
         "has_padding mismatch for unbounded_vectors"
     );
-    assert_eq!(
-        unbounded_vectors.type_shape.has_flexible_envelope, false,
+    assert!(
+        !unbounded_vectors.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for unbounded_vectors"
     );
     assert_eq!(
@@ -2204,12 +2202,12 @@ type TableWithUnboundedVectors = table {
         table_with_padded_vector.type_shape.max_out_of_line, 40,
         "max_out_of_line mismatch for table_with_padded_vector"
     );
-    assert_eq!(
-        table_with_padded_vector.type_shape.has_padding, true,
+    assert!(
+        table_with_padded_vector.type_shape.has_padding,
         "has_padding mismatch for table_with_padded_vector"
     );
-    assert_eq!(
-        table_with_padded_vector.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_padded_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_padded_vector"
     );
     assert_eq!(
@@ -2233,12 +2231,12 @@ type TableWithUnboundedVectors = table {
         u32::MAX,
         "max_out_of_line mismatch for table_with_unbounded_vector"
     );
-    assert_eq!(
-        table_with_unbounded_vector.type_shape.has_padding, true,
+    assert!(
+        table_with_unbounded_vector.type_shape.has_padding,
         "has_padding mismatch for table_with_unbounded_vector"
     );
-    assert_eq!(
-        table_with_unbounded_vector.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_unbounded_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_unbounded_vector"
     );
     assert_eq!(
@@ -2262,15 +2260,14 @@ type TableWithUnboundedVectors = table {
         u32::MAX,
         "max_out_of_line mismatch for table_with_unbounded_vectors"
     );
-    assert_eq!(
-        table_with_unbounded_vectors.type_shape.has_padding, true,
+    assert!(
+        table_with_unbounded_vectors.type_shape.has_padding,
         "has_padding mismatch for table_with_unbounded_vectors"
     );
-    assert_eq!(
+    assert!(
         table_with_unbounded_vectors
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for table_with_unbounded_vectors"
     );
 }
@@ -2369,12 +2366,12 @@ type TableWithHandleStructVector = resource table {
         handle_vector.type_shape.max_out_of_line, 32,
         "max_out_of_line mismatch for handle_vector"
     );
-    assert_eq!(
-        handle_vector.type_shape.has_padding, true,
+    assert!(
+        handle_vector.type_shape.has_padding,
         "has_padding mismatch for handle_vector"
     );
-    assert_eq!(
-        handle_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !handle_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for handle_vector"
     );
     assert_eq!(
@@ -2397,12 +2394,12 @@ type TableWithHandleStructVector = resource table {
         handle_nullable_vector.type_shape.max_out_of_line, 32,
         "max_out_of_line mismatch for handle_nullable_vector"
     );
-    assert_eq!(
-        handle_nullable_vector.type_shape.has_padding, true,
+    assert!(
+        handle_nullable_vector.type_shape.has_padding,
         "has_padding mismatch for handle_nullable_vector"
     );
-    assert_eq!(
-        handle_nullable_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !handle_nullable_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for handle_nullable_vector"
     );
     assert_eq!(
@@ -2427,12 +2424,12 @@ type TableWithHandleStructVector = resource table {
         u32::MAX,
         "max_out_of_line mismatch for unbounded_handle_vector"
     );
-    assert_eq!(
-        unbounded_handle_vector.type_shape.has_padding, true,
+    assert!(
+        unbounded_handle_vector.type_shape.has_padding,
         "has_padding mismatch for unbounded_handle_vector"
     );
-    assert_eq!(
-        unbounded_handle_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !unbounded_handle_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for unbounded_handle_vector"
     );
     assert_eq!(
@@ -2459,15 +2456,14 @@ type TableWithHandleStructVector = resource table {
         u32::MAX,
         "max_out_of_line mismatch for table_with_unbounded_handle_vector"
     );
-    assert_eq!(
-        table_with_unbounded_handle_vector.type_shape.has_padding, true,
+    assert!(
+        table_with_unbounded_handle_vector.type_shape.has_padding,
         "has_padding mismatch for table_with_unbounded_handle_vector"
     );
-    assert_eq!(
+    assert!(
         table_with_unbounded_handle_vector
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for table_with_unbounded_handle_vector"
     );
     assert_eq!(
@@ -2490,12 +2486,12 @@ type TableWithHandleStructVector = resource table {
         handle_struct_vector.type_shape.max_out_of_line, 32,
         "max_out_of_line mismatch for handle_struct_vector"
     );
-    assert_eq!(
-        handle_struct_vector.type_shape.has_padding, true,
+    assert!(
+        handle_struct_vector.type_shape.has_padding,
         "has_padding mismatch for handle_struct_vector"
     );
-    assert_eq!(
-        handle_struct_vector.type_shape.has_flexible_envelope, false,
+    assert!(
+        !handle_struct_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for handle_struct_vector"
     );
     assert_eq!(
@@ -2518,12 +2514,12 @@ type TableWithHandleStructVector = resource table {
         handle_table_vector.type_shape.max_out_of_line, 192,
         "max_out_of_line mismatch for handle_table_vector"
     );
-    assert_eq!(
-        handle_table_vector.type_shape.has_padding, false,
+    assert!(
+        !handle_table_vector.type_shape.has_padding,
         "has_padding mismatch for handle_table_vector"
     );
-    assert_eq!(
-        handle_table_vector.type_shape.has_flexible_envelope, true,
+    assert!(
+        handle_table_vector.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for handle_table_vector"
     );
     assert_eq!(
@@ -2546,15 +2542,14 @@ type TableWithHandleStructVector = resource table {
         table_with_handle_struct_vector.type_shape.max_out_of_line, 56,
         "max_out_of_line mismatch for table_with_handle_struct_vector"
     );
-    assert_eq!(
-        table_with_handle_struct_vector.type_shape.has_padding, true,
+    assert!(
+        table_with_handle_struct_vector.type_shape.has_padding,
         "has_padding mismatch for table_with_handle_struct_vector"
     );
-    assert_eq!(
+    assert!(
         table_with_handle_struct_vector
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for table_with_handle_struct_vector"
     );
 }
@@ -2617,12 +2612,12 @@ type TableWithUnboundedString = table {
         short_string.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for short_string"
     );
-    assert_eq!(
-        short_string.type_shape.has_padding, true,
+    assert!(
+        short_string.type_shape.has_padding,
         "has_padding mismatch for short_string"
     );
-    assert_eq!(
-        short_string.type_shape.has_flexible_envelope, false,
+    assert!(
+        !short_string.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for short_string"
     );
     assert_eq!(
@@ -2646,12 +2641,12 @@ type TableWithUnboundedString = table {
         u32::MAX,
         "max_out_of_line mismatch for unbounded_string"
     );
-    assert_eq!(
-        unbounded_string.type_shape.has_padding, true,
+    assert!(
+        unbounded_string.type_shape.has_padding,
         "has_padding mismatch for unbounded_string"
     );
-    assert_eq!(
-        unbounded_string.type_shape.has_flexible_envelope, false,
+    assert!(
+        !unbounded_string.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for unbounded_string"
     );
     assert_eq!(
@@ -2674,12 +2669,12 @@ type TableWithUnboundedString = table {
         table_with_short_string.type_shape.max_out_of_line, 32,
         "max_out_of_line mismatch for table_with_short_string"
     );
-    assert_eq!(
-        table_with_short_string.type_shape.has_padding, true,
+    assert!(
+        table_with_short_string.type_shape.has_padding,
         "has_padding mismatch for table_with_short_string"
     );
-    assert_eq!(
-        table_with_short_string.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_short_string.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_short_string"
     );
     assert_eq!(
@@ -2703,12 +2698,12 @@ type TableWithUnboundedString = table {
         u32::MAX,
         "max_out_of_line mismatch for table_with_unbounded_string"
     );
-    assert_eq!(
-        table_with_unbounded_string.type_shape.has_padding, true,
+    assert!(
+        table_with_unbounded_string.type_shape.has_padding,
         "has_padding mismatch for table_with_unbounded_string"
     );
-    assert_eq!(
-        table_with_unbounded_string.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_unbounded_string.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_unbounded_string"
     );
 }
@@ -2750,12 +2745,12 @@ type StringArray = struct {
         string_array.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for string_array"
     );
-    assert_eq!(
-        string_array.type_shape.has_padding, false,
+    assert!(
+        !string_array.type_shape.has_padding,
         "has_padding mismatch for string_array"
     );
-    assert_eq!(
-        string_array.type_shape.has_flexible_envelope, false,
+    assert!(
+        !string_array.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for string_array"
     );
 }
@@ -2815,12 +2810,12 @@ type TableWithAnInt32ArrayNoPadding = table {
         an_array.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for an_array"
     );
-    assert_eq!(
-        an_array.type_shape.has_padding, false,
+    assert!(
+        !an_array.type_shape.has_padding,
         "has_padding mismatch for an_array"
     );
-    assert_eq!(
-        an_array.type_shape.has_flexible_envelope, false,
+    assert!(
+        !an_array.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for an_array"
     );
     assert_eq!(
@@ -2843,12 +2838,12 @@ type TableWithAnInt32ArrayNoPadding = table {
         table_with_an_array.type_shape.max_out_of_line, 48,
         "max_out_of_line mismatch for table_with_an_array"
     );
-    assert_eq!(
-        table_with_an_array.type_shape.has_padding, false,
+    assert!(
+        !table_with_an_array.type_shape.has_padding,
         "has_padding mismatch for table_with_an_array"
     );
-    assert_eq!(
-        table_with_an_array.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_an_array.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_an_array"
     );
     assert_eq!(
@@ -2880,18 +2875,16 @@ type TableWithAnInt32ArrayNoPadding = table {
         24,
         "max_out_of_line mismatch for table_with_an_int32_array_with_padding"
     );
-    assert_eq!(
+    assert!(
         table_with_an_int32_array_with_padding
             .type_shape
             .has_padding,
-        true,
         "has_padding mismatch for table_with_an_int32_array_with_padding"
     );
-    assert_eq!(
+    assert!(
         table_with_an_int32_array_with_padding
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for table_with_an_int32_array_with_padding"
     );
     assert_eq!(
@@ -2917,15 +2910,14 @@ type TableWithAnInt32ArrayNoPadding = table {
         24,
         "max_out_of_line mismatch for table_with_an_int32_array_no_padding"
     );
-    assert_eq!(
-        table_with_an_int32_array_no_padding.type_shape.has_padding, false,
+    assert!(
+        !table_with_an_int32_array_no_padding.type_shape.has_padding,
         "has_padding mismatch for table_with_an_int32_array_no_padding"
     );
-    assert_eq!(
+    assert!(
         table_with_an_int32_array_no_padding
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for table_with_an_int32_array_no_padding"
     );
 }
@@ -2991,12 +2983,12 @@ type TableWithNullableHandleArray = resource table {
         handle_array.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for handle_array"
     );
-    assert_eq!(
-        handle_array.type_shape.has_padding, false,
+    assert!(
+        !handle_array.type_shape.has_padding,
         "has_padding mismatch for handle_array"
     );
-    assert_eq!(
-        handle_array.type_shape.has_flexible_envelope, false,
+    assert!(
+        !handle_array.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for handle_array"
     );
     assert_eq!(
@@ -3019,12 +3011,12 @@ type TableWithNullableHandleArray = resource table {
         table_with_handle_array.type_shape.max_out_of_line, 40,
         "max_out_of_line mismatch for table_with_handle_array"
     );
-    assert_eq!(
-        table_with_handle_array.type_shape.has_padding, false,
+    assert!(
+        !table_with_handle_array.type_shape.has_padding,
         "has_padding mismatch for table_with_handle_array"
     );
-    assert_eq!(
-        table_with_handle_array.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_with_handle_array.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_with_handle_array"
     );
     assert_eq!(
@@ -3047,12 +3039,12 @@ type TableWithNullableHandleArray = resource table {
         nullable_handle_array.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for nullable_handle_array"
     );
-    assert_eq!(
-        nullable_handle_array.type_shape.has_padding, false,
+    assert!(
+        !nullable_handle_array.type_shape.has_padding,
         "has_padding mismatch for nullable_handle_array"
     );
-    assert_eq!(
-        nullable_handle_array.type_shape.has_flexible_envelope, false,
+    assert!(
+        !nullable_handle_array.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for nullable_handle_array"
     );
     assert_eq!(
@@ -3075,15 +3067,14 @@ type TableWithNullableHandleArray = resource table {
         table_with_nullable_handle_array.type_shape.max_out_of_line, 40,
         "max_out_of_line mismatch for table_with_nullable_handle_array"
     );
-    assert_eq!(
-        table_with_nullable_handle_array.type_shape.has_padding, false,
+    assert!(
+        !table_with_nullable_handle_array.type_shape.has_padding,
         "has_padding mismatch for table_with_nullable_handle_array"
     );
-    assert_eq!(
+    assert!(
         table_with_nullable_handle_array
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for table_with_nullable_handle_array"
     );
 }
@@ -3172,12 +3163,12 @@ type PaddingCheck = flexible union {
         one_bool.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_padding, true,
+    assert!(
+        one_bool.type_shape.has_padding,
         "has_padding mismatch for one_bool"
     );
-    assert_eq!(
-        one_bool.type_shape.has_flexible_envelope, true,
+    assert!(
+        one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for one_bool"
     );
     assert_eq!(
@@ -3200,12 +3191,12 @@ type PaddingCheck = flexible union {
         opt_one_bool.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for opt_one_bool"
     );
-    assert_eq!(
-        opt_one_bool.type_shape.has_padding, true,
+    assert!(
+        opt_one_bool.type_shape.has_padding,
         "has_padding mismatch for opt_one_bool"
     );
-    assert_eq!(
-        opt_one_bool.type_shape.has_flexible_envelope, true,
+    assert!(
+        opt_one_bool.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for opt_one_bool"
     );
     assert_eq!(xu.type_shape.inline_size, 16, "inline_size mismatch for xu");
@@ -3216,12 +3207,9 @@ type PaddingCheck = flexible union {
         xu.type_shape.max_out_of_line, 256,
         "max_out_of_line mismatch for xu"
     );
-    assert_eq!(
-        xu.type_shape.has_padding, true,
-        "has_padding mismatch for xu"
-    );
-    assert_eq!(
-        xu.type_shape.has_flexible_envelope, true,
+    assert!(xu.type_shape.has_padding, "has_padding mismatch for xu");
+    assert!(
+        xu.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for xu"
     );
     assert_eq!(
@@ -3245,12 +3233,12 @@ type PaddingCheck = flexible union {
         u32::MAX,
         "max_out_of_line mismatch for unbounded"
     );
-    assert_eq!(
-        unbounded.type_shape.has_padding, true,
+    assert!(
+        unbounded.type_shape.has_padding,
         "has_padding mismatch for unbounded"
     );
-    assert_eq!(
-        unbounded.type_shape.has_flexible_envelope, true,
+    assert!(
+        unbounded.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for unbounded"
     );
     assert_eq!(
@@ -3273,12 +3261,12 @@ type PaddingCheck = flexible union {
         xu_no_payload_padding.type_shape.max_out_of_line, 56,
         "max_out_of_line mismatch for xu_no_payload_padding"
     );
-    assert_eq!(
-        xu_no_payload_padding.type_shape.has_padding, false,
+    assert!(
+        !xu_no_payload_padding.type_shape.has_padding,
         "has_padding mismatch for xu_no_payload_padding"
     );
-    assert_eq!(
-        xu_no_payload_padding.type_shape.has_flexible_envelope, true,
+    assert!(
+        xu_no_payload_padding.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for xu_no_payload_padding"
     );
     assert_eq!(
@@ -3301,12 +3289,12 @@ type PaddingCheck = flexible union {
         padding_check.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for padding_check"
     );
-    assert_eq!(
-        padding_check.type_shape.has_padding, true,
+    assert!(
+        padding_check.type_shape.has_padding,
         "has_padding mismatch for padding_check"
     );
-    assert_eq!(
-        padding_check.type_shape.has_flexible_envelope, true,
+    assert!(
+        padding_check.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for padding_check"
     );
 }
@@ -3395,12 +3383,12 @@ type StrictUnionOfFlexibleTable = strict union {
         strict_union.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for strict_union"
     );
-    assert_eq!(
-        strict_union.type_shape.has_padding, false,
+    assert!(
+        !strict_union.type_shape.has_padding,
         "has_padding mismatch for strict_union"
     );
-    assert_eq!(
-        strict_union.type_shape.has_flexible_envelope, false,
+    assert!(
+        !strict_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for strict_union"
     );
     assert_eq!(
@@ -3423,12 +3411,12 @@ type StrictUnionOfFlexibleTable = strict union {
         flexible_union.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for flexible_union"
     );
-    assert_eq!(
-        flexible_union.type_shape.has_padding, false,
+    assert!(
+        !flexible_union.type_shape.has_padding,
         "has_padding mismatch for flexible_union"
     );
-    assert_eq!(
-        flexible_union.type_shape.has_flexible_envelope, true,
+    assert!(
+        flexible_union.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for flexible_union"
     );
     assert_eq!(
@@ -3451,12 +3439,12 @@ type StrictUnionOfFlexibleTable = strict union {
         flexible_of_strict.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for flexible_of_strict"
     );
-    assert_eq!(
-        flexible_of_strict.type_shape.has_padding, false,
+    assert!(
+        !flexible_of_strict.type_shape.has_padding,
         "has_padding mismatch for flexible_of_strict"
     );
-    assert_eq!(
-        flexible_of_strict.type_shape.has_flexible_envelope, true,
+    assert!(
+        flexible_of_strict.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for flexible_of_strict"
     );
     assert_eq!(
@@ -3479,12 +3467,12 @@ type StrictUnionOfFlexibleTable = strict union {
         flexible_of_flexible.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for flexible_of_flexible"
     );
-    assert_eq!(
-        flexible_of_flexible.type_shape.has_padding, false,
+    assert!(
+        !flexible_of_flexible.type_shape.has_padding,
         "has_padding mismatch for flexible_of_flexible"
     );
-    assert_eq!(
-        flexible_of_flexible.type_shape.has_flexible_envelope, true,
+    assert!(
+        flexible_of_flexible.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for flexible_of_flexible"
     );
     assert_eq!(
@@ -3507,12 +3495,12 @@ type StrictUnionOfFlexibleTable = strict union {
         strict_of_strict.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for strict_of_strict"
     );
-    assert_eq!(
-        strict_of_strict.type_shape.has_padding, false,
+    assert!(
+        !strict_of_strict.type_shape.has_padding,
         "has_padding mismatch for strict_of_strict"
     );
-    assert_eq!(
-        strict_of_strict.type_shape.has_flexible_envelope, false,
+    assert!(
+        !strict_of_strict.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for strict_of_strict"
     );
     assert_eq!(
@@ -3535,12 +3523,12 @@ type StrictUnionOfFlexibleTable = strict union {
         strict_of_flexible.type_shape.max_out_of_line, 24,
         "max_out_of_line mismatch for strict_of_flexible"
     );
-    assert_eq!(
-        strict_of_flexible.type_shape.has_padding, false,
+    assert!(
+        !strict_of_flexible.type_shape.has_padding,
         "has_padding mismatch for strict_of_flexible"
     );
-    assert_eq!(
-        strict_of_flexible.type_shape.has_flexible_envelope, true,
+    assert!(
+        strict_of_flexible.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for strict_of_flexible"
     );
     assert_eq!(
@@ -3563,12 +3551,12 @@ type StrictUnionOfFlexibleTable = strict union {
         flexible_table.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for flexible_table"
     );
-    assert_eq!(
-        flexible_table.type_shape.has_padding, false,
+    assert!(
+        !flexible_table.type_shape.has_padding,
         "has_padding mismatch for flexible_table"
     );
-    assert_eq!(
-        flexible_table.type_shape.has_flexible_envelope, true,
+    assert!(
+        flexible_table.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for flexible_table"
     );
     assert_eq!(
@@ -3591,15 +3579,14 @@ type StrictUnionOfFlexibleTable = strict union {
         strict_union_of_flexible_table.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for strict_union_of_flexible_table"
     );
-    assert_eq!(
-        strict_union_of_flexible_table.type_shape.has_padding, false,
+    assert!(
+        !strict_union_of_flexible_table.type_shape.has_padding,
         "has_padding mismatch for strict_union_of_flexible_table"
     );
-    assert_eq!(
+    assert!(
         strict_union_of_flexible_table
             .type_shape
             .has_flexible_envelope,
-        true,
         "has_flexible_envelope mismatch for strict_union_of_flexible_table"
     );
 }
@@ -3664,12 +3651,12 @@ type UsingOptRequestSomeProtocol = resource struct {
         using_some_protocol.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for using_some_protocol"
     );
-    assert_eq!(
-        using_some_protocol.type_shape.has_padding, false,
+    assert!(
+        !using_some_protocol.type_shape.has_padding,
         "has_padding mismatch for using_some_protocol"
     );
-    assert_eq!(
-        using_some_protocol.type_shape.has_flexible_envelope, false,
+    assert!(
+        !using_some_protocol.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for using_some_protocol"
     );
     assert_eq!(
@@ -3692,12 +3679,12 @@ type UsingOptRequestSomeProtocol = resource struct {
         using_opt_some_protocol.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for using_opt_some_protocol"
     );
-    assert_eq!(
-        using_opt_some_protocol.type_shape.has_padding, false,
+    assert!(
+        !using_opt_some_protocol.type_shape.has_padding,
         "has_padding mismatch for using_opt_some_protocol"
     );
-    assert_eq!(
-        using_opt_some_protocol.type_shape.has_flexible_envelope, false,
+    assert!(
+        !using_opt_some_protocol.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for using_opt_some_protocol"
     );
     assert_eq!(
@@ -3720,12 +3707,12 @@ type UsingOptRequestSomeProtocol = resource struct {
         using_request_some_protocol.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for using_request_some_protocol"
     );
-    assert_eq!(
-        using_request_some_protocol.type_shape.has_padding, false,
+    assert!(
+        !using_request_some_protocol.type_shape.has_padding,
         "has_padding mismatch for using_request_some_protocol"
     );
-    assert_eq!(
-        using_request_some_protocol.type_shape.has_flexible_envelope, false,
+    assert!(
+        !using_request_some_protocol.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for using_request_some_protocol"
     );
     assert_eq!(
@@ -3748,15 +3735,14 @@ type UsingOptRequestSomeProtocol = resource struct {
         using_opt_request_some_protocol.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for using_opt_request_some_protocol"
     );
-    assert_eq!(
-        using_opt_request_some_protocol.type_shape.has_padding, false,
+    assert!(
+        !using_opt_request_some_protocol.type_shape.has_padding,
         "has_padding mismatch for using_opt_request_some_protocol"
     );
-    assert_eq!(
-        using_opt_request_some_protocol
+    assert!(
+        !using_opt_request_some_protocol
             .type_shape
             .has_flexible_envelope,
-        false,
         "has_flexible_envelope mismatch for using_opt_request_some_protocol"
     );
 }
@@ -3847,12 +3833,12 @@ protocol MessagePort {
         web_message.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_padding, false,
+    assert!(
+        !web_message.type_shape.has_padding,
         "has_padding mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_flexible_envelope, false,
+    assert!(
+        !web_message.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for web_message"
     );
     let member_web_message_0 = web_message.members[0].clone();
@@ -3914,12 +3900,12 @@ protocol MessagePort {
         web_message.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_padding, false,
+    assert!(
+        !web_message.type_shape.has_padding,
         "has_padding mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_flexible_envelope, false,
+    assert!(
+        !web_message.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for web_message"
     );
 }
@@ -3972,12 +3958,12 @@ protocol MessagePort {
         web_message.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_padding, false,
+    assert!(
+        !web_message.type_shape.has_padding,
         "has_padding mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_flexible_envelope, false,
+    assert!(
+        !web_message.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for web_message"
     );
 }
@@ -4030,12 +4016,12 @@ protocol MessagePort {
         web_message.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_padding, false,
+    assert!(
+        !web_message.type_shape.has_padding,
         "has_padding mismatch for web_message"
     );
-    assert_eq!(
-        web_message.type_shape.has_flexible_envelope, false,
+    assert!(
+        !web_message.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for web_message"
     );
 }
@@ -4079,12 +4065,12 @@ type TheStruct = struct {
         u32::MAX,
         "max_out_of_line mismatch for the_struct"
     );
-    assert_eq!(
-        the_struct.type_shape.has_padding, false,
+    assert!(
+        !the_struct.type_shape.has_padding,
         "has_padding mismatch for the_struct"
     );
-    assert_eq!(
-        the_struct.type_shape.has_flexible_envelope, false,
+    assert!(
+        !the_struct.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for the_struct"
     );
     let member_the_struct_0 = the_struct.members[0].clone();
@@ -4142,12 +4128,12 @@ type TheStruct = resource struct {
         u32::MAX,
         "max_out_of_line mismatch for the_struct"
     );
-    assert_eq!(
-        the_struct.type_shape.has_padding, true,
+    assert!(
+        the_struct.type_shape.has_padding,
         "has_padding mismatch for the_struct"
     );
-    assert_eq!(
-        the_struct.type_shape.has_flexible_envelope, false,
+    assert!(
+        !the_struct.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for the_struct"
     );
     let member_the_struct_0 = the_struct.members[0].clone();
@@ -4212,12 +4198,12 @@ type B = struct {
         u32::MAX,
         "max_out_of_line mismatch for struct_a"
     );
-    assert_eq!(
-        struct_a.type_shape.has_padding, false,
+    assert!(
+        !struct_a.type_shape.has_padding,
         "has_padding mismatch for struct_a"
     );
-    assert_eq!(
-        struct_a.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_a.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_a"
     );
     assert_eq!(
@@ -4242,12 +4228,12 @@ type B = struct {
         u32::MAX,
         "max_out_of_line mismatch for struct_b"
     );
-    assert_eq!(
-        struct_b.type_shape.has_padding, false,
+    assert!(
+        !struct_b.type_shape.has_padding,
         "has_padding mismatch for struct_b"
     );
-    assert_eq!(
-        struct_b.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_b.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_b"
     );
 }
@@ -4300,12 +4286,12 @@ type B = resource struct {
         u32::MAX,
         "max_out_of_line mismatch for struct_a"
     );
-    assert_eq!(
-        struct_a.type_shape.has_padding, true,
+    assert!(
+        struct_a.type_shape.has_padding,
         "has_padding mismatch for struct_a"
     );
-    assert_eq!(
-        struct_a.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_a.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_a"
     );
     assert_eq!(
@@ -4331,12 +4317,12 @@ type B = resource struct {
         u32::MAX,
         "max_out_of_line mismatch for struct_b"
     );
-    assert_eq!(
-        struct_b.type_shape.has_padding, true,
+    assert!(
+        struct_b.type_shape.has_padding,
         "has_padding mismatch for struct_b"
     );
-    assert_eq!(
-        struct_b.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_b.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_b"
     );
 }
@@ -4383,12 +4369,12 @@ type Bar = struct {
         u32::MAX,
         "max_out_of_line mismatch for struct_foo"
     );
-    assert_eq!(
-        struct_foo.type_shape.has_padding, false,
+    assert!(
+        !struct_foo.type_shape.has_padding,
         "has_padding mismatch for struct_foo"
     );
-    assert_eq!(
-        struct_foo.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_foo.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_foo"
     );
     assert_eq!(
@@ -4413,12 +4399,12 @@ type Bar = struct {
         u32::MAX,
         "max_out_of_line mismatch for struct_bar"
     );
-    assert_eq!(
-        struct_bar.type_shape.has_padding, false,
+    assert!(
+        !struct_bar.type_shape.has_padding,
         "has_padding mismatch for struct_bar"
     );
-    assert_eq!(
-        struct_bar.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_bar.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_bar"
     );
 }
@@ -4463,12 +4449,12 @@ type Foo = union {
         u32::MAX,
         "max_out_of_line mismatch for struct_bar"
     );
-    assert_eq!(
-        struct_bar.type_shape.has_padding, false,
+    assert!(
+        !struct_bar.type_shape.has_padding,
         "has_padding mismatch for struct_bar"
     );
-    assert_eq!(
-        struct_bar.type_shape.has_flexible_envelope, true,
+    assert!(
+        struct_bar.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_bar"
     );
 }
@@ -4510,12 +4496,12 @@ type Foo = union {
         u32::MAX,
         "max_out_of_line mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_padding, false,
+    assert!(
+        !union_foo.type_shape.has_padding,
         "has_padding mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_flexible_envelope, true,
+    assert!(
+        union_foo.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for union_foo"
     );
 }
@@ -4562,12 +4548,12 @@ type Foo = resource union {
         u32::MAX,
         "max_out_of_line mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_padding, false,
+    assert!(
+        !union_foo.type_shape.has_padding,
         "has_padding mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_flexible_envelope, true,
+    assert!(
+        union_foo.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for union_foo"
     );
 }
@@ -4614,12 +4600,12 @@ type Foo = resource union {
         u32::MAX,
         "max_out_of_line mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_padding, false,
+    assert!(
+        !union_foo.type_shape.has_padding,
         "has_padding mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_flexible_envelope, true,
+    assert!(
+        union_foo.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for union_foo"
     );
 }
@@ -4670,12 +4656,12 @@ type Foo = resource union {
         u32::MAX,
         "max_out_of_line mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_padding, false,
+    assert!(
+        !union_foo.type_shape.has_padding,
         "has_padding mismatch for union_foo"
     );
-    assert_eq!(
-        union_foo.type_shape.has_flexible_envelope, true,
+    assert!(
+        union_foo.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for union_foo"
     );
     assert_eq!(
@@ -4701,12 +4687,12 @@ type Foo = resource union {
         u32::MAX,
         "max_out_of_line mismatch for table_bar"
     );
-    assert_eq!(
-        table_bar.type_shape.has_padding, false,
+    assert!(
+        !table_bar.type_shape.has_padding,
         "has_padding mismatch for table_bar"
     );
-    assert_eq!(
-        table_bar.type_shape.has_flexible_envelope, true,
+    assert!(
+        table_bar.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for table_bar"
     );
     assert_eq!(
@@ -4732,12 +4718,12 @@ type Foo = resource union {
         u32::MAX,
         "max_out_of_line mismatch for struct_baz"
     );
-    assert_eq!(
-        struct_baz.type_shape.has_padding, false,
+    assert!(
+        !struct_baz.type_shape.has_padding,
         "has_padding mismatch for struct_baz"
     );
-    assert_eq!(
-        struct_baz.type_shape.has_flexible_envelope, true,
+    assert!(
+        struct_baz.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_baz"
     );
 }
@@ -4804,12 +4790,12 @@ type Priority = enum {
         buffer.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for buffer"
     );
-    assert_eq!(
-        buffer.type_shape.has_padding, true,
+    assert!(
+        buffer.type_shape.has_padding,
         "has_padding mismatch for buffer"
     );
-    assert_eq!(
-        buffer.type_shape.has_flexible_envelope, false,
+    assert!(
+        !buffer.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for buffer"
     );
     assert_eq!(
@@ -4829,12 +4815,12 @@ type Priority = enum {
         value.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for value"
     );
-    assert_eq!(
-        value.type_shape.has_padding, true,
+    assert!(
+        value.type_shape.has_padding,
         "has_padding mismatch for value"
     );
-    assert_eq!(
-        value.type_shape.has_flexible_envelope, false,
+    assert!(
+        !value.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for value"
     );
     assert_eq!(
@@ -4857,12 +4843,12 @@ type Priority = enum {
         diff_entry.type_shape.max_out_of_line, 352,
         "max_out_of_line mismatch for diff_entry"
     );
-    assert_eq!(
-        diff_entry.type_shape.has_padding, true,
+    assert!(
+        diff_entry.type_shape.has_padding,
         "has_padding mismatch for diff_entry"
     );
-    assert_eq!(
-        diff_entry.type_shape.has_flexible_envelope, false,
+    assert!(
+        !diff_entry.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for diff_entry"
     );
 }
@@ -4907,12 +4893,12 @@ type Sandwich = struct {
         sandwich.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_padding, true,
+    assert!(
+        sandwich.type_shape.has_padding,
         "has_padding mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_flexible_envelope, false,
+    assert!(
+        !sandwich.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for sandwich"
     );
     let member_sandwich_0 = sandwich.members[0].clone();
@@ -4984,12 +4970,12 @@ type Sandwich = struct {
         sandwich.type_shape.max_out_of_line, 8,
         "max_out_of_line mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_padding, true,
+    assert!(
+        sandwich.type_shape.has_padding,
         "has_padding mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_flexible_envelope, false,
+    assert!(
+        !sandwich.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for sandwich"
     );
     let member_sandwich_0 = sandwich.members[0].clone();
@@ -5066,12 +5052,12 @@ type Sandwich = struct {
         sandwich.type_shape.max_out_of_line, 16,
         "max_out_of_line mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_padding, true,
+    assert!(
+        sandwich.type_shape.has_padding,
         "has_padding mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_flexible_envelope, false,
+    assert!(
+        !sandwich.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for sandwich"
     );
     let member_sandwich_0 = sandwich.members[0].clone();
@@ -5143,12 +5129,12 @@ type Sandwich = struct {
         sandwich.type_shape.max_out_of_line, 32,
         "max_out_of_line mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_padding, true,
+    assert!(
+        sandwich.type_shape.has_padding,
         "has_padding mismatch for sandwich"
     );
-    assert_eq!(
-        sandwich.type_shape.has_flexible_envelope, false,
+    assert!(
+        !sandwich.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for sandwich"
     );
     let member_sandwich_0 = sandwich.members[0].clone();
@@ -5215,12 +5201,12 @@ type A = resource struct {
         struct_a.type_shape.max_out_of_line, 0,
         "max_out_of_line mismatch for struct_a"
     );
-    assert_eq!(
-        struct_a.type_shape.has_padding, true,
+    assert!(
+        struct_a.type_shape.has_padding,
         "has_padding mismatch for struct_a"
     );
-    assert_eq!(
-        struct_a.type_shape.has_flexible_envelope, false,
+    assert!(
+        !struct_a.type_shape.has_flexible_envelope,
         "has_flexible_envelope mismatch for struct_a"
     );
 }

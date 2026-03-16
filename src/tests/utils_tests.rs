@@ -573,53 +573,46 @@ fn test_lower_snake_case() {
 #[test]
 #[ignore]
 fn test_is_valid_library_component() {
-    assert_eq!(is_valid_library_component("a"), true);
-    assert_eq!(is_valid_library_component("abc"), true);
-    assert_eq!(is_valid_library_component("a2b"), true);
-    assert_eq!(is_valid_library_component(""), false);
-    assert_eq!(is_valid_library_component("A"), false);
-    assert_eq!(is_valid_library_component("2"), false);
-    assert_eq!(is_valid_library_component("a_c"), false);
-    assert_eq!(is_valid_library_component("ab_"), false);
+    assert!(is_valid_library_component("a"));
+    assert!(is_valid_library_component("abc"));
+    assert!(is_valid_library_component("a2b"));
+    assert!(!is_valid_library_component(""));
+    assert!(!is_valid_library_component("A"));
+    assert!(!is_valid_library_component("2"));
+    assert!(!is_valid_library_component("a_c"));
+    assert!(!is_valid_library_component("ab_"));
 }
 
 #[test]
 #[ignore]
 fn test_is_valid_identifier_component() {
-    assert_eq!(is_valid_identifier_component("a"), true);
-    assert_eq!(is_valid_identifier_component("abc"), true);
-    assert_eq!(is_valid_identifier_component("A"), true);
-    assert_eq!(is_valid_identifier_component("a2b"), true);
-    assert_eq!(is_valid_identifier_component("a_c"), true);
-    assert_eq!(is_valid_identifier_component(""), false);
-    assert_eq!(is_valid_identifier_component("2"), false);
-    assert_eq!(is_valid_identifier_component("ab_"), false);
+    assert!(is_valid_identifier_component("a"));
+    assert!(is_valid_identifier_component("abc"));
+    assert!(is_valid_identifier_component("A"));
+    assert!(is_valid_identifier_component("a2b"));
+    assert!(is_valid_identifier_component("a_c"));
+    assert!(!is_valid_identifier_component(""));
+    assert!(!is_valid_identifier_component("2"));
+    assert!(!is_valid_identifier_component("ab_"));
 }
 
 #[test]
 #[ignore]
 fn test_is_valid_fully_qualified_method_identifier() {
-    assert_eq!(
-        is_valid_fully_qualified_method_identifier("lib/Protocol.Method"),
-        true
-    );
-    assert_eq!(
-        is_valid_fully_qualified_method_identifier("long.lib/Protocol.Method"),
-        true
-    );
-    assert_eq!(is_valid_fully_qualified_method_identifier("Method"), false);
-    assert_eq!(
-        is_valid_fully_qualified_method_identifier("lib/Protocol"),
-        false
-    );
-    assert_eq!(
-        is_valid_fully_qualified_method_identifier("lonG.lib/Protocol.Method"),
-        false
-    );
-    assert_eq!(
-        is_valid_fully_qualified_method_identifier("long.liB/Protocol.Method"),
-        false
-    );
+    assert!(is_valid_fully_qualified_method_identifier(
+        "lib/Protocol.Method"
+    ));
+    assert!(is_valid_fully_qualified_method_identifier(
+        "long.lib/Protocol.Method"
+    ));
+    assert!(!is_valid_fully_qualified_method_identifier("Method"));
+    assert!(!is_valid_fully_qualified_method_identifier("lib/Protocol"));
+    assert!(!is_valid_fully_qualified_method_identifier(
+        "lonG.lib/Protocol.Method"
+    ));
+    assert!(!is_valid_fully_qualified_method_identifier(
+        "long.liB/Protocol.Method"
+    ));
 }
 
 #[test]

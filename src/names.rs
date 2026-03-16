@@ -507,19 +507,19 @@ mod tests {
         let lib2 = OwnedLibraryName::new("fuchsia.math".to_string());
         assert_eq!(lib1, "fuchsia.math");
         assert!(lib1 == *"fuchsia.math");
-        assert!(lib1 == "fuchsia.math".to_string());
+        assert!(lib1 == "fuchsia.math");
         assert_eq!(lib2.to_string(), "fuchsia.math");
 
         // OwnedQualifiedName
         let fqn1 = OwnedQualifiedName::parse("fuchsia.math/Matrix");
         assert_eq!(fqn1, "fuchsia.math/Matrix");
         assert!(fqn1 == *"fuchsia.math/Matrix");
-        assert!(fqn1 == "fuchsia.math/Matrix".to_string());
+        assert!(fqn1 == "fuchsia.math/Matrix");
 
         // QualifiedName
         let fqn2 = QualifiedName::parse("fuchsia.math/Matrix.m00");
         assert_eq!(fqn2, "fuchsia.math/Matrix.m00");
         assert!(fqn2 == *"fuchsia.math/Matrix.m00");
-        assert!(fqn2 == "fuchsia.math/Matrix.m00".to_string());
+        assert!(fqn2 == "fuchsia.math/Matrix.m00");
     }
 }

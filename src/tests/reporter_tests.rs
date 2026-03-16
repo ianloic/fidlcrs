@@ -11,7 +11,7 @@ fn report_error_format_params() {
     let span = SourceSpan::new("span text", &file);
 
     // Reporter::fail requires positional replacement to match C++ '{0}'. We use a random Error.
-    reporter.fail(Error::ErrInvalidCharacter, span.clone(), &[&"param1"]);
+    reporter.fail(Error::ErrInvalidCharacter, span, &[&"param1"]);
 
     let errors = reporter.diagnostics();
     assert_eq!(errors.len(), 1);
@@ -31,7 +31,7 @@ fn make_error_then_report_it() {
     // MakeError -> Report() is not directly implemented with factory functions yet in rust port.
     reporter.fail(
         Error::ErrCannotSpecifyModifier,
-        span.clone(),
+        span,
         &[&"param1", &"param2"],
     );
 
@@ -50,11 +50,7 @@ fn report_warning_format_params() {
 
     // warnings() filtering and Warn() are not completely mapped in fidlcrs Reporter yet.
     // using a WarningDef representation instead.
-    reporter.fail(
-        Error::WarnAttributeTypo,
-        span.clone(),
-        &[&"param1", &"param2"],
-    );
+    reporter.fail(Error::WarnAttributeTypo, span, &[&"param1", &"param2"]);
 
     let warnings = reporter.diagnostics();
     assert_eq!(warnings.len(), 1);
@@ -70,11 +66,7 @@ fn make_warning_then_report_it() {
     let span = SourceSpan::new("span text", &file);
 
     // Reporter::Warn equivalent handling.
-    reporter.fail(
-        Error::WarnAttributeTypo,
-        span.clone(),
-        &[&"param1", &"param2"],
-    );
+    reporter.fail(Error::WarnAttributeTypo, span, &[&"param1", &"param2"]);
 
     let warnings = reporter.diagnostics();
     assert_eq!(warnings.len(), 1);
@@ -89,11 +81,7 @@ fn report_error_with_reused_format_params() {
     let span = SourceSpan::new("span text", &file);
 
     // fidlcrs doesn't string-index positional args like '{1}' and '{0}' currently.
-    reporter.fail(
-        Error::ErrInvalidCharacter,
-        span.clone(),
-        &[&"param1", &"param2"],
-    );
+    reporter.fail(Error::ErrInvalidCharacter, span, &[&"param1", &"param2"]);
 
     let errors = reporter.diagnostics();
     assert_eq!(errors.len(), 1);

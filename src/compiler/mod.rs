@@ -267,6 +267,7 @@ pub struct Compiler<'node, 'src> {
     pub declarations: IndexMap<String, String>,
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<OwnedQualifiedName, Availability>,
+    pub member_availability: HashMap<usize, Availability>,
     pub version_selection: VersionSelection,
     pub compiling_shapes: HashSet<OwnedQualifiedName>,
     pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, String>>,
@@ -309,6 +310,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             declarations: IndexMap::new(),
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
+            member_availability: HashMap::new(),
             version_selection: VersionSelection::new(),
             compiling_shapes: HashSet::new(),
             dependency_declarations: BTreeMap::new(),
@@ -1582,21 +1584,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 obj_str.push_str(r#""kind":"experimental_resource""#);
             } else {
                 obj_str.push_str(&format!(r#""kind":"{}""#, kind));
-                if kind != "const" && kind != "alias" && kind != "protocol" && kind != "service" {
-                    if let Some(shape) = self.shapes.get::<str>(name) {
-                        let inline = shape.inline_size;
-                        let align = shape.alignment;
-                        let depth = shape.depth;
-                        let max_handles = shape.max_handles;
-                        let max_ool = shape.max_out_of_line;
-                        let padding = if shape.has_padding { "true" } else { "false" };
-                        let flex = if shape.has_flexible_envelope {
-                            "true"
-                        } else {
-                            "false"
-                        };
-                        obj_str.push_str(&format!(r#","type_shape_v2":{{"inline_size":{},"alignment":{},"depth":{},"max_handles":{},"max_out_of_line":{},"has_padding":{},"has_flexible_envelope":{}}}"#, inline, align, depth, max_handles, max_ool, padding, flex));
-                    }
+                if kind != "const"
+                    && kind != "alias"
+                    && kind != "protocol"
+                    && kind != "service"
+                    && let Some(shape) = self.shapes.get::<str>(name)
+                {
+                    let inline = shape.inline_size;
+                    let align = shape.alignment;
+                    let depth = shape.depth;
+                    let max_handles = shape.max_handles;
+                    let max_ool = shape.max_out_of_line;
+                    let padding = if shape.has_padding { "true" } else { "false" };
+                    let flex = if shape.has_flexible_envelope {
+                        "true"
+                    } else {
+                        "false"
+                    };
+                    obj_str.push_str(&format!(r#","type_shape_v2":{{"inline_size":{},"alignment":{},"depth":{},"max_handles":{},"max_out_of_line":{},"has_padding":{},"has_flexible_envelope":{}}}"#, inline, align, depth, max_handles, max_ool, padding, flex));
                 }
             }
             obj_str.push('}');
@@ -1787,6 +1792,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut max_val_spans = vec![];
 
         for member in &decl.members {
+            if !self.is_member_active(member.element.span().data.as_ptr() as usize) {
+                continue;
+            }
             let attributes = self.compile_attribute_list(&member.attributes);
             self.validate_constant(&member.value, &expected_type);
             let compiled_value = self.compile_constant(&member.value);
@@ -2067,6 +2075,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut member_names = CanonicalNames::new();
 
         for member in &decl.members {
+            if !self.is_member_active(member.element.span().data.as_ptr() as usize) {
+                continue;
+            }
             let attributes = self.compile_attribute_list(&member.attributes);
             let compiled_value = self.compile_constant(&member.value);
 
@@ -2255,6 +2266,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut members = vec![];
         let mut member_names = CanonicalNames::new();
         for member in &decl.members {
+            if !self.is_member_active(member.element.span().data.as_ptr() as usize) {
+                continue;
+            }
             let ordinal = if let Some(ord) = &member.ordinal {
                 match &ord.kind {
                     raw_ast::LiteralKind::Numeric => ord.value.parse::<i64>().unwrap_or(0),
@@ -2389,10 +2403,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
                 if type_obj.resource
-                    && !decl
-                        .modifiers
-                        .iter()
-                        .any(|m| m.subkind == TokenSubkind::Resource)
+                    && !decl.modifiers.iter().any(|m| {
+                        m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
+                    })
                 {
                     let member_name = member.name.as_ref().unwrap().data().to_string();
                     let n = name.to_string();
@@ -2511,10 +2524,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 || self.is_deprecated(inherited_attributes),
             members,
             strict: false,
-            resource: decl
-                .modifiers
-                .iter()
-                .any(|m| m.subkind == TokenSubkind::Resource),
+            resource: decl.modifiers.iter().any(|m| {
+                m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
+            }),
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
                 if let Some(inherited) = inherited_attributes {
@@ -2546,6 +2558,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut members = vec![];
         let mut member_names = CanonicalNames::new();
         for member in &decl.members {
+            if !self.is_member_active(member.element.span().data.as_ptr() as usize) {
+                continue;
+            }
             let ordinal = if let Some(ord) = &member.ordinal {
                 match &ord.kind {
                     raw_ast::LiteralKind::Numeric => ord.value.parse::<u32>().map_err(|_| ()),
@@ -2645,10 +2660,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
                 if type_obj.resource
-                    && !decl
-                        .modifiers
-                        .iter()
-                        .any(|m| m.subkind == TokenSubkind::Resource)
+                    && !decl.modifiers.iter().any(|m| {
+                        m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
+                    })
                 {
                     let member_name = member.name.as_ref().unwrap().data().to_string();
                     let n = name.to_string();
@@ -2857,10 +2871,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 || self.is_deprecated(inherited_attributes),
             members,
             strict,
-            resource: decl
-                .modifiers
-                .iter()
-                .any(|m| m.subkind == TokenSubkind::Resource),
+            resource: decl.modifiers.iter().any(|m| {
+                m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
+            }),
             is_result: if decl.is_overlay { None } else { Some(false) }, // TODO: detect result unions
             maybe_attributes: {
                 let mut attrs = self.compile_attribute_list(&decl.attributes);
@@ -2905,6 +2918,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         let mut depth: u32 = 0;
 
         for member in &decl.members {
+            if !self.is_member_active(member.element.span().data.as_ptr() as usize) {
+                continue;
+            }
             let member_name = member.name.data();
             self.check_canonical_insert(
                 &mut member_names,
@@ -2930,10 +2946,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let member_ctx = ctx.enter_member(member.name.element.span());
             let mut type_obj = self.resolve_type(&member.type_ctor, library_name, Some(member_ctx));
             if type_obj.resource
-                && !decl
-                    .modifiers
-                    .iter()
-                    .any(|m| m.subkind == TokenSubkind::Resource)
+                && !decl.modifiers.iter().any(|m| {
+                    m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
+                })
             {
                 let member_name = member.name.data().to_string();
                 let n = name.to_string();
@@ -3092,10 +3107,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 attrs
             },
             members,
-            resource: decl
-                .modifiers
-                .iter()
-                .any(|m| m.subkind == TokenSubkind::Resource),
+            resource: decl.modifiers.iter().any(|m| {
+                m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
+            }),
             is_empty_success_struct: false,
             type_shape,
         }
@@ -4332,31 +4346,31 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let is_resource = if let Some(decl) = self.raw_decls.get::<str>(full_name.as_ref())
                 {
                     match decl {
-                        RawDecl::Struct(s) => s
-                            .modifiers
-                            .iter()
-                            .any(|m| m.subkind == TokenSubkind::Resource),
-                        RawDecl::Table(t) => t
-                            .modifiers
-                            .iter()
-                            .any(|m| m.subkind == TokenSubkind::Resource),
-                        RawDecl::Union(u) => u
-                            .modifiers
-                            .iter()
-                            .any(|m| m.subkind == TokenSubkind::Resource),
+                        RawDecl::Struct(s) => s.modifiers.iter().any(|m| {
+                            m.subkind == TokenSubkind::Resource
+                                && self.is_active(m.attributes.as_ref())
+                        }),
+                        RawDecl::Table(t) => t.modifiers.iter().any(|m| {
+                            m.subkind == TokenSubkind::Resource
+                                && self.is_active(m.attributes.as_ref())
+                        }),
+                        RawDecl::Union(u) => u.modifiers.iter().any(|m| {
+                            m.subkind == TokenSubkind::Resource
+                                && self.is_active(m.attributes.as_ref())
+                        }),
                         RawDecl::Type(t) => match &t.layout {
-                            raw_ast::Layout::Struct(s) => s
-                                .modifiers
-                                .iter()
-                                .any(|m| m.subkind == TokenSubkind::Resource),
-                            raw_ast::Layout::Table(t) => t
-                                .modifiers
-                                .iter()
-                                .any(|m| m.subkind == TokenSubkind::Resource),
-                            raw_ast::Layout::Union(u) => u
-                                .modifiers
-                                .iter()
-                                .any(|m| m.subkind == TokenSubkind::Resource),
+                            raw_ast::Layout::Struct(s) => s.modifiers.iter().any(|m| {
+                                m.subkind == TokenSubkind::Resource
+                                    && self.is_active(m.attributes.as_ref())
+                            }),
+                            raw_ast::Layout::Table(t) => t.modifiers.iter().any(|m| {
+                                m.subkind == TokenSubkind::Resource
+                                    && self.is_active(m.attributes.as_ref())
+                            }),
+                            raw_ast::Layout::Union(u) => u.modifiers.iter().any(|m| {
+                                m.subkind == TokenSubkind::Resource
+                                    && self.is_active(m.attributes.as_ref())
+                            }),
                             _ => false,
                         },
                         RawDecl::Protocol(_) => true,
@@ -4488,15 +4502,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let is_protocol = matches!(decl, RawDecl::Protocol(_));
                     let (inline, align, flex, padding) = if is_union_or_table {
                         let is_strict = match decl {
-                            RawDecl::Union(u) => u
-                                .modifiers
-                                .iter()
-                                .any(|m| m.subkind == TokenSubkind::Strict),
+                            RawDecl::Union(u) => u.modifiers.iter().any(|m| {
+                                m.subkind == TokenSubkind::Strict
+                                    && self.is_active(m.attributes.as_ref())
+                            }),
                             RawDecl::Type(t) => match &t.layout {
-                                raw_ast::Layout::Union(u) => u
-                                    .modifiers
-                                    .iter()
-                                    .any(|m| m.subkind == TokenSubkind::Strict),
+                                raw_ast::Layout::Union(u) => u.modifiers.iter().any(|m| {
+                                    m.subkind == TokenSubkind::Strict
+                                        && self.is_active(m.attributes.as_ref())
+                                }),
                                 _ => false,
                             },
                             _ => false,
@@ -5100,6 +5114,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         for m in &decl.methods {
+            if !self.is_member_active(m.element.span().data.as_ptr() as usize) {
+                continue;
+            }
             if has_no_resource {
                 for l in [&m.request_payload, &m.response_payload, &m.error_payload]
                     .into_iter()
@@ -5144,13 +5161,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
 
-            let mut is_method_flexible = false;
+            let mut has_explicit_strict = false;
+            let mut has_explicit_flexible = false;
             for modifier in &m.modifiers {
+                if !self.is_active(modifier.attributes.as_ref()) {
+                    continue;
+                }
                 match modifier.subkind {
-                    TokenSubkind::Strict => {}
-                    TokenSubkind::Flexible => {
-                        is_method_flexible = true;
-                    }
+                    TokenSubkind::Strict => has_explicit_strict = true,
+                    TokenSubkind::Flexible => has_explicit_flexible = true,
                     _ => {
                         self.reporter.fail(
                             Error::ErrCannotSpecifyModifier,
@@ -5161,7 +5180,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
 
+            let mut is_method_flexible = false;
             let two_way = m.has_request && m.has_response;
+
+            if has_explicit_flexible {
+                is_method_flexible = true;
+            } else if !has_explicit_strict
+                && (openness == "open" || (openness == "ajar" && !two_way))
+            {
+                is_method_flexible = true;
+            }
+
             if is_method_flexible && two_way && openness != "open" {
                 self.reporter.fail(
                     Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,

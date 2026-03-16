@@ -420,7 +420,7 @@ protocol MyProtocol {
 #[test]
 fn bad_constraint_only_three_members_on_struct() {
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
-        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
+        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span()) };
         compiler.reporter.fail(
             Error::ErrInvalidAttributePlacement,
             span,
@@ -451,7 +451,7 @@ type MyStruct = struct {
 #[test]
 fn bad_constraint_only_three_members_on_method() {
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
-        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
+        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span()) };
         compiler.reporter.fail(
             Error::ErrInvalidAttributePlacement,
             span,
@@ -478,7 +478,7 @@ protocol MyProtocol {
 #[test]
 fn bad_constraint_only_three_members_on_protocol() {
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
-        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span().clone()) };
+        let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span()) };
         compiler.reporter.fail(
             Error::ErrInvalidAttributePlacement,
             span,
@@ -1887,7 +1887,7 @@ protocol Foo {};
         let mut lib = TestLibrary::new();
         lib.add_source_file("example.fidl", &(source_text));
         lib.compile()
-            .expect(&format!("compilation failed for {}", name));
+            .unwrap_or_else(|_| panic!("compilation failed for {}", name));
     }
 }
 

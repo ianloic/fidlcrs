@@ -531,6 +531,16 @@ impl VersionSelection {
         }
     }
 
+    pub fn intersects(&self, platform: &Platform, set: &VersionSet) -> bool {
+        if platform.is_unversioned() {
+            set.contains(Version::HEAD)
+        } else if let Some(versions) = self.map.get(platform) {
+            versions.iter().any(|&v| set.contains(v))
+        } else {
+            set.contains(Version::HEAD)
+        }
+    }
+
     pub fn contains(&self, platform: &Platform) -> bool {
         assert!(!platform.is_unversioned());
         self.map.contains_key(platform)

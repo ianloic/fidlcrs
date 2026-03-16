@@ -192,7 +192,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 _ => continue,
                             };
                             let d = Version::parse(&val_str).unwrap_or(Version::POS_INF);
-                            let is_depr = d <= Version::HEAD;
+                            let platform = crate::versioning_types::Platform::parse(
+                                self.library_name.versioning_platform(),
+                            )
+                            .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                            let selected_version = self.version_selection.lookup(&platform);
+                            let is_depr = d <= selected_version;
                             if is_depr {
                                 return true;
                             }
@@ -219,7 +224,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             _ => continue,
                         };
                         let r = Version::parse(&val_str).unwrap_or(Version::POS_INF);
-                        if r <= Version::HEAD {
+                        let platform = crate::versioning_types::Platform::parse(
+                            self.library_name.versioning_platform(),
+                        )
+                        .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                        let selected_version = self.version_selection.lookup(&platform);
+                        if r <= selected_version {
                             return false;
                         }
                     } else if arg_name == "added" {
@@ -229,7 +239,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             _ => continue,
                         };
                         let a = Version::parse(&val_str).unwrap_or(Version::POS_INF);
-                        if a > Version::HEAD {
+                        let platform = crate::versioning_types::Platform::parse(
+                            self.library_name.versioning_platform(),
+                        )
+                        .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                        let selected_version = self.version_selection.lookup(&platform);
+                        if a > selected_version {
                             return false;
                         }
                     }
@@ -237,6 +252,19 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             }
         }
         true
+    }
+
+    pub fn is_member_active(&self, member_ptr: usize) -> bool {
+        if let Some(avail) = self.member_availability.get(&member_ptr) {
+            let platform =
+                crate::versioning_types::Platform::parse(self.library_name.versioning_platform())
+                    .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+            avail
+                .set()
+                .contains(self.version_selection.lookup(&platform))
+        } else {
+            true
+        }
     }
 
     pub fn compile_attribute_list(

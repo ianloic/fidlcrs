@@ -2,6 +2,7 @@ use super::test_library::TestLibrary;
 use crate::raw_ast::*;
 use crate::tree_visitor::TreeVisitor;
 use std::collections::BTreeSet;
+use test_case::test_case;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ElementType {
@@ -255,12 +256,25 @@ fn extract_spans(source: &str) -> (String, Vec<String>) {
     (clean, spans)
 }
 
-fn check_spans(element_type: ElementType, sources: &[&str]) {
+fn check_spans(
+    element_type: ElementType,
+    pad_left: &str,
+    pad_right: &str,
+    exclude: &[ElementType],
+    sources: &[&str],
+) {
+    if exclude.contains(&element_type) {
+        return;
+    }
+
     let mut library = TestLibrary::new();
     let mut expected_spans = BTreeSet::new();
 
     for (i, source) in sources.iter().enumerate() {
-        let (clean, spans) = extract_spans(source);
+        let marked_source = source
+            .replace("«", &format!("{}«", pad_left))
+            .replace("»", &format!("»{}", pad_right));
+        let (clean, spans) = extract_spans(&marked_source);
         for span in spans {
             expected_spans.insert(span);
         }
@@ -293,187 +307,478 @@ fn check_spans(element_type: ElementType, sources: &[&str]) {
     }
 }
 
-#[test]
-fn test_span_alias_declaration() {
-    check_spans(ElementType::AliasDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_alias_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::AliasDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_attribute() {
-    check_spans(ElementType::Attribute, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_attribute(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::Attribute, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_attribute_arg() {
-    check_spans(ElementType::AttributeArg, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_attribute_arg(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::AttributeArg, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_attribute_list() {
-    check_spans(ElementType::AttributeList, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_attribute_list(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::AttributeList,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_binary_operator_constant() {
-    check_spans(ElementType::BinaryOperatorConstant, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_binary_operator_constant(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::BinaryOperatorConstant,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_bool_literal() {
-    check_spans(ElementType::BoolLiteral, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_bool_literal(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::BoolLiteral, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_compound_identifier() {
-    check_spans(ElementType::CompoundIdentifier, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_compound_identifier(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::CompoundIdentifier,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_const_declaration() {
-    check_spans(ElementType::ConstDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_const_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ConstDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_doc_comment_literal() {
-    check_spans(ElementType::DocCommentLiteral, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_doc_comment_literal(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::DocCommentLiteral,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_identifier() {
-    check_spans(ElementType::Identifier, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_identifier(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::Identifier, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_identifier_constant() {
-    check_spans(ElementType::IdentifierConstant, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_identifier_constant(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::IdentifierConstant,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_identifier_layout_parameter() {
-    check_spans(ElementType::IdentifierLayoutParameter, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_identifier_layout_parameter(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::IdentifierLayoutParameter,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_inline_layout_reference() {
-    check_spans(ElementType::InlineLayoutReference, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_inline_layout_reference(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::InlineLayoutReference,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_library_declaration() {
-    check_spans(ElementType::LibraryDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_library_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::LibraryDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_literal_constant() {
-    check_spans(ElementType::LiteralConstant, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_literal_constant(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::LiteralConstant,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_literal_layout_parameter() {
-    check_spans(ElementType::LiteralLayoutParameter, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_literal_layout_parameter(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::LiteralLayoutParameter,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_modifier() {
-    check_spans(ElementType::Modifier, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_modifier(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::Modifier, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_named_layout_reference() {
-    check_spans(ElementType::NamedLayoutReference, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_named_layout_reference(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::NamedLayoutReference,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_numeric_literal() {
-    check_spans(ElementType::NumericLiteral, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_numeric_literal(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::NumericLiteral,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_ordinaled_layout() {
-    check_spans(ElementType::OrdinaledLayout, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_ordinaled_layout(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::OrdinaledLayout,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_ordinaled_layout_member() {
-    check_spans(ElementType::OrdinaledLayoutMember, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_ordinaled_layout_member(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::OrdinaledLayoutMember,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_protocol_compose() {
-    check_spans(ElementType::ProtocolCompose, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_protocol_compose(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ProtocolCompose,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_protocol_declaration() {
-    check_spans(ElementType::ProtocolDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_protocol_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ProtocolDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_protocol_method() {
-    check_spans(ElementType::ProtocolMethod, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_protocol_method(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ProtocolMethod,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_resource_declaration() {
-    check_spans(ElementType::ResourceDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_resource_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ResourceDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_resource_property() {
-    check_spans(ElementType::ResourceProperty, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_resource_property(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ResourceProperty,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_service_declaration() {
-    check_spans(ElementType::ServiceDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_service_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ServiceDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_service_member() {
-    check_spans(ElementType::ServiceMember, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_service_member(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ServiceMember,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_string_literal() {
-    check_spans(ElementType::StringLiteral, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_string_literal(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::StringLiteral,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_struct_layout() {
-    check_spans(ElementType::StructLayout, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_struct_layout(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::StructLayout, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_struct_layout_member() {
-    check_spans(ElementType::StructLayoutMember, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_struct_layout_member(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::StructLayoutMember,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_type_constructor() {
-    check_spans(ElementType::TypeConstructor, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_type_constructor(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::TypeConstructor,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_type_declaration() {
-    check_spans(ElementType::TypeDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_type_declaration(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::TypeDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_type_layout_parameter() {
-    check_spans(ElementType::TypeLayoutParameter, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_type_layout_parameter(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::TypeLayoutParameter,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_using() {
-    check_spans(ElementType::UsingDeclaration, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_using(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::UsingDeclaration,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }
 
-#[test]
-fn test_span_value_layout() {
-    check_spans(ElementType::ValueLayout, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_value_layout(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(ElementType::ValueLayout, pad_left, pad_right, exclude, &[]);
 }
 
-#[test]
-fn test_span_value_layout_member() {
-    check_spans(ElementType::ValueLayoutMember, &[]);
+#[test_case("", "", &[] ; "good_no_padding")]
+#[test_case(" ", "", &[] ; "good_left_padding")]
+#[test_case("", " ", &[ElementType::DocCommentLiteral] ; "good_right_padding")]
+#[test_case(" ", " ", &[ElementType::DocCommentLiteral] ; "good_left_right_padding")]
+fn test_span_value_layout_member(pad_left: &str, pad_right: &str, exclude: &[ElementType]) {
+    check_spans(
+        ElementType::ValueLayoutMember,
+        pad_left,
+        pad_right,
+        exclude,
+        &[],
+    );
 }

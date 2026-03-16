@@ -1,4 +1,3 @@
-
 use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
 
 #[test]
@@ -76,7 +75,10 @@ fn bad_missing_using() {
         "library example;
 type Foo = struct { dep dependent.Bar; };",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrNameNotFound, &["\"dependent\"", "OwnedLibraryName { name: \"example\" }"]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &["\"dependent\"", "OwnedLibraryName { name: \"example\" }"],
+    );
     assert!(lib.check_compile());
 }
 
@@ -84,8 +86,17 @@ type Foo = struct { dep dependent.Bar; };",
 fn bad_unknown_using() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0046.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrUnknownLibrary, &["\"dependent\""]);
-    lib.expect_fail(crate::diagnostics::Error::ErrNameNotFound, &["\"dependent\"", "OwnedLibraryName { name: \"test.bad.fi0046\" }"]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrUnknownLibrary,
+        &["\"dependent\""],
+    );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &[
+            "\"dependent\"",
+            "OwnedLibraryName { name: \"test.bad.fi0046\" }",
+        ],
+    );
     assert!(lib.check_compile());
 }
 
@@ -102,7 +113,10 @@ fn bad_using_alias_ref_through_fqn() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_source_file("example.fidl", "library example;\nusing dependent as the_alias;\ntype Foo = struct { dep1 dependent.Bar; };");
-    lib.expect_fail(crate::diagnostics::Error::ErrNameNotFound, &["\"dependent\"", "OwnedLibraryName { name: \"example\" }"]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &["\"dependent\"", "OwnedLibraryName { name: \"example\" }"],
+    );
     assert!(lib.check_compile());
 }
 
@@ -116,7 +130,10 @@ fn bad_duplicate_using_no_alias() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0042-b.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateLibraryImport, &["\"test.bad.fi0042a\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateLibraryImport,
+        &["\"test.bad.fi0042a\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -133,7 +150,10 @@ fn bad_duplicate_using_first_alias() {
         "example.fidl",
         "library example;\nusing dependent as alias;\nusing dependent;",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateLibraryImport, &["\"dependent\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateLibraryImport,
+        &["\"dependent\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -150,7 +170,10 @@ fn bad_duplicate_using_second_alias() {
         "example.fidl",
         "library example;\nusing dependent;\nusing dependent as alias;",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateLibraryImport, &["\"dependent\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateLibraryImport,
+        &["\"dependent\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -167,7 +190,10 @@ fn bad_duplicate_using_same_library_same_alias() {
         "example.fidl",
         "library example;\nusing dependent as alias;\nusing dependent as alias;",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateLibraryImport, &["\"dependent\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateLibraryImport,
+        &["\"dependent\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -184,7 +210,10 @@ fn bad_duplicate_using_same_library_different_alias() {
         "example.fidl",
         "library example;\nusing dependent as alias1;\nusing dependent as alias2;",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrDuplicateLibraryImport, &["\"dependent\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDuplicateLibraryImport,
+        &["\"dependent\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -204,7 +233,10 @@ fn bad_conflicting_using_library_and_alias() {
         "example.fidl",
         "library example;\nusing dependent1;\nusing dependent2 as dependent1;",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrConflictingLibraryImportAlias, &["\"dependent2\"", "\"dependent1\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrConflictingLibraryImportAlias,
+        &["\"dependent2\"", "\"dependent1\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -221,8 +253,14 @@ fn bad_conflicting_using_alias_and_library() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0043-c.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrConflictingLibraryImport, &["\"fi0043b\""]);
-    lib.expect_fail(crate::diagnostics::Error::ErrNameNotFound, &["\"test.bad.fi0043a/Baz\"", "\"test.bad.fi0043c\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrConflictingLibraryImport,
+        &["\"fi0043b\""],
+    );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &["\"test.bad.fi0043a/Baz\"", "\"test.bad.fi0043c\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -239,8 +277,14 @@ fn bad_conflicting_using_alias_and_alias() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0044-c.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrConflictingLibraryImportAlias, &["\"test.bad.fi0044b\"", "\"dep\""]);
-    lib.expect_fail(crate::diagnostics::Error::ErrNameNotFound, &["\"test.bad.fi0044a/Baz\"", "\"test.bad.fi0044c\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrConflictingLibraryImportAlias,
+        &["\"test.bad.fi0044b\"", "\"dep\""],
+    );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &["\"test.bad.fi0044a/Baz\"", "\"test.bad.fi0044c\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -254,7 +298,13 @@ fn bad_unused_using() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0178.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrUnusedImport, &["OwnedLibraryName { name: \"test.bad.fi0178\" }", "\"dependent\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrUnusedImport,
+        &[
+            "OwnedLibraryName { name: \"test.bad.fi0178\" }",
+            "\"dependent\"",
+        ],
+    );
     assert!(lib.check_compile());
 }
 
@@ -262,7 +312,10 @@ fn bad_unused_using() {
 fn bad_unknown_dependent_library() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0051.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrUnknownDependentLibrary, &["\"unknown.dependent.library\"", "\"unknown.dependent\""]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrUnknownDependentLibrary,
+        &["\"unknown.dependent.library\"", "\"unknown.dependent\""],
+    );
     assert!(lib.check_compile());
 }
 
@@ -276,8 +329,14 @@ fn bad_library_declaration_name_collision() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0038-b.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport, &["\"dependency\""]);
-    lib.expect_fail(crate::diagnostics::Error::ErrCannotResolveConstantValue, &[]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport,
+        &["\"dependency\""],
+    );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrCannotResolveConstantValue,
+        &[],
+    );
     assert!(lib.check_compile());
 }
 
@@ -294,8 +353,14 @@ fn bad_aliased_library_declaration_name_collision() {
         "lib.fidl",
         "library lib;\nusing dep as x;\ntype x = struct{};\ntype B = struct{a dep.A;};",
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport, &["\"x\""]);
-    lib.expect_fail(crate::diagnostics::Error::ErrNameNotFound, &["\"dep\"", "OwnedLibraryName { name: \"lib\" }"]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrDeclNameConflictsWithLibraryImport,
+        &["\"x\""],
+    );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameNotFound,
+        &["\"dep\"", "OwnedLibraryName { name: \"lib\" }"],
+    );
     assert!(lib.check_compile());
 }
 

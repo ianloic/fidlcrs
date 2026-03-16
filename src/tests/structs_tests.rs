@@ -69,7 +69,10 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrCannotResolveConstantValue, &[]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrCannotResolveConstantValue,
+        &[],
+    );
     assert!(lib.check_compile());
 }
 
@@ -132,7 +135,10 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrMismatchedNameTypeAssignment, &[r#""example/MyEnum""#, r#""example/OtherEnum""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrMismatchedNameTypeAssignment,
+        &[r#""example/MyEnum""#, r#""example/OtherEnum""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -206,7 +212,10 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrMismatchedNameTypeAssignment, &[r#""example/MyBits""#, r#""example/OtherBits""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrMismatchedNameTypeAssignment,
+        &[r#""example/MyBits""#, r#""example/OtherBits""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -226,7 +235,10 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, &[r#""1""#, r#""literal""#, r#""example/MyBits""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+        &[r#""1""#, r#""literal""#, r#""example/MyBits""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -246,7 +258,10 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrCannotResolveConstantValue, &[]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrCannotResolveConstantValue,
+        &[],
+    );
     assert!(lib.check_compile());
 }
 
@@ -275,7 +290,15 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrNameCollision, &[r#""struct member""#, r#""my_struct_member""#, r#""struct member""#, r#""example.fidl:5:5""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrNameCollision,
+        &[
+            r#""struct member""#,
+            r#""my_struct_member""#,
+            r#""struct member""#,
+            r#""example.fidl:5:5""#,
+        ],
+    );
     assert!(lib.check_compile());
 }
 
@@ -352,7 +375,10 @@ type MySelf = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'MySelf' -> struct 'MySelf'""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &[r#""struct 'MySelf' -> struct 'MySelf'""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -393,7 +419,10 @@ type Leaf = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Yin' -> struct 'Yang' -> struct 'Yin'""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &[r#""struct 'Yin' -> struct 'Yang' -> struct 'Yin'""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -419,7 +448,10 @@ type Leaf = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Yang' -> struct 'Yin' -> struct 'Yang'""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &[r#""struct 'Yang' -> struct 'Yin' -> struct 'Yang'""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -445,8 +477,14 @@ type Intersection = struct {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Intersection' -> struct 'Yin' -> struct 'Intersection'""#]);
-    lib.expect_fail(crate::diagnostics::Error::ErrIncludeCycle, &[r#""struct 'Intersection' -> struct 'Yang' -> struct 'Intersection'""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &[r#""struct 'Intersection' -> struct 'Yin' -> struct 'Intersection'""#],
+    );
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrIncludeCycle,
+        &[r#""struct 'Intersection' -> struct 'Yang' -> struct 'Intersection'""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -485,7 +523,10 @@ type Foo = resource struct {
 "#,
     );
     lib.use_library_zx();
-    lib.expect_fail(crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional, &[r#""zx.Handle""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional,
+        &[r#""zx.Handle""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -516,7 +557,10 @@ type Foo = struct {
 const BAR bool = "not a bool";
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrTypeCannotBeConvertedToType, &[r#""string""#, r#""string""#, r#""bool""#]);
+    lib.expect_fail(
+        crate::diagnostics::Error::ErrTypeCannotBeConvertedToType,
+        &[r#""string""#, r#""string""#, r#""bool""#],
+    );
     assert!(lib.check_compile());
 }
 
@@ -575,8 +619,21 @@ type MyStruct = struct {{
             )),
         );
         let b_name = format!("\"{}\"", boxed_name);
-        lib.expect_fail(crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional, &[&b_name]);
-        lib.expect_fail(crate::diagnostics::Error::ErrTypeMustBeResource, &[r#""struct""#, r#""MyStruct""#, r#""foo""#, r#""struct""#, r#""struct""#, r#""MyStruct""#]);
+        lib.expect_fail(
+            crate::diagnostics::Error::ErrCannotBeBoxedShouldBeOptional,
+            &[&b_name],
+        );
+        lib.expect_fail(
+            crate::diagnostics::Error::ErrTypeMustBeResource,
+            &[
+                r#""struct""#,
+                r#""MyStruct""#,
+                r#""foo""#,
+                r#""struct""#,
+                r#""struct""#,
+                r#""MyStruct""#,
+            ],
+        );
         assert!(lib.check_compile());
     }
 }
@@ -600,7 +657,10 @@ type MyStruct = struct {{
             )),
         );
         let b_name = format!("\"{}\"", boxed_name);
-        lib.expect_fail(crate::diagnostics::Error::ErrCannotBeBoxedNorOptional, &[&b_name]);
+        lib.expect_fail(
+            crate::diagnostics::Error::ErrCannotBeBoxedNorOptional,
+            &[&b_name],
+        );
         assert!(lib.check_compile());
     }
 }

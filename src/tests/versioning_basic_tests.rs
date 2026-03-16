@@ -3,20 +3,28 @@ use crate::diagnostics::Error;
 use crate::flat_ast;
 use test_case::test_case;
 
-macro_rules! version_test {
+macro_rules! version_test_impl {
     (
+        [$($ver:expr),+],
         $(#[$meta:meta])*
         fn $name:ident($version_arg:ident: &str) {
             $($body:tt)*
         }
     ) => {
         $(#[$meta])*
-        #[test_case("1")]
-        #[test_case("2")]
-        #[test_case("HEAD")]
+        $(#[test_case($ver)])+
         fn $name($version_arg: &str) {
             $($body)*
         }
+    };
+}
+
+macro_rules! version_test {
+    ($($tokens:tt)*) => {
+        version_test_impl!(
+            ["1", "2", "HEAD"],
+            $($tokens)*
+        );
     };
 }
 

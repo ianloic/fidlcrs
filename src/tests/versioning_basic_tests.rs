@@ -3,6 +3,23 @@ use crate::diagnostics::Error;
 use crate::flat_ast;
 use test_case::test_case;
 
+macro_rules! version_test {
+    (
+        $(#[$meta:meta])*
+        fn $name:ident($version_arg:ident: &str) {
+            $($body:tt)*
+        }
+    ) => {
+        $(#[$meta])*
+        #[test_case("1")]
+        #[test_case("2")]
+        #[test_case("HEAD")]
+        fn $name($version_arg: &str) {
+            $($body)*
+        }
+    };
+}
+
 const V1: u32 = 1;
 const V2: u32 = 2;
 const HEAD: u32 = u32::MAX;
@@ -49,9 +66,7 @@ impl TargetVersions {
     }
 }
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_library_default(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -64,10 +79,9 @@ library example;
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_library_added_at_head(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -81,10 +95,9 @@ library example;
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_library_added_at_one(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -98,10 +111,9 @@ library example;
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_library_added_and_removed(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -115,10 +127,9 @@ library example;
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_library_added_and_deprecated_and_removed(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -132,10 +143,9 @@ library example;
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_added_at_head(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -153,10 +163,9 @@ type Foo = struct {};
     let ast = library.compile().unwrap();
     assert_eq!(ast.lookup_struct("example/Foo").is_some(), tv.any_ge(HEAD));
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_added_at_one(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -174,10 +183,9 @@ type Foo = struct {};
     let ast = library.compile().unwrap();
     assert!(ast.lookup_struct("example/Foo").is_some());
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_added_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -195,10 +203,9 @@ type Foo = struct {};
     let ast = library.compile().unwrap();
     assert_eq!(ast.lookup_struct("example/Foo").is_some(), tv.any_eq(V1));
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_added_and_replaced(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -222,10 +229,9 @@ type Foo = resource struct {};
         !tv.all_eq(V1)
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_added_and_deprecated_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -250,10 +256,9 @@ type Foo = struct {};
         );
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_member_added_at_head(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -276,10 +281,9 @@ type Foo = struct {
         if tv.any_ge(HEAD) { 1 } else { 0 }
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_member_added_at_one(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -299,10 +303,9 @@ type Foo = struct {
     let ast = library.compile().unwrap();
     assert_eq!(ast.lookup_struct("example/Foo").unwrap().members.len(), 1);
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_member_added_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -325,10 +328,9 @@ type Foo = struct {
         if tv.any_eq(V1) { 1 } else { 0 }
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_member_added_and_replaced(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -360,10 +362,9 @@ type Foo = struct {
         }
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_member_added_and_deprecated_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -393,10 +394,9 @@ type Foo = struct {
         );
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_strictness_added_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -419,10 +419,9 @@ type Foo = strict(added=2, removed=3) flexible(added=3) enum {
         tv.any_eq(V2) && tv.all_le(V2)
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_decl_resourceness_added_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -443,10 +442,9 @@ type Foo = resource(added=2, removed=3) struct {};
         tv.any_eq(V2) && tv.all_le(V2)
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_protocol_openness_added_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -471,10 +469,9 @@ closed(added=2, removed=3) open(added=3) protocol Foo {};
         }
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_method_strictness_added_and_removed(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -497,10 +494,9 @@ open protocol Protocol {
         tv.any_eq(V2) && tv.all_le(V2)
     );
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn bad_change_interacting_modifiers(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -542,10 +538,9 @@ closed(removed=2) ajar(added=2, removed=3) open(added=3) protocol Protocol {
         assert!(library.compile().is_ok());
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_change_interacting_modifiers(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -565,10 +560,9 @@ closed(removed=2) ajar(added=2, removed=3) open(added=3) protocol Protocol {
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_add_resource_modifier_and_handle(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -590,10 +584,9 @@ type Foo = resource(added=2) table {
     library.use_library_zx();
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn remove_resource_modifier_and_handle(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -625,10 +618,9 @@ type Foo = resource(removed=2) table {
         let _ast = library.compile().unwrap();
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn bad_reference_outside_availability(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -641,10 +633,9 @@ fn bad_reference_outside_availability(version: &str) {
         assert!(library.compile().is_ok());
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_regular_deprecated_references_versioned_deprecated(version: &str) {
     let _tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -663,10 +654,9 @@ const BAR uint32 = 1;
     library.select_version("example", version);
     let _ast = library.compile().unwrap();
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_deprecation_logic_regression1(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -698,10 +688,9 @@ type Bar = struct {
         );
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_deprecation_logic_regression2(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -733,10 +722,9 @@ type Bar = struct {
         );
     }
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_multiple_files(version: &str) {
     let tv = TargetVersions::new(version);
     let mut library = TestLibrary::new();
@@ -775,10 +763,9 @@ type Bar = struct {
     assert_eq!(ast.lookup_struct("example/Foo").is_some(), tv.any_ge(V2));
     assert_eq!(ast.lookup_struct("example/Bar").is_some(), tv.any_ge(V2));
 }
+}
 
-#[test_case("1")]
-#[test_case("2")]
-#[test_case("HEAD")]
+version_test! {
 fn good_multiple_libraries(version: &str) {
     let tv = TargetVersions::new(version);
     let mut shared = SharedAmongstLibraries::new();
@@ -821,4 +808,5 @@ type ShouldBeSplit = struct {
             .inline_size,
         if tv.all_eq(V1) { 1 } else { 16 }
     );
+}
 }

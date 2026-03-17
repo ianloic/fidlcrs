@@ -911,7 +911,7 @@ impl From<&flat_ast::ProtocolDeclaration> for ProtocolDeclaration {
             location: (&ast.location).into(),
             deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
-            openness: ast.openness.clone(),
+            openness: ast.openness.to_string(),
             composed_protocols: ast.composed_protocols.iter().map(Into::into).collect(),
             methods: ast.methods.iter().map(Into::into).collect(),
             implementation_locations: ast.implementation_locations.clone(),

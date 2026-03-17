@@ -367,12 +367,12 @@ protocol #Decl1# {
         let source_dep = &sources[..idx];
         let source_ex = &sources[idx..];
 
-        let dependency = TestLibrary::with_source_file("dependency.fidl", (source_dep));
+        let dependency = TestLibrary::with_source_file("dependency.fidl", source_dep);
         let root_dep = dependency.compile().unwrap();
 
         let mut library = TestLibrary::new();
-        library.add_dependency_file("dependency.fidl", (source_dep));
-        library.add_source_file("example.fidl", (source_ex));
+        library.add_dependency_file("dependency.fidl", source_dep);
+        library.add_source_file("example.fidl", source_ex);
 
         let root = library.compile().unwrap();
 

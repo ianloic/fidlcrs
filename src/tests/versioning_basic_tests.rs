@@ -471,9 +471,9 @@ closed(added=2, removed=3) open(added=3) protocol Foo {};
     assert_eq!(
         ast.lookup_protocol("example/Foo").unwrap().openness,
         if tv.any_eq(V2) && tv.all_le(V2) {
-            "closed"
+            crate::flat_ast::Openness::Closed
         } else {
-            "open"
+            crate::flat_ast::Openness::Open
         }
     );
 }

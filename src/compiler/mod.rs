@@ -5003,15 +5003,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .iter()
             .any(|m| m.subkind == TokenSubkind::Ajar && self.is_active(m.attributes.as_ref()))
         {
-            "ajar"
+            crate::flat_ast::Openness::Ajar
         } else if decl
             .modifiers
             .iter()
             .any(|m| m.subkind == TokenSubkind::Closed && self.is_active(m.attributes.as_ref()))
         {
-            "closed"
+            crate::flat_ast::Openness::Closed
         } else {
-            "open"
+            crate::flat_ast::Openness::Open
         };
 
         let mut compiled_composed = vec![];
@@ -5068,14 +5068,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
 
-            let mut composed_openness = "open";
+            let mut composed_openness = crate::flat_ast::Openness::Open;
             let mut parent_methods = vec![];
             if let Some(p) = self
                 .declarations
                 .protocols()
                 .find(|&p| p.name == full_composed_name)
             {
-                composed_openness = p.openness.as_str();
+                composed_openness = p.openness;
                 parent_methods = p.methods.clone();
             } else if let Some(RawDecl::Protocol(p)) =
                 self.raw_decls.get::<str>(full_composed_name.as_ref())
@@ -5083,19 +5083,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if p.modifiers.iter().any(|m| {
                     m.subkind == TokenSubkind::Ajar && self.is_active(m.attributes.as_ref())
                 }) {
-                    composed_openness = "ajar";
+                    composed_openness = crate::flat_ast::Openness::Ajar;
                 } else if p.modifiers.iter().any(|m| {
                     m.subkind == TokenSubkind::Closed && self.is_active(m.attributes.as_ref())
                 }) {
-                    composed_openness = "closed";
+                    composed_openness = crate::flat_ast::Openness::Closed;
                 }
             }
 
             let valid = match openness {
-                "open" => true,
-                "ajar" => composed_openness == "ajar" || composed_openness == "closed",
-                "closed" => composed_openness == "closed",
-                _ => true,
+                crate::flat_ast::Openness::Open => true,
+                crate::flat_ast::Openness::Ajar => {
+                    composed_openness == crate::flat_ast::Openness::Ajar
+                        || composed_openness == crate::flat_ast::Openness::Closed
+                }
+                crate::flat_ast::Openness::Closed => {
+                    composed_openness == crate::flat_ast::Openness::Closed
+                }
             };
 
             if !valid {
@@ -5196,18 +5200,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if has_explicit_flexible {
                 is_method_flexible = true;
             } else if !has_explicit_strict
-                && (openness == "open" || (openness == "ajar" && !two_way))
+                && (openness == crate::flat_ast::Openness::Open
+                    || (openness == crate::flat_ast::Openness::Ajar && !two_way))
             {
                 is_method_flexible = true;
             }
 
-            if is_method_flexible && two_way && openness != "open" {
+            if is_method_flexible && two_way && openness != crate::flat_ast::Openness::Open {
                 self.reporter.fail(
                     Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
                     m.name.element.span(),
-                    &[&openness],
+                    &[&openness.to_string()],
                 );
-            } else if is_method_flexible && !two_way && openness == "closed" {
+            } else if is_method_flexible
+                && !two_way
+                && openness == crate::flat_ast::Openness::Closed
+            {
                 self.reporter.fail(
                     Error::ErrFlexibleOneWayMethodInClosedProtocol,
                     m.name.element.span(),
@@ -6039,7 +6047,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.get_location(&decl.name.element),
             self.is_deprecated(decl.attributes.as_deref()),
             self.compile_attribute_list(&decl.attributes),
-            openness.to_string(),
+            openness,
             compiled_composed,
             methods,
             implementation_locations,

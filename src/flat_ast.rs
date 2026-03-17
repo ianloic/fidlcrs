@@ -1101,10 +1101,27 @@ impl ExperimentalResourceDeclaration {
         }
     }
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Openness {
+    Open,
+    Ajar,
+    Closed,
+}
+
+impl std::fmt::Display for Openness {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Open => write!(f, "open"),
+            Self::Ajar => write!(f, "ajar"),
+            Self::Closed => write!(f, "closed"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ProtocolDeclaration {
     pub base: DeclBase,
-    pub openness: String,
+    pub openness: Openness,
     pub composed_protocols: Vec<ProtocolCompose>,
     pub methods: Vec<ProtocolMethod>,
     pub implementation_locations: Option<std::collections::BTreeMap<String, Vec<String>>>,
@@ -1117,7 +1134,7 @@ impl ProtocolDeclaration {
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
-        openness: String,
+        openness: Openness,
         composed_protocols: Vec<ProtocolCompose>,
         methods: Vec<ProtocolMethod>,
         implementation_locations: Option<std::collections::BTreeMap<String, Vec<String>>>,

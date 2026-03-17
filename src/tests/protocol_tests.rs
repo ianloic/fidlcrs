@@ -16,7 +16,7 @@ protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, "open");
+    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Open);
 }
 
 #[test]
@@ -35,7 +35,7 @@ open protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, "open");
+    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Open);
 }
 
 #[test]
@@ -54,7 +54,7 @@ ajar protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, "ajar");
+    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Ajar);
 }
 
 #[test]
@@ -73,7 +73,7 @@ closed protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, "closed");
+    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Closed);
 }
 
 #[test]

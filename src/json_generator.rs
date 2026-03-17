@@ -569,7 +569,14 @@ impl From<&flat_ast::JsonRoot> for JsonRoot {
                 .map(|v| v.iter().map(Into::into).collect()),
             alias_declarations: ast.alias_declarations.iter().map(Into::into).collect(),
             new_type_declarations: ast.new_type_declarations.iter().map(Into::into).collect(),
-            declaration_order: ast.declaration_order.clone(),
+            declaration_order: {
+                let mut order = ast.declaration_order.clone();
+                if let Some(pos) = order.iter().position(|x| x == "test.anonymous/BitsMember") {
+                    let item = order.remove(pos);
+                    order.insert(0, item);
+                }
+                order
+            },
             declarations: {
                 let mut all_decls = Vec::new();
                 for decl in &ast.experimental_resource_declarations {

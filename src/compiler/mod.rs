@@ -776,14 +776,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             },
             alias_declarations: self.alias_declarations.clone(),
             new_type_declarations: self.new_type_declarations.clone(),
-            declaration_order: {
-                let mut order = self.declaration_order.clone();
-                if let Some(pos) = order.iter().position(|x| x == "test.anonymous/BitsMember") {
-                    let item = order.remove(pos);
-                    order.insert(0, item);
-                }
-                order
-            },
+            declaration_order: self.declaration_order.clone(),
         };
 
         let has_errors = self
@@ -1590,9 +1583,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.compiled_decls
             .insert(crate::names::OwnedQualifiedName::from(name.to_string()));
 
-        if is_main_library {
-            self.declaration_order.push(name.to_string());
-        }
+        if is_main_library {}
     }
 
     fn check_canonical_insert(
@@ -3449,7 +3440,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     );
 
                     if library_name == self.library_name.to_string() {
-                        self.declaration_order.push(full_name.clone());
                         self.compiled_decls
                             .insert(crate::names::OwnedQualifiedName::from(full_name.clone()));
                     }
@@ -5866,7 +5856,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
                 self.union_declarations.push(union_decl);
                 if library_name == self.library_name.to_string() {
-                    self.declaration_order.push(full_synth_union.clone());
                     self.compiled_decls
                         .insert(crate::names::OwnedQualifiedName::from(
                             full_synth_union.clone(),

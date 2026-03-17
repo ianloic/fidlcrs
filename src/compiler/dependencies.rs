@@ -446,7 +446,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             visited: &mut HashSet<String>,
             temp_path: &mut Vec<String>,
             sorted: &mut Vec<String>,
-            decl_kinds: &HashMap<crate::names::OwnedQualifiedName, crate::flat_ast::DeclarationKind>,
+            decl_kinds: &HashMap<
+                crate::names::OwnedQualifiedName,
+                crate::flat_ast::DeclarationKind,
+            >,
             skip_optional: bool,
             inline_names: &HashMap<usize, String>,
             reporter: &Reporter<'b>,
@@ -459,13 +462,17 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let mut cycle_str = String::new();
                 for cname in cycle_names {
                     let ckind_opt = decl_kinds.get::<str>(cname.as_ref());
-                    let ckind = ckind_opt.map(|k| k.to_string()).unwrap_or_else(|| "unknown".to_string());
+                    let ckind = ckind_opt
+                        .map(|k| k.to_string())
+                        .unwrap_or_else(|| "unknown".to_string());
                     let cname_fqn = crate::names::OwnedQualifiedName::parse(cname);
                     let short_name = cname_fqn.declaration();
                     cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
                 }
                 let kind_opt = decl_kinds.get::<str>(name.as_ref());
-                let kind = kind_opt.map(|k| k.to_string()).unwrap_or_else(|| "unknown".to_string());
+                let kind = kind_opt
+                    .map(|k| k.to_string())
+                    .unwrap_or_else(|| "unknown".to_string());
                 let name_fqn = crate::names::OwnedQualifiedName::parse(name);
                 let short_name = name_fqn.declaration();
                 cycle_str.push_str(&format!("{} '{}'", kind, short_name));

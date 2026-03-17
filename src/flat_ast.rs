@@ -1405,6 +1405,7 @@ pub enum Decl {
     Struct(StructDeclaration),
     Table(TableDeclaration),
     Union(UnionDeclaration),
+    Overlay(UnionDeclaration),
 }
 
 impl std::ops::Deref for Decl {
@@ -1422,6 +1423,7 @@ impl std::ops::Deref for Decl {
             Decl::Struct(d) => &d.base,
             Decl::Table(d) => &d.base,
             Decl::Union(d) => &d.base,
+            Decl::Overlay(d) => &d.base,
         }
     }
 }
@@ -1440,6 +1442,7 @@ impl std::ops::DerefMut for Decl {
             Decl::Struct(d) => &mut d.base,
             Decl::Table(d) => &mut d.base,
             Decl::Union(d) => &mut d.base,
+            Decl::Overlay(d) => &mut d.base,
         }
     }
 }
@@ -1465,3 +1468,70 @@ impl_from_decl!(Service, ServiceDeclaration);
 impl_from_decl!(Struct, StructDeclaration);
 impl_from_decl!(Table, TableDeclaration);
 impl_from_decl!(Union, UnionDeclaration);
+
+#[derive(Clone, Debug, Default)]
+pub struct Declarations {
+    decls: Vec<Decl>,
+}
+
+macro_rules! decl_iterators {
+    ($method:ident, $mut_method:ident, $variant:ident, $type:ty) => {
+        pub fn $method(&self) -> impl Iterator<Item = &$type> {
+            self.decls.iter().filter_map(|d| {
+                if let Decl::$variant(inner) = d {
+                    Some(inner)
+                } else {
+                    None
+                }
+            })
+        }
+
+        pub fn $mut_method(&mut self) -> impl Iterator<Item = &mut $type> {
+            self.decls.iter_mut().filter_map(|d| {
+                if let Decl::$variant(inner) = d {
+                    Some(inner)
+                } else {
+                    None
+                }
+            })
+        }
+    };
+}
+
+impl Declarations {
+    pub fn new() -> Self {
+        Self { decls: Vec::new() }
+    }
+
+    pub fn push(&mut self, decl: Decl) {
+        self.decls.push(decl);
+    }
+
+    pub fn decls(&self) -> std::slice::Iter<'_, Decl> {
+        self.decls.iter()
+    }
+
+    pub fn decls_mut(&mut self) -> std::slice::IterMut<'_, Decl> {
+        self.decls.iter_mut()
+    }
+    
+    pub fn sort_by<F>(&mut self, compare: F)
+    where
+        F: FnMut(&Decl, &Decl) -> std::cmp::Ordering,
+    {
+        self.decls.sort_by(compare);
+    }
+
+    decl_iterators!(aliases, aliases_mut, Alias, AliasDeclaration);
+    decl_iterators!(bits, bits_mut, Bits, BitsDeclaration);
+    decl_iterators!(consts, consts_mut, Const, ConstDeclaration);
+    decl_iterators!(enums, enums_mut, Enum, EnumDeclaration);
+    decl_iterators!(experimental_resources, experimental_resources_mut, ExperimentalResource, ExperimentalResourceDeclaration);
+    decl_iterators!(new_types, new_types_mut, NewType, NewTypeDeclaration);
+    decl_iterators!(protocols, protocols_mut, Protocol, ProtocolDeclaration);
+    decl_iterators!(services, services_mut, Service, ServiceDeclaration);
+    decl_iterators!(structs, structs_mut, Struct, StructDeclaration);
+    decl_iterators!(tables, tables_mut, Table, TableDeclaration);
+    decl_iterators!(unions, unions_mut, Union, UnionDeclaration);
+    decl_iterators!(overlays, overlays_mut, Overlay, UnionDeclaration);
+}

@@ -981,8 +981,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape.max_out_of_line = max_ool;
                 decl.type_shape.max_handles = max_handles;
                 decl.type_shape.has_padding = has_padding;
-                let is_flexible =
-                    decl.base.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
+                let is_flexible = decl
+                    .base
+                    .maybe_attributes
+                    .iter()
+                    .any(|a| a.name == "flexible")
+                    || !decl.strict;
                 // Also check if any member has the flexible trait
                 decl.type_shape.has_flexible_envelope = has_flex || is_flexible;
             }
@@ -1387,7 +1391,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .outer_alias
                         .take()
                         .or_else(|| typ.experimental_maybe_from_alias.take());
-                    let compiled = NewTypeDeclaration::new(format!("{}/{}", library_name, t.name.data()), self.get_location(&t.name.element), self.is_deprecated(t.attributes.as_deref()), self.compile_attribute_list(&t.attributes), typ, alias);
+                    let compiled = NewTypeDeclaration::new(
+                        format!("{}/{}", library_name, t.name.data()),
+                        self.get_location(&t.name.element),
+                        self.is_deprecated(t.attributes.as_deref()),
+                        self.compile_attribute_list(&t.attributes),
+                        typ,
+                        alias,
+                    );
                     if is_main_library {
                         self.new_type_declarations.push(compiled);
                     }

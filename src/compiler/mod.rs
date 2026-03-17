@@ -279,6 +279,9 @@ pub struct Compiler<'node, 'src> {
     pub library_name: OwnedLibraryName,
     pub library_decl: Option<LibraryDeclaration<'src>>,
     pub raw_decls: HashMap<OwnedQualifiedName, RawDecl<'node, 'src>>,
+    /// Internal mapping from a declaration's qualified name to its kind.
+    /// This is used heavily during compilation (resolution, type checking, 
+    /// layout calculation) for fast unordered lookups.
     pub decl_kinds: HashMap<OwnedQualifiedName, DeclarationKind>,
     pub sorted_names: Vec<OwnedQualifiedName>,
 
@@ -299,6 +302,10 @@ pub struct Compiler<'node, 'src> {
     pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
     pub overlay_declarations: Vec<UnionDeclaration>,
 
+    /// Ordered map of all declarations going into the JSON IR.
+    /// Keys are fully qualified name strings. It is strictly sorted 
+    /// by `DeclarationKind` (e.g. all Bits first, then Const) and then alphabetically.
+    /// This ensures stable output in the generated `"declarations"` field.
     pub declarations: IndexMap<String, DeclarationKind>,
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<OwnedQualifiedName, Availability>,
@@ -785,7 +792,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 for kind_group in &order {
                     for (decl_name, decl_obj) in &all_dep_decls {
-                        if &(*decl_obj).kind == kind_group {
+                        if &decl_obj.kind == kind_group {
                             sorted_declarations
                                 .insert((*decl_name).clone(), (*decl_obj).clone());
                         }

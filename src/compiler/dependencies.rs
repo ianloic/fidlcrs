@@ -575,17 +575,17 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         for k in &keys {
             all_names.push(k.to_string());
         }
-        for decl in &self.union_declarations {
+        for decl in self.declarations.unions() {
             if !all_names.contains(&decl.name) {
                 all_names.push(decl.name.clone());
             }
         }
-        for decl in &self.struct_declarations {
+        for decl in self.declarations.structs() {
             if !all_names.contains(&decl.name) {
                 all_names.push(decl.name.clone());
             }
         }
-        for decl in &self.table_declarations {
+        for decl in self.declarations.tables() {
             if !all_names.contains(&decl.name) {
                 all_names.push(decl.name.clone());
             }
@@ -599,59 +599,59 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         for name in &all_names {
             let mut d = Vec::new();
 
-            if let Some(obj) = self.bits_declarations.iter().find(|x| &x.name == name) {
+            if let Some(obj) = self.declarations.bits().find(|x| &x.name == name) {
                 d.extend(get_type_dependencies(&obj.type_));
                 for m in &obj.members {
                     d.extend(get_constant_deps(&m.value));
                 }
-            } else if let Some(obj) = self.const_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.consts().find(|x| &x.name == name) {
                 d.extend(get_type_dependencies(&obj.type_));
                 d.extend(get_constant_deps(&obj.value));
-            } else if let Some(obj) = self.enum_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.enums().find(|x| &x.name == name) {
                 for m in &obj.members {
                     d.extend(get_constant_deps(&m.value));
                 }
-            } else if let Some(obj) = self.struct_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.structs().find(|x| &x.name == name) {
                 for m in &obj.members {
                     d.extend(get_type_dependencies(&m.type_));
                     if let Some(def_val) = &m.maybe_default_value {
                         d.extend(get_constant_deps(def_val));
                     }
                 }
-            } else if let Some(obj) = self.table_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.tables().find(|x| &x.name == name) {
                 for m in &obj.members {
                     if let Some(ref ty) = m.type_ {
                         d.extend(get_type_dependencies(ty));
                     }
                 }
-            } else if let Some(obj) = self.union_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.unions().find(|x| &x.name == name) {
                 for m in &obj.members {
                     if let Some(ref ty) = m.type_ {
                         d.extend(get_type_dependencies(ty));
                     }
                 }
-            } else if let Some(obj) = self.alias_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.aliases().find(|x| &x.name == name) {
                 d.push(obj.partial_type_ctor.name.clone());
-            } else if let Some(obj) = self.new_type_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.new_types().find(|x| &x.name == name) {
                 if let Some(alias) = &obj.type_.experimental_maybe_from_alias {
                     d.push(alias.name.clone());
                 } else if let Some(id) = obj.type_.identifier() {
                     d.push(id.clone());
                 }
-            } else if let Some(obj) = self.service_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.services().find(|x| &x.name == name) {
                 for m in &obj.members {
                     d.extend(get_type_dependencies(&m.type_));
                 }
             } else if let Some(obj) = self
-                .experimental_resource_declarations
-                .iter()
+                .declarations
+                .experimental_resources()
                 .find(|x| &x.name == name)
             {
                 d.extend(get_type_dependencies(&obj.type_));
                 for prop in &obj.properties {
                     d.extend(get_type_dependencies(&prop.type_));
                 }
-            } else if let Some(obj) = self.protocol_declarations.iter().find(|x| &x.name == name) {
+            } else if let Some(obj) = self.declarations.protocols().find(|x| &x.name == name) {
                 for comp in &obj.composed_protocols {
                     d.push(comp.name.clone());
                 }

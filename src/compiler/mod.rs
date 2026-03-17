@@ -286,21 +286,7 @@ pub struct Compiler<'node, 'src> {
     pub sorted_names: Vec<OwnedQualifiedName>,
 
     // Outputs
-    pub alias_declarations: Vec<AliasDeclaration>,
-    pub new_type_declarations: Vec<NewTypeDeclaration>,
-    pub bits_declarations: Vec<BitsDeclaration>,
-    pub const_declarations: Vec<ConstDeclaration>,
-    pub enum_declarations: Vec<EnumDeclaration>,
-    pub protocol_declarations: Vec<ProtocolDeclaration>,
-    pub external_protocol_declarations: Vec<ProtocolDeclaration>,
-    pub service_declarations: Vec<ServiceDeclaration>,
-    pub struct_declarations: Vec<StructDeclaration>,
-    pub table_declarations: Vec<TableDeclaration>,
-    pub union_declarations: Vec<UnionDeclaration>,
-    pub external_struct_declarations: Vec<StructDeclaration>,
-    pub external_enum_declarations: Vec<EnumDeclaration>,
-    pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
-    pub overlay_declarations: Vec<UnionDeclaration>,
+    pub declarations: crate::flat_ast::Declarations,
 
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<OwnedQualifiedName, Availability>,
@@ -343,19 +329,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             raw_decls: HashMap::new(),
             decl_kinds: HashMap::new(),
             sorted_names: Vec::new(),
-            alias_declarations: Vec::new(),
-            new_type_declarations: Vec::new(),
-            bits_declarations: Vec::new(),
-            const_declarations: Vec::new(),
-            enum_declarations: Vec::new(),
-            protocol_declarations: Vec::new(),
-            external_protocol_declarations: Vec::new(),
-            service_declarations: Vec::new(),
-            struct_declarations: Vec::new(),
-            table_declarations: Vec::new(),
-            union_declarations: Vec::new(),
-            external_struct_declarations: Vec::new(),
-            external_enum_declarations: Vec::new(),
+            declarations: crate::flat_ast::Declarations::new(),
 
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
@@ -365,8 +339,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
             dependency_declarations: BTreeMap::new(),
             inline_names: HashMap::new(),
             compiled_decls: HashSet::new(),
-            experimental_resource_declarations: Vec::new(),
-            overlay_declarations: Vec::new(),
             generated_source_file: VirtualSourceFile::new("generated".to_string()),
             skip_eager_compile: false,
             anonymous_structs: HashSet::new(),
@@ -503,17 +475,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         self.verify_used_imports();
         // Fixup max_handles for resources in cycles
-        for decl in &mut self.struct_declarations {
+        for decl in self.declarations.structs_mut() {
             if decl.resource && decl.type_shape.depth == u32::MAX {
                 decl.type_shape.max_handles = u32::MAX;
             }
         }
-        for decl in &mut self.table_declarations {
+        for decl in self.declarations.tables_mut() {
             if decl.resource && decl.type_shape.depth == u32::MAX {
                 decl.type_shape.max_handles = u32::MAX;
             }
         }
-        for decl in &mut self.union_declarations {
+        for decl in self.declarations.unions_mut() {
             if decl.resource && decl.type_shape.depth == u32::MAX {
                 decl.type_shape.max_handles = u32::MAX;
             }
@@ -523,21 +495,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.recompute_declaration_order();
 
         // Sort declarations by name to match fidlc output order (alphabetical)
-        self.alias_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.new_type_declarations
-            .sort_by(|a, b| a.name.cmp(&b.name));
-        self.bits_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.const_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.enum_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.protocol_declarations
-            .sort_by(|a, b| a.name.cmp(&b.name));
-        self.service_declarations
-            .sort_by(|a, b| a.name.cmp(&b.name));
-        self.struct_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.table_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
-        self.experimental_resource_declarations
-            .sort_by(|a, b| a.name.cmp(&b.name));
+        self.declarations.sort_by(|a, b| a.name.cmp(&b.name));
 
         let platform = if self.is_versioned_library() {
             self.library_name.versioning_platform().to_string()
@@ -567,10 +525,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 if compiler.anonymous_structs.contains(id)
-                    && let Some(s) = compiler
-                        .external_struct_declarations
-                        .iter()
-                        .find(|s| s.name == id)
+                    && let Some(s) = compiler.declarations.structs().find(|s| s.name == id)
                 {
                     for m in &s.members {
                         extract_deps_from_type(&m.type_, deps, compiler);
@@ -613,7 +568,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-        for u in &self.union_declarations {
+        for u in self.declarations.unions() {
             if u.name.starts_with(&format!("{}/", self.library_name)) {
                 for m in &u.members {
                     if let Some(t) = &m.type_ {
@@ -622,7 +577,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        for a in &self.alias_declarations {
+        for a in self.declarations.aliases() {
             if a.name.starts_with(&format!("{}/", self.library_name)) {
                 let id = &a.partial_type_ctor.name;
                 if let Some(pos) = id.find('/') {
@@ -633,7 +588,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             }
         }
-        for s in &self.struct_declarations {
+        for s in self.declarations.structs() {
             if s.name.starts_with(&format!("{}/", self.library_name)) {
                 for m in &s.members {
                     extract_deps_from_type(&m.type_, &mut used_deps, self);
@@ -655,12 +610,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let mut methods = vec![];
             let mut composed = vec![];
 
-            if let Some(p) = compiler
-                .protocol_declarations
-                .iter()
-                .chain(compiler.external_protocol_declarations.iter())
-                .find(|p| p.name == p_name)
-            {
+            if let Some(p) = compiler.declarations.protocols().find(|p| p.name == p_name) {
                 methods.extend(p.methods.iter().cloned());
                 composed.extend(p.composed_protocols.iter().cloned());
             }
@@ -685,7 +635,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
 
-        for p in &self.protocol_declarations {
+        for p in self.declarations.protocols() {
             extract_deps_from_protocol(&p.name, &mut used_deps, self, &mut visited_protocols);
         }
 
@@ -756,26 +706,50 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 exps
             },
             library_dependencies,
-            bits_declarations: self.bits_declarations.clone(),
-            const_declarations: self.const_declarations.clone(),
-            enum_declarations: self.enum_declarations.clone(),
-            experimental_resource_declarations: self.experimental_resource_declarations.clone(),
-            protocol_declarations: self.protocol_declarations.clone(),
-            service_declarations: self.service_declarations.clone(),
-            struct_declarations: self.struct_declarations.clone(),
-            external_struct_declarations: self.external_struct_declarations.clone(),
-            table_declarations: self.table_declarations.clone(),
-            union_declarations: self.union_declarations.clone(),
+            bits_declarations: self.declarations.bits().cloned().collect(),
+            const_declarations: self.declarations.consts().cloned().collect(),
+            enum_declarations: self
+                .declarations
+                .enums()
+                .filter(|d| d.name.starts_with(&format!("{}/", self.library_name)))
+                .cloned()
+                .collect(),
+            experimental_resource_declarations: self
+                .declarations
+                .experimental_resources()
+                .cloned()
+                .collect(),
+            protocol_declarations: self
+                .declarations
+                .protocols()
+                .filter(|d| d.name.starts_with(&format!("{}/", self.library_name)))
+                .cloned()
+                .collect(),
+            service_declarations: self.declarations.services().cloned().collect(),
+            struct_declarations: self
+                .declarations
+                .structs()
+                .filter(|d| d.name.starts_with(&format!("{}/", self.library_name)))
+                .cloned()
+                .collect(),
+            external_struct_declarations: self
+                .declarations
+                .structs()
+                .filter(|d| !d.name.starts_with(&format!("{}/", self.library_name)))
+                .cloned()
+                .collect(),
+            table_declarations: self.declarations.tables().cloned().collect(),
+            union_declarations: self.declarations.unions().cloned().collect(),
             overlay_declarations: if self
                 .experimental_flags
                 .is_enabled(ExperimentalFlag::ZxCTypes)
             {
-                Some(self.overlay_declarations.clone())
+                Some(self.declarations.overlays().cloned().collect())
             } else {
                 None
             },
-            alias_declarations: self.alias_declarations.clone(),
-            new_type_declarations: self.new_type_declarations.clone(),
+            alias_declarations: self.declarations.aliases().cloned().collect(),
+            new_type_declarations: self.declarations.new_types().cloned().collect(),
             declaration_order: self.declaration_order.clone(),
         };
 
@@ -841,7 +815,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         };
 
-        for decl in &mut self.struct_declarations {
+        for decl in self.declarations.structs_mut() {
             let mut offset = 0u32;
             let mut alignment = 1u32;
             let mut sum_ool = 0u32;
@@ -962,7 +936,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 );
             }
         }
-        for decl in &mut self.union_declarations {
+        for decl in self.declarations.unions_mut() {
             let mut max_ool = 0u32;
             let mut max_handles = 0u32;
             let mut has_padding = false;
@@ -991,7 +965,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape.has_flexible_envelope = has_flex || is_flexible;
             }
         }
-        for decl in &mut self.table_declarations {
+        for decl in self.declarations.tables_mut() {
             let mut max_ool = 0u32;
             let mut max_handles = 0u32;
             let mut has_padding = false;
@@ -1014,16 +988,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape.has_flexible_envelope = true;
             }
         }
-        for decl in &mut self.alias_declarations {
+        for decl in self.declarations.aliases_mut() {
             Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
         }
-        for decl in &mut self.new_type_declarations {
+        for decl in self.declarations.new_types_mut() {
             Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
         }
-        for decl in &mut self.const_declarations {
+        for decl in self.declarations.consts_mut() {
             Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
         }
-        for decl in &mut self.protocol_declarations {
+        for decl in self.declarations.protocols_mut() {
             for method in &mut decl.methods {
                 if let Some(ty) = &mut method.maybe_request_payload {
                     Self::update_type_shape(ty, &shapes, &struct_names);
@@ -1315,9 +1289,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                     );
                     if is_main_library {
-                        self.struct_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Struct(compiled));
                     } else {
-                        self.external_struct_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Struct(compiled));
                     }
                 } else if let raw_ast::Layout::Enum(ref e) = t.layout {
                     let compiled = self.compile_enum(
@@ -1329,9 +1305,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if is_main_library {
-                        self.enum_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Enum(compiled));
                     } else {
-                        self.external_enum_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Enum(compiled));
                     }
                 } else if let raw_ast::Layout::Bits(ref b) = t.layout {
                     let compiled = self.compile_bits(
@@ -1343,7 +1321,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if is_main_library {
-                        self.bits_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Bits(compiled));
                     }
                 } else if let raw_ast::Layout::Table(ref ta) = t.layout {
                     let compiled = self.compile_table(
@@ -1355,7 +1334,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if is_main_library {
-                        self.table_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Table(compiled));
                     }
                 } else if let raw_ast::Layout::Union(ref u) = t.layout {
                     let compiled = self.compile_union(
@@ -1367,9 +1347,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if u.is_overlay {
-                        self.overlay_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Overlay(compiled));
                     } else {
-                        self.union_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Union(compiled));
                     }
                 } else if let raw_ast::Layout::TypeConstructor(ref tc) = t.layout {
                     let mut existing_type_name = "unknown".to_string();
@@ -1400,7 +1382,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         alias,
                     );
                     if is_main_library {
-                        self.new_type_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::NewType(compiled));
                     }
                 }
             }
@@ -1415,9 +1398,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         s.attributes.as_deref(),
                     );
                     if is_main_library {
-                        self.struct_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Struct(compiled));
                     } else {
-                        self.external_struct_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Struct(compiled));
                     }
                 }
             }
@@ -1432,9 +1417,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if is_main_library {
-                        self.enum_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Enum(compiled));
                     } else {
-                        self.external_enum_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Enum(compiled));
                     }
                 }
             }
@@ -1449,7 +1436,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if is_main_library {
-                        self.bits_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Bits(compiled));
                     }
                 }
             }
@@ -1464,9 +1452,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if u.is_overlay {
-                        self.overlay_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Overlay(compiled));
                     } else {
-                        self.union_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Union(compiled));
                     }
                 }
             }
@@ -1481,7 +1471,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                     );
                     if is_main_library {
-                        self.table_declarations.push(compiled);
+                        self.declarations
+                            .push(crate::flat_ast::Decl::Table(compiled));
                     }
                 }
             }
@@ -1514,9 +1505,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 if is_main_library {
-                    self.protocol_declarations.push(compiled);
+                    self.declarations
+                        .push(crate::flat_ast::Decl::Protocol(compiled));
                 } else {
-                    self.external_protocol_declarations.push(compiled);
+                    self.declarations
+                        .push(crate::flat_ast::Decl::Protocol(compiled));
                 }
 
                 for id in extra_to_compile {
@@ -1530,26 +1523,30 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let short_name = s.name.data();
                 let compiled = self.compile_service(short_name, s, &library_name);
                 if is_main_library {
-                    self.service_declarations.push(compiled);
+                    self.declarations
+                        .push(crate::flat_ast::Decl::Service(compiled));
                 }
             }
             RawDecl::Resource(r) => {
                 let short_name = r.name.data();
                 let compiled = self.compile_resource(short_name, r, &library_name);
                 if is_main_library {
-                    self.experimental_resource_declarations.push(compiled);
+                    self.declarations
+                        .push(crate::flat_ast::Decl::ExperimentalResource(compiled));
                 }
             }
             RawDecl::Const(c) => {
                 let compiled = self.compile_const(c, &library_name);
                 if is_main_library {
-                    self.const_declarations.push(compiled);
+                    self.declarations
+                        .push(crate::flat_ast::Decl::Const(compiled));
                 }
             }
             RawDecl::Alias(a) => {
                 let compiled = self.compile_alias(a, &library_name);
                 if is_main_library {
-                    self.alias_declarations.push(compiled);
+                    self.declarations
+                        .push(crate::flat_ast::Decl::Alias(compiled));
                 }
             }
         }
@@ -3390,7 +3387,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                                 None,
                             );
-                            self.struct_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Struct(compiled));
                             self.raw_decls.insert(
                                 crate::names::OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Struct(s),
@@ -3405,7 +3403,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 naming_context.clone(),
                             );
-                            self.enum_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Enum(compiled));
                             self.raw_decls.insert(
                                 crate::names::OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Enum(e),
@@ -3420,7 +3419,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 naming_context.clone(),
                             );
-                            self.bits_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Bits(compiled));
                             self.raw_decls.insert(
                                 crate::names::OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Bits(b),
@@ -3436,9 +3436,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 naming_context.clone(),
                             );
                             if u.is_overlay {
-                                self.overlay_declarations.push(compiled);
+                                self.declarations
+                                    .push(crate::flat_ast::Decl::Overlay(compiled));
                             } else {
-                                self.union_declarations.push(compiled);
+                                self.declarations
+                                    .push(crate::flat_ast::Decl::Union(compiled));
                             }
                             self.raw_decls.insert(
                                 crate::names::OwnedQualifiedName::from(full_name.clone()),
@@ -3454,7 +3456,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 naming_context.clone(),
                             );
-                            self.table_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Table(compiled));
                             self.raw_decls.insert(
                                 crate::names::OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Table(t),
@@ -3923,10 +3926,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 transport = Some(lit.literal.value.trim_matches('"').to_string());
                             }
                         }
-                    } else if let Some(p) = self
-                        .protocol_declarations
-                        .iter()
-                        .find(|p| p.name == protocol)
+                    } else if let Some(p) =
+                        self.declarations.protocols().find(|&p| p.name == protocol)
                     {
                         is_protocol = true;
                         if let Some(attr) =
@@ -3936,10 +3937,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         {
                             transport = Some(lit.value.trim_matches('"').to_string());
                         }
-                    } else if let Some(p) = self
-                        .external_protocol_declarations
-                        .iter()
-                        .find(|p| p.name == protocol)
+                    } else if let Some(p) =
+                        std::iter::empty::<&crate::flat_ast::ProtocolDeclaration>()
+                            .find(|&p| p.name == protocol)
                     {
                         is_protocol = true;
                         if let Some(attr) =
@@ -5008,9 +5008,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if has_no_resource {
                 let mut composed_has_no_resource = false;
                 if let Some(p) = self
-                    .protocol_declarations
-                    .iter()
-                    .find(|p| p.name == full_composed_name)
+                    .declarations
+                    .protocols()
+                    .find(|&p| p.name == full_composed_name)
                 {
                     composed_has_no_resource =
                         p.maybe_attributes.iter().any(|a| a.name == "no_resource");
@@ -5023,10 +5023,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .iter()
                             .any(|a| a.name.data() == "no_resource");
                     }
-                } else if let Some(p) = self
-                    .external_protocol_declarations
-                    .iter()
-                    .find(|p| p.name == full_composed_name)
+                } else if let Some(p) = std::iter::empty::<&crate::flat_ast::ProtocolDeclaration>()
+                    .find(|&p| p.name == full_composed_name)
                 {
                     composed_has_no_resource =
                         p.maybe_attributes.iter().any(|a| a.name == "no_resource");
@@ -5043,9 +5041,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let mut composed_openness = "open";
             let mut parent_methods = vec![];
             if let Some(p) = self
-                .protocol_declarations
-                .iter()
-                .find(|p| p.name == full_composed_name)
+                .declarations
+                .protocols()
+                .find(|&p| p.name == full_composed_name)
             {
                 composed_openness = p.openness.as_str();
                 parent_methods = p.methods.clone();
@@ -5227,9 +5225,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 || kind == DeclarationKind::Union
                                 || kind == DeclarationKind::Overlay
                         } else if let Some(id) = &resolved_type.identifier() {
-                            self.struct_declarations.iter().any(|d| &d.name == id)
-                                || self.table_declarations.iter().any(|d| &d.name == id)
-                                || self.union_declarations.iter().any(|d| &d.name == id)
+                            self.declarations.structs().any(|d| &d.name == id)
+                                || self.declarations.tables().any(|d| &d.name == id)
+                                || self.declarations.unions().any(|d| &d.name == id)
                         } else {
                             false
                         };
@@ -5281,14 +5279,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                             );
                             if library_name == self.library_name.to_string() {
-                                self.struct_declarations.push(compiled);
+                                self.declarations
+                                    .push(crate::flat_ast::Decl::Struct(compiled));
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls
                                     .insert(crate::names::OwnedQualifiedName::from(
                                         full_synth.clone(),
                                     ));
                             } else {
-                                self.external_struct_declarations.push(compiled);
+                                self.declarations
+                                    .push(crate::flat_ast::Decl::Struct(compiled));
                             }
                             self.shapes
                                 .get::<str>(full_synth.as_str())
@@ -5317,7 +5317,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 Some(ctx.clone()),
                             );
-                            self.table_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Table(compiled));
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls
@@ -5354,9 +5355,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             );
                             if library_name == self.library_name.to_string() {
                                 if u.is_overlay {
-                                    self.overlay_declarations.push(compiled);
+                                    self.declarations
+                                        .push(crate::flat_ast::Decl::Overlay(compiled));
                                 } else {
-                                    self.union_declarations.push(compiled);
+                                    self.declarations
+                                        .push(crate::flat_ast::Decl::Union(compiled));
                                 }
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls
@@ -5421,9 +5424,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 || kind == DeclarationKind::Union
                                 || kind == DeclarationKind::Overlay
                         } else if let Some(id) = &resolved_type.identifier() {
-                            self.struct_declarations.iter().any(|d| &d.name == id)
-                                || self.table_declarations.iter().any(|d| &d.name == id)
-                                || self.union_declarations.iter().any(|d| &d.name == id)
+                            self.declarations.structs().any(|d| &d.name == id)
+                                || self.declarations.tables().any(|d| &d.name == id)
+                                || self.declarations.unions().any(|d| &d.name == id)
                         } else {
                             false
                         };
@@ -5493,7 +5496,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                                 None,
                             );
-                            self.struct_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Struct(compiled));
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls
@@ -5547,7 +5551,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 None,
                                 Some(ctx.clone()),
                             );
-                            self.table_declarations.push(compiled);
+                            self.declarations
+                                .push(crate::flat_ast::Decl::Table(compiled));
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
                                 self.compiled_decls
@@ -5602,9 +5607,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 Some(ctx.clone()),
                             );
                             if u.is_overlay {
-                                self.overlay_declarations.push(compiled);
+                                self.declarations
+                                    .push(crate::flat_ast::Decl::Overlay(compiled));
                             } else {
-                                self.union_declarations.push(compiled);
+                                self.declarations
+                                    .push(crate::flat_ast::Decl::Union(compiled));
                             }
                             if library_name == self.library_name.to_string() {
                                 self.declaration_order.push(full_synth.clone());
@@ -5662,16 +5669,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         } else if err_type_resolved.kind() == TypeKind::Identifier
                             && let Some(id) = &err_type_resolved.identifier()
                         {
-                            if let Some(e_decl) =
-                                self.enum_declarations.iter().find(|e| &e.name == id)
+                            if let Some(e_decl) = self.declarations.enums().find(|&e| &e.name == id)
                             {
                                 if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
                                     is_valid_error_type = true;
                                 }
-                            } else if let Some(e_decl) = self
-                                .external_enum_declarations
-                                .iter()
-                                .find(|e| &e.name == id)
+                            } else if let Some(e_decl) =
+                                std::iter::empty::<&crate::flat_ast::EnumDeclaration>()
+                                    .find(|&e| &e.name == id)
                                 && (e_decl.type_ == "int32" || e_decl.type_ == "uint32")
                             {
                                 is_valid_error_type = true;
@@ -5751,7 +5756,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             is_empty_success_struct: true,
                             type_shape: shape.clone(),
                         };
-                        self.struct_declarations.push(decl);
+                        self.declarations.push(crate::flat_ast::Decl::Struct(decl));
                         if library_name == self.library_name.to_string() {
                             self.declaration_order.push(full_synth.clone());
                             self.compiled_decls
@@ -5894,7 +5899,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     is_result: Some(true),
                     type_shape: union_shape.clone(),
                 };
-                self.union_declarations.push(union_decl);
+                self.declarations
+                    .push(crate::flat_ast::Decl::Union(union_decl));
                 if library_name == self.library_name.to_string() {
                     self.compiled_decls
                         .insert(crate::names::OwnedQualifiedName::from(

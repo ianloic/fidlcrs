@@ -1836,11 +1836,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
 
             members.push(EnumMember {
-                name: member.name.data().to_string(),
-                location: self.get_location(&member.name.element),
-                deprecated: self.is_deprecated(member.attributes.as_deref()),
+                base: crate::flat_ast::DeclBase {
+                    name: member.name.data().to_string(),
+                    location: self.get_location(&member.name.element),
+                    deprecated: self.is_deprecated(member.attributes.as_deref()),
+                    maybe_attributes: attributes,
+                },
                 value: compiled_value,
-                maybe_attributes: attributes,
             });
         }
 
@@ -2166,11 +2168,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
 
             members.push(BitsMember {
-                name: name_str,
-                location: self.get_location(&member.name.element),
-                deprecated: self.is_deprecated(member.attributes.as_deref()),
+                base: crate::flat_ast::DeclBase {
+                    name: name_str,
+                    location: self.get_location(&member.name.element),
+                    deprecated: self.is_deprecated(member.attributes.as_deref()),
+                    maybe_attributes: attributes,
+                },
                 value: compiled_value,
-                maybe_attributes: attributes,
             });
         }
 
@@ -2296,9 +2300,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !(is_versioned && prev_versioned) {
                     let location_str = format!(
                         "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename,
-                        prev.location.as_ref().unwrap().line,
-                        prev.location.as_ref().unwrap().column
+                        prev.location.filename,
+                        prev.location.line,
+                        prev.location.column
                     );
                     self.reporter.fail(
                         Error::ErrDuplicateTableFieldOrdinal,
@@ -2407,10 +2411,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 ordinal,
                 reserved,
                 type_,
-                name,
-                location: member.name.as_ref().map(|n| self.get_location(&n.element)),
-                deprecated: Some(self.is_deprecated(member.attributes.as_deref())),
-                maybe_attributes: attributes,
+                base: crate::flat_ast::DeclBase {
+                    name: name.unwrap_or_default(),
+                    location: member.name.as_ref().map(|n| self.get_location(&n.element)).unwrap_or_else(|| crate::flat_ast::Location { filename: String::new(), line: 0, column: 0, length: 0 }),
+                    deprecated: self.is_deprecated(member.attributes.as_deref()),
+                    maybe_attributes: attributes,
+                },
             });
         }
 
@@ -2581,9 +2587,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !(is_versioned && prev_versioned) {
                     let location_str = format!(
                         "{}:{}:{}",
-                        prev.location.as_ref().unwrap().filename,
-                        prev.location.as_ref().unwrap().line,
-                        prev.location.as_ref().unwrap().column
+                        prev.location.filename,
+                        prev.location.line,
+                        prev.location.column
                     );
                     self.reporter.fail(
                         Error::ErrDuplicateUnionMemberOrdinal,
@@ -2683,11 +2689,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 ordinal,
                 reserved,
-                name,
                 type_,
-                location: member.name.as_ref().map(|n| self.get_location(&n.element)),
-                deprecated: Some(self.is_deprecated(member.attributes.as_deref())),
-                maybe_attributes: attributes,
+                base: crate::flat_ast::DeclBase {
+                    name: name.unwrap_or_default(),
+                    location: member.name.as_ref().map(|n| self.get_location(&n.element)).unwrap_or_else(|| crate::flat_ast::Location { filename: String::new(), line: 0, column: 0, length: 0 }),
+                    deprecated: self.is_deprecated(member.attributes.as_deref()),
+                    maybe_attributes: attributes,
+                },
             });
         }
 
@@ -2980,11 +2988,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             members.push(StructMember {
                 type_: type_obj,
-                name: member.name.data().to_string(),
+                base: crate::flat_ast::DeclBase {
+                    name: member.name.data().to_string(),
+                    location,
+                    deprecated: self.is_deprecated(member.attributes.as_deref()),
+                    maybe_attributes: self.compile_attribute_list(&member.attributes),
+                },
                 experimental_maybe_from_alias: alias,
-                location,
-                deprecated: self.is_deprecated(member.attributes.as_deref()),
-                maybe_attributes: self.compile_attribute_list(&member.attributes),
                 field_shape: FieldShape {
                     offset: field_offset,
                     padding: 0,
@@ -4878,10 +4888,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             members.push(ServiceMember {
                 type_: type_obj,
-                name: member_name,
-                location: self.get_location(&member.name.element),
-                deprecated: self.is_deprecated(member.attributes.as_deref()),
-                maybe_attributes: attributes,
+                base: crate::flat_ast::DeclBase {
+                    name: member_name,
+                    location: self.get_location(&member.name.element),
+                    deprecated: self.is_deprecated(member.attributes.as_deref()),
+                    maybe_attributes: attributes,
+                },
             });
         }
 
@@ -5810,24 +5822,28 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut union_members = vec![UnionMember {
                     ordinal: 1,
                     reserved: None,
-                    name: Some("response".to_string()),
                     type_: Some(success_type.clone()),
                     experimental_maybe_from_alias: None,
-                    location: Some(response_loc),
-                    deprecated: Some(false),
-                    maybe_attributes: vec![],
+                    base: crate::flat_ast::DeclBase {
+                        name: "response".to_string(),
+                        location: response_loc,
+                        deprecated: false,
+                        maybe_attributes: vec![],
+                    },
                 }];
 
                 if let Some(err_type) = maybe_response_err_type.clone() {
                     union_members.push(UnionMember {
                         ordinal: 2,
                         reserved: None,
-                        name: Some("err".to_string()),
                         type_: Some(err_type.clone()),
                         experimental_maybe_from_alias: None,
-                        location: Some(err_loc),
-                        deprecated: Some(false),
-                        maybe_attributes: vec![],
+                        base: crate::flat_ast::DeclBase {
+                            name: "err".to_string(),
+                            location: err_loc,
+                            deprecated: false,
+                            maybe_attributes: vec![],
+                        },
                     });
                 }
 
@@ -5836,11 +5852,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         experimental_maybe_from_alias: None,
                         ordinal: 3,
                         reserved: None,
-                        name: Some("framework_err".to_string()),
                         type_: Some(Type::internal("framework_error".to_string())),
-                        location: Some(_framework_err_loc),
-                        deprecated: Some(false),
-                        maybe_attributes: vec![],
+                        base: crate::flat_ast::DeclBase {
+                            name: "framework_err".to_string(),
+                            location: _framework_err_loc,
+                            deprecated: false,
+                            maybe_attributes: vec![],
+                        },
                     });
                 }
 
@@ -5913,13 +5931,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let ordinal = compute_method_ordinal(&selector);
 
             methods.push(ProtocolMethod {
+                base: crate::flat_ast::DeclBase {
+                    name: m.name.data().to_string(),
+                    location: self.get_location(&m.name.element),
+                    deprecated: self.is_deprecated(m.attributes.as_deref()),
+                    maybe_attributes: self.compile_attribute_list(&m.attributes),
+                },
                 kind,
                 ordinal,
-                name: m.name.data().to_string(),
                 strict: !is_method_flexible,
-                location: self.get_location(&m.name.element),
-                deprecated: self.is_deprecated(m.attributes.as_deref()),
-                maybe_attributes: self.compile_attribute_list(&m.attributes),
                 has_request,
                 maybe_request_payload,
                 has_response,

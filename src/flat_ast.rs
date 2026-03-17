@@ -859,10 +859,7 @@ pub struct ExperimentalMaybeFromAlias {
 pub struct StructMember {
     pub type_: Type,
     pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub maybe_default_value: Option<Constant>,
     pub field_shape: FieldShape,
 }
@@ -961,11 +958,8 @@ impl BitsDeclaration {
 
 #[derive(Clone, Debug)]
 pub struct BitsMember {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
+    pub base: DeclBase,
     pub value: Constant,
-    pub maybe_attributes: Vec<Attribute>,
 }
 
 #[derive(Clone, Debug)]
@@ -1037,11 +1031,8 @@ impl EnumDeclaration {
 
 #[derive(Clone, Debug)]
 pub struct EnumMember {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
+    pub base: DeclBase,
     pub value: Constant,
-    pub maybe_attributes: Vec<Attribute>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1156,15 +1147,12 @@ pub struct ProtocolCompose {
 
 #[derive(Clone, Debug)]
 pub struct ProtocolMethod {
+    pub base: DeclBase,
     pub kind: String,
     pub ordinal: u64,
-    pub name: String,
     pub strict: bool,
-    pub location: Location,
-    pub deprecated: bool,
     pub has_request: bool,
     pub maybe_request_payload: Option<Type>,
-    pub maybe_attributes: Vec<Attribute>,
     pub has_response: bool,
     pub maybe_response_payload: Option<Type>,
     pub is_composed: bool,
@@ -1201,10 +1189,7 @@ impl ServiceDeclaration {
 #[derive(Clone, Debug)]
 pub struct ServiceMember {
     pub type_: Type,
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
 }
 #[derive(Clone, Debug)]
 pub struct TableDeclaration {
@@ -1252,10 +1237,7 @@ pub struct TableMember {
 
     pub type_: Option<Type>,
     pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
-    pub name: Option<String>,
-    pub location: Option<Location>,
-    pub deprecated: Option<bool>,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
 }
 
 #[derive(Clone, Debug)]
@@ -1304,13 +1286,10 @@ impl UnionDeclaration {
 pub struct UnionMember {
     pub ordinal: u32,
     pub reserved: Option<bool>,
-    pub name: Option<String>,
 
     pub type_: Option<Type>,
     pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
-    pub location: Option<Location>,
-    pub deprecated: Option<bool>,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
 }
 #[derive(Clone, Debug)]
 pub struct PartialTypeCtor {
@@ -1405,3 +1384,10 @@ impl_deref_for_decl!(TableDeclaration);
 impl_deref_for_decl!(UnionDeclaration);
 impl_deref_for_decl!(AliasDeclaration);
 impl_deref_for_decl!(NewTypeDeclaration);
+impl_deref_for_decl!(StructMember);
+impl_deref_for_decl!(BitsMember);
+impl_deref_for_decl!(EnumMember);
+impl_deref_for_decl!(ServiceMember);
+impl_deref_for_decl!(TableMember);
+impl_deref_for_decl!(UnionMember);
+impl_deref_for_decl!(ProtocolMethod);

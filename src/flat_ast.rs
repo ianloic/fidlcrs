@@ -1514,7 +1514,7 @@ impl Declarations {
     pub fn decls_mut(&mut self) -> std::slice::IterMut<'_, Decl> {
         self.decls.iter_mut()
     }
-    
+
     pub fn sort_by<F>(&mut self, compare: F)
     where
         F: FnMut(&Decl, &Decl) -> std::cmp::Ordering,
@@ -1526,7 +1526,12 @@ impl Declarations {
     decl_iterators!(bits, bits_mut, Bits, BitsDeclaration);
     decl_iterators!(consts, consts_mut, Const, ConstDeclaration);
     decl_iterators!(enums, enums_mut, Enum, EnumDeclaration);
-    decl_iterators!(experimental_resources, experimental_resources_mut, ExperimentalResource, ExperimentalResourceDeclaration);
+    decl_iterators!(
+        experimental_resources,
+        experimental_resources_mut,
+        ExperimentalResource,
+        ExperimentalResourceDeclaration
+    );
     decl_iterators!(new_types, new_types_mut, NewType, NewTypeDeclaration);
     decl_iterators!(protocols, protocols_mut, Protocol, ProtocolDeclaration);
     decl_iterators!(services, services_mut, Service, ServiceDeclaration);

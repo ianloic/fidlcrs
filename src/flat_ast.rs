@@ -58,7 +58,6 @@ pub struct JsonRoot {
     pub alias_declarations: Vec<AliasDeclaration>,
     pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub declaration_order: Vec<String>,
-    pub declarations: indexmap::IndexMap<String, DeclarationKind>,
 }
 
 #[derive(Clone, Debug)]

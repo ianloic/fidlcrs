@@ -280,7 +280,7 @@ pub struct Compiler<'node, 'src> {
     pub library_decl: Option<LibraryDeclaration<'src>>,
     pub raw_decls: HashMap<OwnedQualifiedName, RawDecl<'node, 'src>>,
     /// Internal mapping from a declaration's qualified name to its kind.
-    /// This is used heavily during compilation (resolution, type checking, 
+    /// This is used heavily during compilation (resolution, type checking,
     /// layout calculation) for fast unordered lookups.
     pub decl_kinds: HashMap<OwnedQualifiedName, DeclarationKind>,
     pub sorted_names: Vec<OwnedQualifiedName>,
@@ -302,28 +302,24 @@ pub struct Compiler<'node, 'src> {
     pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
     pub overlay_declarations: Vec<UnionDeclaration>,
 
-    /// Ordered map of all declarations going into the JSON IR.
-    /// Keys are fully qualified name strings. It is strictly sorted 
-    /// by `DeclarationKind` (e.g. all Bits first, then Const) and then alphabetically.
-    /// This ensures stable output in the generated `"declarations"` field.
-    pub declarations: IndexMap<String, DeclarationKind>,
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<OwnedQualifiedName, Availability>,
     pub member_availability: HashMap<usize, Availability>,
     pub version_selection: VersionSelection,
     pub compiling_shapes: HashSet<OwnedQualifiedName>,
     /// A mapping of imported library dependencies to their compiled declarations.
-    /// 
+    ///
     /// The outer map is keyed by `OwnedLibraryName` (the name of the dependency).
     /// The inner `IndexMap` stores the declarations belonging to that specific library:
     /// - Key (`String`): The fully qualified name of the declaration (e.g., `"fuchsia.some.lib/MyStruct"`).
     /// - Value (`DependencyDeclaration`): A structured representation of the minimal IR schema for
     ///   the declaration.
-    /// 
+    ///
     /// This representation provides necessary metadata—such as memory layout
     /// shapes, padding flags, and `max_handles`—for dependent types in the compiling library
     /// to correctly compute their own shapes and behaviors across boundaries.
-    pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, crate::flat_ast::DependencyDeclaration>>,
+    pub dependency_declarations:
+        BTreeMap<OwnedLibraryName, IndexMap<String, crate::flat_ast::DependencyDeclaration>>,
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<OwnedQualifiedName>,
     pub generated_source_file: VirtualSourceFile,
@@ -360,7 +356,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             union_declarations: Vec::new(),
             external_struct_declarations: Vec::new(),
             external_enum_declarations: Vec::new(),
-            declarations: IndexMap::new(),
+
             declaration_order: Vec::new(),
             decl_availability: HashMap::new(),
             member_availability: HashMap::new(),
@@ -542,69 +538,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
         self.union_declarations.sort_by(|a, b| a.name.cmp(&b.name));
         self.experimental_resource_declarations
             .sort_by(|a, b| a.name.cmp(&b.name));
-
-        let mut all_decls = Vec::new();
-        for decl in &self.experimental_resource_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::ExperimentalResource));
-        }
-        for decl in &self.bits_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Bits));
-        }
-        for decl in &self.const_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Const));
-        }
-        for decl in &self.enum_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Enum));
-        }
-        for decl in &self.protocol_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Protocol));
-        }
-        for decl in &self.service_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Service));
-        }
-        for decl in &self.struct_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Struct));
-        }
-        for decl in &self.table_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Table));
-        }
-        for decl in &self.union_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Union));
-        }
-        for decl in &self.overlay_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Overlay));
-        }
-        for decl in &self.alias_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::Alias));
-        }
-        for decl in &self.new_type_declarations {
-            all_decls.push((decl.name.clone(), DeclarationKind::NewType));
-        }
-
-        all_decls.sort_by(|a, b| a.0.cmp(&b.0));
-
-        let order = [
-            DeclarationKind::Bits,
-            DeclarationKind::Const,
-            DeclarationKind::Enum,
-            DeclarationKind::ExperimentalResource,
-            DeclarationKind::Protocol,
-            DeclarationKind::Service,
-            DeclarationKind::Struct,
-            DeclarationKind::Table,
-            DeclarationKind::Union,
-            DeclarationKind::Overlay,
-            DeclarationKind::Alias,
-            DeclarationKind::NewType,
-        ];
-
-        for kind_group in &order {
-            for (name, kind) in &all_decls {
-                if kind == kind_group {
-                    self.declarations.insert(name.clone(), *kind);
-                }
-            }
-        }
 
         let platform = if self.is_versioned_library() {
             self.library_name.versioning_platform().to_string()
@@ -793,8 +726,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 for kind_group in &order {
                     for (decl_name, decl_obj) in &all_dep_decls {
                         if &decl_obj.kind == kind_group {
-                            sorted_declarations
-                                .insert((*decl_name).clone(), (*decl_obj).clone());
+                            sorted_declarations.insert((*decl_name).clone(), (*decl_obj).clone());
                         }
                     }
                 }
@@ -852,7 +784,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 order
             },
-            declarations: self.declarations.clone(),
         };
 
         let has_errors = self
@@ -1230,8 +1161,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if !n.contains('/') {
                     let full = crate::names::OwnedLibraryName::new(library_name.to_string())
                         .with_declaration(&n);
-                    if self.declarations.contains_key::<str>(full.as_ref())
-                        || self.decl_kinds.contains_key(&full)
+                    if self.decl_kinds.contains_key(&full)
                         || self.shapes.contains_key::<str>(n.as_str())
                     {
                         n = full.as_string();
@@ -1632,7 +1562,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .decl_kinds
                 .get::<str>(name.as_ref())
                 .copied()
-                .unwrap_or(DeclarationKind::Struct); 
+                .unwrap_or(DeclarationKind::Struct);
             let decl_obj = if name == "zx/Handle" {
                 crate::flat_ast::DependencyDeclaration {
                     kind: DeclarationKind::ExperimentalResource,
@@ -1647,10 +1577,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => self.shapes.get::<str>(name).cloned(),
                 };
 
-                crate::flat_ast::DependencyDeclaration {
-                    kind,
-                    type_shape,
-                }
+                crate::flat_ast::DependencyDeclaration { kind, type_shape }
             };
 
             self.dependency_declarations
@@ -5271,17 +5198,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         let is_allowed = if resolved_type.kind() != TypeKind::Identifier {
                             false
-                        } else if let Some(kind) = resolved_type.identifier().and_then(|id| {
-                            self.decl_kinds.get::<str>(id.as_ref()).copied()
-                        }) {
+                        } else if let Some(kind) = resolved_type
+                            .identifier()
+                            .and_then(|id| self.decl_kinds.get::<str>(id.as_ref()).copied())
+                        {
                             kind == DeclarationKind::Struct
                                 || kind == DeclarationKind::Table
                                 || kind == DeclarationKind::Union
                                 || kind == DeclarationKind::Overlay
                         } else if let Some(id) = &resolved_type.identifier() {
                             self.struct_declarations.iter().any(|d| &d.name == id)
-                                    || self.table_declarations.iter().any(|d| &d.name == id)
-                                    || self.union_declarations.iter().any(|d| &d.name == id)
+                                || self.table_declarations.iter().any(|d| &d.name == id)
+                                || self.union_declarations.iter().any(|d| &d.name == id)
                         } else {
                             false
                         };
@@ -5464,17 +5392,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         let is_allowed = if resolved_type.kind() != TypeKind::Identifier {
                             false
-                        } else if let Some(kind) = resolved_type.identifier().and_then(|id| {
-                            self.decl_kinds.get::<str>(id.as_ref()).copied()
-                        }) {
+                        } else if let Some(kind) = resolved_type
+                            .identifier()
+                            .and_then(|id| self.decl_kinds.get::<str>(id.as_ref()).copied())
+                        {
                             kind == DeclarationKind::Struct
                                 || kind == DeclarationKind::Table
                                 || kind == DeclarationKind::Union
                                 || kind == DeclarationKind::Overlay
                         } else if let Some(id) = &resolved_type.identifier() {
                             self.struct_declarations.iter().any(|d| &d.name == id)
-                                    || self.table_declarations.iter().any(|d| &d.name == id)
-                                    || self.union_declarations.iter().any(|d| &d.name == id)
+                                || self.table_declarations.iter().any(|d| &d.name == id)
+                                || self.union_declarations.iter().any(|d| &d.name == id)
                         } else {
                             false
                         };

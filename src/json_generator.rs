@@ -570,11 +570,77 @@ impl From<&flat_ast::JsonRoot> for JsonRoot {
             alias_declarations: ast.alias_declarations.iter().map(Into::into).collect(),
             new_type_declarations: ast.new_type_declarations.iter().map(Into::into).collect(),
             declaration_order: ast.declaration_order.clone(),
-            declarations: ast
-                .declarations
-                .iter()
-                .map(|(k, v)| (k.clone(), v.into()))
-                .collect(),
+            declarations: {
+                let mut all_decls = Vec::new();
+                for decl in &ast.experimental_resource_declarations {
+                    all_decls.push((
+                        decl.name.clone(),
+                        flat_ast::DeclarationKind::ExperimentalResource,
+                    ));
+                }
+                for decl in &ast.bits_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Bits));
+                }
+                for decl in &ast.const_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Const));
+                }
+                for decl in &ast.enum_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Enum));
+                }
+                for decl in &ast.protocol_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Protocol));
+                }
+                for decl in &ast.service_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Service));
+                }
+                for decl in &ast.struct_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Struct));
+                }
+                for decl in &ast.table_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Table));
+                }
+                for decl in &ast.union_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Union));
+                }
+                if let Some(overlay_declarations) = &ast.overlay_declarations {
+                    for decl in overlay_declarations {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Overlay));
+                    }
+                }
+                for decl in &ast.alias_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Alias));
+                }
+                for decl in &ast.new_type_declarations {
+                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::NewType));
+                }
+
+                all_decls.sort_by(|a, b| a.0.cmp(&b.0));
+
+                let order = [
+                    flat_ast::DeclarationKind::Bits,
+                    flat_ast::DeclarationKind::Const,
+                    flat_ast::DeclarationKind::Enum,
+                    flat_ast::DeclarationKind::ExperimentalResource,
+                    flat_ast::DeclarationKind::Protocol,
+                    flat_ast::DeclarationKind::Service,
+                    flat_ast::DeclarationKind::Struct,
+                    flat_ast::DeclarationKind::Table,
+                    flat_ast::DeclarationKind::Union,
+                    flat_ast::DeclarationKind::Overlay,
+                    flat_ast::DeclarationKind::Alias,
+                    flat_ast::DeclarationKind::NewType,
+                ];
+
+                let mut declarations = indexmap::IndexMap::new();
+                for kind_group in &order {
+                    for (name, kind) in &all_decls {
+                        if kind == kind_group {
+                            declarations.insert(name.clone(), kind.into());
+                        }
+                    }
+                }
+                declarations
+            },
         }
     }
 }

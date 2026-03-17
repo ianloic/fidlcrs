@@ -176,6 +176,41 @@ pub enum RawDecl<'node, 'src> {
 }
 
 impl<'node, 'src> RawDecl<'node, 'src> {
+    pub fn kind(&self) -> DeclarationKind {
+        match self {
+            RawDecl::Struct(_) => DeclarationKind::Struct,
+            RawDecl::Enum(_) => DeclarationKind::Enum,
+            RawDecl::Bits(_) => DeclarationKind::Bits,
+            RawDecl::Union(u) => {
+                if u.is_overlay {
+                    DeclarationKind::Overlay
+                } else {
+                    DeclarationKind::Union
+                }
+            }
+            RawDecl::Table(_) => DeclarationKind::Table,
+            RawDecl::Protocol(_) => DeclarationKind::Protocol,
+            RawDecl::Service(_) => DeclarationKind::Service,
+            RawDecl::Resource(_) => DeclarationKind::ExperimentalResource,
+            RawDecl::Const(_) => DeclarationKind::Const,
+            RawDecl::Alias(_) => DeclarationKind::Alias,
+            RawDecl::Type(t) => match t.layout {
+                raw_ast::Layout::Struct(_) => DeclarationKind::Struct,
+                raw_ast::Layout::Enum(_) => DeclarationKind::Enum,
+                raw_ast::Layout::Bits(_) => DeclarationKind::Bits,
+                raw_ast::Layout::Union(ref u) => {
+                    if u.is_overlay {
+                        DeclarationKind::Overlay
+                    } else {
+                        DeclarationKind::Union
+                    }
+                }
+                raw_ast::Layout::Table(_) => DeclarationKind::Table,
+                raw_ast::Layout::TypeConstructor(_) => DeclarationKind::NewType,
+            },
+        }
+    }
+
     pub fn attributes(&self) -> Option<&'node raw_ast::AttributeList<'src>> {
         match self {
             RawDecl::Struct(d) => d.attributes.as_deref(),
@@ -3360,19 +3395,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if is_collision {
                     let prev_decl = self.raw_decls.get::<str>(full_name.as_ref()).unwrap();
-                    let prev_kind = match prev_decl {
-                        RawDecl::Struct(_) => "struct",
-                        RawDecl::Enum(_) => "enum",
-                        RawDecl::Bits(_) => "bits",
-                        RawDecl::Union(_) => "union",
-                        RawDecl::Table(_) => "table",
-                        RawDecl::Protocol(_) => "protocol",
-                        RawDecl::Service(_) => "service",
-                        RawDecl::Resource(_) => "resource",
-                        RawDecl::Const(_) => "const",
-                        RawDecl::Alias(_) => "alias",
-                        RawDecl::Type(_) => "type",
-                    };
+                    let prev_kind = prev_decl.kind().to_string();
                     let prev_site = prev_decl.element().span().position_str();
                     let kind = default_name.strip_prefix("inline_").unwrap_or(default_name);
                     let span_transmuted: SourceSpan =

@@ -16,6 +16,26 @@ pub enum DeclarationKind {
     NewType,
 }
 
+impl std::fmt::Display for DeclarationKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Bits => "bits",
+            Self::Const => "const",
+            Self::Enum => "enum",
+            Self::ExperimentalResource => "resource",
+            Self::Protocol => "protocol",
+            Self::Service => "service",
+            Self::Struct => "struct",
+            Self::Table => "table",
+            Self::Union => "union",
+            Self::Overlay => "overlay",
+            Self::Alias => "alias",
+            Self::NewType => "type",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug)]
 pub struct JsonRoot {
     pub name: String,

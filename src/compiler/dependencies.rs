@@ -48,7 +48,7 @@ pub(crate) fn collect_deps_from_attributes(
 pub(crate) fn get_dependencies<'node, 'src>(
     decl: &RawDecl<'node, 'src>,
     library_name: &str,
-    _decl_kinds: &HashMap<crate::names::OwnedQualifiedName, &'static str>,
+    _decl_kinds: &HashMap<crate::names::OwnedQualifiedName, crate::flat_ast::DeclarationKind>,
     skip_optional: bool,
     inline_names: &HashMap<usize, String>,
 ) -> Vec<String> {
@@ -446,7 +446,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             visited: &mut HashSet<String>,
             temp_path: &mut Vec<String>,
             sorted: &mut Vec<String>,
-            decl_kinds: &HashMap<crate::names::OwnedQualifiedName, &'static str>,
+            decl_kinds: &HashMap<crate::names::OwnedQualifiedName, crate::flat_ast::DeclarationKind>,
             skip_optional: bool,
             inline_names: &HashMap<usize, String>,
             reporter: &Reporter<'b>,
@@ -458,12 +458,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let cycle_names = &temp_path[idx..];
                 let mut cycle_str = String::new();
                 for cname in cycle_names {
-                    let ckind = decl_kinds.get::<str>(cname.as_ref()).unwrap_or(&"unknown");
+                    let ckind_opt = decl_kinds.get::<str>(cname.as_ref());
+                    let ckind = ckind_opt.map(|k| k.to_string()).unwrap_or_else(|| "unknown".to_string());
                     let cname_fqn = crate::names::OwnedQualifiedName::parse(cname);
                     let short_name = cname_fqn.declaration();
                     cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
                 }
-                let kind = decl_kinds.get::<str>(name.as_ref()).unwrap_or(&"unknown");
+                let kind_opt = decl_kinds.get::<str>(name.as_ref());
+                let kind = kind_opt.map(|k| k.to_string()).unwrap_or_else(|| "unknown".to_string());
                 let name_fqn = crate::names::OwnedQualifiedName::parse(name);
                 let short_name = name_fqn.declaration();
                 cycle_str.push_str(&format!("{} '{}'", kind, short_name));

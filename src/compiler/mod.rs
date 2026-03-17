@@ -279,7 +279,7 @@ pub struct Compiler<'node, 'src> {
     pub library_name: OwnedLibraryName,
     pub library_decl: Option<LibraryDeclaration<'src>>,
     pub raw_decls: HashMap<OwnedQualifiedName, RawDecl<'node, 'src>>,
-    pub decl_kinds: HashMap<OwnedQualifiedName, &'static str>,
+    pub decl_kinds: HashMap<OwnedQualifiedName, DeclarationKind>,
     pub sorted_names: Vec<OwnedQualifiedName>,
 
     // Outputs
@@ -1624,42 +1624,24 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let kind = self
                 .decl_kinds
                 .get::<str>(name.as_ref())
-                .cloned()
-                .unwrap_or("unknown");
+                .copied()
+                .unwrap_or(DeclarationKind::Struct); 
             let decl_obj = if name == "zx/Handle" {
                 crate::flat_ast::DependencyDeclaration {
                     kind: DeclarationKind::ExperimentalResource,
                     type_shape: None,
                 }
             } else {
-                let kind_enum = match kind {
-                    "bits" => DeclarationKind::Bits,
-                    "const" => DeclarationKind::Const,
-                    "enum" => DeclarationKind::Enum,
-                    "experimental_resource" => DeclarationKind::ExperimentalResource,
-                    "protocol" => DeclarationKind::Protocol,
-                    "service" => DeclarationKind::Service,
-                    "struct" => DeclarationKind::Struct,
-                    "table" => DeclarationKind::Table,
-                    "union" => DeclarationKind::Union,
-                    "overlay" => DeclarationKind::Overlay,
-                    "alias" => DeclarationKind::Alias,
-                    "new_type" => DeclarationKind::NewType,
-                    _ => panic!("Unknown kind: {}", kind),
-                };
-
-                let type_shape = if kind != "const"
-                    && kind != "alias"
-                    && kind != "protocol"
-                    && kind != "service"
-                {
-                    self.shapes.get::<str>(name).cloned()
-                } else {
-                    None
+                let type_shape = match kind {
+                    DeclarationKind::Const
+                    | DeclarationKind::Alias
+                    | DeclarationKind::Protocol
+                    | DeclarationKind::Service => None,
+                    _ => self.shapes.get::<str>(name).cloned(),
                 };
 
                 crate::flat_ast::DependencyDeclaration {
-                    kind: kind_enum,
+                    kind,
                     type_shape,
                 }
             };
@@ -5282,17 +5264,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         let is_allowed = if resolved_type.kind() != TypeKind::Identifier {
                             false
+                        } else if let Some(kind) = resolved_type.identifier().and_then(|id| {
+                            self.decl_kinds.get::<str>(id.as_ref()).copied()
+                        }) {
+                            kind == DeclarationKind::Struct
+                                || kind == DeclarationKind::Table
+                                || kind == DeclarationKind::Union
+                                || kind == DeclarationKind::Overlay
                         } else if let Some(id) = &resolved_type.identifier() {
-                            if let Some(kind) = self.decl_kinds.get::<str>(id.as_ref()) {
-                                *kind == "struct"
-                                    || *kind == "table"
-                                    || *kind == "union"
-                                    || *kind == "overlay"
-                            } else {
-                                self.struct_declarations.iter().any(|d| &d.name == id)
+                            self.struct_declarations.iter().any(|d| &d.name == id)
                                     || self.table_declarations.iter().any(|d| &d.name == id)
                                     || self.union_declarations.iter().any(|d| &d.name == id)
-                            }
                         } else {
                             false
                         };
@@ -5475,17 +5457,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         let is_allowed = if resolved_type.kind() != TypeKind::Identifier {
                             false
+                        } else if let Some(kind) = resolved_type.identifier().and_then(|id| {
+                            self.decl_kinds.get::<str>(id.as_ref()).copied()
+                        }) {
+                            kind == DeclarationKind::Struct
+                                || kind == DeclarationKind::Table
+                                || kind == DeclarationKind::Union
+                                || kind == DeclarationKind::Overlay
                         } else if let Some(id) = &resolved_type.identifier() {
-                            if let Some(kind) = self.decl_kinds.get::<str>(id.as_ref()) {
-                                *kind == "struct"
-                                    || *kind == "table"
-                                    || *kind == "union"
-                                    || *kind == "overlay"
-                            } else {
-                                self.struct_declarations.iter().any(|d| &d.name == id)
+                            self.struct_declarations.iter().any(|d| &d.name == id)
                                     || self.table_declarations.iter().any(|d| &d.name == id)
                                     || self.union_declarations.iter().any(|d| &d.name == id)
-                            }
                         } else {
                             false
                         };

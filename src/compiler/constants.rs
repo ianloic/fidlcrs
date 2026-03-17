@@ -387,10 +387,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             Type::Primitive(_) => true,
             Type::Identifier(i) => {
                 let id_str = i.identifier.as_ref().unwrap_or(&"".to_string()).clone();
-                let Some(decl_kind) = self.decl_kinds.get::<str>(id_str.as_ref()) else {
+                let Some(&decl_kind) = self.decl_kinds.get::<str>(id_str.as_ref()) else {
                     return false;
                 };
-                *decl_kind == "enum" || *decl_kind == "bits"
+                decl_kind == DeclarationKind::Enum || decl_kind == DeclarationKind::Bits
             }
             _ => false,
         }
@@ -775,7 +775,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             Type::Identifier(idt) => {
                 let expected_name = idt.identifier.as_ref().unwrap_or(&"".to_string()).clone();
                 let Some(expected_decl_kind) =
-                    self.decl_kinds.get::<str>(expected_name.as_ref()).cloned()
+                    self.decl_kinds.get::<str>(expected_name.as_ref()).copied()
                 else {
                     return;
                 };
@@ -783,7 +783,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 match constant {
                     raw_ast::Constant::Literal(lit) => {
                         let span = lit.literal.element.start_token.span;
-                        if expected_decl_kind == "bits"
+                        if expected_decl_kind == DeclarationKind::Bits
                             && lit.literal.kind == raw_ast::LiteralKind::Numeric
                             && lit.literal.value == "0"
                         {

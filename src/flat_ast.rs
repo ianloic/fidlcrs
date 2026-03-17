@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeclarationKind {
     Bits,
     Const,

@@ -2300,9 +2300,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !(is_versioned && prev_versioned) {
                     let location_str = format!(
                         "{}:{}:{}",
-                        prev.location.filename,
-                        prev.location.line,
-                        prev.location.column
+                        prev.location.filename, prev.location.line, prev.location.column
                     );
                     self.reporter.fail(
                         Error::ErrDuplicateTableFieldOrdinal,
@@ -2413,7 +2411,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 type_,
                 base: crate::flat_ast::DeclBase {
                     name: name.unwrap_or_default(),
-                    location: member.name.as_ref().map(|n| self.get_location(&n.element)).unwrap_or_else(|| crate::flat_ast::Location { filename: String::new(), line: 0, column: 0, length: 0 }),
+                    location: member
+                        .name
+                        .as_ref()
+                        .map(|n| self.get_location(&n.element))
+                        .unwrap_or_else(|| crate::flat_ast::Location {
+                            filename: String::new(),
+                            line: 0,
+                            column: 0,
+                            length: 0,
+                        }),
                     deprecated: self.is_deprecated(member.attributes.as_deref()),
                     maybe_attributes: attributes,
                 },
@@ -2587,9 +2594,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !(is_versioned && prev_versioned) {
                     let location_str = format!(
                         "{}:{}:{}",
-                        prev.location.filename,
-                        prev.location.line,
-                        prev.location.column
+                        prev.location.filename, prev.location.line, prev.location.column
                     );
                     self.reporter.fail(
                         Error::ErrDuplicateUnionMemberOrdinal,
@@ -2692,7 +2697,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 type_,
                 base: crate::flat_ast::DeclBase {
                     name: name.unwrap_or_default(),
-                    location: member.name.as_ref().map(|n| self.get_location(&n.element)).unwrap_or_else(|| crate::flat_ast::Location { filename: String::new(), line: 0, column: 0, length: 0 }),
+                    location: member
+                        .name
+                        .as_ref()
+                        .map(|n| self.get_location(&n.element))
+                        .unwrap_or_else(|| crate::flat_ast::Location {
+                            filename: String::new(),
+                            line: 0,
+                            column: 0,
+                            length: 0,
+                        }),
                     deprecated: self.is_deprecated(member.attributes.as_deref()),
                     maybe_attributes: attributes,
                 },

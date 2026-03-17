@@ -1391,3 +1391,77 @@ impl_deref_for_decl!(ServiceMember);
 impl_deref_for_decl!(TableMember);
 impl_deref_for_decl!(UnionMember);
 impl_deref_for_decl!(ProtocolMethod);
+
+#[derive(Clone, Debug)]
+pub enum Decl {
+    Alias(AliasDeclaration),
+    Bits(BitsDeclaration),
+    Const(ConstDeclaration),
+    Enum(EnumDeclaration),
+    ExperimentalResource(ExperimentalResourceDeclaration),
+    NewType(NewTypeDeclaration),
+    Protocol(ProtocolDeclaration),
+    Service(ServiceDeclaration),
+    Struct(StructDeclaration),
+    Table(TableDeclaration),
+    Union(UnionDeclaration),
+}
+
+impl std::ops::Deref for Decl {
+    type Target = DeclBase;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Decl::Alias(d) => &d.base,
+            Decl::Bits(d) => &d.base,
+            Decl::Const(d) => &d.base,
+            Decl::Enum(d) => &d.base,
+            Decl::ExperimentalResource(d) => &d.base,
+            Decl::NewType(d) => &d.base,
+            Decl::Protocol(d) => &d.base,
+            Decl::Service(d) => &d.base,
+            Decl::Struct(d) => &d.base,
+            Decl::Table(d) => &d.base,
+            Decl::Union(d) => &d.base,
+        }
+    }
+}
+
+impl std::ops::DerefMut for Decl {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Decl::Alias(d) => &mut d.base,
+            Decl::Bits(d) => &mut d.base,
+            Decl::Const(d) => &mut d.base,
+            Decl::Enum(d) => &mut d.base,
+            Decl::ExperimentalResource(d) => &mut d.base,
+            Decl::NewType(d) => &mut d.base,
+            Decl::Protocol(d) => &mut d.base,
+            Decl::Service(d) => &mut d.base,
+            Decl::Struct(d) => &mut d.base,
+            Decl::Table(d) => &mut d.base,
+            Decl::Union(d) => &mut d.base,
+        }
+    }
+}
+
+macro_rules! impl_from_decl {
+    ($variant:ident, $type:ty) => {
+        impl From<$type> for Decl {
+            fn from(decl: $type) -> Self {
+                Decl::$variant(decl)
+            }
+        }
+    };
+}
+
+impl_from_decl!(Alias, AliasDeclaration);
+impl_from_decl!(Bits, BitsDeclaration);
+impl_from_decl!(Const, ConstDeclaration);
+impl_from_decl!(Enum, EnumDeclaration);
+impl_from_decl!(ExperimentalResource, ExperimentalResourceDeclaration);
+impl_from_decl!(NewType, NewTypeDeclaration);
+impl_from_decl!(Protocol, ProtocolDeclaration);
+impl_from_decl!(Service, ServiceDeclaration);
+impl_from_decl!(Struct, StructDeclaration);
+impl_from_decl!(Table, TableDeclaration);
+impl_from_decl!(Union, UnionDeclaration);

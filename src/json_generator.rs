@@ -1002,9 +1002,21 @@ impl From<&flat_ast::TableMember> for TableMember {
                 .experimental_maybe_from_alias
                 .as_ref()
                 .map(Into::into),
-            name: if ast.reserved == Some(true) { None } else { Some(ast.base.name.clone()) },
-            location: if ast.reserved == Some(true) { None } else { Some((&ast.base.location).into()) },
-            deprecated: if ast.reserved == Some(true) { None } else { Some(ast.base.deprecated) },
+            name: if ast.reserved == Some(true) {
+                None
+            } else {
+                Some(ast.base.name.clone())
+            },
+            location: if ast.reserved == Some(true) {
+                None
+            } else {
+                Some((&ast.base.location).into())
+            },
+            deprecated: if ast.reserved == Some(true) {
+                None
+            } else {
+                Some(ast.base.deprecated)
+            },
             maybe_attributes: ast.base.maybe_attributes.iter().map(Into::into).collect(),
         }
     }
@@ -1032,14 +1044,26 @@ impl From<&flat_ast::UnionMember> for UnionMember {
         Self {
             ordinal: ast.ordinal,
             reserved: ast.reserved,
-            name: if ast.reserved == Some(true) { None } else { Some(ast.base.name.clone()) },
+            name: if ast.reserved == Some(true) {
+                None
+            } else {
+                Some(ast.base.name.clone())
+            },
             type_: ast.type_.as_ref().map(Into::into),
             experimental_maybe_from_alias: ast
                 .experimental_maybe_from_alias
                 .as_ref()
                 .map(Into::into),
-            location: if ast.reserved == Some(true) { None } else { Some((&ast.base.location).into()) },
-            deprecated: if ast.reserved == Some(true) { None } else { Some(ast.base.deprecated) },
+            location: if ast.reserved == Some(true) {
+                None
+            } else {
+                Some((&ast.base.location).into())
+            },
+            deprecated: if ast.reserved == Some(true) {
+                None
+            } else {
+                Some(ast.base.deprecated)
+            },
             maybe_attributes: ast.base.maybe_attributes.iter().map(Into::into).collect(),
         }
     }

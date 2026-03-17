@@ -270,6 +270,17 @@ pub struct Compiler<'node, 'src> {
     pub member_availability: HashMap<usize, Availability>,
     pub version_selection: VersionSelection,
     pub compiling_shapes: HashSet<OwnedQualifiedName>,
+    /// A mapping of imported library dependencies to their compiled declarations.
+    /// 
+    /// The outer map is keyed by `OwnedLibraryName` (the name of the dependency).
+    /// The inner `IndexMap` stores the declarations belonging to that specific library:
+    /// - Key (`String`): The fully qualified name of the declaration (e.g., `"fuchsia.some.lib/MyStruct"`).
+    /// - Value (`String`): A raw serialized JSON string representing the minimal IR schema for
+    ///   the declaration (e.g., `{"kind":"struct","resource":false,"type_shape_v2":{...}}`).
+    /// 
+    /// This serialized JSON representation provides necessary metadata—such as memory layout
+    /// shapes, padding flags, and `max_handles`—for dependent types in the compiling library
+    /// to correctly compute their own shapes and behaviors across boundaries.
     pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, String>>,
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<OwnedQualifiedName>,

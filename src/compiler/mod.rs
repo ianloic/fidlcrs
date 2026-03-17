@@ -275,13 +275,13 @@ pub struct Compiler<'node, 'src> {
     /// The outer map is keyed by `OwnedLibraryName` (the name of the dependency).
     /// The inner `IndexMap` stores the declarations belonging to that specific library:
     /// - Key (`String`): The fully qualified name of the declaration (e.g., `"fuchsia.some.lib/MyStruct"`).
-    /// - Value (`String`): A raw serialized JSON string representing the minimal IR schema for
-    ///   the declaration (e.g., `{"kind":"struct","resource":false,"type_shape_v2":{...}}`).
+    /// - Value (`DependencyDeclaration`): A structured representation of the minimal IR schema for
+    ///   the declaration.
     /// 
-    /// This serialized JSON representation provides necessary metadata—such as memory layout
+    /// This representation provides necessary metadata—such as memory layout
     /// shapes, padding flags, and `max_handles`—for dependent types in the compiling library
     /// to correctly compute their own shapes and behaviors across boundaries.
-    pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, String>>,
+    pub dependency_declarations: BTreeMap<OwnedLibraryName, IndexMap<String, crate::flat_ast::DependencyDeclaration>>,
     pub inline_names: HashMap<usize, String>,
     pub compiled_decls: HashSet<OwnedQualifiedName>,
     pub generated_source_file: VirtualSourceFile,
@@ -734,26 +734,25 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 all_dep_decls.sort_by(|a, b| a.0.cmp(b.0));
 
                 let order = [
-                    "bits",
-                    "const",
-                    "enum",
-                    "experimental_resource",
-                    "protocol",
-                    "service",
-                    "struct",
-                    "table",
-                    "union",
-                    "overlay",
-                    "alias",
-                    "new_type",
+                    DeclarationKind::Bits,
+                    DeclarationKind::Const,
+                    DeclarationKind::Enum,
+                    DeclarationKind::ExperimentalResource,
+                    DeclarationKind::Protocol,
+                    DeclarationKind::Service,
+                    DeclarationKind::Struct,
+                    DeclarationKind::Table,
+                    DeclarationKind::Union,
+                    DeclarationKind::Overlay,
+                    DeclarationKind::Alias,
+                    DeclarationKind::NewType,
                 ];
 
-                for kind_group in order {
-                    let prefix = format!(r#""kind":"{}""#, kind_group);
+                for kind_group in &order {
                     for (decl_name, decl_obj) in &all_dep_decls {
-                        if decl_obj.contains(&prefix) {
+                        if &(*decl_obj).kind == kind_group {
                             sorted_declarations
-                                .insert((*decl_name).clone(), (*decl_obj).to_string());
+                                .insert((*decl_name).clone(), (*decl_obj).clone());
                         }
                     }
                 }
@@ -851,7 +850,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
         for decls in self.dependency_declarations.values() {
             for (name, val) in decls {
-                if val.contains(r#""kind":"struct""#) {
+                if val.kind == DeclarationKind::Struct {
                     struct_names.insert(name.to_string());
                 }
             }
@@ -1310,7 +1309,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         if name == "zx/Handle" {
-            let obj = r#"{"kind":"experimental_resource"}"#.to_string();
+            let obj = crate::flat_ast::DependencyDeclaration {
+                kind: DeclarationKind::ExperimentalResource,
+                type_shape: None,
+            };
             self.dependency_declarations
                 .entry(crate::names::OwnedLibraryName::new("zx".to_string()))
                 .or_default()
@@ -1589,38 +1591,48 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .get::<str>(name.as_ref())
                 .cloned()
                 .unwrap_or("unknown");
-            let mut obj_str = String::new();
-            obj_str.push('{');
-            if name == "zx/Handle" {
-                obj_str.push_str(r#""kind":"experimental_resource""#);
+            let decl_obj = if name == "zx/Handle" {
+                crate::flat_ast::DependencyDeclaration {
+                    kind: DeclarationKind::ExperimentalResource,
+                    type_shape: None,
+                }
             } else {
-                obj_str.push_str(&format!(r#""kind":"{}""#, kind));
-                if kind != "const"
+                let kind_enum = match kind {
+                    "bits" => DeclarationKind::Bits,
+                    "const" => DeclarationKind::Const,
+                    "enum" => DeclarationKind::Enum,
+                    "experimental_resource" => DeclarationKind::ExperimentalResource,
+                    "protocol" => DeclarationKind::Protocol,
+                    "service" => DeclarationKind::Service,
+                    "struct" => DeclarationKind::Struct,
+                    "table" => DeclarationKind::Table,
+                    "union" => DeclarationKind::Union,
+                    "overlay" => DeclarationKind::Overlay,
+                    "alias" => DeclarationKind::Alias,
+                    "new_type" => DeclarationKind::NewType,
+                    _ => panic!("Unknown kind: {}", kind),
+                };
+
+                let type_shape = if kind != "const"
                     && kind != "alias"
                     && kind != "protocol"
                     && kind != "service"
-                    && let Some(shape) = self.shapes.get::<str>(name)
                 {
-                    let inline = shape.inline_size;
-                    let align = shape.alignment;
-                    let depth = shape.depth;
-                    let max_handles = shape.max_handles;
-                    let max_ool = shape.max_out_of_line;
-                    let padding = if shape.has_padding { "true" } else { "false" };
-                    let flex = if shape.has_flexible_envelope {
-                        "true"
-                    } else {
-                        "false"
-                    };
-                    obj_str.push_str(&format!(r#","type_shape_v2":{{"inline_size":{},"alignment":{},"depth":{},"max_handles":{},"max_out_of_line":{},"has_padding":{},"has_flexible_envelope":{}}}"#, inline, align, depth, max_handles, max_ool, padding, flex));
+                    self.shapes.get::<str>(name).cloned()
+                } else {
+                    None
+                };
+
+                crate::flat_ast::DependencyDeclaration {
+                    kind: kind_enum,
+                    type_shape,
                 }
-            }
-            obj_str.push('}');
+            };
 
             self.dependency_declarations
                 .entry(crate::names::OwnedLibraryName::new(library_name.clone()))
                 .or_default()
-                .insert(name.to_string(), obj_str);
+                .insert(name.to_string(), decl_obj);
         }
 
         self.compiling_shapes.remove::<str>(name.as_ref());

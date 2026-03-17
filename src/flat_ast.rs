@@ -42,9 +42,15 @@ pub struct JsonRoot {
 }
 
 #[derive(Clone, Debug)]
+pub struct DependencyDeclaration {
+    pub kind: DeclarationKind,
+    pub type_shape: Option<TypeShape>,
+}
+
+#[derive(Clone, Debug)]
 pub struct LibraryDependency {
     pub name: String,
-    pub declarations: indexmap::IndexMap<String, String>,
+    pub declarations: indexmap::IndexMap<String, DependencyDeclaration>,
 }
 
 #[derive(Clone, Debug)]

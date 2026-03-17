@@ -46,9 +46,17 @@ pub struct JsonRoot {
     pub declarations: indexmap::IndexMap<String, DeclarationKind>,
 }
 #[derive(Serialize, Clone, Debug)]
+pub struct DependencyDeclaration {
+    pub kind: DeclarationKind,
+    #[serde(rename = "type_shape_v2")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_shape: Option<TypeShape>,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct LibraryDependency {
     pub name: String,
-    pub declarations: indexmap::IndexMap<String, serde_json::Value>,
+    pub declarations: indexmap::IndexMap<String, DependencyDeclaration>,
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct Location {
@@ -571,6 +579,15 @@ impl From<&flat_ast::JsonRoot> for JsonRoot {
     }
 }
 
+impl From<&flat_ast::DependencyDeclaration> for DependencyDeclaration {
+    fn from(ast: &flat_ast::DependencyDeclaration) -> Self {
+        Self {
+            kind: (&ast.kind).into(),
+            type_shape: ast.type_shape.as_ref().map(Into::into),
+        }
+    }
+}
+
 impl From<&flat_ast::LibraryDependency> for LibraryDependency {
     fn from(ast: &flat_ast::LibraryDependency) -> Self {
         Self {
@@ -578,12 +595,7 @@ impl From<&flat_ast::LibraryDependency> for LibraryDependency {
             declarations: ast
                 .declarations
                 .iter()
-                .map(|(k, v)| {
-                    (
-                        k.clone(),
-                        serde_json::from_str(v).unwrap_or(serde_json::Value::Null),
-                    )
-                })
+                .map(|(k, v)| (k.clone(), v.into()))
                 .collect(),
         }
     }

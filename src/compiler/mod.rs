@@ -594,7 +594,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         for kind_group in &order {
             for (name, kind) in &all_decls {
                 if kind == kind_group {
-                    self.declarations.insert(name.clone(), kind.clone());
+                    self.declarations.insert(name.clone(), *kind);
                 }
             }
         }

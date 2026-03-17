@@ -1,5 +1,4 @@
-use crate::compiler::{Compiler, RawDecl};
-use crate::raw_ast;
+use crate::compiler::Compiler;
 use crate::step::Step;
 
 pub struct ResolveStep;

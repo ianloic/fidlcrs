@@ -513,7 +513,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let identifier = ty.identifier();
             let mut target_id = identifier.as_deref();
             if let Some(alias) = &ty.experimental_maybe_from_alias {
-                target_id = Some(&alias.name);
+                target_id = Some(alias.name.as_ref());
             }
 
             if let Some(id) = target_id
@@ -569,7 +569,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         for u in self.declarations.unions() {
-            if u.name.starts_with(&format!("{}/", self.library_name)) {
+            if u.name
+                .as_string()
+                .starts_with(&format!("{}/", self.library_name))
+            {
                 for m in &u.members {
                     if let Some(t) = &m.type_ {
                         extract_deps_from_type(t, &mut used_deps, self);
@@ -578,7 +581,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
         for a in self.declarations.aliases() {
-            if a.name.starts_with(&format!("{}/", self.library_name)) {
+            if a.name
+                .as_string()
+                .starts_with(&format!("{}/", self.library_name))
+            {
                 let id = &a.partial_type_ctor.name;
                 if let Some(pos) = id.find('/') {
                     let d = id[..pos].to_string();
@@ -589,7 +595,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
         for s in self.declarations.structs() {
-            if s.name.starts_with(&format!("{}/", self.library_name)) {
+            if s.name
+                .as_string()
+                .starts_with(&format!("{}/", self.library_name))
+            {
                 for m in &s.members {
                     extract_deps_from_type(&m.type_, &mut used_deps, self);
                 }
@@ -636,7 +645,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         for p in self.declarations.protocols() {
-            extract_deps_from_protocol(&p.name, &mut used_deps, self, &mut visited_protocols);
+            extract_deps_from_protocol(
+                &p.name.as_string(),
+                &mut used_deps,
+                self,
+                &mut visited_protocols,
+            );
         }
 
         let mut library_dependencies = vec![];
@@ -682,14 +696,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 library_dependencies.push(LibraryDependency {
-                    name: name.to_string(),
+                    name: name.to_string().into(),
                     declarations: sorted_declarations,
                 });
             }
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
         let json_root = Root {
-            name: self.library_name.to_string(),
+            name: self.library_name.to_string().into(),
             platform,
             available: Some(self.version_selection.as_available_map()),
             maybe_attributes: main_files
@@ -711,7 +725,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             enum_declarations: self
                 .declarations
                 .enums()
-                .filter(|d| d.name.starts_with(&format!("{}/", self.library_name)))
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
                 .cloned()
                 .collect(),
             experimental_resource_declarations: self
@@ -722,20 +740,32 @@ impl<'node, 'src> Compiler<'node, 'src> {
             protocol_declarations: self
                 .declarations
                 .protocols()
-                .filter(|d| d.name.starts_with(&format!("{}/", self.library_name)))
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
                 .cloned()
                 .collect(),
             service_declarations: self.declarations.services().cloned().collect(),
             struct_declarations: self
                 .declarations
                 .structs()
-                .filter(|d| d.name.starts_with(&format!("{}/", self.library_name)))
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
                 .cloned()
                 .collect(),
             external_struct_declarations: self
                 .declarations
                 .structs()
-                .filter(|d| !d.name.starts_with(&format!("{}/", self.library_name)))
+                .filter(|d| {
+                    !d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
                 .cloned()
                 .collect(),
             table_declarations: self.declarations.tables().cloned().collect(),
@@ -927,7 +957,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref())
             {
                 let span = raw_decl.element().span();
-                let decl_fqn = crate::names::OwnedQualifiedName::parse(&decl.name);
+                let decl_fqn = decl.name.clone();
                 let display_name = decl_fqn.declaration();
                 self.reporter.fail(
                     Error::ErrInlineSizeExceedsLimit,
@@ -1180,7 +1210,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         format!("{}/{}", library_name, p_name)
                     };
                     args.push(PartialTypeCtor {
-                        name: full,
+                        name: full.into(),
                         args: vec![],
                         nullable: false,
                         maybe_size: None,
@@ -1374,7 +1404,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .take()
                         .or_else(|| typ.experimental_maybe_from_alias.take());
                     let compiled = NewTypeDeclaration::new(
-                        format!("{}/{}", library_name, t.name.data()),
+                        format!("{}/{}", library_name, t.name.data()).into(),
                         self.get_location(&t.name.element),
                         self.is_deprecated(t.attributes.as_deref()),
                         self.compile_attribute_list(&t.attributes),
@@ -1834,7 +1864,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             members.push(EnumMember {
                 base: crate::flat_ast::DeclBase {
-                    name: member.name.data().to_string(),
+                    name: member.name.data().to_string().into(),
                     location: self.get_location(&member.name.element),
                     deprecated: self.is_deprecated(member.attributes.as_deref()),
                     maybe_attributes: attributes,
@@ -1899,7 +1929,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         crate::flat_ast::EnumDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -2166,7 +2196,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             members.push(BitsMember {
                 base: crate::flat_ast::DeclBase {
-                    name: name_str,
+                    name: name_str.into(),
                     location: self.get_location(&member.name.element),
                     deprecated: self.is_deprecated(member.attributes.as_deref()),
                     maybe_attributes: attributes,
@@ -2184,7 +2214,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         crate::flat_ast::BitsDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -2407,7 +2437,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 reserved,
                 type_,
                 base: crate::flat_ast::DeclBase {
-                    name: name.unwrap_or_default(),
+                    name: name.unwrap_or_default().into(),
                     location: member
                         .name
                         .as_ref()
@@ -2494,7 +2524,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         crate::flat_ast::TableDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -2693,7 +2723,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 reserved,
                 type_,
                 base: crate::flat_ast::DeclBase {
-                    name: name.unwrap_or_default(),
+                    name: name.unwrap_or_default().into(),
                     location: member
                         .name
                         .as_ref()
@@ -2850,7 +2880,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         crate::flat_ast::UnionDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -3000,7 +3030,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             members.push(StructMember {
                 type_: type_obj,
                 base: crate::flat_ast::DeclBase {
-                    name: member.name.data().to_string(),
+                    name: member.name.data().to_string().into(),
                     location,
                     deprecated: self.is_deprecated(member.attributes.as_deref()),
                     maybe_attributes: self.compile_attribute_list(&member.attributes),
@@ -3081,7 +3111,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         crate::flat_ast::StructDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref())
                 || self.is_deprecated(inherited_attributes),
@@ -4453,7 +4483,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
 
                         resolved_type.outer_alias = Some(ExperimentalMaybeFromAlias {
-                            name: full_name.clone(),
+                            name: full_name.clone().into(),
                             args: vec![], // TODO handle args if any
                             nullable,
                         });
@@ -4802,7 +4832,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             properties.push(ResourceProperty {
                 type_: prop_type,
-                name: prop_name,
+                name: prop_name.into(),
                 location: self.get_location(&prop.name.element),
                 deprecated: self.is_deprecated(prop.attributes.as_deref()),
             });
@@ -4817,7 +4847,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         crate::flat_ast::ExperimentalResourceDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref()),
             self.compile_attribute_list(&decl.attributes),
@@ -4903,7 +4933,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             members.push(ServiceMember {
                 type_: type_obj,
                 base: crate::flat_ast::DeclBase {
-                    name: member_name,
+                    name: member_name.into(),
                     location: self.get_location(&member.name.element),
                     deprecated: self.is_deprecated(member.attributes.as_deref()),
                     maybe_attributes: attributes,
@@ -4912,7 +4942,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         crate::flat_ast::ServiceDeclaration::new(
-            full_name,
+            full_name.clone().into(),
             location,
             self.is_deprecated(decl.attributes.as_deref()),
             self.compile_attribute_list(&decl.attributes),
@@ -4926,7 +4956,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
     ) -> AliasDeclaration {
         crate::flat_ast::AliasDeclaration::new(
-            format!("{}/{}", library_name, decl.name.data()),
+            format!("{}/{}", library_name, decl.name.data()).into(),
             self.get_location(&decl.name.element),
             self.is_deprecated(decl.attributes.as_deref()),
             self.compile_attribute_list(&decl.attributes),
@@ -5086,7 +5116,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 methods.push(pm);
             }
             compiled_composed.push(ProtocolCompose {
-                name: full_composed_name,
+                name: full_composed_name.into(),
                 location: self.get_location(&composed.protocol_name.element),
                 deprecated: self.is_deprecated(composed.attributes.as_deref()),
                 maybe_attributes: self.compile_attribute_list(&composed.attributes),
@@ -5669,14 +5699,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         } else if err_type_resolved.kind() == TypeKind::Identifier
                             && let Some(id) = &err_type_resolved.identifier()
                         {
-                            if let Some(e_decl) = self.declarations.enums().find(|&e| &e.name == id)
+                            if let Some(e_decl) = self.declarations.enums().find(|&e| e.name == *id)
                             {
                                 if e_decl.type_ == "int32" || e_decl.type_ == "uint32" {
                                     is_valid_error_type = true;
                                 }
                             } else if let Some(e_decl) =
                                 std::iter::empty::<&crate::flat_ast::EnumDeclaration>()
-                                    .find(|&e| &e.name == id)
+                                    .find(|&e| e.name == *id)
                                 && (e_decl.type_ == "int32" || e_decl.type_ == "uint32")
                             {
                                 is_valid_error_type = true;
@@ -5740,7 +5770,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         };
                         let decl = StructDeclaration {
                             base: crate::flat_ast::DeclBase {
-                                name: full_synth.clone(),
+                                name: full_synth.clone().into(),
                                 location: loc,
                                 deprecated: false,
                                 maybe_attributes: vec![],
@@ -5844,7 +5874,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     type_: Some(success_type.clone()),
                     experimental_maybe_from_alias: None,
                     base: crate::flat_ast::DeclBase {
-                        name: "response".to_string(),
+                        name: "response".to_string().into(),
                         location: response_loc,
                         deprecated: false,
                         maybe_attributes: vec![],
@@ -5858,7 +5888,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         type_: Some(err_type.clone()),
                         experimental_maybe_from_alias: None,
                         base: crate::flat_ast::DeclBase {
-                            name: "err".to_string(),
+                            name: "err".to_string().into(),
                             location: err_loc,
                             deprecated: false,
                             maybe_attributes: vec![],
@@ -5873,7 +5903,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         reserved: None,
                         type_: Some(Type::internal("framework_error".to_string())),
                         base: crate::flat_ast::DeclBase {
-                            name: "framework_err".to_string(),
+                            name: "framework_err".to_string().into(),
                             location: _framework_err_loc,
                             deprecated: false,
                             maybe_attributes: vec![],
@@ -5883,7 +5913,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let union_decl = UnionDeclaration {
                     base: crate::flat_ast::DeclBase {
-                        name: full_synth_union.clone(),
+                        name: full_synth_union.clone().into(),
                         location: union_loc,
                         deprecated: false,
                         maybe_attributes: vec![],
@@ -5952,7 +5982,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             methods.push(ProtocolMethod {
                 base: crate::flat_ast::DeclBase {
-                    name: m.name.data().to_string(),
+                    name: m.name.data().to_string().into(),
                     location: self.get_location(&m.name.element),
                     deprecated: self.is_deprecated(m.attributes.as_deref()),
                     maybe_attributes: self.compile_attribute_list(&m.attributes),
@@ -6005,7 +6035,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         crate::flat_ast::ProtocolDeclaration::new(
-            name,
+            name.into(),
             self.get_location(&decl.name.element),
             self.is_deprecated(decl.attributes.as_deref()),
             self.compile_attribute_list(&decl.attributes),

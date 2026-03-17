@@ -958,7 +958,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         let constant = self.compile_constant(&decl.value);
 
         crate::flat_ast::ConstDeclaration::new(
-            full_name,
+            full_name.into(),
             location,
             self.is_deprecated(decl.attributes.as_deref()),
             self.compile_attribute_list(&decl.attributes),

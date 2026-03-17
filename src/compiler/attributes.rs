@@ -75,7 +75,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             .unwrap_or_else(|| "value".to_string());
                         let value = self.compile_constant(&arg.value);
                         AttributeArg {
-                            name: arg_name,
+                            name: arg_name.into(),
                             type_: if attr.name.element.start_token.span.data == "available" {
                                 "uint32".to_string()
                             } else {
@@ -92,7 +92,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     .collect();
 
                 compiled_attrs.push(Attribute {
-                    name: attr.name.element.start_token.span.data.to_string(),
+                    name: attr.name.element.start_token.span.data.to_string().into(),
                     arguments: args,
                     location: self.get_location(&attr.element),
                 });
@@ -145,9 +145,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         let json_expr = self.generate_json_string_literal(&combined_expression);
 
         Attribute {
-            name: "doc".to_string(),
+            name: "doc".to_string().into(),
             arguments: vec![AttributeArg {
-                name: "value".to_string(),
+                name: "value".to_string().into(),
                 type_: "string".to_string(),
                 value: Constant {
                     kind: "literal".to_string(),

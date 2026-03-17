@@ -264,7 +264,7 @@ pub struct Compiler<'node, 'src> {
     pub experimental_resource_declarations: Vec<ExperimentalResourceDeclaration>,
     pub overlay_declarations: Vec<UnionDeclaration>,
 
-    pub declarations: IndexMap<String, String>,
+    pub declarations: IndexMap<String, DeclarationKind>,
     pub declaration_order: Vec<String>,
     pub decl_availability: HashMap<OwnedQualifiedName, Availability>,
     pub member_availability: HashMap<usize, Availability>,
@@ -492,60 +492,60 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         let mut all_decls = Vec::new();
         for decl in &self.experimental_resource_declarations {
-            all_decls.push((decl.name.clone(), "experimental_resource".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::ExperimentalResource));
         }
         for decl in &self.bits_declarations {
-            all_decls.push((decl.name.clone(), "bits".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Bits));
         }
         for decl in &self.const_declarations {
-            all_decls.push((decl.name.clone(), "const".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Const));
         }
         for decl in &self.enum_declarations {
-            all_decls.push((decl.name.clone(), "enum".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Enum));
         }
         for decl in &self.protocol_declarations {
-            all_decls.push((decl.name.clone(), "protocol".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Protocol));
         }
         for decl in &self.service_declarations {
-            all_decls.push((decl.name.clone(), "service".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Service));
         }
         for decl in &self.struct_declarations {
-            all_decls.push((decl.name.clone(), "struct".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Struct));
         }
         for decl in &self.table_declarations {
-            all_decls.push((decl.name.clone(), "table".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Table));
         }
         for decl in &self.union_declarations {
-            all_decls.push((decl.name.clone(), "union".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Union));
         }
         for decl in &self.overlay_declarations {
-            all_decls.push((decl.name.clone(), "overlay".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Overlay));
         }
         for decl in &self.alias_declarations {
-            all_decls.push((decl.name.clone(), "alias".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::Alias));
         }
         for decl in &self.new_type_declarations {
-            all_decls.push((decl.name.clone(), "new_type".to_string()));
+            all_decls.push((decl.name.clone(), DeclarationKind::NewType));
         }
 
         all_decls.sort_by(|a, b| a.0.cmp(&b.0));
 
         let order = [
-            "bits",
-            "const",
-            "enum",
-            "experimental_resource",
-            "protocol",
-            "service",
-            "struct",
-            "table",
-            "union",
-            "overlay",
-            "alias",
-            "new_type",
+            DeclarationKind::Bits,
+            DeclarationKind::Const,
+            DeclarationKind::Enum,
+            DeclarationKind::ExperimentalResource,
+            DeclarationKind::Protocol,
+            DeclarationKind::Service,
+            DeclarationKind::Struct,
+            DeclarationKind::Table,
+            DeclarationKind::Union,
+            DeclarationKind::Overlay,
+            DeclarationKind::Alias,
+            DeclarationKind::NewType,
         ];
 
-        for kind_group in order {
+        for kind_group in &order {
             for (name, kind) in &all_decls {
                 if kind == kind_group {
                     self.declarations.insert(name.clone(), kind.clone());

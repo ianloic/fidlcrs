@@ -1,6 +1,23 @@
 use crate::flat_ast;
 use serde::Serialize;
 use std::collections::BTreeMap;
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DeclarationKind {
+    Bits,
+    Const,
+    Enum,
+    ExperimentalResource,
+    Protocol,
+    Service,
+    Struct,
+    Table,
+    Union,
+    Overlay,
+    Alias,
+    NewType,
+}
+
 #[derive(Serialize, Debug)]
 pub struct JsonRoot {
     pub name: String,
@@ -26,7 +43,7 @@ pub struct JsonRoot {
     pub alias_declarations: Vec<AliasDeclaration>,
     pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub declaration_order: Vec<String>,
-    pub declarations: indexmap::IndexMap<String, String>,
+    pub declarations: indexmap::IndexMap<String, DeclarationKind>,
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct LibraryDependency {
@@ -545,7 +562,11 @@ impl From<&flat_ast::JsonRoot> for JsonRoot {
             alias_declarations: ast.alias_declarations.iter().map(Into::into).collect(),
             new_type_declarations: ast.new_type_declarations.iter().map(Into::into).collect(),
             declaration_order: ast.declaration_order.clone(),
-            declarations: ast.declarations.clone(),
+            declarations: ast
+                .declarations
+                .iter()
+                .map(|(k, v)| (k.clone(), v.into()))
+                .collect(),
         }
     }
 }
@@ -964,6 +985,25 @@ impl From<&flat_ast::NewTypeDeclaration> for NewTypeDeclaration {
                 .experimental_maybe_from_alias
                 .as_ref()
                 .map(Into::into),
+        }
+    }
+}
+
+impl From<&flat_ast::DeclarationKind> for DeclarationKind {
+    fn from(ast: &flat_ast::DeclarationKind) -> Self {
+        match ast {
+            flat_ast::DeclarationKind::Bits => Self::Bits,
+            flat_ast::DeclarationKind::Const => Self::Const,
+            flat_ast::DeclarationKind::Enum => Self::Enum,
+            flat_ast::DeclarationKind::ExperimentalResource => Self::ExperimentalResource,
+            flat_ast::DeclarationKind::Protocol => Self::Protocol,
+            flat_ast::DeclarationKind::Service => Self::Service,
+            flat_ast::DeclarationKind::Struct => Self::Struct,
+            flat_ast::DeclarationKind::Table => Self::Table,
+            flat_ast::DeclarationKind::Union => Self::Union,
+            flat_ast::DeclarationKind::Overlay => Self::Overlay,
+            flat_ast::DeclarationKind::Alias => Self::Alias,
+            flat_ast::DeclarationKind::NewType => Self::NewType,
         }
     }
 }

@@ -1,5 +1,21 @@
 use std::collections::BTreeMap;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DeclarationKind {
+    Bits,
+    Const,
+    Enum,
+    ExperimentalResource,
+    Protocol,
+    Service,
+    Struct,
+    Table,
+    Union,
+    Overlay,
+    Alias,
+    NewType,
+}
+
 #[derive(Debug)]
 pub struct JsonRoot {
     pub name: String,
@@ -22,7 +38,7 @@ pub struct JsonRoot {
     pub alias_declarations: Vec<AliasDeclaration>,
     pub new_type_declarations: Vec<NewTypeDeclaration>,
     pub declaration_order: Vec<String>,
-    pub declarations: indexmap::IndexMap<String, String>,
+    pub declarations: indexmap::IndexMap<String, DeclarationKind>,
 }
 
 #[derive(Clone, Debug)]

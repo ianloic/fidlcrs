@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DeclKind {
+pub enum MemberKind {
     EnumValue,
     Member,
     TableField,
@@ -24,7 +24,7 @@ pub enum DeclKind {
     Method,
 }
 
-impl std::fmt::Display for DeclKind {
+impl std::fmt::Display for MemberKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::EnumValue => "member",
@@ -55,7 +55,7 @@ impl<'src> std::fmt::Display for Site<'src> {
 
 struct CanonicalNameEntry<'src> {
     raw: String,
-    kind: DeclKind,
+    kind: MemberKind,
     site: Site<'src>,
     is_versioned: bool,
 }
@@ -74,10 +74,10 @@ impl<'src> CanonicalNames<'src> {
     fn insert(
         &mut self,
         raw_name: String,
-        kind: DeclKind,
+        kind: MemberKind,
         span: SourceSpan<'src>,
         is_versioned: bool,
-    ) -> Result<(), (bool, String, DeclKind, Site<'src>)> {
+    ) -> Result<(), (bool, String, MemberKind, Site<'src>)> {
         let canonical = crate::attribute_schema::canonicalize(&raw_name);
         if let Some(prev) = self.names.get(&canonical) {
             if is_versioned && prev.is_versioned {
@@ -1625,7 +1625,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         &mut self,
         names: &mut CanonicalNames<'src>,
         raw_name: String,
-        kind: DeclKind,
+        kind: MemberKind,
         span: SourceSpan<'src>,
         is_versioned: bool,
     ) {
@@ -1803,7 +1803,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 name_str.clone(),
-                DeclKind::EnumValue,
+                MemberKind::EnumValue,
                 member.name.element.span(),
                 member.attributes.as_ref().is_some_and(|attrs| {
                     attrs.attributes.iter().any(|a| {
@@ -2085,7 +2085,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 name_str.clone(),
-                DeclKind::Member,
+                MemberKind::Member,
                 member.name.element.span(),
                 member.attributes.as_ref().is_some_and(|attrs| {
                     attrs.attributes.iter().any(|a| {
@@ -2344,7 +2344,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.check_canonical_insert(
                     &mut member_names,
                     name_str.clone(),
-                    DeclKind::TableField,
+                    MemberKind::TableField,
                     member.name.as_ref().unwrap().element.span(),
                     member.attributes.as_ref().is_some_and(|attrs| {
                         attrs.attributes.iter().any(|a| {
@@ -2629,7 +2629,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.check_canonical_insert(
                     &mut member_names,
                     member_name.to_string(),
-                    DeclKind::UnionMember,
+                    MemberKind::UnionMember,
                     n_name.element.span(),
                     member.attributes.as_ref().is_some_and(|attrs| {
                         attrs.attributes.iter().any(|a| {
@@ -2925,7 +2925,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 member_name.to_string(),
-                DeclKind::StructMember,
+                MemberKind::StructMember,
                 member.name.element.span(),
                 member.attributes.as_ref().is_some_and(|attrs| {
                     attrs.attributes.iter().any(|a| {
@@ -4732,7 +4732,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut property_names,
                 prop_name.clone(),
-                DeclKind::ResourceProperty,
+                MemberKind::ResourceProperty,
                 prop.name.element.span(),
                 prop.attributes.as_ref().is_some_and(|attrs| {
                     attrs.attributes.iter().any(|a| {
@@ -4867,7 +4867,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut member_names,
                 member_name.clone(),
-                DeclKind::ServiceMember,
+                MemberKind::ServiceMember,
                 member.name.element.span(),
                 member.attributes.as_ref().is_some_and(|attrs| {
                     attrs.attributes.iter().any(|a| {
@@ -5212,7 +5212,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             self.check_canonical_insert(
                 &mut method_names,
                 m.name.data().to_string(),
-                DeclKind::Method,
+                MemberKind::Method,
                 m.name.element.span(),
                 m.attributes.as_ref().is_some_and(|attrs| {
                     attrs.attributes.iter().any(|a| {

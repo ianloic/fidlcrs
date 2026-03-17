@@ -876,7 +876,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let maybe_offset = offset.checked_add(padding_before);
                 if maybe_offset.is_none() && !overflowed {
                     overflowed = true;
-                    if let Some(raw_decl) = self.raw_decls.get::<str>(decl.name.as_ref()) {
+                    if let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref()) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
                             Error::ErrTypeShapeIntegerOverflow,
@@ -892,7 +892,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let maybe_offset2 = offset.checked_add(size);
                 if maybe_offset2.is_none() && !overflowed {
                     overflowed = true;
-                    if let Some(raw_decl) = self.raw_decls.get::<str>(decl.name.as_ref()) {
+                    if let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref()) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
                             Error::ErrTypeShapeIntegerOverflow,
@@ -913,7 +913,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let maybe_total = offset.checked_add(final_padding);
                 if maybe_total.is_none() && !overflowed {
                     overflowed = true;
-                    if let Some(raw_decl) = self.raw_decls.get::<str>(decl.name.as_ref()) {
+                    if let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref()) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
                             Error::ErrTypeShapeIntegerOverflow,
@@ -950,7 +950,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if !overflowed
                 && total_size > 65535
-                && let Some(raw_decl) = self.raw_decls.get::<str>(decl.name.as_ref())
+                && let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref())
             {
                 let span = raw_decl.element().span();
                 let decl_fqn = crate::names::OwnedQualifiedName::parse(&decl.name);
@@ -982,7 +982,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape.max_handles = max_handles;
                 decl.type_shape.has_padding = has_padding;
                 let is_flexible =
-                    decl.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
+                    decl.base.maybe_attributes.iter().any(|a| a.name == "flexible") || !decl.strict;
                 // Also check if any member has the flexible trait
                 decl.type_shape.has_flexible_envelope = has_flex || is_flexible;
             }
@@ -1388,10 +1388,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .take()
                         .or_else(|| typ.experimental_maybe_from_alias.take());
                     let compiled = NewTypeDeclaration {
-                        name: format!("{}/{}", library_name, t.name.data()),
-                        location: self.get_location(&t.name.element),
-                        deprecated: self.is_deprecated(t.attributes.as_deref()),
-                        maybe_attributes: self.compile_attribute_list(&t.attributes),
+                        base: crate::flat_ast::DeclBase {
+                            name: format!("{}/{}", library_name, t.name.data()),
+                            location: self.get_location(&t.name.element),
+                            deprecated: self.is_deprecated(t.attributes.as_deref()),
+                            maybe_attributes: self.compile_attribute_list(&t.attributes),
+                        },
                         type_: typ,
                         experimental_maybe_from_alias: alias,
                     };
@@ -1896,25 +1898,27 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         EnumDeclaration {
-            name: full_name,
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref())
+                    || self.is_deprecated(inherited_attributes),
+                maybe_attributes: {
+                    let mut attrs = self.compile_attribute_list(&decl.attributes);
+                    if let Some(inherited) = inherited_attributes {
+                        let extra = self.compile_attributes_from_ref(inherited);
+                        attrs.extend(extra);
+                    }
+                    attrs
+                },
+            },
             naming_context: naming_context
                 .map(|ctx| ctx.context())
                 .unwrap_or_else(|| vec![name.to_string()]),
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref())
-                || self.is_deprecated(inherited_attributes),
             type_: subtype_name,
             members,
             strict,
             maybe_unknown_value,
-            maybe_attributes: {
-                let mut attrs = self.compile_attribute_list(&decl.attributes);
-                if let Some(inherited) = inherited_attributes {
-                    let extra = self.compile_attributes_from_ref(inherited);
-                    attrs.extend(extra);
-                }
-                attrs
-            },
         }
     }
 
@@ -2179,21 +2183,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         BitsDeclaration {
-            name: full_name,
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref())
+                    || self.is_deprecated(inherited_attributes),
+                maybe_attributes: {
+                    let mut attrs = self.compile_attribute_list(&decl.attributes);
+                    if let Some(inherited) = inherited_attributes {
+                        let extra = self.compile_attributes_from_ref(inherited);
+                        attrs.extend(extra);
+                    }
+                    attrs
+                },
+            },
             naming_context: naming_context
                 .map(|ctx| ctx.context())
                 .unwrap_or_else(|| vec![name.to_string()]),
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref())
-                || self.is_deprecated(inherited_attributes),
-            maybe_attributes: {
-                let mut attrs = self.compile_attribute_list(&decl.attributes);
-                if let Some(inherited) = inherited_attributes {
-                    let extra = self.compile_attributes_from_ref(inherited);
-                    attrs.extend(extra);
-                }
-                attrs
-            },
             type_: primitive,
             mask: mask.to_string(),
             members,
@@ -2480,26 +2486,28 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         TableDeclaration {
-            name: full_name,
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref())
+                    || self.is_deprecated(inherited_attributes),
+                maybe_attributes: {
+                    let mut attrs = self.compile_attribute_list(&decl.attributes);
+                    if let Some(inherited) = inherited_attributes {
+                        let extra = self.compile_attributes_from_ref(inherited);
+                        attrs.extend(extra);
+                    }
+                    attrs
+                },
+            },
             naming_context: naming_context
                 .map(|ctx| ctx.context())
                 .unwrap_or_else(|| vec![name.to_string()]),
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref())
-                || self.is_deprecated(inherited_attributes),
             members,
             strict: false,
             resource: decl.modifiers.iter().any(|m| {
                 m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
             }),
-            maybe_attributes: {
-                let mut attrs = self.compile_attribute_list(&decl.attributes);
-                if let Some(inherited) = inherited_attributes {
-                    let extra = self.compile_attributes_from_ref(inherited);
-                    attrs.extend(extra);
-                }
-                attrs
-            },
             type_shape,
         }
     }
@@ -2827,27 +2835,29 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
 
         UnionDeclaration {
-            name: full_name,
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref())
+                    || self.is_deprecated(inherited_attributes),
+                maybe_attributes: {
+                    let mut attrs = self.compile_attribute_list(&decl.attributes);
+                    if let Some(inherited) = inherited_attributes {
+                        let extra = self.compile_attributes_from_ref(inherited);
+                        attrs.extend(extra);
+                    }
+                    attrs
+                },
+            },
             naming_context: naming_context
                 .map(|ctx| ctx.context())
                 .unwrap_or_else(|| vec![name.to_string()]),
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref())
-                || self.is_deprecated(inherited_attributes),
             members,
             strict,
             resource: decl.modifiers.iter().any(|m| {
                 m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
             }),
             is_result: if decl.is_overlay { None } else { Some(false) }, // TODO: detect result unions
-            maybe_attributes: {
-                let mut attrs = self.compile_attribute_list(&decl.attributes);
-                if let Some(inherited) = inherited_attributes {
-                    let extra = self.compile_attributes_from_ref(inherited);
-                    attrs.extend(extra);
-                }
-                attrs
-            },
             type_shape,
         }
     }
@@ -3056,21 +3066,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         StructDeclaration {
-            name: full_name,
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref())
+                    || self.is_deprecated(inherited_attributes),
+                maybe_attributes: {
+                    let mut attrs = self.compile_attribute_list(&decl.attributes);
+                    if let Some(inherited) = inherited_attributes {
+                        let extra = self.compile_attributes_from_ref(inherited);
+                        attrs.extend(extra);
+                    }
+                    attrs
+                },
+            },
             naming_context: naming_context
                 .map(|ctx| ctx.context())
                 .unwrap_or_else(|| vec![name.to_string()]),
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref())
-                || self.is_deprecated(inherited_attributes),
-            maybe_attributes: {
-                let mut attrs = self.compile_attribute_list(&decl.attributes);
-                if let Some(inherited) = inherited_attributes {
-                    let extra = self.compile_attributes_from_ref(inherited);
-                    attrs.extend(extra);
-                }
-                attrs
-            },
             members,
             resource: decl.modifiers.iter().any(|m| {
                 m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref())
@@ -4789,10 +4801,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         ExperimentalResourceDeclaration {
-            name: full_name,
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()),
-            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            },
             type_: type_obj,
             properties,
         }
@@ -4882,10 +4896,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         ServiceDeclaration {
-            name: full_name,
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()),
-            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            },
             members,
         }
     }
@@ -4896,10 +4912,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         library_name: &str,
     ) -> AliasDeclaration {
         AliasDeclaration {
-            name: format!("{}/{}", library_name, decl.name.data()),
-            location: self.get_location(&decl.name.element),
-            deprecated: self.is_deprecated(decl.attributes.as_deref()),
-            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            base: crate::flat_ast::DeclBase {
+                name: format!("{}/{}", library_name, decl.name.data()),
+                location: self.get_location(&decl.name.element),
+                deprecated: self.is_deprecated(decl.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            },
             partial_type_ctor: self.compile_partial_type_ctor(&decl.type_ctor, library_name),
             type_: self.resolve_type(&decl.type_ctor, library_name, None),
         }
@@ -5704,20 +5722,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.get_location(&m.name.element)
                         };
                         let decl = StructDeclaration {
-                            name: full_synth.clone(),
+                            base: crate::flat_ast::DeclBase {
+                                name: full_synth.clone(),
+                                location: loc,
+                                deprecated: false,
+                                maybe_attributes: vec![],
+                            },
                             naming_context: vec![
                                 short_name.to_string(),
                                 m.name.data().to_string(),
                                 "Response".to_string(),
                                 "response".to_string(),
                             ],
-                            location: loc,
-                            deprecated: false,
                             members: vec![],
                             resource: false,
                             is_empty_success_struct: true,
                             type_shape: shape.clone(),
-                            maybe_attributes: vec![],
                         };
                         self.struct_declarations.push(decl);
                         if library_name == self.library_name.to_string() {
@@ -5839,20 +5859,22 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 let union_decl = UnionDeclaration {
-                    name: full_synth_union.clone(),
+                    base: crate::flat_ast::DeclBase {
+                        name: full_synth_union.clone(),
+                        location: union_loc,
+                        deprecated: false,
+                        maybe_attributes: vec![],
+                    },
                     naming_context: vec![
                         short_name.to_string(),
                         m.name.data().to_string(),
                         "Response".to_string(),
                     ],
-                    location: union_loc,
-                    deprecated: false,
                     members: union_members,
                     strict: true,
                     resource: union_handles > 0,
                     is_result: Some(true),
                     type_shape: union_shape.clone(),
-                    maybe_attributes: vec![],
                 };
                 self.union_declarations.push(union_decl);
                 if library_name == self.library_name.to_string() {
@@ -5957,10 +5979,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
 
         ProtocolDeclaration {
-            name,
-            location: self.get_location(&decl.name.element),
-            deprecated: self.is_deprecated(decl.attributes.as_deref()),
-            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            base: crate::flat_ast::DeclBase {
+                name,
+                location: self.get_location(&decl.name.element),
+                deprecated: self.is_deprecated(decl.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            },
             openness: openness.to_string(),
             composed_protocols: compiled_composed,
             methods,

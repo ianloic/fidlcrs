@@ -958,10 +958,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         let constant = self.compile_constant(&decl.value);
 
         ConstDeclaration {
-            name: full_name,
-            location,
-            deprecated: self.is_deprecated(decl.attributes.as_deref()),
-            maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            base: crate::flat_ast::DeclBase {
+                name: full_name,
+                location,
+                deprecated: self.is_deprecated(decl.attributes.as_deref()),
+                maybe_attributes: self.compile_attribute_list(&decl.attributes),
+            },
             type_: type_obj,
             value: constant,
         }

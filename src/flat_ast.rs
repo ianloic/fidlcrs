@@ -868,12 +868,17 @@ pub struct StructMember {
 }
 
 #[derive(Clone, Debug)]
-pub struct StructDeclaration {
+pub struct DeclBase {
     pub name: String,
-    pub naming_context: Vec<String>,
     pub location: Location,
     pub deprecated: bool,
     pub maybe_attributes: Vec<Attribute>,
+}
+
+#[derive(Clone, Debug)]
+pub struct StructDeclaration {
+    pub base: DeclBase,
+    pub naming_context: Vec<String>,
     pub members: Vec<StructMember>,
     pub resource: bool,
     pub is_empty_success_struct: bool,
@@ -888,11 +893,8 @@ pub struct BitField {
 
 #[derive(Clone, Debug)]
 pub struct BitsDeclaration {
-    pub name: String,
+    pub base: DeclBase,
     pub naming_context: Vec<String>,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
     pub type_: Type,
     pub mask: String,
     pub members: Vec<BitsMember>,
@@ -910,20 +912,14 @@ pub struct BitsMember {
 
 #[derive(Clone, Debug)]
 pub struct ConstDeclaration {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub type_: Type,
     pub value: Constant,
 }
 #[derive(Clone, Debug)]
 pub struct EnumDeclaration {
-    pub name: String,
+    pub base: DeclBase,
     pub naming_context: Vec<String>,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
     pub type_: String,
     pub members: Vec<EnumMember>,
     pub strict: bool,
@@ -979,19 +975,13 @@ pub struct ResourceProperty {
 
 #[derive(Clone, Debug)]
 pub struct ExperimentalResourceDeclaration {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub type_: Type,
     pub properties: Vec<ResourceProperty>,
 }
 #[derive(Clone, Debug)]
 pub struct ProtocolDeclaration {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub openness: String,
     pub composed_protocols: Vec<ProtocolCompose>,
     pub methods: Vec<ProtocolMethod>,
@@ -1026,10 +1016,7 @@ pub struct ProtocolMethod {
 }
 #[derive(Clone, Debug)]
 pub struct ServiceDeclaration {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub members: Vec<ServiceMember>,
 }
 
@@ -1043,11 +1030,8 @@ pub struct ServiceMember {
 }
 #[derive(Clone, Debug)]
 pub struct TableDeclaration {
-    pub name: String,
+    pub base: DeclBase,
     pub naming_context: Vec<String>,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
     pub members: Vec<TableMember>,
     pub strict: bool,
     pub resource: bool,
@@ -1069,11 +1053,8 @@ pub struct TableMember {
 
 #[derive(Clone, Debug)]
 pub struct UnionDeclaration {
-    pub name: String,
+    pub base: DeclBase,
     pub naming_context: Vec<String>,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
     pub members: Vec<UnionMember>,
     pub strict: bool,
     pub resource: bool,
@@ -1104,19 +1085,41 @@ pub struct PartialTypeCtor {
 
 #[derive(Clone, Debug)]
 pub struct AliasDeclaration {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub partial_type_ctor: PartialTypeCtor,
     pub type_: Type,
 }
 #[derive(Clone, Debug)]
 pub struct NewTypeDeclaration {
-    pub name: String,
-    pub location: Location,
-    pub deprecated: bool,
-    pub maybe_attributes: Vec<Attribute>,
+    pub base: DeclBase,
     pub type_: Type,
     pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
 }
+
+macro_rules! impl_deref_for_decl {
+    ($t:ty) => {
+        impl std::ops::Deref for $t {
+            type Target = DeclBase;
+            fn deref(&self) -> &Self::Target {
+                &self.base
+            }
+        }
+        impl std::ops::DerefMut for $t {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.base
+            }
+        }
+    };
+}
+
+impl_deref_for_decl!(StructDeclaration);
+impl_deref_for_decl!(BitsDeclaration);
+impl_deref_for_decl!(ConstDeclaration);
+impl_deref_for_decl!(EnumDeclaration);
+impl_deref_for_decl!(ExperimentalResourceDeclaration);
+impl_deref_for_decl!(ProtocolDeclaration);
+impl_deref_for_decl!(ServiceDeclaration);
+impl_deref_for_decl!(TableDeclaration);
+impl_deref_for_decl!(UnionDeclaration);
+impl_deref_for_decl!(AliasDeclaration);
+impl_deref_for_decl!(NewTypeDeclaration);

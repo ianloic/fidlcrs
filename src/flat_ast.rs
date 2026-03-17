@@ -1123,3 +1123,206 @@ impl_deref_for_decl!(TableDeclaration);
 impl_deref_for_decl!(UnionDeclaration);
 impl_deref_for_decl!(AliasDeclaration);
 impl_deref_for_decl!(NewTypeDeclaration);
+
+impl StructDeclaration {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        naming_context: Vec<String>,
+        members: Vec<StructMember>,
+        resource: bool,
+        is_empty_success_struct: bool,
+        type_shape: TypeShape,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            naming_context,
+            members,
+            resource,
+            is_empty_success_struct,
+            type_shape,
+        }
+    }
+}
+
+impl BitsDeclaration {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        naming_context: Vec<String>,
+        type_: Type,
+        mask: String,
+        members: Vec<BitsMember>,
+        strict: bool,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            naming_context, type_, mask, members, strict,
+        }
+    }
+}
+
+impl ConstDeclaration {
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        type_: Type,
+        value: Constant,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            type_, value,
+        }
+    }
+}
+
+impl EnumDeclaration {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        naming_context: Vec<String>,
+        type_: String,
+        members: Vec<EnumMember>,
+        strict: bool,
+        maybe_unknown_value: Option<u32>,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            naming_context, type_, members, strict, maybe_unknown_value,
+        }
+    }
+}
+
+impl ExperimentalResourceDeclaration {
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        type_: Type,
+        properties: Vec<ResourceProperty>,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            type_, properties,
+        }
+    }
+}
+
+impl ProtocolDeclaration {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        openness: String,
+        composed_protocols: Vec<ProtocolCompose>,
+        methods: Vec<ProtocolMethod>,
+        implementation_locations: Option<std::collections::BTreeMap<String, Vec<String>>>,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            openness, composed_protocols, methods, implementation_locations,
+        }
+    }
+}
+
+impl ServiceDeclaration {
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        members: Vec<ServiceMember>,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            members,
+        }
+    }
+}
+
+impl TableDeclaration {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        naming_context: Vec<String>,
+        members: Vec<TableMember>,
+        strict: bool,
+        resource: bool,
+        type_shape: TypeShape,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            naming_context, members, strict, resource, type_shape,
+        }
+    }
+}
+
+impl UnionDeclaration {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        naming_context: Vec<String>,
+        members: Vec<UnionMember>,
+        strict: bool,
+        resource: bool,
+        is_result: Option<bool>,
+        type_shape: TypeShape,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            naming_context, members, strict, resource, is_result, type_shape,
+        }
+    }
+}
+
+impl AliasDeclaration {
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        partial_type_ctor: PartialTypeCtor,
+        type_: Type,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            partial_type_ctor, type_,
+        }
+    }
+}
+
+impl NewTypeDeclaration {
+    pub fn new(
+        name: String,
+        location: Location,
+        deprecated: bool,
+        maybe_attributes: Vec<Attribute>,
+        type_: Type,
+        experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
+    ) -> Self {
+        Self {
+            base: DeclBase { name, location, deprecated, maybe_attributes },
+            type_, experimental_maybe_from_alias,
+        }
+    }
+}

@@ -536,8 +536,8 @@ impl From<&flat_ast::Type> for Type {
     }
 }
 
-impl From<&flat_ast::JsonRoot> for JsonRoot {
-    fn from(ast: &flat_ast::JsonRoot) -> Self {
+impl From<&flat_ast::Root> for JsonRoot {
+    fn from(ast: &flat_ast::Root) -> Self {
         Self {
             name: ast.name.clone(),
             platform: ast.platform.clone(),

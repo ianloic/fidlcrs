@@ -266,7 +266,7 @@ resource_definition handle : uint32 {
         self.dependency_files.insert(0, dummy_fdf);
     }
 
-    pub fn compile(&'a self) -> Result<JsonRoot, String> {
+    pub fn compile(&'a self) -> Result<Root, String> {
         let mut compiler = Compiler::new(&self.reporter);
         let mut flags = ExperimentalFlags::new();
         for f in &self.experimental_flags {
@@ -422,7 +422,7 @@ pub trait LookupHelpers {
     fn lookup_constant(&self, name: &str) -> Option<&ConstDeclaration>;
 }
 
-impl LookupHelpers for JsonRoot {
+impl LookupHelpers for Root {
     fn lookup_struct(&self, name: &str) -> Option<&StructDeclaration> {
         {
             println!(

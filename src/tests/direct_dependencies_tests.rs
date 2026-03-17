@@ -1,7 +1,7 @@
-use crate::flat_ast::JsonRoot;
+use crate::flat_ast::Root;
 use crate::tests::test_library::TestLibrary;
 
-fn direct_and_composed_dependencies(root: &JsonRoot) -> Vec<String> {
+fn direct_and_composed_dependencies(root: &Root) -> Vec<String> {
     let mut names: Vec<String> = root
         .library_dependencies
         .iter()

@@ -450,7 +450,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         main_files: &'node [raw_ast::File<'src>],
         dependency_files: &'node [raw_ast::File<'src>],
         source_files: &[&'src SourceFile],
-    ) -> Result<JsonRoot, String> {
+    ) -> Result<Root, String> {
         self.source_files = source_files.to_vec();
 
         // 1. Consume
@@ -688,7 +688,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
-        let json_root = JsonRoot {
+        let json_root = Root {
             name: self.library_name.to_string(),
             platform,
             available: Some(self.version_selection.as_available_map()),

@@ -37,7 +37,7 @@ impl std::fmt::Display for DeclarationKind {
 }
 
 #[derive(Debug)]
-pub struct JsonRoot {
+pub struct Root {
     pub name: String,
     pub platform: String,
     pub available: Option<BTreeMap<String, Vec<String>>>,

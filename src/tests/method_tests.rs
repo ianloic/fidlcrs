@@ -1,3 +1,4 @@
+use crate::diagnostics::Error;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -298,7 +299,12 @@ closed protocol Closed {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrFlexibleOneWayMethodInClosedProtocol,
+        &["\"event\""],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -306,7 +312,12 @@ closed protocol Closed {
 fn bad_invalid_strictness_flexible_one_way_method_in_closed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0116.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrFlexibleOneWayMethodInClosedProtocol,
+        &["\"one-way method\""],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -323,7 +334,12 @@ closed protocol Closed {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
+        &["\"closed\""],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -331,7 +347,12 @@ closed protocol Closed {
 fn bad_invalid_strictness_flexible_two_way_method_in_ajar() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0115.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
+        &["\"ajar\""],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -348,7 +369,9 @@ protocol BadMethod {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrCannotSpecifyModifier, &["\"open\"", "\"method\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -384,7 +407,9 @@ open protocol Test {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrEmptyPayloadStructs, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -401,7 +426,9 @@ open protocol Test {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrEmptyPayloadStructs, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -418,7 +445,9 @@ open protocol Test {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrEmptyPayloadStructs, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -435,7 +464,9 @@ open protocol Test {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrEmptyPayloadStructs, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]

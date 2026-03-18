@@ -1,3 +1,4 @@
+use crate::diagnostics::Error;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -5,7 +6,16 @@ use crate::tests::test_library::TestLibrary;
 fn bad_compound_identifier_test() {
     let mut lib = TestLibrary::new();
     lib.add_source_file("example.fidl", "library 0fidl.test.badcompoundidentifier;");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"NumericLiteral\"", "\"Identifier\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -13,7 +23,12 @@ fn bad_compound_identifier_test() {
 fn bad_library_name_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0011.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrInvalidLibraryNameComponent,
+        &["\"name_with_underscores\""],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -485,7 +500,9 @@ type Test = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrInvalidCharacter, &["\"#\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -502,7 +519,9 @@ type Test = struct / {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrInvalidCharacter, &["\"/\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -510,7 +529,9 @@ type Test = struct / {
 fn bad_identifier_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0010-a.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrInvalidIdentifier, &["\"Foo_\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -518,7 +539,9 @@ fn bad_identifier_test() {
 fn bad_invalid_character_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0001.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrInvalidCharacter, &["\"ß\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -540,7 +563,17 @@ type Empty = struct {};
 fn bad_error_on_alias_before_imports() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0025.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrUnknownLibrary, &["\"dependent\""]);
+
+    lib.expect_fail(
+        Error::ErrNameNotFound,
+        &[
+            "\"dependent\"",
+            "OwnedLibraryName { name: \"test.bad.fi0025\" }",
+        ],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -571,7 +604,23 @@ fn good_attribute_value_has_correct_contents() {
 fn bad_attribute_with_dotted_identifier() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0010-b.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrInvalidIdentifier, &["\"bar.baz\""]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -649,7 +698,9 @@ type Empty = struct {};
 fn bad_doc_comment_not_allowed_on_params() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0024.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrDocCommentOnParameters, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -707,7 +758,22 @@ type Empty = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrUnexpectedToken, &[]);
+
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Equal\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -725,7 +791,12 @@ type Struct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"RightCurly\"", "\"Semicolon\""],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -744,7 +815,9 @@ type Struct = struct {
    // error: want "}", got EOF
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrUnexpectedToken, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -761,7 +834,25 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Comma\"", "\"Semicolon\""],
+    );
+
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Comma\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -769,7 +860,25 @@ type Foo = struct {
 fn bad_multiple_constraint_definition_double_colon() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0163.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Colon\"", "\"Semicolon\""],
+    );
+
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Colon\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -789,7 +898,47 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Colon\"", "\"Semicolon\""],
+    );
+
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Colon\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -814,7 +963,20 @@ type Foo = struct {
 fn bad_subtype_constructor() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0031.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Colon\"", "\"LeftCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -822,7 +984,16 @@ fn bad_subtype_constructor() {
 fn bad_layout_class() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0012.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"LeftCurly\"", "\"Semicolon\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -839,7 +1010,18 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Identifier\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -858,7 +1040,22 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Identifier\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -874,7 +1071,9 @@ type t1 = union { 1: foo uint8; };
 type t2 = strict t1;
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrNewTypesNotAllowed, &["\"t2\"", "\"t1\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -882,7 +1081,18 @@ type t2 = strict t1;
 fn bad_identifier_attributes() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0022.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Identifier\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -901,7 +1111,22 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Identifier\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -909,7 +1134,9 @@ type Foo = struct {
 fn bad_type_declaration_of_enum_layout_with_invalid_subtype() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0013.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrInvalidWrappedType, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -926,7 +1153,25 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"NumericLiteral\"", "\"RightAngle\""],
+    );
+
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"NumericLiteral\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -934,7 +1179,21 @@ type Foo = struct {
 fn bad_missing_equals_value_enum() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0008.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Semicolon\"", "\"Equal\""],
+    );
+
+    lib.expect_fail(
+        Error::ErrUnexpectedTokenOfKind,
+        &["\"Semicolon\"", "\"RightCurly\""],
+    );
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -942,5 +1201,7 @@ fn bad_missing_equals_value_enum() {
 fn bad_reserved_field_not_allowed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0209.noformat.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrReservedNotAllowed, &[]);
+
+    assert!(lib.check_compile());
 }

@@ -1,3 +1,4 @@
+use crate::diagnostics::Error;
 use crate::flat_ast::Type;
 use crate::flat_ast::TypeKind;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
@@ -86,7 +87,21 @@ protocol P {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"zx/Handle\""]);
+
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"PMethodRequest\"",
+            "\"h\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"PMethodRequest\"",
+        ],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -197,7 +212,21 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"zx/Handle\""]);
+
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"MyStruct\"",
+            "\"a\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"MyStruct\"",
+        ],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -216,7 +245,9 @@ type MyStruct = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrNameNotFound, &["\"handle\"", "\"example\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -285,7 +316,9 @@ type MyStruct = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrExpectedType, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -313,7 +346,9 @@ type MyStruct = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"example/handle\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -329,7 +364,9 @@ type MyStruct = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrNameNotFound, &["\"handle\"", "\"example\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -345,7 +382,9 @@ type MyStruct = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrNameNotFound, &["\"handle\"", "\"example\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -363,5 +402,11 @@ type MyStruct = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrNameNotFound, &["\"handle\"", "\"example\""]);
+
+    lib.expect_fail(Error::ErrNameNotFound, &["\"handle\"", "\"example\""]);
+
+    lib.expect_fail(Error::ErrTooManyConstraints, &["\"my_handle\"", "0", "1"]);
+
+    assert!(lib.check_compile());
 }

@@ -1,3 +1,4 @@
+use crate::diagnostics::Error;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
@@ -63,14 +64,28 @@ service MyService {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrNameCollision,
+        &[
+            "\"service member\"",
+            "\"my_service_member\"",
+            "\"service member\"",
+            "\"example.fidl:7:5\"",
+        ],
+    );
+
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_no_nullable_protocol_members() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0088.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrOptionalServiceMember, &[]);
+
+    lib.expect_fail(Error::ErrOptionalServiceMember, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -88,14 +103,18 @@ service SomeService {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrOnlyClientEndsInServices, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_no_server_ends() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0112.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrOnlyClientEndsInServices, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -113,12 +132,19 @@ type CannotUseService = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
+    lib.expect_fail(Error::ErrExpectedType, &[]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_cannot_use_more_than_one_protocol_transport_kind() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0113.test.fidl");
-    assert!(lib.compile().is_err());
+    lib.expect_fail(
+        Error::ErrMismatchedTransportInServices,
+        &["\"b\"", "\"Driver\"", "\"a\"", "\"Channel\""],
+    );
+
+    assert!(lib.check_compile());
 }

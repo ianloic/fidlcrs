@@ -1,3 +1,4 @@
+use crate::diagnostics::Error;
 use crate::tests::test_library::TestLibrary;
 
 #[test]
@@ -19,7 +20,9 @@ type S = struct {
 fn bad_zero_size_array() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0161.test.fidl");
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrMustHaveNonZeroSize, &["\"array\""]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -34,7 +37,9 @@ type S = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters, &["{}", "{}", "{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -49,7 +54,9 @@ type S = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters, &["{}", "{}", "{}"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -64,7 +71,11 @@ type S = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrCannotBeOptional, &["\"array\""]);
+
+    lib.expect_fail(Error::ErrTooManyConstraints, &["\"array\"", "0", "1"]);
+
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -79,5 +90,7 @@ type S = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err(), "expected compilation to fail");
+    lib.expect_fail(Error::ErrTooManyConstraints, &["\"array\"", "0", "3"]);
+
+    assert!(lib.check_compile());
 }

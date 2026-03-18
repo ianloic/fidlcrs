@@ -104,10 +104,8 @@ type TypeDecl = struct {
 fn bad_type_decl_of_new_type_errors() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0062.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrNewTypesNotAllowed);
+    lib.expect_fail(Error::ErrNewTypesNotAllowed, &["\"Matrix\"", "\"array\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -249,10 +247,11 @@ type TypeDecl = resource struct {
 fn bad_too_many_layout_parameters() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0162-b.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
+    lib.expect_fail(
+        Error::ErrWrongNumberOfLayoutParameters,
+        &["\"uint8\"", "0", "1"],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -268,30 +267,24 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_not_enough_parameters() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0162-a.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_too_many_constraints() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0164.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTooManyConstraints);
+    lib.expect_fail(Error::ErrTooManyConstraints, &["\"string\"", "1", "3"]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -307,10 +300,11 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrWrongNumberOfLayoutParameters);
+    lib.expect_fail(
+        Error::ErrWrongNumberOfLayoutParameters,
+        &["\"inline_struct\"", "0", "1"],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -331,10 +325,8 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotConstrainTwice);
+    lib.expect_fail(Error::ErrCannotConstrainTwice, &["\"MyVmo\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -362,10 +354,8 @@ type Foo = resource struct {
 fn bad_want_type_layout_parameter() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0165.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrExpectedType);
+    lib.expect_fail(Error::ErrExpectedType, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -381,20 +371,16 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrExpectedValueButGotType);
+    lib.expect_fail(Error::ErrExpectedValueButGotType, &["\"uint8\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_unresolvable_constraint() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0166.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrUnexpectedConstraint);
+    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"vector\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -412,10 +398,8 @@ type Foo = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrUnexpectedConstraint);
+    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"vector\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -431,11 +415,9 @@ type Foo = resource struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 2);
-    assert_eq!(errors[0].def, Error::ErrTypeCannotBeConvertedToType);
-    assert_eq!(errors[1].def, Error::ErrCouldNotResolveSizeBound);
+    lib.expect_fail(Error::ErrTypeCannotBeConvertedToType, &[]);
+    lib.expect_fail(Error::ErrCouldNotResolveSizeBound, &[]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -451,10 +433,8 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrNameNotFound);
+    lib.expect_fail(Error::ErrNameNotFound, &["\"FrameworkErr\"", "\"example\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -470,40 +450,35 @@ type Foo = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrNameNotFound);
+    lib.expect_fail(
+        Error::ErrNameNotFound,
+        &["\"fidl/FrameworkErr\"", "\"example\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_usize64_without_flag() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0180.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed, &["\"usize64\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_uintptr64_without_flag() {
     let mut lib = TestLibrary::new();
     lib.add_source_file("example.fidl", r#"library example; alias T = uintptr64;"#);
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed, &["\"uintptr64\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_uchar_without_flag() {
     let mut lib = TestLibrary::new();
     lib.add_source_file("example.fidl", r#"library example; alias T = uchar;"#);
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed, &["\"uchar\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -513,10 +488,11 @@ fn bad_experimental_pointer_without_flag() {
         "example.fidl",
         r#"library example; alias T = experimental_pointer<uint32>;"#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrExperimentalZxCTypesDisallowed);
+    lib.expect_fail(
+        Error::ErrExperimentalZxCTypesDisallowed,
+        &["\"experimental_pointer\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]

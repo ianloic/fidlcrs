@@ -15,33 +15,33 @@ type Two = strict strict union { 1: b bool; };
 type Three = strict strict strict union { 1: b bool; };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 3);
-    assert_eq!(errors[0].def, Error::ErrDuplicateModifier);
-    assert_eq!(errors[1].def, Error::ErrDuplicateModifier);
-    assert_eq!(errors[2].def, Error::ErrDuplicateModifier);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"strict\""]);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"strict\""]);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"strict\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_duplicate_modifier_non_consecutive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0032.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrDuplicateModifier);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"strict\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
 fn bad_conflicting_modifiers() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0033.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 2);
-    assert_eq!(errors[0].def, Error::ErrConflictingModifier);
-    assert_eq!(errors[1].def, Error::ErrConflictingModifier);
+    lib.expect_fail(
+        Error::ErrConflictingModifier,
+        &["\"flexible\"", "\"strict\""],
+    );
+    lib.expect_fail(
+        Error::ErrConflictingModifier,
+        &["\"strict\"", "\"flexible\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -128,10 +128,11 @@ type Foo = flexible bits {
 fn bad_strictness_struct() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0030.noformat.test.fidl");
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"strict\"", "\"struct\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -145,10 +146,11 @@ library example;
 type StrictFoo = strict table {};
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"strict\"", "\"table\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]

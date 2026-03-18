@@ -15,10 +15,11 @@ type Foo = resource bits {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"resource\"", "\"bits\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -33,10 +34,11 @@ type Foo = resource enum {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"resource\"", "\"enum\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -50,10 +52,11 @@ library example;
 resource const BAR uint32 = 1;
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"resource\"", "\"const\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -67,10 +70,11 @@ library example;
 resource protocol Foo {};
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"resource\"", "\"protocol\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -84,10 +88,11 @@ library example;
 resource alias B = bool;
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrCannotSpecifyModifier);
+    lib.expect_fail(
+        Error::ErrCannotSpecifyModifier,
+        &["\"resource\"", "\"alias\""],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -103,12 +108,10 @@ type Two = resource resource struct {};
 type Three = resource resource resource struct {};
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 3);
-    assert_eq!(errors[0].def, Error::ErrDuplicateModifier);
-    assert_eq!(errors[1].def, Error::ErrDuplicateModifier);
-    assert_eq!(errors[2].def, Error::ErrDuplicateModifier);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"resource\""]);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"resource\""]);
+    lib.expect_fail(Error::ErrDuplicateModifier, &["\"resource\""]);
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -127,10 +130,18 @@ fn bad_resource_modifier_missing() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
     lib.add_source_file("bad/fi-0110.test.fidl", &(content));
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"handle\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 #[test]
 fn good_resource_struct() {
@@ -200,10 +211,18 @@ fn bad_handles_in_value_struct() {
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
-        assert!(lib.compile().is_err());
-        let errors = lib.reporter().diagnostics();
-        assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+        lib.expect_fail(
+            Error::ErrTypeMustBeResource,
+            &[
+                "\"struct\"",
+                "\"Foo\"",
+                "\"bad_member\"",
+                "\"struct\"",
+                "\"struct\"",
+                "\"Foo\"",
+            ],
+        );
+        assert!(lib.check_compile());
     }
 }
 #[test]
@@ -220,10 +239,18 @@ fn bad_handles_in_value_table() {
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
-        assert!(lib.compile().is_err());
-        let errors = lib.reporter().diagnostics();
-        assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+        lib.expect_fail(
+            Error::ErrTypeMustBeResource,
+            &[
+                "\"table\"",
+                "\"Foo\"",
+                "\"bad_member\"",
+                "\"table\"",
+                "\"table\"",
+                "\"Foo\"",
+            ],
+        );
+        assert!(lib.check_compile());
     }
 }
 #[test]
@@ -240,10 +267,18 @@ fn bad_handles_in_value_union() {
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
-        assert!(lib.compile().is_err());
-        let errors = lib.reporter().diagnostics();
-        assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+        lib.expect_fail(
+            Error::ErrTypeMustBeResource,
+            &[
+                "\"union\"",
+                "\"Foo\"",
+                "\"bad_member\"",
+                "\"union\"",
+                "\"union\"",
+                "\"Foo\"",
+            ],
+        );
+        assert!(lib.check_compile());
     }
 }
 #[test]
@@ -262,10 +297,18 @@ type Foo = struct { bad_member client_end:Protocol; };
 
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"bad_member\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -285,10 +328,18 @@ type Foo = struct { bad_member ResourceStruct; };
 
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"bad_member\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -316,10 +367,18 @@ type Foo = struct { bad_member HandleAlias; };
 
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"bad_member\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -341,10 +400,18 @@ type Foo = struct { bad_member vector<vector<zx.Handle>>; };
 
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"bad_member\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -366,12 +433,40 @@ type Foo = struct {
 type ResourceStruct = resource struct {};
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 3);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
-    assert_eq!(errors[1].def, Error::ErrTypeMustBeResource);
-    assert_eq!(errors[2].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"first\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"second\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Foo\"",
+            "\"third\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Foo\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -411,10 +506,18 @@ type Middle = struct {
 type Bottom = resource struct {};
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Middle\"",
+            "\"bottom\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Middle\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]
@@ -474,10 +577,18 @@ type Boros = struct {
 };
 "#,
     );
-    assert!(lib.compile().is_err());
-    let errors = lib.reporter().diagnostics();
-    assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].def, Error::ErrTypeMustBeResource);
+    lib.expect_fail(
+        Error::ErrTypeMustBeResource,
+        &[
+            "\"struct\"",
+            "\"Boros\"",
+            "\"bad_member\"",
+            "\"struct\"",
+            "\"struct\"",
+            "\"Boros\"",
+        ],
+    );
+    assert!(lib.check_compile());
 }
 
 #[test]

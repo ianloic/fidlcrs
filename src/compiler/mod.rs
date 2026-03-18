@@ -67,23 +67,11 @@ impl std::fmt::Display for MemberKind {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum Site<'src> {
-    Span(SourceSpan<'src>),
-}
-
-impl<'src> std::fmt::Display for Site<'src> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Span(s) => write!(f, "{}", s.position_str()),
-        }
-    }
-}
 
 struct CanonicalNameEntry<'src> {
     raw: String,
     kind: MemberKind,
-    site: Site<'src>,
+    site: SourceSpan<'src>,
     is_versioned: bool,
 }
 
@@ -104,7 +92,7 @@ impl<'src> CanonicalNames<'src> {
         kind: MemberKind,
         span: SourceSpan<'src>,
         is_versioned: bool,
-    ) -> Result<(), (bool, String, MemberKind, Site<'src>)> {
+    ) -> Result<(), (bool, String, MemberKind, SourceSpan<'src>)> {
         let canonical = attribute_schema::canonicalize(&raw_name);
         if let Some(prev) = self.names.get(&canonical) {
             if is_versioned && prev.is_versioned {
@@ -118,7 +106,7 @@ impl<'src> CanonicalNames<'src> {
                 CanonicalNameEntry {
                     raw: raw_name,
                     kind,
-                    site: Site::Span(span),
+                    site: span,
                     is_versioned,
                 },
             );
@@ -1457,7 +1445,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         {
             let kind_str = kind.to_string();
             let prev_kind_str = prev_kind.to_string();
-            let prev_site_str = prev_site.to_string();
+            let prev_site_str = prev_site.position_str();
 
             if is_exact {
                 self.reporter.fail(

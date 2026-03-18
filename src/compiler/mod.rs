@@ -5107,9 +5107,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     Error::ErrComposedProtocolTooOpen,
                     composed.element.span(),
                     &[
-                        &openness,
+                        &openness.to_string(),
                         &decl.name.data(),
-                        &composed_openness,
+                        &composed_openness.to_string(),
                         &full_composed_name,
                     ],
                 );

@@ -1,27 +1,132 @@
-use crate::tests::test_library::{SharedAmongstLibraries, TestLibrary};
+#![allow(unused_mut, unused_variables, unused_imports, dead_code)]
+use crate::diagnostics::Error;
+use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-fn error0056() {
-    // Interleaving availability test
-    let mut shared = SharedAmongstLibraries::new();
-    let mut dep = TestLibrary::with_shared(&mut shared);
-    dep.add_source_file(
-        "dep.fidl",
-        "@available(added=1)
-library dependent;
+#[ignore]
+fn same_library() {
+    if false {
+        let fidl = r#"
 @available(added=1)
-type Bar = struct {};",
-    );
-    dep.compile().expect("dep compiled");
-
-    let mut lib = TestLibrary::with_shared(&mut shared);
-    lib.add_source_file(
-        "example.fidl",
-        "@available(added=2)
 library example;
-using dependent;
-@available(added=2)
-type Foo = struct { b dependent.Bar; };",
-    );
-    lib.compile().expect("lib compiled");
+
+${source_available}
+const SOURCE bool = TARGET;
+
+${target_available}
+const TARGET bool = false;
+"#;
+
+        let mut library = TestLibrary::new();
+        library.add_errcat_file(fidl);
+        library.select_version("example", "HEAD");
+    }
+}
+
+#[test]
+#[ignore]
+fn decl_to_decl_external() {
+    let example_fidl = r#"
+@available(added=1)
+library platform.example;
+
+using platform.dependency;
+
+${source_available}
+const SOURCE bool = platform.dependency.tARGET;
+"#;
+    let dependency_fidl = r#"
+@available(added=1)
+library platform.dependency;
+
+${target_available}
+const TARGET bool = false;
+"#;
+    if false {}
+}
+
+#[test]
+#[ignore]
+fn library_to_library_external() {
+    let example_fidl = r#"
+${source_available}
+library platform.example;
+
+using platform.dependency;
+
+const SOURCE bool = platform.dependency.tARGET;
+"#;
+    let dependency_fidl = r#"
+${target_available}
+library platform.dependency;
+
+const TARGET bool = false;
+"#;
+    if false {}
+}
+
+#[test]
+#[ignore]
+fn library_to_decl_external() {
+    let example_fidl = r#"
+${source_available}
+library platform.example;
+
+using platform.dependency;
+
+const SOURCE bool = platform.dependency.tARGET;
+"#;
+    let dependency_fidl = r#"
+@available(added=1)
+library platform.dependency;
+
+${target_available}
+const TARGET bool = false;
+"#;
+    if false {}
+}
+
+#[test]
+#[ignore]
+fn decl_to_library_external() {
+    let example_fidl = r#"
+@available(added=1)
+library platform.example;
+
+using platform.dependency;
+
+${source_available}
+const SOURCE bool = platform.dependency.tARGET;
+"#;
+    let dependency_fidl = r#"
+${target_available}
+library platform.dependency;
+
+const TARGET bool = false;
+"#;
+    if false {}
+}
+
+#[test]
+#[ignore]
+fn error0055() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0055.test.fidl");
+    library.select_version("test", "HEAD");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn error0056() {
+    // SharedAmongstLibraries shared;
+
+    let mut dependency = TestLibrary::new();
+    dependency.add_errcat_file("bad/fi-0056-a.test.fidl");
+    assert!(dependency.check_compile());
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0056-b.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
 }

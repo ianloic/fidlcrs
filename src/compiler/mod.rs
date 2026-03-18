@@ -1222,11 +1222,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                         t.attributes.as_deref(),
                     );
-                    if is_main_library {
-                        self.declarations.push(Decl::Struct(compiled));
-                    } else {
-                        self.declarations.push(Decl::Struct(compiled));
-                    }
+                    self.declarations.push(Decl::Struct(compiled));
                 } else if let raw_ast::Layout::Enum(ref e) = t.layout {
                     let compiled = self.compile_enum(
                         t.name.data(),
@@ -1236,11 +1232,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
-                        self.declarations.push(Decl::Enum(compiled));
-                    } else {
-                        self.declarations.push(Decl::Enum(compiled));
-                    }
+                    self.declarations.push(Decl::Enum(compiled));
                 } else if let raw_ast::Layout::Bits(ref b) = t.layout {
                     let compiled = self.compile_bits(
                         t.name.data(),
@@ -1322,11 +1314,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         None,
                         s.attributes.as_deref(),
                     );
-                    if is_main_library {
-                        self.declarations.push(Decl::Struct(compiled));
-                    } else {
-                        self.declarations.push(Decl::Struct(compiled));
-                    }
+                    self.declarations.push(Decl::Struct(compiled));
                 }
             }
             RawDecl::Enum(e) => {
@@ -1339,11 +1327,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         e.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
-                        self.declarations.push(Decl::Enum(compiled));
-                    } else {
-                        self.declarations.push(Decl::Enum(compiled));
-                    }
+                    self.declarations.push(Decl::Enum(compiled));
                 }
             }
             RawDecl::Bits(b) => {
@@ -1421,11 +1405,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 }
 
-                if is_main_library {
-                    self.declarations.push(Decl::Protocol(compiled));
-                } else {
-                    self.declarations.push(Decl::Protocol(compiled));
-                }
+                self.declarations.push(Decl::Protocol(compiled));
 
                 for id in extra_to_compile {
                     if id.is_empty() {
@@ -5055,10 +5035,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let mut is_method_flexible = false;
             let two_way = m.has_request && m.has_response;
 
-            if has_explicit_flexible {
-                is_method_flexible = true;
-            } else if !has_explicit_strict
-                && (openness == Openness::Open || (openness == Openness::Ajar && !two_way))
+            if has_explicit_flexible
+                || (!has_explicit_strict
+                    && (openness == Openness::Open || (openness == Openness::Ajar && !two_way)))
             {
                 is_method_flexible = true;
             }

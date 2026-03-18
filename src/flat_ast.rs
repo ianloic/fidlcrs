@@ -1408,6 +1408,7 @@ impl_deref_for_decl!(UnionMember);
 impl_deref_for_decl!(ProtocolMethod);
 impl_deref_for_decl!(ProtocolCompose);
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum Decl {
     Alias(AliasDeclaration),

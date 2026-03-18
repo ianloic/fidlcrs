@@ -6,6 +6,10 @@ use crate::raw_ast::AttributeList;
 use crate::source_span::SourceSpan;
 use crate::step::Step;
 
+use crate::attribute_schema;
+use crate::names::OwnedLibraryName;
+use crate::names::OwnedQualifiedName;
+use crate::raw_ast::AttributeProvenance;
 pub struct ConsumeStep<'node, 'src> {
     pub main_files: &'node [raw_ast::File<'src>],
     pub dependency_files: &'node [raw_ast::File<'src>],
@@ -19,7 +23,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             .and_then(|f| f.library_decl.as_ref().map(|l| l.path.to_string()))
             .unwrap_or_else(|| "unknown".to_string());
 
-        compiler.library_name = crate::names::OwnedLibraryName::from(main_library_name.clone());
+        compiler.library_name = OwnedLibraryName::from(main_library_name.clone());
 
         let mut all_library_attributes = Vec::new();
         let mut main_library_decl: Option<raw_ast::LibraryDeclaration> = None;
@@ -115,7 +119,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     // we add them all; but our resolve_type is currently global.
                     // This is sufficient for the tests.
                     compiler.library_imports.insert(
-                        crate::names::OwnedLibraryName::new(local_name.clone()),
+                        OwnedLibraryName::new(local_name.clone()),
                         using_decl.clone(),
                     );
                 }
@@ -150,7 +154,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             std::collections::HashMap::new();
 
         for (local_name, import) in &compiler.library_imports {
-            let canon = crate::attribute_schema::canonicalize(&local_name.to_string());
+            let canon = attribute_schema::canonicalize(&local_name.to_string());
             let span = import.element.span();
             let site = span.position_str();
             canonical_names.insert(
@@ -188,7 +192,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     if let Some((lib, _)) = name.rsplit_once('/') {
                         // We only check for collisions in the main library!
                         if lib == compiler.library_name.to_string() && !is_anonymous {
-                            let canon = crate::attribute_schema::canonicalize(local_decl_name);
+                            let canon = attribute_schema::canonicalize(local_decl_name);
                             let span = decl.element().span();
                             let site = span.position_str();
 
@@ -199,9 +203,25 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                     std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span)
                                 };
 
-                                let is_versioned = decl.attributes().is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                                let is_versioned = decl.attributes().is_some_and(|attrs| {
+                                    attrs.attributes.iter().any(|a| {
+                                        a.name.data() == "available"
+                                            || a.provenance
+                                                == AttributeProvenance::ModifierAvailability
+                                    })
+                                });
                                 let prev_full_name = format!("{}/{}", lib, prev_raw);
-                                let prev_is_versioned = compiler.raw_decls.get::<str>(prev_full_name.as_ref()).and_then(|d| d.attributes()).is_some_and(|attrs| attrs.attributes.iter().any(|a| a.name.data() == "available" || a.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability));
+                                let prev_is_versioned = compiler
+                                    .raw_decls
+                                    .get::<str>(prev_full_name.as_ref())
+                                    .and_then(|d| d.attributes())
+                                    .is_some_and(|attrs| {
+                                        attrs.attributes.iter().any(|a| {
+                                            a.name.data() == "available"
+                                                || a.provenance
+                                                    == AttributeProvenance::ModifierAvailability
+                                        })
+                                    });
 
                                 if is_versioned
                                     && prev_is_versioned
@@ -255,10 +275,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             }
                         }
                     }
-                    compiler.raw_decls.insert(
-                        crate::names::OwnedQualifiedName::from(name.to_string()),
-                        decl,
-                    );
+                    compiler
+                        .raw_decls
+                        .insert(OwnedQualifiedName::from(name.to_string()), decl);
                 };
 
             for decl in &file.type_decls {
@@ -406,7 +425,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         let full_synth = format!("{}/{}", file_library_name, synth_name);
                         compiler
                             .anonymous_structs
-                            .insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                            .insert(OwnedQualifiedName::from(full_synth.clone()));
                         let kind = match decl {
                             RawDecl::Struct(_) => "struct",
                             RawDecl::Table(_) => "table",
@@ -490,7 +509,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                         let full_synth = format!("{}/{}", file_library_name, synth_name);
                         compiler
                             .anonymous_structs
-                            .insert(crate::names::OwnedQualifiedName::from(full_synth.clone()));
+                            .insert(OwnedQualifiedName::from(full_synth.clone()));
                         let kind = match decl {
                             RawDecl::Struct(_) => "struct",
                             RawDecl::Table(_) => "table",

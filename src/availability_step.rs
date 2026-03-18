@@ -4,6 +4,13 @@ use crate::step::Step;
 use crate::versioning_types::Platform;
 use crate::versioning_types::{Availability, InheritStatus, InitArgs, Version};
 
+use crate::diagnostics::Error;
+use crate::names::OwnedQualifiedName;
+use crate::raw_ast::AttributeProvenance;
+use crate::raw_ast::Layout;
+use crate::raw_ast::RawDecl;
+use crate::source_span::SourceSpan;
+use crate::token::TokenSubkind;
 pub struct AvailabilityStep;
 
 impl AvailabilityStep {
@@ -40,7 +47,7 @@ impl AvailabilityStep {
                 added = Version::parse(&val_str);
                 if added.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion,
                         arg.element.span(),
                         &[&val_str],
                     );
@@ -50,7 +57,7 @@ impl AvailabilityStep {
                 deprecated = Version::parse(&val_str);
                 if deprecated.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion,
                         arg.element.span(),
                         &[&val_str],
                     );
@@ -58,7 +65,7 @@ impl AvailabilityStep {
                 deprecated_arg = Some((arg_name, val_str.clone(), arg.element.span()));
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidModifierAvailableArgument,
+                        Error::ErrInvalidModifierAvailableArgument,
                         arg.element.span(),
                         &[],
                     );
@@ -67,7 +74,7 @@ impl AvailabilityStep {
                 removed = Version::parse(&val_str);
                 if removed.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion,
                         arg.element.span(),
                         &[&val_str],
                     );
@@ -77,25 +84,23 @@ impl AvailabilityStep {
                 replaced = Version::parse(&val_str);
                 if replaced.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion,
                         arg.element.span(),
                         &[&val_str],
                     );
                 }
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidModifierAvailableArgument,
+                        Error::ErrInvalidModifierAvailableArgument,
                         arg.element.span(),
                         &[],
                     );
                 }
             } else if arg_name == "platform" {
                 if decl_kind != "library" {
-                    compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrPlatformNotOnLibrary,
-                        arg.element.span(),
-                        &[],
-                    );
+                    compiler
+                        .reporter
+                        .fail(Error::ErrPlatformNotOnLibrary, arg.element.span(), &[]);
                 }
             } else if arg_name == "renamed" {
                 if decl_kind == "library" || decl_kind == "declaration" {
@@ -105,7 +110,7 @@ impl AvailabilityStep {
                         "alias"
                     }; // just hardcode kind string for now
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrCannotBeRenamed,
+                        Error::ErrCannotBeRenamed,
                         arg.element.span(),
                         &[&kind_str.to_string()],
                     );
@@ -113,7 +118,7 @@ impl AvailabilityStep {
                     let unquoted_val = val_str.trim_matches('"');
                     if unquoted_val == item_name {
                         compiler.reporter.fail(
-                            crate::diagnostics::Error::ErrRenamedToSameName,
+                            Error::ErrRenamedToSameName,
                             arg.element.span(),
                             &[&unquoted_val.to_string(), &item_name.to_string()],
                         );
@@ -121,14 +126,14 @@ impl AvailabilityStep {
                 }
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        crate::diagnostics::Error::ErrInvalidModifierAvailableArgument,
+                        Error::ErrInvalidModifierAvailableArgument,
                         arg.element.span(),
                         &[],
                     );
                 }
             } else if (arg_name == "note" || arg_name == "legacy") && decl_kind == "modifier" {
                 compiler.reporter.fail(
-                    crate::diagnostics::Error::ErrInvalidModifierAvailableArgument,
+                    Error::ErrInvalidModifierAvailableArgument,
                     arg.element.span(),
                     &[],
                 );
@@ -137,15 +142,13 @@ impl AvailabilityStep {
 
         if decl_kind == "library" {
             if replaced.is_some() {
-                compiler.reporter.fail(
-                    crate::diagnostics::Error::ErrLibraryReplaced,
-                    attr.element.span(),
-                    &[],
-                );
+                compiler
+                    .reporter
+                    .fail(Error::ErrLibraryReplaced, attr.element.span(), &[]);
             }
             if added.is_none() {
                 compiler.reporter.fail(
-                    crate::diagnostics::Error::ErrLibraryAvailabilityMissingAdded,
+                    Error::ErrLibraryAvailabilityMissingAdded,
                     attr.element.span(),
                     &[],
                 );
@@ -176,23 +179,17 @@ impl AvailabilityStep {
                 msg.push_str(" < replaced");
             }
             let span = unsafe {
-                std::mem::transmute::<
-                    crate::source_span::SourceSpan<'_>,
-                    crate::source_span::SourceSpan<'_>,
-                >(attr.element.span())
+                std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(attr.element.span())
             };
-            compiler.reporter.fail(
-                crate::diagnostics::Error::ErrInvalidAvailabilityOrder,
-                span,
-                &[&msg],
-            );
+            compiler
+                .reporter
+                .fail(Error::ErrInvalidAvailabilityOrder, span, &[&msg]);
             return None;
         }
 
         let result = initial.inherit(parent_avail);
 
-        let report = |arg: Option<(&str, String, crate::source_span::SourceSpan)>,
-                      status: InheritStatus| {
+        let report = |arg: Option<(&str, String, SourceSpan)>, status: InheritStatus| {
             if status == InheritStatus::Ok {
                 return;
             }
@@ -213,14 +210,10 @@ impl AvailabilityStep {
                 let parent_val = "unknown"; // We omit finding the actual parent value for simplicity
                 let parent_span = "unknown_location";
 
-                let span = unsafe {
-                    std::mem::transmute::<
-                        crate::source_span::SourceSpan<'_>,
-                        crate::source_span::SourceSpan<'_>,
-                    >(child_span)
-                };
+                let span =
+                    unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(child_span) };
                 compiler.reporter.fail(
-                    crate::diagnostics::Error::ErrAvailabilityConflictsWithParent,
+                    Error::ErrAvailabilityConflictsWithParent,
                     span,
                     &[
                         &child_name,
@@ -255,14 +248,14 @@ impl AvailabilityStep {
         if let Some(attrs) = attrs {
             for attr in &attrs.attributes {
                 if attr.name.data() == "available"
-                    || attr.provenance == crate::raw_ast::AttributeProvenance::ModifierAvailability
+                    || attr.provenance == AttributeProvenance::ModifierAvailability
                 {
                     if !has_library_avail
                         && attr.name.data() == "available"
                         && decl_kind != "library"
                     {
                         compiler.reporter.fail(
-                            crate::diagnostics::Error::ErrMissingLibraryAvailability,
+                            Error::ErrMissingLibraryAvailability,
                             attr.element.span(),
                             &[],
                         );
@@ -377,7 +370,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
         compiler.decl_availability = decl_availability
             .clone()
             .into_iter()
-            .map(|(k, v)| (crate::names::OwnedQualifiedName::from(k), v))
+            .map(|(k, v)| (OwnedQualifiedName::from(k), v))
             .collect();
 
         let mut any_decl_removed = false;
@@ -428,12 +421,9 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                     );
 
                     let kind = match modifier.subkind {
-                        crate::token::TokenSubkind::Strict
-                        | crate::token::TokenSubkind::Flexible => 1,
-                        crate::token::TokenSubkind::Open
-                        | crate::token::TokenSubkind::Ajar
-                        | crate::token::TokenSubkind::Closed => 2,
-                        crate::token::TokenSubkind::Resource => 3,
+                        TokenSubkind::Strict | TokenSubkind::Flexible => 1,
+                        TokenSubkind::Open | TokenSubkind::Ajar | TokenSubkind::Closed => 2,
+                        TokenSubkind::Resource => 3,
                         _ => 0,
                     };
 
@@ -442,13 +432,13 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         if avail.set().overlap(&other_avail.set()) {
                             if modifier.subkind == other_mod.subkind {
                                 compiler.reporter.fail(
-                                    crate::diagnostics::Error::ErrDuplicateModifier,
+                                    Error::ErrDuplicateModifier,
                                     modifier.element.span(),
                                     &[&modifier.element.span().data.to_string()],
                                 );
                             } else {
                                 compiler.reporter.fail(
-                                    crate::diagnostics::Error::ErrConflictingModifier,
+                                    Error::ErrConflictingModifier,
                                     modifier.element.span(),
                                     &[
                                         &modifier.element.span().data.to_string(),
@@ -482,10 +472,8 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                     has_library_avail,
                     item_name,
                 );
-                let platform = crate::versioning_types::Platform::parse(
-                    compiler.library_name.versioning_platform(),
-                )
-                .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                let platform = Platform::parse(compiler.library_name.versioning_platform())
+                    .unwrap_or_else(Platform::unversioned);
                 if !avail
                     .set()
                     .contains(compiler.version_selection.lookup(&platform))
@@ -496,7 +484,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             };
 
             match decl {
-                crate::raw_ast::RawDecl::Struct(d) => {
+                RawDecl::Struct(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -505,7 +493,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Table(d) => {
+                RawDecl::Table(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -514,7 +502,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Union(d) => {
+                RawDecl::Union(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -523,7 +511,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Enum(d) => {
+                RawDecl::Enum(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -532,7 +520,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Bits(d) => {
+                RawDecl::Bits(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -541,7 +529,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Protocol(d) => {
+                RawDecl::Protocol(d) => {
                     for m in &d.methods {
                         visit_member(
                             m.attributes.as_deref(),
@@ -550,7 +538,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Service(d) => {
+                RawDecl::Service(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -559,8 +547,8 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::raw_ast::RawDecl::Type(d) => match &d.layout {
-                    crate::raw_ast::Layout::Struct(l) => {
+                RawDecl::Type(d) => match &d.layout {
+                    Layout::Struct(l) => {
                         for m in &l.members {
                             visit_member(
                                 m.attributes.as_deref(),
@@ -569,7 +557,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             );
                         }
                     }
-                    crate::raw_ast::Layout::Table(l) => {
+                    Layout::Table(l) => {
                         for m in &l.members {
                             visit_member(
                                 m.attributes.as_deref(),
@@ -578,7 +566,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             );
                         }
                     }
-                    crate::raw_ast::Layout::Union(l) => {
+                    Layout::Union(l) => {
                         for m in &l.members {
                             visit_member(
                                 m.attributes.as_deref(),
@@ -587,7 +575,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             );
                         }
                     }
-                    crate::raw_ast::Layout::Enum(l) => {
+                    Layout::Enum(l) => {
                         for m in &l.members {
                             visit_member(
                                 m.attributes.as_deref(),
@@ -596,7 +584,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                             );
                         }
                     }
-                    crate::raw_ast::Layout::Bits(l) => {
+                    Layout::Bits(l) => {
                         for m in &l.members {
                             visit_member(
                                 m.attributes.as_deref(),

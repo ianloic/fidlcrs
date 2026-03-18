@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::names::OwnedQualifiedName;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeclarationKind {
     Bits,
@@ -866,7 +867,7 @@ pub struct StructMember {
 
 #[derive(Clone, Debug)]
 pub struct DeclBase {
-    pub name: crate::names::OwnedQualifiedName,
+    pub name: OwnedQualifiedName,
     pub location: Location,
     pub deprecated: bool,
     pub maybe_attributes: Vec<Attribute>,
@@ -885,7 +886,7 @@ pub struct StructDeclaration {
 impl StructDeclaration {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -930,7 +931,7 @@ pub struct BitsDeclaration {
 impl BitsDeclaration {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -971,7 +972,7 @@ pub struct ConstDeclaration {
 
 impl ConstDeclaration {
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1003,7 +1004,7 @@ pub struct EnumDeclaration {
 impl EnumDeclaration {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1082,7 +1083,7 @@ pub struct ExperimentalResourceDeclaration {
 
 impl ExperimentalResourceDeclaration {
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1130,7 +1131,7 @@ pub struct ProtocolDeclaration {
 impl ProtocolDeclaration {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1182,7 +1183,7 @@ pub struct ServiceDeclaration {
 
 impl ServiceDeclaration {
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1218,7 +1219,7 @@ pub struct TableDeclaration {
 impl TableDeclaration {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1268,7 +1269,7 @@ pub struct UnionDeclaration {
 impl UnionDeclaration {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1323,7 +1324,7 @@ pub struct AliasDeclaration {
 
 impl AliasDeclaration {
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,
@@ -1351,7 +1352,7 @@ pub struct NewTypeDeclaration {
 
 impl NewTypeDeclaration {
     pub fn new(
-        name: crate::names::OwnedQualifiedName,
+        name: OwnedQualifiedName,
         location: Location,
         deprecated: bool,
         maybe_attributes: Vec<Attribute>,

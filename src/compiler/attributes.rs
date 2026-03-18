@@ -1,8 +1,9 @@
-use crate::raw_ast::RawDecl;
 use crate::diagnostics::Error;
 use crate::flat_ast::*;
 use crate::raw_ast;
+use crate::raw_ast::RawDecl;
 use crate::source_span::SourceSpan;
+use crate::versioning_types::Platform;
 use crate::versioning_types::Version;
 impl<'node, 'src> super::Compiler<'node, 'src> {
     pub(crate) fn get_location(&self, element: &raw_ast::SourceElement<'_>) -> Location {
@@ -192,10 +193,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 _ => continue,
                             };
                             let d = Version::parse(&val_str).unwrap_or(Version::POS_INF);
-                            let platform = crate::versioning_types::Platform::parse(
-                                self.library_name.versioning_platform(),
-                            )
-                            .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                            let platform = Platform::parse(self.library_name.versioning_platform())
+                                .unwrap_or_else(Platform::unversioned);
                             let selected_version = self.version_selection.lookup(&platform);
                             let is_depr = d <= selected_version;
                             if is_depr {
@@ -224,10 +223,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             _ => continue,
                         };
                         let r = Version::parse(&val_str).unwrap_or(Version::POS_INF);
-                        let platform = crate::versioning_types::Platform::parse(
-                            self.library_name.versioning_platform(),
-                        )
-                        .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                        let platform = Platform::parse(self.library_name.versioning_platform())
+                            .unwrap_or_else(Platform::unversioned);
                         let selected_version = self.version_selection.lookup(&platform);
                         if r <= selected_version {
                             return false;
@@ -239,10 +236,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             _ => continue,
                         };
                         let a = Version::parse(&val_str).unwrap_or(Version::POS_INF);
-                        let platform = crate::versioning_types::Platform::parse(
-                            self.library_name.versioning_platform(),
-                        )
-                        .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+                        let platform = Platform::parse(self.library_name.versioning_platform())
+                            .unwrap_or_else(Platform::unversioned);
                         let selected_version = self.version_selection.lookup(&platform);
                         if a > selected_version {
                             return false;
@@ -256,9 +251,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
     pub fn is_member_active(&self, member_ptr: usize) -> bool {
         if let Some(avail) = self.member_availability.get(&member_ptr) {
-            let platform =
-                crate::versioning_types::Platform::parse(self.library_name.versioning_platform())
-                    .unwrap_or_else(crate::versioning_types::Platform::unversioned);
+            let platform = Platform::parse(self.library_name.versioning_platform())
+                .unwrap_or_else(Platform::unversioned);
             avail
                 .set()
                 .contains(self.version_selection.lookup(&platform))

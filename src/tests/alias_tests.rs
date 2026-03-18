@@ -1,6 +1,7 @@
 use crate::flat_ast::TypeKind;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
+use crate::tests::test_library::SharedAmongstLibraries;
 #[test]
 
 fn bad_duplicate_alias() {
@@ -411,7 +412,7 @@ alias foo.bar.baz = uint8;
 
 #[test]
 fn good_using_library() {
-    let mut shared = crate::tests::test_library::SharedAmongstLibraries::new();
+    let mut shared = SharedAmongstLibraries::new();
     let mut dependency_lib = TestLibrary::with_shared(&mut shared);
     dependency_lib.add_source_file(
         "dependent.fidl",

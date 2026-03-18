@@ -1,6 +1,7 @@
 use crate::flat_ast;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
+use crate::diagnostics::Error;
 #[test]
 fn good_error() {
     let mut library = TestLibrary::new();
@@ -133,10 +134,10 @@ fn bad_error_unknown_identifier() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0052.test.fidl");
     library.expect_fail(
-        crate::diagnostics::Error::ErrNameNotFound,
+        Error::ErrNameNotFound,
         &["\"ParsingError\"", "\"test.bad.fi0052\""],
     );
-    library.expect_fail(crate::diagnostics::Error::ErrInvalidErrorType, &[]);
+    library.expect_fail(Error::ErrInvalidErrorType, &[]);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrNameNotFound"
@@ -147,7 +148,7 @@ fn bad_error_unknown_identifier() {
 fn bad_error_wrong_primitive() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0141.test.fidl");
-    library.expect_fail(crate::diagnostics::Error::ErrInvalidErrorType, &[]);
+    library.expect_fail(Error::ErrInvalidErrorType, &[]);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrInvalidErrorType"
@@ -168,13 +169,10 @@ protocol Example {
 };
 "#,
     );
-    library.expect_fail(crate::diagnostics::Error::ErrUnexpectedToken, &[]);
+    library.expect_fail(Error::ErrUnexpectedToken, &[]);
+    library.expect_fail(Error::ErrNameNotFound, &["\"flub\"", "\"example\""]);
     library.expect_fail(
-        crate::diagnostics::Error::ErrNameNotFound,
-        &["\"flub\"", "\"example\""],
-    );
-    library.expect_fail(
-        crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
+        Error::ErrInvalidMethodPayloadLayoutClass,
         &["\"provided type\""],
     );
     assert!(
@@ -197,16 +195,13 @@ protocol Example {
 };
 "#,
     );
+    library.expect_fail(Error::ErrNameNotFound, &["\"flub\"", "\"example\""]);
     library.expect_fail(
-        crate::diagnostics::Error::ErrNameNotFound,
-        &["\"flub\"", "\"example\""],
-    );
-    library.expect_fail(
-        crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
+        Error::ErrInvalidMethodPayloadLayoutClass,
         &["\"provided type\""],
     );
-    library.expect_fail(crate::diagnostics::Error::ErrExpectedType, &[]);
-    library.expect_fail(crate::diagnostics::Error::ErrInvalidErrorType, &[]);
+    library.expect_fail(Error::ErrExpectedType, &[]);
+    library.expect_fail(Error::ErrInvalidErrorType, &[]);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrExpectedType"
@@ -228,17 +223,17 @@ protocol Example {
 "#,
     );
     library.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+        Error::ErrUnexpectedTokenOfKind,
         &["\"Identifier\"", "\"LeftParen\""],
     );
     library.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+        Error::ErrUnexpectedTokenOfKind,
         &["\"Identifier\"", "\"RightCurly\""],
     );
-    library.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &["{}"]);
-    library.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &["{}"]);
-    library.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &["{}"]);
-    library.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &["{}"]);
+    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedTokenOfKind"
@@ -258,7 +253,7 @@ type ForgotTheSemicolon = table {}
 "#,
     );
     library.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+        Error::ErrUnexpectedTokenOfKind,
         &["\"EndOfFile\"", "\"Semicolon\""],
     );
     assert!(
@@ -272,13 +267,10 @@ fn bad_incorrect_identifier() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0009.noformat.test.fidl");
     library.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedIdentifier,
+        Error::ErrUnexpectedIdentifier,
         &["\"using\"", "\"library\""],
     );
-    library.expect_fail(
-        crate::diagnostics::Error::ErrUnknownLibrary,
-        &["\"test.bad.fi0009\""],
-    );
+    library.expect_fail(Error::ErrUnknownLibrary, &["\"test.bad.fi0009\""]);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedIdentifier"
@@ -291,7 +283,7 @@ fn bad_error_empty_file() {
 
     library.add_source_file("example0.fidl", "");
     library.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedIdentifier,
+        Error::ErrUnexpectedIdentifier,
         &["\"end of file\"", "\"library\""],
     );
     assert!(
@@ -345,14 +337,8 @@ protocol Example {
 };
 "#,
     );
-    library.expect_fail(
-        crate::diagnostics::Error::ErrDeprecatedAttribute,
-        &["\"transitional\""],
-    );
-    library.expect_fail(
-        crate::diagnostics::Error::ErrDeprecatedAttribute,
-        &["\"transitional\""],
-    );
+    library.expect_fail(Error::ErrDeprecatedAttribute, &["\"transitional\""]);
+    library.expect_fail(Error::ErrDeprecatedAttribute, &["\"transitional\""]);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrDeprecatedAttribute"

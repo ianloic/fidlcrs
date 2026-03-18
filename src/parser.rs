@@ -1475,7 +1475,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             };
             if has_attrs {
                 self.reporter.fail(
-                    crate::diagnostics::Error::ErrAttributeInsideTypeDeclaration,
+                    Error::ErrAttributeInsideTypeDeclaration,
                     tc.element.span(),
                     &[],
                 );

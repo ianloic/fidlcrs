@@ -9,6 +9,7 @@ use crate::reporter::Reporter;
 use crate::source_file::{SourceFile, VirtualSourceFile};
 use std::cell::RefCell;
 
+use crate::diagnostics::Error;
 pub struct SharedAmongstLibraries {
     pub experimental_flags: Vec<String>,
     pub select_versions: Vec<(String, String)>,
@@ -373,7 +374,7 @@ resource_definition handle : uint32 {
         &self.reporter
     }
 
-    pub fn expect_fail(&mut self, def: crate::diagnostics::Error, args: &[&str]) {
+    pub fn expect_fail(&mut self, def: Error, args: &[&str]) {
         let mut msg = def.msg().to_string();
         for arg in args {
             msg = msg.replacen("{}", arg, 1);
@@ -381,7 +382,7 @@ resource_definition handle : uint32 {
         self.expected_diagnostics.push(msg);
     }
 
-    pub fn expect_warn(&mut self, def: crate::diagnostics::Error, args: &[&str]) {
+    pub fn expect_warn(&mut self, def: Error, args: &[&str]) {
         let mut msg = def.msg().to_string();
         for arg in args {
             msg = msg.replacen("{}", arg, 1);

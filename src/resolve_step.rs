@@ -1,6 +1,7 @@
 use crate::compiler::Compiler;
 use crate::step::Step;
 
+use crate::names::OwnedQualifiedName;
 pub struct ResolveStep;
 
 impl<'node, 'src> Step<'node, 'src> for ResolveStep {
@@ -11,7 +12,7 @@ impl<'node, 'src> Step<'node, 'src> for ResolveStep {
         compiler.sorted_names = compiler
             .topological_sort(true)
             .into_iter()
-            .map(crate::names::OwnedQualifiedName::from)
+            .map(OwnedQualifiedName::from)
             .collect();
     }
 }

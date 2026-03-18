@@ -3,6 +3,7 @@ use crate::diagnostics::Error;
 use crate::flat_ast;
 use test_case::test_case;
 
+use crate::flat_ast::Openness;
 macro_rules! version_test_impl {
     (
         [$($ver:expr),+],
@@ -471,9 +472,9 @@ closed(added=2, removed=3) open(added=3) protocol Foo {};
     assert_eq!(
         ast.lookup_protocol("example/Foo").unwrap().openness,
         if tv.any_eq(V2) && tv.all_le(V2) {
-            crate::flat_ast::Openness::Closed
+            Openness::Closed
         } else {
-            crate::flat_ast::Openness::Open
+            Openness::Open
         }
     );
 }

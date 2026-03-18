@@ -1,5 +1,7 @@
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
+use crate::diagnostics::Error;
+use crate::flat_ast::Openness;
 #[test]
 fn good_valid_empty_protocol() {
     let mut lib = TestLibrary::new();
@@ -16,7 +18,7 @@ protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Open);
+    assert_eq!(type_decl.openness, Openness::Open);
 }
 
 #[test]
@@ -35,7 +37,7 @@ open protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Open);
+    assert_eq!(type_decl.openness, Openness::Open);
 }
 
 #[test]
@@ -54,7 +56,7 @@ ajar protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Ajar);
+    assert_eq!(type_decl.openness, Openness::Ajar);
 }
 
 #[test]
@@ -73,7 +75,7 @@ closed protocol Empty {};
         .lookup_protocol("example/Empty")
         .expect("Empty protocol not found");
     assert_eq!(type_decl.methods.len(), 0);
-    assert_eq!(type_decl.openness, crate::flat_ast::Openness::Closed);
+    assert_eq!(type_decl.openness, Openness::Closed);
 }
 
 #[test]
@@ -87,7 +89,7 @@ fn bad_empty_strict_protocol() {
 strict protocol Empty {};
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrMustHaveOneMember, &[]);
+    lib.expect_fail(Error::ErrMustHaveOneMember, &[]);
     assert!(lib.check_compile());
 }
 
@@ -102,7 +104,7 @@ fn bad_empty_flexible_protocol() {
 flexible protocol Empty {};
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrMustHaveOneMember, &[]);
+    lib.expect_fail(Error::ErrMustHaveOneMember, &[]);
     assert!(lib.check_compile());
 }
 
@@ -117,10 +119,10 @@ fn bad_open_missing_protocol_token() {
 open Empty {};
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
     assert!(lib.check_compile());
 }
 
@@ -137,7 +139,7 @@ protocol Example {
 };
 "#,
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrInvalidProtocolMember, &[]);
+    lib.expect_fail(Error::ErrInvalidProtocolMember, &[]);
     assert!(lib.check_compile());
 }
 
@@ -237,7 +239,7 @@ closed protocol Composing {
 "#,
     );
     lib.expect_fail(
-        crate::diagnostics::Error::ErrComposedProtocolTooOpen,
+        Error::ErrComposedProtocolTooOpen,
         &[
             "\"closed\"",
             "\"Composing\"",
@@ -264,7 +266,7 @@ protocol B {
 "#,
     );
     lib.expect_fail(
-        crate::diagnostics::Error::ErrCannotSpecifyModifier,
+        Error::ErrCannotSpecifyModifier,
         &["\"strict\"", "\"compose\""],
     );
     assert!(lib.check_compile());
@@ -322,7 +324,7 @@ protocol MyProtocol {
 "#,
     );
     lib.expect_fail(
-        crate::diagnostics::Error::ErrNameCollision,
+        Error::ErrNameCollision,
         &[
             "\"method\"",
             "\"MyMethod\"",
@@ -338,10 +340,7 @@ protocol MyProtocol {
 fn bad_request_must_be_protocol() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0157.test.fidl");
-    lib.expect_fail(
-        crate::diagnostics::Error::ErrMustBeAProtocol,
-        &["\"test.bad.fi0157/MyStruct\""],
-    );
+    lib.expect_fail(Error::ErrMustBeAProtocol, &["\"test.bad.fi0157/MyStruct\""]);
     assert!(lib.check_compile());
 }
 
@@ -351,7 +350,7 @@ fn bad_request_must_be_parameterized() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0168.test.fidl");
     lib.expect_fail(
-        crate::diagnostics::Error::ErrWrongNumberOfLayoutParameters,
+        Error::ErrWrongNumberOfLayoutParameters,
         &["\"client_end/server_end\"", "1", "0"],
     );
     assert!(lib.check_compile());
@@ -419,8 +418,8 @@ fn good_event_absent_payload_struct() {
 fn bad_method_empty_payload_struct() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0077-a.test.fidl");
-    lib.expect_fail(crate::diagnostics::Error::ErrEmptyPayloadStructs, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrEmptyPayloadStructs, &[]);
+    lib.expect_fail(Error::ErrEmptyPayloadStructs, &[]);
+    lib.expect_fail(Error::ErrEmptyPayloadStructs, &[]);
     assert!(lib.check_compile());
 }
 
@@ -545,17 +544,17 @@ protocol MyProtocol {
 "#,
     );
     lib.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+        Error::ErrUnexpectedTokenOfKind,
         &["\"Identifier\"", "\"Semicolon\""],
     );
     lib.expect_fail(
-        crate::diagnostics::Error::ErrUnexpectedTokenOfKind,
+        Error::ErrUnexpectedTokenOfKind,
         &["\"Identifier\"", "\"RightCurly\""],
     );
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
-    lib.expect_fail(crate::diagnostics::Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
+    lib.expect_fail(Error::ErrExpectedDeclaration, &[]);
     assert!(lib.check_compile());
 }
 
@@ -565,7 +564,7 @@ fn bad_disallowed_request_type() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0075.test.fidl");
     lib.expect_fail(
-        crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
+        Error::ErrInvalidMethodPayloadLayoutClass,
         &["\"provided type\""],
     );
     assert!(lib.check_compile());
@@ -585,7 +584,7 @@ protocol MyProtocol {
 "#,
     );
     lib.expect_fail(
-        crate::diagnostics::Error::ErrInvalidMethodPayloadLayoutClass,
+        Error::ErrInvalidMethodPayloadLayoutClass,
         &["\"provided type\""],
     );
     assert!(lib.check_compile());

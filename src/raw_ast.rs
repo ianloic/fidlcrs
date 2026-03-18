@@ -412,7 +412,6 @@ pub struct AliasDeclaration<'a> {
     pub type_ctor: TypeConstructor<'a>,
 }
 
-
 use crate::flat_ast::DeclarationKind;
 #[derive(Clone)]
 pub enum RawDecl<'node, 'src> {

@@ -1,5 +1,6 @@
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
+use crate::tests::test_library::SharedAmongstLibraries;
 #[test]
 fn good_empty_struct() {
     let mut lib = TestLibrary::new();
@@ -5244,8 +5245,8 @@ type Foo = struct {
 
 #[test]
 fn good_protocol_child_and_parent() {
-    let mut shared = crate::tests::test_library::SharedAmongstLibraries::new();
-    let mut parent_library = crate::tests::test_library::TestLibrary::with_shared(&mut shared);
+    let mut shared = SharedAmongstLibraries::new();
+    let mut parent_library = TestLibrary::with_shared(&mut shared);
     parent_library.add_source_file(
         "parent.fidl",
         "library parent;
@@ -5255,7 +5256,7 @@ protocol Parent {
     );
     parent_library.compile().expect("parent compiled");
 
-    let mut child_library = crate::tests::test_library::TestLibrary::with_shared(&mut shared);
+    let mut child_library = TestLibrary::with_shared(&mut shared);
     child_library.add_source_file(
         "child.fidl",
         "library child;

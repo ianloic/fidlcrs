@@ -1,9 +1,10 @@
-use crate::raw_ast::RawDecl;
 use crate::diagnostics::Error;
+use crate::flat_ast::ConstDeclaration;
 use crate::flat_ast::*;
 use crate::name::NamingContext;
 use crate::raw_ast;
 use crate::raw_ast::LayoutParameter;
+use crate::raw_ast::RawDecl;
 use crate::raw_ast::{Layout, LiteralKind};
 impl<'node, 'src> super::Compiler<'node, 'src> {
     pub fn eval_constant_value_as_string(
@@ -957,7 +958,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
         let constant = self.compile_constant(&decl.value);
 
-        crate::flat_ast::ConstDeclaration::new(
+        ConstDeclaration::new(
             full_name.into(),
             location,
             self.is_deprecated(decl.attributes.as_deref()),

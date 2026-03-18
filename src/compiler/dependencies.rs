@@ -1,7 +1,10 @@
 use super::RawDecl;
 use crate::diagnostics::Error;
 use crate::flat_ast;
+use crate::flat_ast::DeclarationKind;
 use crate::flat_ast::*;
+use crate::names::OwnedLibraryName;
+use crate::names::OwnedQualifiedName;
 use crate::raw_ast;
 use crate::reporter::Reporter;
 use std::collections::{HashMap, HashSet};
@@ -48,7 +51,7 @@ pub(crate) fn collect_deps_from_attributes(
 pub(crate) fn get_dependencies<'node, 'src>(
     decl: &RawDecl<'node, 'src>,
     library_name: &str,
-    _decl_kinds: &HashMap<crate::names::OwnedQualifiedName, crate::flat_ast::DeclarationKind>,
+    _decl_kinds: &HashMap<OwnedQualifiedName, DeclarationKind>,
     skip_optional: bool,
     inline_names: &HashMap<usize, String>,
 ) -> Vec<String> {
@@ -441,15 +444,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         #[allow(clippy::too_many_arguments)]
         pub(crate) fn visit<'a, 'b>(
             name: &str,
-            decls: &HashMap<crate::names::OwnedQualifiedName, RawDecl<'a, 'b>>,
-            library_name: &crate::names::OwnedLibraryName,
+            decls: &HashMap<OwnedQualifiedName, RawDecl<'a, 'b>>,
+            library_name: &OwnedLibraryName,
             visited: &mut HashSet<String>,
             temp_path: &mut Vec<String>,
             sorted: &mut Vec<String>,
-            decl_kinds: &HashMap<
-                crate::names::OwnedQualifiedName,
-                crate::flat_ast::DeclarationKind,
-            >,
+            decl_kinds: &HashMap<OwnedQualifiedName, DeclarationKind>,
             skip_optional: bool,
             inline_names: &HashMap<usize, String>,
             reporter: &Reporter<'b>,
@@ -465,7 +465,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let ckind = ckind_opt
                         .map(|k| k.to_string())
                         .unwrap_or_else(|| "unknown".to_string());
-                    let cname_fqn = crate::names::OwnedQualifiedName::parse(cname);
+                    let cname_fqn = OwnedQualifiedName::parse(cname);
                     let short_name = cname_fqn.declaration();
                     cycle_str.push_str(&format!("{} '{}' -> ", ckind, short_name));
                 }
@@ -473,7 +473,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 let kind = kind_opt
                     .map(|k| k.to_string())
                     .unwrap_or_else(|| "unknown".to_string());
-                let name_fqn = crate::names::OwnedQualifiedName::parse(name);
+                let name_fqn = OwnedQualifiedName::parse(name);
                 let short_name = name_fqn.declaration();
                 cycle_str.push_str(&format!("{} '{}'", kind, short_name));
 
@@ -571,7 +571,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
 
         let mut all_names = Vec::new();
-        let keys: Vec<crate::names::OwnedQualifiedName> = self.raw_decls.keys().cloned().collect();
+        let keys: Vec<OwnedQualifiedName> = self.raw_decls.keys().cloned().collect();
         for k in &keys {
             all_names.push(k.to_string());
         }
@@ -700,7 +700,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         d.extend(get_type_dependencies(req));
                     }
                     if m.has_error {
-                        let name_fqn = crate::names::OwnedQualifiedName::parse(name);
+                        let name_fqn = OwnedQualifiedName::parse(name);
                         let decl_name_short = name_fqn.declaration();
                         let union_name = format!(
                             "{}/{}_{}_Result",

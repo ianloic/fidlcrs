@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::attribute_schema;
 use crate::attribute_schema::AttributeSchemaMap;
+use crate::canonical_names::CanonicalNames;
 use crate::availability_step::AvailabilityStep;
 use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
@@ -67,53 +68,6 @@ impl std::fmt::Display for MemberKind {
     }
 }
 
-
-struct CanonicalNameEntry<'src> {
-    raw: String,
-    kind: MemberKind,
-    site: SourceSpan<'src>,
-    is_versioned: bool,
-}
-
-struct CanonicalNames<'src> {
-    names: HashMap<String, CanonicalNameEntry<'src>>,
-}
-
-impl<'src> CanonicalNames<'src> {
-    fn new() -> Self {
-        Self {
-            names: HashMap::new(),
-        }
-    }
-
-    fn insert(
-        &mut self,
-        raw_name: String,
-        kind: MemberKind,
-        span: SourceSpan<'src>,
-        is_versioned: bool,
-    ) -> Result<(), (bool, String, MemberKind, SourceSpan<'src>)> {
-        let canonical = attribute_schema::canonicalize(&raw_name);
-        if let Some(prev) = self.names.get(&canonical) {
-            if is_versioned && prev.is_versioned {
-                Ok(())
-            } else {
-                Err((prev.raw == raw_name, prev.raw.clone(), prev.kind, prev.site))
-            }
-        } else {
-            self.names.insert(
-                canonical,
-                CanonicalNameEntry {
-                    raw: raw_name,
-                    kind,
-                    site: span,
-                    is_versioned,
-                },
-            );
-            Ok(())
-        }
-    }
-}
 
 pub fn to_camel_case(s: &str) -> String {
     let mut camel = String::new();

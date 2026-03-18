@@ -18,6 +18,7 @@ pub mod tree_visitor;
 pub mod versioning_types;
 
 pub mod attribute_schema;
+pub mod canonical_names;
 pub mod availability_step;
 pub mod compile_step;
 pub mod consume_step;

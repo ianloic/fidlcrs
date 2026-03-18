@@ -621,31 +621,7 @@ pub fn official_attributes() -> HashMap<String, AttributeSchema> {
     map
 }
 
-pub fn canonicalize(name: &str) -> String {
-    let mut canonical = String::new();
-    let chars: Vec<char> = name.chars().collect();
-    let mut prev = '_';
-    for i in 0..chars.len() {
-        let c = chars[i];
-        if c == '_' {
-            if prev != '_' {
-                canonical.push('_');
-            }
-        } else if ((prev.is_ascii_lowercase() || prev.is_ascii_digit()) && c.is_ascii_uppercase())
-            || (prev != '_'
-                && c.is_ascii_uppercase()
-                && i + 1 < chars.len()
-                && chars[i + 1].is_ascii_lowercase())
-        {
-            canonical.push('_');
-            canonical.push(c.to_ascii_lowercase());
-        } else {
-            canonical.push(c.to_ascii_lowercase());
-        }
-        prev = c;
-    }
-    canonical
-}
+pub use crate::canonical_names::canonicalize;
 
 #[derive(Clone)]
 pub struct AttributeSchemaMap {

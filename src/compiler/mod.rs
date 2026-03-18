@@ -1,34 +1,37 @@
-use crate::attribute_schema::AttributeSchemaMap;
-use crate::compile_step::CompileStep;
-use crate::consume_step::ConsumeStep;
-use crate::flat_ast::*;
-use crate::names::{OwnedLibraryName, OwnedQualifiedName};
-use crate::raw_ast;
-use crate::reporter::Reporter;
-use crate::resolve_step::ResolveStep;
-use crate::source_span::SourceSpan;
-use crate::step::Step;
 use indexmap::IndexMap;
-
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::attribute_schema;
-use crate::flat_ast::AliasDeclaration;
-use crate::flat_ast::BitsDeclaration;
-use crate::flat_ast::Decl;
-use crate::flat_ast::DeclBase;
-use crate::flat_ast::Declarations;
-use crate::flat_ast::DependencyDeclaration;
-use crate::flat_ast::EnumDeclaration;
-use crate::flat_ast::ExperimentalResourceDeclaration;
-use crate::flat_ast::Location;
-
-use crate::flat_ast::ProtocolDeclaration;
-use crate::flat_ast::ServiceDeclaration;
-use crate::flat_ast::StructDeclaration;
-use crate::flat_ast::TableDeclaration;
-use crate::flat_ast::UnionDeclaration;
+use crate::attribute_schema::AttributeSchemaMap;
+use crate::availability_step::AvailabilityStep;
+use crate::compile_step::CompileStep;
+use crate::consume_step::ConsumeStep;
+use crate::diagnostics::Error;
+use crate::diagnostics::ErrorKind;
+use crate::experimental_flags::ExperimentalFlag;
+use crate::experimental_flags::ExperimentalFlags;
+use crate::flat_ast::*;
+use crate::name::NamingContext;
+use crate::names::{OwnedLibraryName, OwnedQualifiedName};
+use crate::raw_ast;
 use crate::raw_ast::AttributeProvenance;
+use crate::raw_ast::LibraryDeclaration;
+pub use crate::raw_ast::RawDecl;
+use crate::reporter::Reporter;
+use crate::resolve_step::ResolveStep;
+use crate::source_file::{SourceFile, VirtualSourceFile};
+use crate::source_span::SourceSpan;
+use crate::step::Step;
+use crate::token::TokenSubkind;
+use crate::versioning_types::Availability;
+use crate::versioning_types::VersionSelection;
+pub use protocols::compute_method_ordinal;
+
+pub(crate) mod attributes;
+pub(crate) mod constants;
+pub(crate) mod dependencies;
+pub(crate) mod protocols;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MemberKind {
     EnumValue,
@@ -132,33 +135,6 @@ pub fn to_camel_case(s: &str) -> String {
     }
     camel
 }
-
-use crate::availability_step::AvailabilityStep;
-use crate::diagnostics::Error;
-use crate::diagnostics::ErrorKind;
-use crate::experimental_flags::ExperimentalFlag;
-use crate::experimental_flags::ExperimentalFlags;
-use crate::flat_ast::ExperimentalMaybeFromAlias;
-use crate::flat_ast::PartialTypeCtor;
-use crate::flat_ast::PrimitiveSubtype;
-
-use crate::flat_ast::Type;
-use crate::flat_ast::TypeKind;
-use crate::flat_ast::TypeShape;
-use crate::flat_ast::UnionMember;
-use crate::name::NamingContext;
-use crate::raw_ast::LibraryDeclaration;
-pub use crate::raw_ast::RawDecl;
-use crate::source_file::{SourceFile, VirtualSourceFile};
-use crate::token::TokenSubkind;
-use crate::versioning_types::Availability;
-use crate::versioning_types::VersionSelection;
-
-pub(crate) mod protocols;
-pub use protocols::compute_method_ordinal;
-pub(crate) mod attributes;
-pub(crate) mod constants;
-pub(crate) mod dependencies;
 
 pub struct Compiler<'node, 'src> {
     // Compiled shapes for types

@@ -45,4 +45,4 @@ mod versioning_basic_tests;
 mod versioning_decomposition_tests;
 mod versioning_inheritance_tests;
 mod versioning_interleaving_tests;
-// mod versioning_overlap_tests; // TODO: port
+mod versioning_overlap_tests;

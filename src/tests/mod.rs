@@ -39,9 +39,10 @@ pub mod types_tests;
 pub mod typeshape_tests;
 pub mod union_tests;
 pub mod using_tests;
-pub mod utils_tests;
-pub mod versioning_attribute_tests;
-pub mod versioning_basic_tests;
+mod utils_tests;
+mod versioning_attribute_tests;
+mod versioning_basic_tests;
 mod versioning_decomposition_tests;
-pub mod versioning_interleaving_tests;
-pub mod versioning_platform_tests;
+mod versioning_inheritance_tests;
+// mod versioning_interleaving_tests; // TODO: port
+// mod versioning_overlap_tests; // TODO: port

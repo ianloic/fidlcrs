@@ -1156,10 +1156,7 @@ impl ProtocolDeclaration {
 
 #[derive(Clone, Debug)]
 pub struct ProtocolCompose {
-    pub name: String,
-    pub maybe_attributes: Vec<Attribute>,
-    pub location: Location,
-    pub deprecated: bool,
+    pub base: DeclBase,
 }
 
 #[derive(Clone, Debug)]
@@ -1408,6 +1405,7 @@ impl_deref_for_decl!(ServiceMember);
 impl_deref_for_decl!(TableMember);
 impl_deref_for_decl!(UnionMember);
 impl_deref_for_decl!(ProtocolMethod);
+impl_deref_for_decl!(ProtocolCompose);
 
 #[derive(Clone, Debug)]
 pub enum Decl {

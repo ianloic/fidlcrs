@@ -640,7 +640,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
 
             for c in composed {
-                extract_deps_from_protocol(&c.name, deps, compiler, visited);
+                extract_deps_from_protocol(&c.name.as_string(), deps, compiler, visited);
             }
         }
 
@@ -5120,10 +5120,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 methods.push(pm);
             }
             compiled_composed.push(ProtocolCompose {
-                name: full_composed_name.into(),
-                location: self.get_location(&composed.protocol_name.element),
-                deprecated: self.is_deprecated(composed.attributes.as_deref()),
-                maybe_attributes: self.compile_attribute_list(&composed.attributes),
+                base: crate::flat_ast::DeclBase {
+                    name: full_composed_name.into(),
+                    location: self.get_location(&composed.protocol_name.element),
+                    deprecated: self.is_deprecated(composed.attributes.as_deref()),
+                    maybe_attributes: self.compile_attribute_list(&composed.attributes),
+                },
             });
         }
 

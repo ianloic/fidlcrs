@@ -234,13 +234,13 @@ pub fn run(cli: &Cli, source_managers: &[Vec<String>]) -> Result<(), String> {
         }
     };
 
-    if let Some(expected_name) = _expected_library_name
-        && compiler.library_name.as_string() != *expected_name
-    {
-        return Err(format!(
-            "Library name '{}' does not match the expected name '{}'\n",
-            compiler.library_name, expected_name
-        ));
+    if let Some(expected_name) = _expected_library_name {
+        if compiler.library_name.as_string() != *expected_name {
+            return Err(format!(
+                "Found `library {};`, but expected `library {};` based on the --name flag\n",
+                compiler.library_name, expected_name
+            ));
+        }
     }
 
     if let Some(expected_platform) = _expected_platform {

@@ -601,14 +601,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
 
                 library_dependencies.push(LibraryDependency {
-                    name: name.to_string().into(),
+                    name: name.to_string(),
                     declarations: sorted_declarations,
                 });
             }
         }
         library_dependencies.sort_by(|a, b| a.name.cmp(&b.name));
         let json_root = Root {
-            name: self.library_name.to_string().into(),
+            name: self.library_name.to_string(),
             platform,
             available: Some(self.version_selection.as_available_map()),
             maybe_attributes: main_files
@@ -1114,7 +1114,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         format!("{}/{}", library_name, p_name)
                     };
                     args.push(PartialTypeCtor {
-                        name: full.into(),
+                        name: full,
                         args: vec![],
                         nullable: false,
                         maybe_size: None,
@@ -4345,7 +4345,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         }
 
                         resolved_type.outer_alias = Some(ExperimentalMaybeFromAlias {
-                            name: full_name.clone().into(),
+                            name: full_name.clone(),
                             args: vec![], // TODO handle args if any
                             nullable,
                         });
@@ -4692,7 +4692,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             properties.push(ResourceProperty {
                 type_: prop_type,
-                name: prop_name.into(),
+                name: prop_name,
                 location: self.get_location(&prop.name.element),
                 deprecated: self.is_deprecated(prop.attributes.as_deref()),
             });

@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::compiler::MemberKind;
 use crate::source_span::SourceSpan;
+use std::collections::HashMap;
 
 pub fn canonicalize(name: &str) -> String {
     let mut canonical = String::new();

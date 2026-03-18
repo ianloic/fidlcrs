@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::attribute_schema;
 use crate::attribute_schema::AttributeSchemaMap;
-use crate::canonical_names::CanonicalNames;
 use crate::availability_step::AvailabilityStep;
+use crate::canonical_names::CanonicalNames;
 use crate::compile_step::CompileStep;
 use crate::consume_step::ConsumeStep;
 use crate::diagnostics::Error;
@@ -67,7 +67,6 @@ impl std::fmt::Display for MemberKind {
         write!(f, "{}", s)
     }
 }
-
 
 pub fn to_camel_case(s: &str) -> String {
     let mut camel = String::new();

@@ -496,7 +496,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
             };
 
             match decl {
-                crate::compiler::RawDecl::Struct(d) => {
+                crate::raw_ast::RawDecl::Struct(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -505,7 +505,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Table(d) => {
+                crate::raw_ast::RawDecl::Table(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -514,7 +514,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Union(d) => {
+                crate::raw_ast::RawDecl::Union(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -523,7 +523,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Enum(d) => {
+                crate::raw_ast::RawDecl::Enum(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -532,7 +532,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Bits(d) => {
+                crate::raw_ast::RawDecl::Bits(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -541,7 +541,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Protocol(d) => {
+                crate::raw_ast::RawDecl::Protocol(d) => {
                     for m in &d.methods {
                         visit_member(
                             m.attributes.as_deref(),
@@ -550,7 +550,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Service(d) => {
+                crate::raw_ast::RawDecl::Service(d) => {
                     for m in &d.members {
                         visit_member(
                             m.attributes.as_deref(),
@@ -559,7 +559,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         );
                     }
                 }
-                crate::compiler::RawDecl::Type(d) => match &d.layout {
+                crate::raw_ast::RawDecl::Type(d) => match &d.layout {
                     crate::raw_ast::Layout::Struct(l) => {
                         for m in &l.members {
                             visit_member(

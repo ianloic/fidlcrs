@@ -151,6 +151,7 @@ use crate::flat_ast::UnionDeclaration;
 use crate::flat_ast::UnionMember;
 use crate::name::NamingContext;
 use crate::raw_ast::LibraryDeclaration;
+pub use crate::raw_ast::RawDecl;
 use crate::source_file::{SourceFile, VirtualSourceFile};
 use crate::token::TokenSubkind;
 use crate::versioning_types::Availability;
@@ -160,114 +161,7 @@ pub(crate) mod attributes;
 pub(crate) mod constants;
 pub(crate) mod dependencies;
 
-#[derive(Clone)]
-pub enum RawDecl<'node, 'src> {
-    Struct(&'node raw_ast::StructDeclaration<'src>),
-    Enum(&'node raw_ast::EnumDeclaration<'src>),
-    Bits(&'node raw_ast::BitsDeclaration<'src>),
-    Union(&'node raw_ast::UnionDeclaration<'src>),
-    Table(&'node raw_ast::TableDeclaration<'src>),
-    Protocol(&'node raw_ast::ProtocolDeclaration<'src>),
-    Service(&'node raw_ast::ServiceDeclaration<'src>),
-    Resource(&'node raw_ast::ResourceDeclaration<'src>),
-    Const(&'node raw_ast::ConstDeclaration<'src>),
-    Alias(&'node raw_ast::AliasDeclaration<'src>),
-    Type(&'node raw_ast::TypeDeclaration<'src>),
-}
 
-impl<'node, 'src> RawDecl<'node, 'src> {
-    pub fn kind(&self) -> DeclarationKind {
-        match self {
-            RawDecl::Struct(_) => DeclarationKind::Struct,
-            RawDecl::Enum(_) => DeclarationKind::Enum,
-            RawDecl::Bits(_) => DeclarationKind::Bits,
-            RawDecl::Union(u) => {
-                if u.is_overlay {
-                    DeclarationKind::Overlay
-                } else {
-                    DeclarationKind::Union
-                }
-            }
-            RawDecl::Table(_) => DeclarationKind::Table,
-            RawDecl::Protocol(_) => DeclarationKind::Protocol,
-            RawDecl::Service(_) => DeclarationKind::Service,
-            RawDecl::Resource(_) => DeclarationKind::ExperimentalResource,
-            RawDecl::Const(_) => DeclarationKind::Const,
-            RawDecl::Alias(_) => DeclarationKind::Alias,
-            RawDecl::Type(t) => match t.layout {
-                raw_ast::Layout::Struct(_) => DeclarationKind::Struct,
-                raw_ast::Layout::Enum(_) => DeclarationKind::Enum,
-                raw_ast::Layout::Bits(_) => DeclarationKind::Bits,
-                raw_ast::Layout::Union(ref u) => {
-                    if u.is_overlay {
-                        DeclarationKind::Overlay
-                    } else {
-                        DeclarationKind::Union
-                    }
-                }
-                raw_ast::Layout::Table(_) => DeclarationKind::Table,
-                raw_ast::Layout::TypeConstructor(_) => DeclarationKind::NewType,
-            },
-        }
-    }
-
-    pub fn attributes(&self) -> Option<&'node raw_ast::AttributeList<'src>> {
-        match self {
-            RawDecl::Struct(d) => d.attributes.as_deref(),
-            RawDecl::Enum(d) => d.attributes.as_deref(),
-            RawDecl::Bits(d) => d.attributes.as_deref(),
-            RawDecl::Union(d) => d.attributes.as_deref(),
-            RawDecl::Table(d) => d.attributes.as_deref(),
-            RawDecl::Protocol(d) => d.attributes.as_deref(),
-            RawDecl::Service(d) => d.attributes.as_deref(),
-            RawDecl::Resource(d) => d.attributes.as_deref(),
-            RawDecl::Const(d) => d.attributes.as_deref(),
-            RawDecl::Alias(d) => d.attributes.as_deref(),
-            RawDecl::Type(d) => d.attributes.as_deref(),
-        }
-    }
-
-    pub fn element(&self) -> &'node raw_ast::SourceElement<'src> {
-        match self {
-            RawDecl::Struct(d) => &d.element,
-            RawDecl::Enum(d) => &d.element,
-            RawDecl::Bits(d) => &d.element,
-            RawDecl::Union(d) => &d.element,
-            RawDecl::Table(d) => &d.element,
-            RawDecl::Protocol(d) => &d.element,
-            RawDecl::Service(d) => &d.element,
-            RawDecl::Resource(d) => &d.element,
-            RawDecl::Const(d) => &d.element,
-            RawDecl::Alias(d) => &d.element,
-            RawDecl::Type(d) => &d.element,
-        }
-    }
-
-    pub fn for_each_modifier_list<F: FnMut(&'node [raw_ast::Modifier<'src>])>(&self, mut f: F) {
-        match self {
-            RawDecl::Struct(d) => f(&d.modifiers),
-            RawDecl::Enum(d) => f(&d.modifiers),
-            RawDecl::Bits(d) => f(&d.modifiers),
-            RawDecl::Union(d) => f(&d.modifiers),
-            RawDecl::Table(d) => f(&d.modifiers),
-            RawDecl::Protocol(d) => {
-                f(&d.modifiers);
-                for method in &d.methods {
-                    f(&method.modifiers);
-                }
-            }
-            RawDecl::Type(d) => match &d.layout {
-                raw_ast::Layout::Struct(l) => f(&l.modifiers),
-                raw_ast::Layout::Enum(l) => f(&l.modifiers),
-                raw_ast::Layout::Bits(l) => f(&l.modifiers),
-                raw_ast::Layout::Union(l) => f(&l.modifiers),
-                raw_ast::Layout::Table(l) => f(&l.modifiers),
-                _ => {}
-            },
-            _ => {}
-        }
-    }
-}
 
 pub struct Compiler<'node, 'src> {
     // Compiled shapes for types

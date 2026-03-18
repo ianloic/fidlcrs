@@ -1,4 +1,4 @@
-use crate::compiler::RawDecl;
+use crate::raw_ast::RawDecl;
 use crate::diagnostics::Error;
 use crate::flat_ast::*;
 use crate::name::NamingContext;

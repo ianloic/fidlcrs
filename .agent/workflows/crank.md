@@ -10,6 +10,8 @@ Your goal is to improve the project by resolving tickets and discovering additio
    ```bash
    thicket add --title "Brief descriptive title" --description "Detailed context" --priority=<N> --type=<TYPE> --created-from <CURRENT_TICKET_ID>
    ```
-4. Commit your changes.
+4. Run `cargo fmt` to format the code.
+5. Run `cargo test` to validate that your changes keep the project working.
+6. Commit your changes.
 
 **CRITICAL**: NEVER edit `.thicket/tickets.jsonl` directly. Always use the `thicket` CLI.

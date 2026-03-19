@@ -1,7 +1,6 @@
 use super::test_library::TestLibrary;
 
 #[test]
-#[ignore]
 fn bad_recover_in_library_consume() {
     let mut library = TestLibrary::new();
 
@@ -261,7 +260,6 @@ protocol Foo {
 }
 
 #[test]
-#[ignore]
 fn bad_recover_in_service() {
     let mut library = TestLibrary::new();
 

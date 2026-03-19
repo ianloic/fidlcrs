@@ -3,7 +3,6 @@ use crate::diagnostics::Error;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_no_gap() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -24,7 +23,6 @@ type Foo = resource struct {};
 }
 
 #[test]
-#[ignore]
 fn good_with_gap() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -50,7 +48,6 @@ type Foo = table {};
 }
 
 #[test]
-#[ignore]
 fn good_no_gap_canonical() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -76,7 +73,6 @@ type FOO = table {};
 }
 
 #[test]
-#[ignore]
 fn good_with_gap_canonical() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -161,7 +157,6 @@ fn bad_example_canonical() {
 }
 
 #[test]
-#[ignore]
 fn bad_subset() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -181,7 +176,6 @@ type Foo = table {};
 }
 
 #[test]
-#[ignore]
 fn bad_subset_canonical() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -201,7 +195,6 @@ type FOO = table {};
 }
 
 #[test]
-#[ignore]
 fn bad_intersect() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -222,7 +215,6 @@ type Foo = table {};
 }
 
 #[test]
-#[ignore]
 fn bad_intersect_canonical() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -266,7 +258,6 @@ const Foo uint32 = 0;
 }
 
 #[test]
-#[ignore]
 fn bad_recursive() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -330,7 +321,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_member_subset() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -352,7 +342,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_member_subset_canonical() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -374,7 +363,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_member_intersect() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -397,7 +385,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_member_intersect_canonical() {
     let mut library = TestLibrary::new();
     library.add_source_file(

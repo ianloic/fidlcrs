@@ -3,7 +3,6 @@ use crate::diagnostics::Error;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_redundant_with_parent() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -31,7 +30,6 @@ fn bad_added_before_parent_added() {
 }
 
 #[test]
-#[ignore]
 fn good_added_when_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -49,7 +47,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_added_after_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -77,7 +74,6 @@ fn bad_added_when_parent_removed() {
 }
 
 #[test]
-#[ignore]
 fn bad_added_when_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -121,7 +117,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_added_after_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -165,7 +160,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_deprecated_when_parent_added() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -183,7 +177,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_deprecated_before_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -239,7 +232,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_deprecated_when_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -283,7 +275,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_deprecated_after_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -308,7 +299,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_removed_before_parent_added() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -327,7 +317,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_replaced_before_parent_added() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -349,7 +338,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_removed_when_parent_added() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -368,7 +356,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_replaced_when_parent_added() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -390,7 +377,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn good_removed_before_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -408,7 +394,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_replaced_before_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -431,7 +416,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn good_removed_when_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -449,7 +433,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_replaced_when_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -472,7 +455,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn good_removed_after_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -490,7 +472,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_replaced_after_parent_deprecated() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -513,7 +494,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_removed_after_parent_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -532,7 +512,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_removed_after_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -557,7 +536,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_replaced_after_parent_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -579,7 +557,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_replaced_after_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -604,7 +581,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_removed_when_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -628,7 +604,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_replaced_when_parent_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -650,7 +625,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_replaced_when_parent_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -675,7 +649,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_member_inherits_from_parent() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -891,7 +864,6 @@ type Foo = struct {           // L6
 }
 
 #[test]
-#[ignore]
 fn bad_member_conflicts_with_grand_parent() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -913,7 +885,6 @@ type Foo = struct {           // L6
 }
 
 #[test]
-#[ignore]
 fn bad_member_conflicts_with_grand_parent_through_anonymous() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -955,7 +926,6 @@ type Foo = resource(added=1) struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_modifier_removed_after_parent_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(

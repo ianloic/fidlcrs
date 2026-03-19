@@ -3,7 +3,6 @@ use crate::diagnostics::Error;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn same_library() {
     if false {
         let fidl = r#"
@@ -24,7 +23,6 @@ const TARGET bool = false;
 }
 
 #[test]
-#[ignore]
 fn decl_to_decl_external() {
     let example_fidl = r#"
 @available(added=1)
@@ -46,7 +44,6 @@ const TARGET bool = false;
 }
 
 #[test]
-#[ignore]
 fn library_to_library_external() {
     let example_fidl = r#"
 ${source_available}
@@ -66,7 +63,6 @@ const TARGET bool = false;
 }
 
 #[test]
-#[ignore]
 fn library_to_decl_external() {
     let example_fidl = r#"
 ${source_available}
@@ -87,7 +83,6 @@ const TARGET bool = false;
 }
 
 #[test]
-#[ignore]
 fn decl_to_library_external() {
     let example_fidl = r#"
 @available(added=1)
@@ -108,7 +103,6 @@ const TARGET bool = false;
 }
 
 #[test]
-#[ignore]
 fn error0055() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0055.test.fidl");

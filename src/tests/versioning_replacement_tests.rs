@@ -4,7 +4,6 @@ use crate::experimental_flags::ExperimentalFlag;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_decl_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -22,7 +21,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_decl_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -44,7 +42,6 @@ type Foo = resource struct {};
 }
 
 #[test]
-#[ignore]
 fn good_decl_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -67,7 +64,6 @@ type Foo = resource struct {};
 }
 
 #[test]
-#[ignore]
 fn bad_decl_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -86,7 +82,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_member_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -106,7 +101,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_member_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -129,7 +123,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn good_member_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -153,7 +146,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_member_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -174,7 +166,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn good_method_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -194,7 +185,6 @@ protocol Foo {
 }
 
 #[test]
-#[ignore]
 fn bad_method_removed() {
     let mut library = TestLibrary::new();
     //   library.select_version("test", GetParam());
@@ -204,7 +194,6 @@ fn bad_method_removed() {
 }
 
 #[test]
-#[ignore]
 fn good_method_replaced() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -228,7 +217,6 @@ protocol Foo {
 }
 
 #[test]
-#[ignore]
 fn bad_method_replaced() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0206.test.fidl");
@@ -238,7 +226,6 @@ fn bad_method_replaced() {
 }
 
 #[test]
-#[ignore]
 fn bad_method_removed_new_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -267,7 +254,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn good_method_replaced_new_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -297,7 +283,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn bad_method_removed_existing_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -326,7 +311,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn good_method_replaced_existing_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -356,7 +340,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn bad_compose_removed_new_method() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -385,7 +368,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn good_compose_replaced_new_method() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -415,7 +397,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn bad_compose_removed_new_method_composee_simultaneously_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -445,7 +426,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn good_compose_replaced_new_method_composee_simultaneously_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -476,7 +456,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn bad_compose_removed_new_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -510,7 +489,6 @@ protocol Bar {
 }
 
 #[test]
-#[ignore]
 fn good_compose_replaced_new_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -545,7 +523,6 @@ protocol Bar {
 }
 
 #[test]
-#[ignore]
 fn bad_compose_removed_new_compose_composee_simultaneously_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -580,7 +557,6 @@ protocol Bar {
 }
 
 #[test]
-#[ignore]
 fn good_compose_replaced_new_compose_composee_simultaneously_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -616,7 +592,6 @@ protocol Bar {
 }
 
 #[test]
-#[ignore]
 fn bad_composed_method_removed_new_method() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -645,7 +620,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn bad_method_removed_transitive_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -678,7 +652,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn good_method_replaced_transitive_compose() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -712,7 +685,6 @@ protocol Base {
 }
 
 #[test]
-#[ignore]
 fn bad_method_and_compose_removed_hybrid() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -758,7 +730,6 @@ protocol BC {
 }
 
 #[test]
-#[ignore]
 fn good_method_and_compose_replaced_hybrid() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -801,7 +772,6 @@ protocol BC {
 }
 
 #[test]
-#[ignore]
 fn good_replaced_twice() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -825,7 +795,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn good_all_decls_replaced_and_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -896,7 +865,6 @@ resource_definition Resource : uint32 { properties { subtype flexible enum : uin
 }
 
 #[test]
-#[ignore]
 fn good_all_members_replaced_and_removed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -961,7 +929,6 @@ service Service {
 }
 
 #[test]
-#[ignore]
 fn good_all_members_replaced_and_renamed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1028,7 +995,6 @@ service Service {
 }
 
 #[test]
-#[ignore]
 fn bad_removed_named_to_anonymous() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1052,7 +1018,6 @@ type Bar = struct {
 }
 
 #[test]
-#[ignore]
 fn good_removed_anonymous_to_named() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1077,7 +1042,6 @@ type Foo = table {};
 }
 
 #[test]
-#[ignore]
 fn good_removed_anonymous_to_anonymous() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1104,7 +1068,6 @@ type Bar2 = struct {
 }
 
 #[test]
-#[ignore]
 fn good_replaced_named_to_anonymous() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1127,7 +1090,6 @@ type Bar = struct {
 }
 
 #[test]
-#[ignore]
 fn good_replaced_anonymous_to_named() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1152,7 +1114,6 @@ type Foo = table {};
 }
 
 #[test]
-#[ignore]
 fn good_replaced_anonymous_to_anonymous() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1179,7 +1140,6 @@ type Bar2 = struct {
 }
 
 #[test]
-#[ignore]
 fn good_replaced_anonymous_to_nothing() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1203,7 +1163,6 @@ type Bar = struct {
 }
 
 #[test]
-#[ignore]
 fn good_member_removed_and_renamed() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1226,7 +1185,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn good_member_removed_and_renamed_name_reused() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1252,7 +1210,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_member_removed_and_renamed_name_already_used_existing() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1274,7 +1231,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_member_removed_and_renamed_name_already_used_new() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1297,7 +1253,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_method_removed_and_renamed() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0214.test.fidl");
@@ -1307,7 +1262,6 @@ fn bad_method_removed_and_renamed() {
 }
 
 #[test]
-#[ignore]
 fn bad_method_replaced_and_renamed() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0215.test.fidl");
@@ -1317,7 +1271,6 @@ fn bad_method_replaced_and_renamed() {
 }
 
 #[test]
-#[ignore]
 fn bad_bits_member_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1340,7 +1293,6 @@ type Foo = bits {
 }
 
 #[test]
-#[ignore]
 fn bad_bits_member_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1363,7 +1315,6 @@ type Foo = bits {
 }
 
 #[test]
-#[ignore]
 fn bad_enum_member_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1386,7 +1337,6 @@ type Foo = enum {
 }
 
 #[test]
-#[ignore]
 fn bad_enum_member_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1409,7 +1359,6 @@ type Foo = enum {
 }
 
 #[test]
-#[ignore]
 fn bad_struct_member_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1432,7 +1381,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_struct_member_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1456,7 +1404,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_table_member_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1479,7 +1426,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_table_member_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1502,7 +1448,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn bad_union_member_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1525,7 +1470,6 @@ type Foo = union {
 }
 
 #[test]
-#[ignore]
 fn bad_union_member_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1548,7 +1492,6 @@ type Foo = union {
 }
 
 #[test]
-#[ignore]
 fn bad_overlay_member_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1572,7 +1515,6 @@ type Foo = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn bad_overlay_member_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -1596,7 +1538,6 @@ type Foo = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn bad_method_removed_abi() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0216.test.fidl");
@@ -1606,7 +1547,6 @@ fn bad_method_removed_abi() {
 }
 
 #[test]
-#[ignore]
 fn bad_method_replaced_abi() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0217.test.fidl");

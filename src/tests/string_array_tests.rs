@@ -22,7 +22,6 @@ fn bad_no_experimental_flag() {
 }
 
 #[test]
-#[ignore]
 fn bad_zero_size_array() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -60,7 +59,6 @@ type S = struct {
 }
 
 #[test]
-#[ignore]
 fn bad_optional_array() {
     let mut library = TestLibrary::new();
     library.add_source_file(

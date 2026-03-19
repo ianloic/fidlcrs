@@ -17,7 +17,6 @@ fn assert_equivalent(left_fidl: &str, right_fidl: &str, versions_str: &str) {
 }
 
 #[test]
-#[ignore]
 fn equivalenttoself() {
     let fidl = r#"
 @available(added=1)
@@ -32,7 +31,6 @@ library example;
 }
 
 #[test]
-#[ignore]
 fn unversionedlibrary() {
     let unversioned = r#"
 library example;
@@ -55,7 +53,6 @@ type Foo = struct {};
 }
 
 #[test]
-#[ignore]
 fn absentlibraryisempty() {
     let fidl = r#"
 @available(added=2, removed=3)
@@ -90,7 +87,6 @@ library example;
 }
 
 #[test]
-#[ignore]
 fn splitbymembership() {
     let fidl = r#"
 @available(added=1)
@@ -126,7 +122,6 @@ type TopLevel = struct {
 }
 
 #[test]
-#[ignore]
 fn splitbymodifier() {
     let fidl = r#"
 @available(added=1)
@@ -157,7 +152,6 @@ type TopLevel = resource struct {};
 }
 
 #[test]
-#[ignore]
 fn splitbyreference() {
     let fidl = r#"
 @available(added=1)
@@ -205,7 +199,6 @@ type That = struct {
 }
 
 #[test]
-#[ignore]
 fn splitbytwomembers() {
     let fidl = r#"
 @available(added=1)
@@ -262,7 +255,6 @@ type That = struct {};
 }
 
 #[test]
-#[ignore]
 fn recursion() {
     let fidl = r#"
 @available(added=1)
@@ -404,7 +396,6 @@ type Expr = flexible union {
 }
 
 #[test]
-#[ignore]
 fn mutualrecursion() {
     let fidl = r#"
 @available(added=1)
@@ -524,7 +515,6 @@ type Bar = table {
 }
 
 #[test]
-#[ignore]
 fn misalignedswapping() {
     let fidl = r#"
 @available(added=1)
@@ -591,7 +581,6 @@ type Foo = table {
 }
 
 #[test]
-#[ignore]
 fn stricttoflexible() {
     let fidl = r#"
 @available(added=1)
@@ -663,7 +652,6 @@ type Y = flexible enum { A = 1; };
 }
 
 #[test]
-#[ignore]
 fn namereuse() {
     let fidl = r#"
 @available(added=1)
@@ -742,7 +730,6 @@ library example;
 }
 
 #[test]
-#[ignore]
 fn constsandconstraints() {
     let fidl = r#"
 @available(added=1)
@@ -1579,7 +1566,6 @@ protocol AB {
 }
 
 #[test]
-#[ignore]
 fn convertnamedtoanonymous() {
     let fidl = r#"
 @available(added=1)
@@ -1626,7 +1612,6 @@ type Foo = struct {
 }
 
 #[test]
-#[ignore]
 fn convertanonymoustonamed() {
     let fidl = r#"
 @available(added=1)

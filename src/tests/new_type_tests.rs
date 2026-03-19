@@ -4,7 +4,6 @@ use crate::experimental_flags::ExperimentalFlag;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_new_types() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -32,7 +31,6 @@ type OpaqueBar = Bar;
 }
 
 #[test]
-#[ignore]
 fn good_new_types_resourceness() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -51,7 +49,6 @@ type C = resource struct { b B; };
 }
 
 #[test]
-#[ignore]
 fn bad_new_types_resourceness() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -71,7 +68,6 @@ type C = struct { b B; };
 }
 
 #[test]
-#[ignore]
 fn good_new_types_simple() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -134,7 +130,6 @@ type NewServerEnd = server_end:Protocol;
 }
 
 #[test]
-#[ignore]
 fn good_new_types_complex() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -153,7 +148,6 @@ type DoubleNewStruct = NewStruct;
 }
 
 #[test]
-#[ignore]
 fn good_new_types_constrained() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -171,7 +165,6 @@ type ConstrainedString = string:108;
 }
 
 #[test]
-#[ignore]
 fn bad_new_types_constraints() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0179.test.fidl");

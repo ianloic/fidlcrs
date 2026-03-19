@@ -3,7 +3,6 @@ use crate::diagnostics::Error;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_unversioned_one_component() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -16,7 +15,6 @@ library example;
 }
 
 #[test]
-#[ignore]
 fn good_unversioned_two_components() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -29,7 +27,6 @@ library example.something;
 }
 
 #[test]
-#[ignore]
 fn good_implicit_one_component() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -44,7 +41,6 @@ library example;
 }
 
 #[test]
-#[ignore]
 fn good_implicit_two_components() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -59,7 +55,6 @@ library example.something;
 }
 
 #[test]
-#[ignore]
 fn good_explicit() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -74,7 +69,6 @@ library example;
 }
 
 #[test]
-#[ignore]
 fn bad_invalid() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0152.test.fidl");
@@ -84,7 +78,6 @@ fn bad_invalid() {
 }
 
 #[test]
-#[ignore]
 fn bad_reserved() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0208.test.fidl");
@@ -93,7 +86,6 @@ fn bad_reserved() {
 }
 
 #[test]
-#[ignore]
 fn bad_explicit_no_version_selected() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0201.test.fidl");
@@ -102,7 +94,6 @@ fn bad_explicit_no_version_selected() {
 }
 
 #[test]
-#[ignore]
 fn bad_implicit_no_version_selected() {
     let mut library = TestLibrary::new();
     library.add_source_file(

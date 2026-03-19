@@ -4,7 +4,6 @@ use crate::experimental_flags::ExperimentalFlag;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_channel_transport_with_channel_transport_end() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("good/fi-0167.test.fidl");
@@ -174,7 +173,6 @@ protocol P {
 }
 
 #[test]
-#[ignore]
 fn bad_channel_transport_with_driver_client_end_request() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -222,7 +220,6 @@ protocol P {
 }
 
 #[test]
-#[ignore]
 fn bad_banjo_transport_with_driver_client_end_request() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -246,7 +243,6 @@ protocol P {
 }
 
 #[test]
-#[ignore]
 fn bad_driver_transport_with_banjo_client_end_request() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -270,7 +266,6 @@ protocol P {
 }
 
 #[test]
-#[ignore]
 fn bad_syscall_transport_with_driver_client_end_request() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0118.test.fidl");
@@ -279,7 +274,6 @@ fn bad_syscall_transport_with_driver_client_end_request() {
 }
 
 #[test]
-#[ignore]
 fn bad_syscall_transport_with_syscall_client_end_request() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -337,7 +331,6 @@ protocol P {
 }
 
 #[test]
-#[ignore]
 fn bad_driver_handle_in_zircon_channel() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0117.test.fidl");

@@ -4,7 +4,6 @@ use crate::experimental_flags::ExperimentalFlag;
 use crate::tests::test_library::{LookupHelpers, TestLibrary};
 
 #[test]
-#[ignore]
 fn good_overlay_in_other_layouts() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -70,7 +69,6 @@ type Overlay = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn good_overlay_in_overlay() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -99,7 +97,6 @@ type Outer = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn good_keywords_as_field_names() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -129,7 +126,6 @@ type Foo = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn bad_flexible() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -150,7 +146,6 @@ type Foo = flexible overlay {
 }
 
 #[test]
-#[ignore]
 fn bad_resource() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -193,7 +188,6 @@ type Foo = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn bad_no_experimental_flag() {
     let mut library = TestLibrary::new();
     library.add_source_file(
@@ -212,7 +206,6 @@ type Foo = strict overlay {
 }
 
 #[test]
-#[ignore]
 fn bad_optional_overlay() {
     let mut library = TestLibrary::new();
     library.add_source_file(

@@ -642,8 +642,7 @@ mod tests {
     ];
 
     const COMPARE_DENYLIST: &[&str] = &[
-        // expected discrepancy: optimization of unused unions
-        "fuchsia.fonts",
+        "fuchsia.fonts", // Known mismatch on payload union pruning in dependencies
         "fdf",
         "fuchsia.accessibility.gesture",
         "fuchsia.accessibility.scene",
@@ -680,7 +679,6 @@ mod tests {
         "fuchsia.feedback",
         "fuchsia.fido.report",
         "fuchsia.firebase.messaging",
-        "fuchsia.fonts",
         "fuchsia.fs",
         "fuchsia.gpu.agis",
         "fuchsia.gpu.virtio",
@@ -782,13 +780,11 @@ mod tests {
         "fuchsia.lightsensor",
         "fuchsia.location.gnss",
         "fuchsia.location.position",
-        "fuchsia.lowpan.bootstrap",
         "fuchsia.lowpan.spinel",
         "fuchsia.lowpan",
         "fuchsia.media.audio",
         "fuchsia.mediastreams",
         "fuchsia.mem",
-        "fuchsia.memory.debug",
         "fuchsia.memory.heapdump.client",
         "fuchsia.memory.inspection",
         "fuchsia.metrics",
@@ -844,7 +840,6 @@ mod tests {
         "fuchsia.ui.input",
         "fuchsia.ui.input3",
         "fuchsia.ui.keyboard.focus",
-        "fuchsia.ui.observation.geometry",
         "fuchsia.ui.views",
         "fuchsia.unknown",
         "fuchsia.update.channelcontrol",

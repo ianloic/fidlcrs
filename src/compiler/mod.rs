@@ -570,16 +570,32 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
                 .cloned()
                 .collect(),
-            external_struct_declarations: self
-                .declarations
-                .structs()
-                .filter(|d| {
-                    !d.name
-                        .as_string()
-                        .starts_with(&format!("{}/", self.library_name))
-                })
-                .cloned()
-                .collect(),
+            external_struct_declarations: {
+                let mut external_names = std::collections::BTreeSet::new();
+                let mut visit = |t: &crate::flat_ast::Type| {
+                    if let Some(id) = t.identifier() {
+                        if !id.starts_with(&format!("{}/", self.library_name)) {
+                            let is_struct = self.declarations.structs().any(|s| s.name.as_string() == id);
+                            if is_struct {
+                                external_names.insert(id);
+                            }
+                        }
+                    }
+                };
+                for protocol in self.declarations.protocols() {
+                    if protocol.name.as_string().starts_with(&format!("{}/", self.library_name)) {
+                        for method in &protocol.methods {
+                            if let Some(t) = &method.maybe_request_payload { visit(t); }
+                            if let Some(t) = &method.maybe_response_payload { visit(t); }
+                            if let Some(t) = &method.maybe_response_success_type { visit(t); }
+                            if let Some(t) = &method.maybe_response_err_type { visit(t); }
+                        }
+                    }
+                }
+                self.declarations.structs().filter(|d| {
+                    external_names.contains(&d.name.as_string())
+                }).cloned().collect()
+            },
             table_declarations: self.declarations.tables().cloned().collect(),
             union_declarations: self.declarations.unions().cloned().collect(),
             overlay_declarations: if self

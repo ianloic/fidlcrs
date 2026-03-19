@@ -641,3 +641,12 @@ type MyStruct = struct {{
         assert!(lib.check_compile());
     }
 }
+
+#[test]
+#[ignore]
+fn bad_inline_size_exceeds64k() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0111.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}

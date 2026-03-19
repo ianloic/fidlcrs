@@ -68,3 +68,12 @@ fn bad_multiple_libraries_same_name() {
         "Expected compilation to fail with ErrMultipleLibrariesWithSameName"
     );
 }
+
+#[test]
+#[ignore]
+fn good_implicit_assumptions() {
+
+    // Preconditions to unit test cases: if these change, we need to rewrite the tests themselves.
+    // test check
+    // test check
+}

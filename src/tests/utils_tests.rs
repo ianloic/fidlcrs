@@ -910,3 +910,171 @@ fn test_string_literal_length() {
     assert_eq!(string_literal_length(r#""\to""#), 2);
     assert_eq!(string_literal_length(r#""\n""#), 1);
 }
+
+#[test]
+#[ignore]
+fn id_to_words() {
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+    // CompareIdToWords
+
+    // Note the next two tests have expected results that may seem
+    // counter-intuitive, but if IDs like "URLLoader" are expected to
+    // translate to the words "url loader", then these translations
+    // are consistent.
+    // CompareIdToWords
+    // CompareIdToWords
+}
+
+#[test]
+#[ignore]
+fn upper_camel_case() {
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn lower_camel_case() {
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn upper_snake_case() {
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn lower_snake_case() {
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}

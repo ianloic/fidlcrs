@@ -5274,3 +5274,52 @@ protocol Child {
     // just check it compiles successfully, asserting method counts
     // assert_eq!(child_decl.methods.len(), 1);
 }
+
+#[test]
+#[ignore]
+fn good_external_definitions() {
+    let mut library = TestLibrary::new();
+    library.use_library_zx();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+using zx;
+
+type ExternalArrayStruct = struct {
+    a array<ExternalSimpleStruct, EXTERNAL_SIZE_DEF>;
+};
+
+type ExternalStringSizeStruct = struct {
+    a string:EXTERNAL_SIZE_DEF;
+};
+
+type ExternalVectorSizeStruct = resource struct {
+    a vector<zx.handle>:EXTERNAL_SIZE_DEF;
+};
+"#,
+    );
+    library.add_source_file(
+        "extern_defs.fidl",
+        r#"
+library example;
+
+const EXTERNAL_SIZE_DEF uint32 = ANOTHER_INDIRECTION;
+const ANOTHER_INDIRECTION uint32 = 32;
+
+type ExternalSimpleStruct = struct {
+    a uint32;
+};
+"#,
+    );
+    assert!(library.check_compile());
+
+    // test check
+
+    // test check
+
+    // test check
+
+    // test check
+}

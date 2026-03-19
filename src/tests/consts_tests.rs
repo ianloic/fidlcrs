@@ -1000,3 +1000,127 @@ const INTEGER uint16 = X;
     );
     assert!(lib.compile().is_err());
 }
+
+#[test]
+#[ignore]
+fn bad_const_test_assign_type_simple() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0063.test.fidl");
+    // expect_fail
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_const_test_assign_type_name() {
+    for type_declaration in [
+        "type Example = struct {};",
+        "type Example = table {};",
+        "service Example {};",
+        "protocol Example {};",
+        "type Example = bits { A = 1; };",
+        "type Example = enum { A = 1; };",
+        "type Example = union { 1: A bool; };",
+        "alias Example = string;",
+    ] {
+        let fidl = "dummy.fidl";
+        // SCOPED_TRACE(fidl);
+        let mut library = TestLibrary::new();
+        library.add_errcat_file(fidl);
+        // expect_fail
+        // expect_fail
+        assert!(library.check_compile());
+    }
+}
+
+#[test]
+#[ignore]
+fn bad_const_test_assign_builtin_simple() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0060.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_const_test_assign_builtin_type() {
+    for builtin in ["bool", "uint32", "box", "vector", "byte"] {
+        let mut library = TestLibrary::new();
+        library.add_errcat_file("dummy.fidl");
+        // TODO(https://fxbug.dev/42182133): Should have a better error message.
+        // expect_fail
+        assert!(library.check_compile());
+    }
+}
+
+#[test]
+#[ignore]
+fn bad_const_test_assign_builtin_non_type() {
+    for builtin in ["MAX", "optional", "NEXT", "HEAD"] {
+        let mut library = TestLibrary::new();
+        library.add_errcat_file("dummy.fidl");
+        // TODO(https://fxbug.dev/42182133): Should have a better error message.
+        // expect_fail
+        assert!(library.check_compile());
+    }
+}
+
+#[test]
+#[ignore]
+fn bad_or_operator_missing_right_paren_test() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+const three uint16 = 3;
+const seven uint16 = 7;
+const eight uint16 = 8;
+const fifteen uint16 = ( three | seven | eight;
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_or_operator_missing_left_paren_test() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+const three uint16 = 3;
+const seven uint16 = 7;
+const eight uint16 = 8;
+const fifteen uint16 = three | seven | eight );
+"#,
+    );
+    // expect_fail
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_or_operator_misplaced_paren_test() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+const three uint16 = 3;
+const seven uint16 = 7;
+const eight uint16 = 8;
+const fifteen uint16 = ( three | seven | ) eight;
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}

@@ -1656,3 +1656,1205 @@ type Bar = struct {};
     assert_equivalent(&fidl, &v2_onward, "HEAD");
     assert_equivalent(&fidl, &v2_onward, "1,2,HEAD");
 }
+
+#[test]
+#[ignore]
+fn equivalent_to_self() {
+    let fidl = r#"
+@available(added=1)
+library example;
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn unversioned_library() {
+    let unversioned = r#"
+library example;
+
+type Foo = struct {};
+"#;
+
+    let versioned = r#"
+@available(added=1)
+library example;
+
+type Foo = struct {};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn absent_library_is_empty() {
+    let fidl = r#"
+@available(added=2, removed=3)
+library example;
+
+type Foo = struct {};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+type Foo = struct {};
+"#;
+
+    let v3_onward = r#"
+@available(added=3)
+library example;
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn split_by_membership() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+type TopLevel = struct {
+    @available(added=2)
+    first uint32;
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type TopLevel = struct {};
+"#;
+
+    let v2_onward = r#"
+@available(added=2)
+library example;
+
+type TopLevel = struct {
+    first uint32;
+};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn split_by_modifier() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+type TopLevel = resource(added=2) struct {};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type TopLevel = struct {};
+"#;
+
+    let v2_onward = r#"
+@available(added=2)
+library example;
+
+type TopLevel = resource struct {};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn split_by_reference() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+type This = struct {
+    this_member That;
+};
+
+type That = struct {
+    @available(added=2)
+    that_member uint32;
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type This = struct {
+    this_member That;
+};
+
+type That = struct {};
+"#;
+
+    let v2_onward = r#"
+@available(added=2)
+library example;
+
+type This = struct {
+    this_member That;
+};
+
+type That = struct {
+    that_member uint32;
+};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn split_by_two_members() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+type This = struct {
+    @available(added=2)
+    first That;
+    @available(added=3)
+    second That;
+};
+
+type That = struct {};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type This = struct {};
+
+type That = struct {};
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+type This = struct {
+    first That;
+};
+
+type That = struct {};
+"#;
+
+    let v3_onward = r#"
+@available(added=3)
+library example;
+
+type This = struct {
+    first That;
+    second That;
+};
+
+type That = struct {};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn mutual_recursion() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(added=2)
+type Foo = table {
+    1: str string;
+    @available(added=3)
+    // Struct wrapper needed because tables aren't allowed to be boxed.
+    2: bars vector<box<struct { bar Bar; }>>;
+};
+
+@available(added=2)
+type Bar = table {
+    @available(removed=5)
+    // OuterStruct needed because aren't allowed to contain boxes.
+    // InnerStruct needed because tables aren't allowed to be boxed.
+    1: foo @generated_name("OuterStruct") struct {
+        inner box<@generated_name("InnerStruct") struct { foo Foo; }>;
+    };
+    @available(added=4)
+    2: str string;
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+type Foo = table {
+    1: str string;
+};
+
+type Bar = table {
+    1: foo @generated_name("OuterStruct") struct {
+        inner box<@generated_name("InnerStruct") struct { foo Foo; }>;
+    };
+};
+"#;
+
+    let v3 = r#"
+@available(added=3, removed=4)
+library example;
+
+type Foo = table {
+    1: str string;
+    2: bars vector<box<struct { bar Bar; }>>;
+};
+
+type Bar = table {
+    1: foo @generated_name("OuterStruct") struct {
+        inner box<@generated_name("InnerStruct") struct { foo Foo; }>;
+    };
+};
+"#;
+
+    let v4 = r#"
+@available(added=4, removed=5)
+library example;
+
+type Foo = table {
+    1: str string;
+    2: bars vector<box<struct { bar Bar; }>>;
+};
+
+type Bar = table {
+    1: foo @generated_name("OuterStruct") struct {
+        inner box<@generated_name("InnerStruct") struct { foo Foo; }>;
+    };
+    2: str string;
+};
+"#;
+
+    let v5_onward = r#"
+@available(added=5)
+library example;
+
+type Foo = table {
+    1: str string;
+    2: bars vector<box<struct { bar Bar; }>>;
+};
+
+type Bar = table {
+    2: str string;
+};
+"#;
+
+    let all_versions = r#"
+library example;
+
+type Foo = table {
+    1: str string;
+    2: bars vector<box<struct { bar Bar; }>>;
+};
+
+type Bar = table {
+    1: foo @generated_name("OuterStruct") struct {
+        inner box<@generated_name("InnerStruct") struct { foo Foo; }>;
+    };
+    2: str string;
+};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn misaligned_swapping() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(replaced=4)
+const LEN uint64 = 16;
+@available(added=4)
+const LEN uint64 = 32;
+
+@available(added=2)
+type Foo = table {
+    @available(replaced=3)
+    1: bar string;
+    @available(added=3)
+    1: bar string:LEN;
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+const LEN uint64 = 16;
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+const LEN uint64 = 16;
+type Foo = table {
+    1: bar string;
+};
+"#;
+
+    let v3 = r#"
+@available(added=3, removed=4)
+library example;
+
+const LEN uint64 = 16;
+type Foo = table {
+    1: bar string:LEN;
+};
+"#;
+
+    let v4_onward = r#"
+@available(added=4)
+library example;
+
+const LEN uint64 = 32;
+type Foo = table {
+    1: bar string:LEN;
+};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn strict_to_flexible() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+type X = struct {
+    @available(added=2, removed=4)
+    y Y;
+};
+
+@available(added=2)
+type Y = strict(removed=3) flexible(added=3) enum { A = 1; };
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type X = struct {};
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+type X = struct {
+    y Y;
+};
+
+type Y = strict enum { A = 1; };
+"#;
+
+    let v3 = r#"
+@available(added=3, removed=4)
+library example;
+
+type X = struct {
+    y Y;
+};
+
+type Y = flexible enum { A = 1; };
+"#;
+
+    let v4_onward = r#"
+@available(added=4)
+library example;
+
+type X = struct {};
+
+type Y = flexible enum { A = 1; };
+"#;
+
+    let all_versions = r#"
+library example;
+
+type X = struct {
+    y Y;
+};
+
+type Y = flexible enum { A = 1; };
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn name_reuse() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(added=2, removed=3)
+type Foo = struct {
+    bar Bar;
+};
+@available(added=1, replaced=4)
+type Bar = struct {};
+
+@available(added=4, removed=7)
+type Foo = struct {};
+@available(added=4, removed=6)
+type Bar = struct {
+    foo Foo;
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type Bar = struct {};
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+type Foo = struct {
+    bar Bar;
+};
+type Bar = struct {};
+"#;
+
+    let v3 = r#"
+@available(added=3, removed=4)
+library example;
+
+type Bar = struct {};
+"#;
+
+    let v4_to_5 = r#"
+@available(added=4, removed=6)
+library example;
+
+type Foo = struct {};
+type Bar = struct {
+    foo Foo;
+};
+"#;
+
+    let v6 = r#"
+@available(added=6, removed=7)
+library example;
+
+type Foo = struct {};
+"#;
+
+    let v7_onward = r#"
+@available(added=7)
+library example;
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn consts_and_constraints() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(removed=4)
+const LEN uint64 = 10;
+
+type Foo = table {
+    @available(replaced=3)
+    1: bar Bar;
+    @available(added=3, replaced=4)
+    1: bar string:LEN;
+    @available(added=4, removed=5)
+    1: bar Bar;
+};
+
+@available(replaced=2)
+type Bar = struct {};
+@available(added=2)
+type Bar = table {};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+const LEN uint64 = 10;
+type Foo = table {
+    1: bar Bar;
+};
+type Bar = struct {};
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+const LEN uint64 = 10;
+type Foo = table {
+    1: bar Bar;
+};
+type Bar = table {};
+"#;
+
+    let v3 = r#"
+@available(added=3, removed=4)
+library example;
+
+const LEN uint64 = 10;
+type Foo = table {
+    1: bar string:LEN;
+};
+type Bar = table {};
+"#;
+
+    let v4 = r#"
+@available(added=4, removed=5)
+library example;
+
+type Foo = table {
+    1: bar Bar;
+};
+type Bar = table {};
+"#;
+
+    let v5_onward = r#"
+@available(added=5)
+library example;
+
+type Foo = table {};
+type Bar = table {};
+"#;
+
+    let all_versions = r#"
+library example;
+
+const LEN uint64 = 10;
+
+type Foo = table {
+    1: bar Bar;
+};
+
+type Bar = table {};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn all_elements_split_by_membership() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(added=2, removed=5)
+type Bits = bits {
+    FIRST = 1;
+    @available(added=3, removed=4)
+    SECOND = 2;
+};
+
+@available(added=2, removed=5)
+type Enum = enum {
+    FIRST = 1;
+    @available(added=3, removed=4)
+    SECOND = 2;
+};
+
+@available(added=2, removed=5)
+type Struct = struct {
+    first string;
+    @available(added=3, removed=4)
+    second string;
+};
+
+@available(added=2, removed=5)
+type Table = table {
+    1: first string;
+    @available(added=3, removed=4)
+    2: second string;
+};
+
+@available(added=2, removed=5)
+type Union = union {
+    1: first string;
+    @available(added=3, removed=4)
+    2: second string;
+};
+
+@available(added=2, removed=5)
+protocol TargetProtocol {};
+
+@available(added=2, removed=5)
+protocol ProtocolComposition {
+    @available(added=3, removed=4)
+    compose TargetProtocol;
+};
+
+@available(added=2, removed=5)
+protocol ProtocolMethods {
+    @available(added=3, removed=4)
+    Method() . ();
+};
+
+@available(added=2, removed=5)
+service Service {
+    first client_end:TargetProtocol;
+    @available(added=3, removed=4)
+    second client_end:TargetProtocol;
+};
+
+@available(added=2, removed=5)
+resource_definition Resource : uint32 {
+    properties {
+        first uint32;
+        @available(added=3, removed=4)
+        second uint32;
+        // This property is required for compilation, but is not otherwise under test.
+        subtype flexible enum : uint32 {};
+    };
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+"#;
+
+    let v2 = r#"
+@available(added=2, removed=3)
+library example;
+
+type Bits = bits {
+    FIRST = 1;
+};
+
+type Enum = enum {
+    FIRST = 1;
+};
+
+type Struct = struct {
+    first string;
+};
+
+type Table = table {
+    1: first string;
+};
+
+type Union = union {
+    1: first string;
+};
+
+protocol TargetProtocol {};
+
+protocol ProtocolComposition {};
+
+protocol ProtocolMethods {};
+
+service Service {
+    first client_end:TargetProtocol;
+};
+
+resource_definition Resource : uint32 {
+    properties {
+        first uint32;
+        // This property is required for compilation, but is not otherwise under test.
+        subtype flexible enum : uint32 {};
+    };
+};
+"#;
+
+    let v3 = r#"
+@available(added=3, removed=4)
+library example;
+
+type Bits = bits {
+    FIRST = 1;
+    SECOND = 2;
+};
+
+type Enum = enum {
+    FIRST = 1;
+    SECOND = 2;
+};
+
+type Struct = struct {
+    first string;
+    second string;
+};
+
+type Table = table {
+    1: first string;
+    2: second string;
+};
+
+type Union = union {
+    1: first string;
+    2: second string;
+};
+
+protocol TargetProtocol {};
+
+protocol ProtocolComposition {
+    compose TargetProtocol;
+};
+
+protocol ProtocolMethods {
+    Method() . ();
+};
+
+service Service {
+    first client_end:TargetProtocol;
+    second client_end:TargetProtocol;
+};
+
+resource_definition Resource : uint32 {
+    properties {
+        first uint32;
+        second uint32;
+        // This property is required for compilation, but is not otherwise under test.
+        subtype flexible enum : uint32 {};
+    };
+};
+"#;
+
+    let v4 = r#"
+@available(added=4, removed=5)
+library example;
+
+type Bits = bits {
+    FIRST = 1;
+};
+
+type Enum = enum {
+    FIRST = 1;
+};
+
+type Struct = struct {
+    first string;
+};
+
+
+type Table = table {
+    1: first string;
+};
+
+type Union = union {
+    1: first string;
+};
+
+protocol TargetProtocol {};
+
+protocol ProtocolComposition {};
+
+protocol ProtocolMethods {};
+
+service Service {
+    first client_end:TargetProtocol;
+};
+
+resource_definition Resource : uint32 {
+    properties {
+        first uint32;
+        // This property is required for compilation, but is not otherwise under test.
+        subtype flexible enum : uint32 {};
+    };
+};
+"#;
+
+    let v5_onward = r#"
+@available(added=5)
+library example;
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn all_elements_split_by_reference() {
+    let fidl_prefix = r#"
+@available(added=1)
+library example;
+
+@available(replaced=2)
+const VALUE uint32 = 1;
+@available(added=2)
+const VALUE uint32 = 2;
+
+@available(replaced=2)
+type Type = struct {
+    value bool;
+};
+@available(added=2)
+type Type = table {
+    1: value bool;
+};
+
+// Need unsigned integers for bits underlying type.
+@available(replaced=2)
+alias IntegerType = uint32;
+@available(added=2)
+alias IntegerType = uint64;
+
+// Need uint32/int32 for error type.
+@available(replaced=2)
+alias Error::ErrorIntegerType = uint32;
+@available(added=2)
+alias Error::ErrorIntegerType = int32;
+
+@available(replaced=2)
+protocol TargetProtocol {};
+@available(added=2)
+protocol TargetProtocol {
+    Method();
+};
+"#;
+
+    let v1_prefix = r#"
+@available(added=1, removed=2)
+library example;
+
+const VALUE uint32 = 1;
+
+type Type = struct {
+    value bool;
+};
+
+alias IntegerType = uint32;
+
+alias Error::ErrorIntegerType = uint32;
+
+protocol TargetProtocol {};
+"#;
+
+    let v2_onward_prefix = r#"
+@available(added=2)
+library example;
+
+const VALUE uint32 = 2;
+
+type Type = table {
+    1: value bool;
+};
+
+alias IntegerType = uint64;
+
+alias Error::ErrorIntegerType = int32;
+
+protocol TargetProtocol { Method(); };
+"#;
+
+    let common_suffix = r#"
+const CONST uint32 = VALUE;
+
+alias Alias = Type;
+
+// TODO(https://fxbug.dev/42158155): Uncomment.
+// type Newtype = Type;
+
+type BitsUnderlying = bits : IntegerType {
+    MEMBER = 1;
+};
+
+type BitsMemberValue = bits {
+    MEMBER = VALUE;
+};
+
+type EnumUnderlying = enum : IntegerType {
+    MEMBER = 1;
+};
+
+type EnumMemberValue = enum {
+    MEMBER = VALUE;
+};
+
+type StructMemberType = struct {
+    member Type;
+};
+
+type StructMemberDefault = struct {
+    @allow_deprecated_struct_defaults
+    member uint32 = VALUE;
+};
+
+type Table = table {
+    1: member Type;
+};
+
+type Union = union {
+    1: member Type;
+};
+
+protocol ProtocolComposition {
+    compose TargetProtocol;
+};
+
+protocol ProtocolMethodRequest {
+    Method(Type);
+};
+
+protocol ProtocolMethodResponse {
+    Method() . (Type);
+};
+
+protocol ProtocolEvent {
+    . Event(Type);
+};
+
+protocol ProtocolSuccess {
+    Method() . (Type) error uint32;
+};
+
+protocol ProtocolError::Error {
+    Method() . () error Error::ErrorIntegerType;
+};
+
+service Service {
+    member client_end:TargetProtocol;
+};
+
+resource_definition Resource : uint32 {
+    properties {
+        first IntegerType;
+        // This property is required for compilation, but is not otherwise under test.
+        subtype flexible enum : uint32 {};
+    };
+};
+
+type NestedTypes = struct {
+    first vector<Type>;
+    second vector<array<Type, 3>>;
+};
+
+type LayoutParameters = struct {
+    member array<bool, VALUE>;
+};
+
+type Constraints = struct {
+    member vector<bool>:VALUE;
+};
+
+type AnonymousLayouts = struct {
+    first_member table {
+        1: second_member union {
+            1: third_member Type;
+        };
+    };
+};
+
+protocol AnonymousLayoutsInProtocol {
+    Request(struct { member Type; });
+    Response() . (struct { member Type; });
+    . Event(struct { member Type; });
+    Success() . (struct { member Type; }) error uint32;
+    Error::Error() . () error Error::ErrorIntegerType;
+};
+"#;
+
+    let fidl = String::from(fidl_prefix) + common_suffix;
+    let v1 = String::from(v1_prefix) + common_suffix;
+    let v2_onward = String::from(v2_onward_prefix) + common_suffix;
+
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn convert_named_to_anonymous() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(replaced=2)
+type Foo = struct {
+    member Bar;
+};
+
+@available(replaced=2)
+type Bar = struct {};
+
+@available(added=2)
+type Foo = struct {
+    member @generated_name("Bar") struct {};
+};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type Foo = struct {
+    member Bar;
+};
+
+type Bar = struct {};
+"#;
+
+    let v2_onward = r#"
+@available(added=2)
+library example;
+
+type Foo = struct {
+    member @generated_name("Bar") struct {};
+};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+}
+
+#[test]
+#[ignore]
+fn convert_anonymous_to_named() {
+    let fidl = r#"
+@available(added=1)
+library example;
+
+@available(replaced=2)
+type Foo = struct {
+    member @generated_name("Bar") struct {};
+};
+
+@available(added=2)
+type Foo = struct {
+    member Bar;
+};
+
+@available(added=2)
+type Bar = struct {};
+"#;
+
+    let v1 = r#"
+@available(added=1, removed=2)
+library example;
+
+type Foo = struct {
+    member @generated_name("Bar") struct {};
+};
+"#;
+
+    let v2_onward = r#"
+@available(added=2)
+library example;
+
+type Foo = struct {
+    member Bar;
+};
+
+type Bar = struct {};
+"#;
+
+    // test check
+    // test check
+    // test check
+    // test check
+}

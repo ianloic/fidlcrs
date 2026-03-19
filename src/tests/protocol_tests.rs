@@ -589,3 +589,931 @@ protocol MyProtocol {
     );
     assert!(lib.check_compile());
 }
+
+#[test]
+#[ignore]
+fn bad_ajar_missing_protocol_token() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+ajar Empty {};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_closed_missing_protocol_token() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+closed Empty {};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_invalid_compose_ajar_in_closed() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+ajar protocol Composed {};
+
+closed protocol Composing {
+  compose Composed;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_invalid_compose_open_in_ajar() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0114.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_modifier_flexible_on_compose() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol A {};
+
+protocol B {
+  flexible compose A;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_modifier_strict_on_invalid_member() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Example {
+  strict;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_modifier_flexible_on_invalid_member() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Example {
+  flexible;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_colon_not_supported() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Parent {};
+protocol Child : Parent {};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_doc_comment_outside_attributelist() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol WellDocumented {
+    Method();
+    /// Misplaced doc comment
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_cannot_compose_yourself() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Narcisse {
+    compose Narcisse;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_cannot_mutually_compose() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0057-b.test.fidl");
+
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_cannot_compose_same_protocol_twice() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Parent {
+    Method();
+};
+
+protocol Child {
+    compose Parent;
+    compose Parent;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_cannot_compose_missing_protocol() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Child {
+    compose MissingParent;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_cannot_compose_non_protocol() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0073.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_cannot_use_ordinals_in_protocol_declaration() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol NoMoreOrdinals {
+    42: NiceTry();
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_empty_named_item() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0020.noformat.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_no_other_pragma_than_compose() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol Wrong {
+    not_compose Something;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_duplicate_method_names_from_immediate_composition() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyChildProtocol {
+    MyMethod();
+};
+
+protocol MyProtocol {
+    compose MyChildProtocol;
+    MyMethod();
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_duplicate_method_names_from_multiple_composition() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol A {
+    Method();
+};
+
+protocol B {
+    Method();
+};
+
+protocol C {
+    compose A;
+    compose B;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_duplicate_method_names_from_nested_composition() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol A {
+    MethodA();
+};
+
+protocol B {
+    compose A;
+    MethodB();
+};
+
+protocol C {
+    compose A;
+    MethodC();
+};
+
+protocol D {
+    compose B;
+    compose C;
+    MethodD();
+    MethodA();
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_composed_protocols_have_clashing_ordinals() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library methodhasher;
+
+protocol SpecialComposed {
+   ClashOne();
+};
+
+protocol Special {
+    compose SpecialComposed;
+    ClashTwo();
+};
+"#,
+    );
+
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_request_must_be_protocol_with_optional() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+type MyStruct = struct {};
+alias ServerEnd = server_end:<MyStruct, optional>;
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_request_must_contain_protocol() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod(resource struct { server server_end; });
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_request_cannot_have_size() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol P {};
+type S = struct {
+    p server_end:<P,0>;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_duplicate_parameter_name() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol P {
+  MethodWithDuplicateParams(struct {foo uint8; foo uint8; });
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_parameterized_typed_channel() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {};
+
+type Foo = resource struct {
+  foo client_end<MyProtocol>;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_too_many_constraints_typed_channel() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {};
+
+type Foo = resource struct {
+  foo client_end:<MyProtocol, optional, 1, 2>;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_struct_layout_default_member() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+  MyMethod(struct {
+    @allow_deprecated_struct_defaults
+    foo uint8 = 1;
+  });
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_event_empty_payload_struct() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0077-b.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_enum_layout() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0074.test.fidl");
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn good_method_absent_response_with_error() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod() . () error uint32;
+};
+"#,
+    );
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_empty_struct_response_with_error() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod() . (struct {}) error uint32;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn good_method_named_alias() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+type MyStruct = struct {
+  a bool;
+};
+
+alias MyStructAlias = MyStruct;
+alias MyAliasAlias = MyStructAlias;
+
+protocol MyProtocol {
+    MyMethod(MyStructAlias) . (MyAliasAlias);
+};
+"#,
+    );
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_named_empty_payload_struct() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+type MyStruct = struct{};
+
+protocol MyProtocol {
+    MyMethod(MyStruct) . (MyStruct);
+};
+"#,
+    );
+    // expect_fail
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_named_default_value_struct() {
+    let mut library = TestLibrary::new();
+    library.add_errcat_file("bad/fi-0084.test.fidl");
+    // expect_fail
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_named_invalid_handle() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+type ObjType = strict enum : uint32 {
+    NONE = 0;
+    VMO = 3;
+};
+
+type Rights = strict bits : uint32 {
+    TRANSFER = 1;
+};
+
+resource_definition Handle : uint32 {
+    properties {
+        subtype ObjType;
+        rights Rights;
+    };
+};
+
+protocol MyProtocol {
+    MyMethod(Handle);
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_named_invalid_alias() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+type ObjType = strict enum : uint32 {
+    NONE = 0;
+    VMO = 3;
+};
+
+type Rights = strict bits : uint32 {
+    TRANSFER = 1;
+};
+
+resource_definition Handle : uint32 {
+    properties {
+        subtype ObjType;
+        rights Rights;
+    };
+};
+
+alias MyPrimAlias = bool;
+alias MyHandleAlias = Handle;
+alias MyVectorAlias = vector<MyPrimAlias>;
+alias MyAliasAlias = MyVectorAlias:optional;
+
+protocol MyProtocol {
+    strict MyMethod(MyPrimAlias) . (MyHandleAlias);
+    strict MyOtherMethod(MyVectorAlias) . (MyAliasAlias);
+};
+"#,
+    );
+
+    // expect_fail
+    // expect_fail
+    // expect_fail
+    // TODO(https://fxbug.dev/42175844): Should be "vector<bool>:optional".
+    // expect_fail
+
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_method_named_invalid_kind() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyOtherProtocol {
+  MyOtherMethod();
+};
+
+service MyService {
+  my_other_protocol client_end:MyOtherProtocol;
+};
+
+protocol MyProtocol {
+    MyMethod(MyOtherProtocol) . (MyService);
+};
+"#,
+    );
+    // expect_fail
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn good_method_table_response() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyOtherProtocol {};
+
+type MyTable = resource table {
+  1: a client_end:<MyProtocol>;
+};
+
+protocol MyProtocol {
+  MyMethod() . (table {
+    1: b bool;
+  });
+  . OnMyEvent(MyTable);
+};
+"#,
+    );
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn good_method_table_result_payload() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyOtherProtocol {};
+
+type MyTable = resource table {
+  1: a client_end:<MyProtocol>;
+};
+
+protocol MyProtocol {
+  MyMethod() . (MyTable) error uint32;
+  MyAnonResponseMethod() . (table {
+    1: b bool;
+  }) error uint32;
+};
+"#,
+    );
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn good_method_union_request() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyOtherProtocol {};
+
+type MyUnion = strict resource union {
+  1: a client_end:<MyProtocol>;
+};
+
+protocol MyProtocol {
+  MyMethodOneWay(flexible union {
+    1: b bool;
+  });
+  MyMethodTwoWay(MyUnion) . ();
+};
+"#,
+    );
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn good_method_union_result_payload() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyOtherProtocol {};
+
+type MyUnion = strict resource union {
+  1: a client_end:<MyProtocol>;
+};
+
+protocol MyProtocol {
+  MyMethod() . (MyUnion) error uint32;
+  MyAnonResponseMethod() . (flexible union {
+    1: b bool;
+  }) error uint32;
+};
+"#,
+    );
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_event_error_syntax() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    . OnMyEvent() error int32;
+};
+"#,
+    );
+    // expect_fail
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_invalid_request_type() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod(box);
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_invalid_response_type() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod() . (box);
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_disallowed_success_type() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod() . (uint32) error uint32;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}
+
+#[test]
+#[ignore]
+fn bad_invalid_success_type() {
+    let mut library = TestLibrary::new();
+    library.add_source_file(
+        "example.fidl",
+        r#"
+library example;
+
+protocol MyProtocol {
+    MyMethod() . (box) error uint32;
+};
+"#,
+    );
+    // expect_fail
+    assert!(library.check_compile());
+}

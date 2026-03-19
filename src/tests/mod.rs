@@ -34,6 +34,7 @@ pub mod sdk_fidl;
 pub mod service_tests;
 pub mod span_tests;
 pub mod strictness_tests;
+pub mod string_array_tests;
 pub mod structs_tests;
 pub mod table_tests;
 pub mod test_library;

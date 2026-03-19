@@ -2,9 +2,9 @@ use crate::compiler::{CanonicalNames, Compiler, DeclarationKind, MemberKind};
 use crate::diagnostics::Error;
 use crate::experimental_flags::ExperimentalFlag;
 use crate::flat_ast::{
-    Decl, DeclBase, DependencyDeclaration, EnumDeclaration, Openness, PrimitiveSubtype, ProtocolCompose,
-    ProtocolDeclaration, ProtocolMethod, StructDeclaration, Type, TypeKind, TypeShape,
-    UnionDeclaration, UnionMember,
+    Decl, DeclBase, DependencyDeclaration, EnumDeclaration, Openness, PrimitiveSubtype,
+    ProtocolCompose, ProtocolDeclaration, ProtocolMethod, StructDeclaration, Type, TypeKind,
+    TypeShape, UnionDeclaration, UnionMember,
 };
 use crate::name::NamingContext;
 use crate::names::{OwnedLibraryName, OwnedQualifiedName};
@@ -838,7 +838,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 .insert(OwnedQualifiedName::from(full_synth.clone()));
                         } else {
                             self.dependency_declarations
-                                .entry(crate::names::OwnedLibraryName::new(library_name.to_string()))
+                                .entry(crate::names::OwnedLibraryName::new(
+                                    library_name.to_string(),
+                                ))
                                 .or_default()
                                 .insert(
                                     full_synth.clone(),
@@ -990,7 +992,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .insert(OwnedQualifiedName::from(full_synth_union.clone()));
                 } else {
                     self.dependency_declarations
-                        .entry(crate::names::OwnedLibraryName::new(library_name.to_string()))
+                        .entry(crate::names::OwnedLibraryName::new(
+                            library_name.to_string(),
+                        ))
                         .or_default()
                         .insert(
                             full_synth_union.clone(),

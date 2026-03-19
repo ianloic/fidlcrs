@@ -533,7 +533,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
             },
             library_dependencies,
             bits_declarations: self.declarations.bits().cloned().collect(),
-            const_declarations: self.declarations.consts().filter(|d| d.name.as_string().starts_with(&format!("{}/", self.library_name))).cloned().collect(),
+            const_declarations: self
+                .declarations
+                .consts()
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
+                .cloned()
+                .collect(),
             enum_declarations: self
                 .declarations
                 .enums()
@@ -559,7 +568,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
                 .cloned()
                 .collect(),
-            service_declarations: self.declarations.services().filter(|d| d.name.as_string().starts_with(&format!("{}/", self.library_name))).cloned().collect(),
+            service_declarations: self
+                .declarations
+                .services()
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
+                .cloned()
+                .collect(),
             struct_declarations: self
                 .declarations
                 .structs()
@@ -575,7 +593,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let mut visit = |t: &crate::flat_ast::Type| {
                     if let Some(id) = t.identifier() {
                         if !id.starts_with(&format!("{}/", self.library_name)) {
-                            let is_struct = self.declarations.structs().any(|s| s.name.as_string() == id);
+                            let is_struct = self
+                                .declarations
+                                .structs()
+                                .any(|s| s.name.as_string() == id);
                             if is_struct {
                                 external_names.insert(id);
                             }
@@ -583,41 +604,91 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 };
                 for protocol in self.declarations.protocols() {
-                    if protocol.name.as_string().starts_with(&format!("{}/", self.library_name)) {
+                    if protocol
+                        .name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                    {
                         for method in &protocol.methods {
-                            if let Some(t) = &method.maybe_request_payload { visit(t); }
-                            if let Some(t) = &method.maybe_response_payload { visit(t); }
-                            if let Some(t) = &method.maybe_response_success_type { visit(t); }
-                            if let Some(t) = &method.maybe_response_err_type { visit(t); }
+                            if let Some(t) = &method.maybe_request_payload {
+                                visit(t);
+                            }
+                            if let Some(t) = &method.maybe_response_payload {
+                                visit(t);
+                            }
+                            if let Some(t) = &method.maybe_response_success_type {
+                                visit(t);
+                            }
+                            if let Some(t) = &method.maybe_response_err_type {
+                                visit(t);
+                            }
                         }
                     }
                 }
-                self.declarations.structs().filter(|d| {
-                    external_names.contains(&d.name.as_string())
-                }).cloned().collect()
+                self.declarations
+                    .structs()
+                    .filter(|d| external_names.contains(&d.name.as_string()))
+                    .cloned()
+                    .collect()
             },
-            table_declarations: self.declarations.tables().filter(|d| {
-                d.name.as_string().starts_with(&format!("{}/", self.library_name))
-            }).cloned().collect(),
-            union_declarations: self.declarations.unions().filter(|d| {
-                d.name.as_string().starts_with(&format!("{}/", self.library_name))
-            }).cloned().collect(),
+            table_declarations: self
+                .declarations
+                .tables()
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
+                .cloned()
+                .collect(),
+            union_declarations: self
+                .declarations
+                .unions()
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
+                .cloned()
+                .collect(),
             overlay_declarations: if self
                 .experimental_flags
                 .is_enabled(ExperimentalFlag::ZxCTypes)
             {
-                Some(self.declarations.overlays().filter(|d| {
-                    d.name.as_string().starts_with(&format!("{}/", self.library_name))
-                }).cloned().collect())
+                Some(
+                    self.declarations
+                        .overlays()
+                        .filter(|d| {
+                            d.name
+                                .as_string()
+                                .starts_with(&format!("{}/", self.library_name))
+                        })
+                        .cloned()
+                        .collect(),
+                )
             } else {
                 None
             },
-            alias_declarations: self.declarations.aliases().filter(|d| {
-                d.name.as_string().starts_with(&format!("{}/", self.library_name))
-            }).cloned().collect(),
-            new_type_declarations: self.declarations.new_types().filter(|d| {
-                d.name.as_string().starts_with(&format!("{}/", self.library_name))
-            }).cloned().collect(),
+            alias_declarations: self
+                .declarations
+                .aliases()
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
+                .cloned()
+                .collect(),
+            new_type_declarations: self
+                .declarations
+                .new_types()
+                .filter(|d| {
+                    d.name
+                        .as_string()
+                        .starts_with(&format!("{}/", self.library_name))
+                })
+                .cloned()
+                .collect(),
             declaration_order: self.declaration_order.clone(),
         };
 
@@ -803,7 +874,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     &[&display_name, &total_size, &65535u32],
                 );
             }
-            shapes.insert(OwnedQualifiedName::from(decl.name.as_string()), decl.type_shape.clone());
+            shapes.insert(
+                OwnedQualifiedName::from(decl.name.as_string()),
+                decl.type_shape.clone(),
+            );
         }
         for decl in self.declarations.unions_mut() {
             let mut max_ool = 0u32;
@@ -856,7 +930,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape.has_padding = has_padding;
                 decl.type_shape.has_flexible_envelope = true;
             }
-            shapes.insert(OwnedQualifiedName::from(decl.name.as_string()), decl.type_shape.clone());
+            shapes.insert(
+                OwnedQualifiedName::from(decl.name.as_string()),
+                decl.type_shape.clone(),
+            );
         }
         for decl in self.declarations.aliases_mut() {
             Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
@@ -1178,7 +1255,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                        self.declarations.push(Decl::Bits(compiled));
+                    self.declarations.push(Decl::Bits(compiled));
                 } else if let raw_ast::Layout::Table(ref ta) = t.layout {
                     let compiled = self.compile_table(
                         t.name.data(),
@@ -1188,7 +1265,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                        self.declarations.push(Decl::Table(compiled));
+                    self.declarations.push(Decl::Table(compiled));
                 } else if let raw_ast::Layout::Union(ref u) = t.layout {
                     let compiled = self.compile_union(
                         t.name.data(),
@@ -1231,7 +1308,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         typ,
                         alias,
                     );
-                        self.declarations.push(Decl::NewType(compiled));
+                    self.declarations.push(Decl::NewType(compiled));
                 }
             }
             RawDecl::Struct(s) => {
@@ -1270,7 +1347,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         b.attributes.as_deref(),
                         None,
                     );
-                        self.declarations.push(Decl::Bits(compiled));
+                    self.declarations.push(Decl::Bits(compiled));
                 }
             }
             RawDecl::Union(u) => {
@@ -1300,7 +1377,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                        self.declarations.push(Decl::Table(compiled));
+                    self.declarations.push(Decl::Table(compiled));
                 }
             }
             RawDecl::Protocol(p) => {
@@ -1343,20 +1420,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
             RawDecl::Service(s) => {
                 let short_name = s.name.data();
                 let compiled = self.compile_service(short_name, s, &library_name);
-                    self.declarations.push(Decl::Service(compiled));
+                self.declarations.push(Decl::Service(compiled));
             }
             RawDecl::Resource(r) => {
                 let short_name = r.name.data();
                 let compiled = self.compile_resource(short_name, r, &library_name);
-                    self.declarations.push(Decl::ExperimentalResource(compiled));
+                self.declarations.push(Decl::ExperimentalResource(compiled));
             }
             RawDecl::Const(c) => {
                 let compiled = self.compile_const(c, &library_name);
-                    self.declarations.push(Decl::Const(compiled));
+                self.declarations.push(Decl::Const(compiled));
             }
             RawDecl::Alias(a) => {
                 let compiled = self.compile_alias(a, &library_name);
-                    self.declarations.push(Decl::Alias(compiled));
+                self.declarations.push(Decl::Alias(compiled));
             }
         }
 
@@ -1380,18 +1457,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     | DeclarationKind::Service => None,
                     _ => self.shapes.get::<str>(name).cloned(),
                 };
-                
-                let resource = self.declarations.decls().find_map(|d| {
-                    match d {
-                        Decl::Struct(s) if s.name.as_string() == *name => Some(s.resource),
-                        Decl::Table(t) if t.name.as_string() == *name => Some(t.resource),
-                        Decl::Union(u) if u.name.as_string() == *name => Some(u.resource),
-                        Decl::Overlay(o) if o.name.as_string() == *name => Some(o.resource),
-                        _ => None,
-                    }
+
+                let resource = self.declarations.decls().find_map(|d| match d {
+                    Decl::Struct(s) if s.name.as_string() == *name => Some(s.resource),
+                    Decl::Table(t) if t.name.as_string() == *name => Some(t.resource),
+                    Decl::Union(u) if u.name.as_string() == *name => Some(u.resource),
+                    Decl::Overlay(o) if o.name.as_string() == *name => Some(o.resource),
+                    _ => None,
                 });
 
-                DependencyDeclaration { kind, type_shape, resource }
+                DependencyDeclaration {
+                    kind,
+                    type_shape,
+                    resource,
+                }
             };
 
             self.dependency_declarations

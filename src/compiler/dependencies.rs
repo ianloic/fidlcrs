@@ -378,6 +378,14 @@ pub(crate) fn collect_deps_from_ctor(
     for param in &ctor.parameters {
         collect_deps_from_ctor(param, library_name, deps, skip_optional, inline_names);
     }
+    for constraint in &ctor.constraints {
+        if let raw_ast::Constant::Identifier(id_const) = constraint
+            && id_const.identifier.to_string() == "optional"
+        {
+            continue;
+        }
+        collect_deps_from_constant(constraint, library_name, deps);
+    }
 }
 
 pub(crate) fn collect_deps_from_layout(
@@ -540,7 +548,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
     }
 
     pub(crate) fn recompute_declaration_order(&mut self) {
-        pub(crate) fn get_type_dependencies(ty: &Type) -> Vec<String> {
+        pub(crate) fn get_type_dependencies(ty: &Type, library_name: &str) -> Vec<String> {
             let mut deps = Vec::new();
             if ty.nullable() {
                 return deps;
@@ -549,7 +557,14 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 deps.push(id.clone());
             }
             if let Some(inner) = ty.element_type() {
-                deps.extend(get_type_dependencies(inner));
+                deps.extend(get_type_dependencies(inner, library_name));
+            }
+            if let Some(name) = ty.maybe_size_constant_name.as_ref() {
+                if name.contains('/') {
+                    deps.push(name.clone());
+                } else {
+                    deps.push(format!("{}/{}", library_name, name));
+                }
             }
             // DO NOT process ty.protocol() because Handles are out-of-line pointers
             // and do not induce topological sorting edges.
@@ -604,7 +619,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 .bits()
                 .find(|x| &x.name.as_string() == name)
             {
-                d.extend(get_type_dependencies(&obj.type_));
+                d.extend(get_type_dependencies(
+                    &obj.type_,
+                    &self.library_name.to_string(),
+                ));
                 for m in &obj.members {
                     d.extend(get_constant_deps(&m.value));
                 }
@@ -613,7 +631,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 .consts()
                 .find(|x| &x.name.as_string() == name)
             {
-                d.extend(get_type_dependencies(&obj.type_));
+                d.extend(get_type_dependencies(
+                    &obj.type_,
+                    &self.library_name.to_string(),
+                ));
                 d.extend(get_constant_deps(&obj.value));
             } else if let Some(obj) = self
                 .declarations
@@ -629,7 +650,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 .find(|x| &x.name.as_string() == name)
             {
                 for m in &obj.members {
-                    d.extend(get_type_dependencies(&m.type_));
+                    d.extend(get_type_dependencies(
+                        &m.type_,
+                        &self.library_name.to_string(),
+                    ));
                     if let Some(def_val) = &m.maybe_default_value {
                         d.extend(get_constant_deps(def_val));
                     }
@@ -641,7 +665,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             {
                 for m in &obj.members {
                     if let Some(ref ty) = m.type_ {
-                        d.extend(get_type_dependencies(ty));
+                        d.extend(get_type_dependencies(ty, &self.library_name.to_string()));
                     }
                 }
             } else if let Some(obj) = self
@@ -651,7 +675,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             {
                 for m in &obj.members {
                     if let Some(ref ty) = m.type_ {
-                        d.extend(get_type_dependencies(ty));
+                        d.extend(get_type_dependencies(ty, &self.library_name.to_string()));
                     }
                 }
             } else if let Some(obj) = self
@@ -676,16 +700,25 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 .find(|x| &x.name.as_string() == name)
             {
                 for m in &obj.members {
-                    d.extend(get_type_dependencies(&m.type_));
+                    d.extend(get_type_dependencies(
+                        &m.type_,
+                        &self.library_name.to_string(),
+                    ));
                 }
             } else if let Some(obj) = self
                 .declarations
                 .experimental_resources()
                 .find(|x| &x.name.as_string() == name)
             {
-                d.extend(get_type_dependencies(&obj.type_));
+                d.extend(get_type_dependencies(
+                    &obj.type_,
+                    &self.library_name.to_string(),
+                ));
                 for prop in &obj.properties {
-                    d.extend(get_type_dependencies(&prop.type_));
+                    d.extend(get_type_dependencies(
+                        &prop.type_,
+                        &self.library_name.to_string(),
+                    ));
                 }
             } else if let Some(obj) = self
                 .declarations
@@ -697,7 +730,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
                 for m in &obj.methods {
                     if let Some(req) = &m.maybe_request_payload {
-                        d.extend(get_type_dependencies(req));
+                        d.extend(get_type_dependencies(req, &self.library_name.to_string()));
                     }
                     if m.has_error {
                         let name_fqn = OwnedQualifiedName::parse(name);
@@ -708,7 +741,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         );
                         d.push(union_name);
                     } else if let Some(res) = &m.maybe_response_payload {
-                        d.extend(get_type_dependencies(res));
+                        d.extend(get_type_dependencies(res, &self.library_name.to_string()));
                     }
                 }
             }

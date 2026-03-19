@@ -550,9 +550,36 @@ impl From<&flat_ast::Root> for JsonRoot {
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             experiments: ast.experiments.clone(),
             library_dependencies: ast.library_dependencies.iter().map(Into::into).collect(),
-            bits_declarations: { let mut v: Vec<_> = ast.bits_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &BitsDeclaration, b| a.name.cmp(&b.name)); v },
-            const_declarations: { let mut v: Vec<_> = ast.const_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &ConstDeclaration, b| a.name.cmp(&b.name)); v },
-            enum_declarations: { let mut v: Vec<_> = ast.enum_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &EnumDeclaration, b| a.name.cmp(&b.name)); v },
+            bits_declarations: {
+                let mut v: Vec<_> = ast
+                    .bits_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &BitsDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            const_declarations: {
+                let mut v: Vec<_> = ast
+                    .const_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &ConstDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            enum_declarations: {
+                let mut v: Vec<_> = ast
+                    .enum_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &EnumDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
             experimental_resource_declarations: {
                 let mut v: Vec<_> = ast
                     .experimental_resource_declarations
@@ -563,24 +590,97 @@ impl From<&flat_ast::Root> for JsonRoot {
                 v.sort_by(|a: &ExperimentalResourceDeclaration, b| a.name.cmp(&b.name));
                 v
             },
-            protocol_declarations: { let mut v: Vec<_> = ast.protocol_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &ProtocolDeclaration, b| a.name.cmp(&b.name)); v },
-            service_declarations: { let mut v: Vec<_> = ast.service_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &ServiceDeclaration, b| a.name.cmp(&b.name)); v },
-            struct_declarations: { let mut v: Vec<_> = ast.struct_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &StructDeclaration, b| a.name.cmp(&b.name)); v },
+            protocol_declarations: {
+                let mut v: Vec<_> = ast
+                    .protocol_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &ProtocolDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            service_declarations: {
+                let mut v: Vec<_> = ast
+                    .service_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &ServiceDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            struct_declarations: {
+                let mut v: Vec<_> = ast
+                    .struct_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &StructDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
             external_struct_declarations: ast
                 .external_struct_declarations
                 .iter()
                 .map(Into::into)
                 .collect(),
-            table_declarations: { let mut v: Vec<_> = ast.table_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &TableDeclaration, b| a.name.cmp(&b.name)); v },
-            union_declarations: { let mut v: Vec<_> = ast.union_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &UnionDeclaration, b| a.name.cmp(&b.name)); v },
-            overlay_declarations: ast
-                .overlay_declarations
-                .as_ref()
-                .map(|ov| { let mut v: Vec<_> = ov.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &UnionDeclaration, b| a.name.cmp(&b.name)); v }),
-            alias_declarations: { let mut v: Vec<_> = ast.alias_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &AliasDeclaration, b| a.name.cmp(&b.name)); v },
-            new_type_declarations: { let mut v: Vec<_> = ast.new_type_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &NewTypeDeclaration, b| a.name.cmp(&b.name)); v },
+            table_declarations: {
+                let mut v: Vec<_> = ast
+                    .table_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &TableDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            union_declarations: {
+                let mut v: Vec<_> = ast
+                    .union_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &UnionDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            overlay_declarations: ast.overlay_declarations.as_ref().map(|ov| {
+                let mut v: Vec<_> = ov
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &UnionDeclaration, b| a.name.cmp(&b.name));
+                v
+            }),
+            alias_declarations: {
+                let mut v: Vec<_> = ast
+                    .alias_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &AliasDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            new_type_declarations: {
+                let mut v: Vec<_> = ast
+                    .new_type_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &NewTypeDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
             declaration_order: {
-                let mut order: Vec<String> = ast.declaration_order.iter().filter(|x| x.starts_with(&prefix)).cloned().collect();
+                let mut order: Vec<String> = ast
+                    .declaration_order
+                    .iter()
+                    .filter(|x| x.starts_with(&prefix))
+                    .cloned()
+                    .collect();
                 if let Some(pos) = order.iter().position(|x| x == "test.anonymous/BitsMember") {
                     let item = order.remove(pos);
                     order.insert(0, item);
@@ -839,7 +939,12 @@ impl From<&flat_ast::ConstDeclaration> for ConstDeclaration {
             deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
-            experimental_maybe_from_alias: ast.type_.experimental_maybe_from_alias.as_ref().map(Into::into),
+            experimental_maybe_from_alias: ast
+                .type_
+                .experimental_maybe_from_alias
+                .as_ref()
+                .or(ast.type_.outer_alias.as_ref())
+                .map(Into::into),
             value: (&ast.value).into(),
         }
     }

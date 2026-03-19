@@ -913,7 +913,10 @@ mod tests {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(&cli, &source_managers)));
 
         let result = match res {
-            Ok(Err(e)) => { println!("Error compiling {}: {:?}", name, e); None },
+            Ok(Err(e)) => {
+                println!("Error compiling {}: {:?}", name, e);
+                None
+            }
             Err(_) => None,
             Ok(Ok(())) => std::fs::read_to_string(&out_json_path).ok(),
         };

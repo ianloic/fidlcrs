@@ -48,3 +48,4 @@ mod versioning_interleaving_tests;
 mod versioning_overlap_tests;
 mod versioning_platform_tests;
 mod versioning_replacement_tests;
+mod versioning_types_tests;

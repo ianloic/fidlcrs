@@ -811,7 +811,6 @@ mod tests {
             serde_json::from_str::<serde_json::Value>(expected_str),
             serde_json::from_str::<serde_json::Value>(actual_str),
         ) {
-
             strip_member(&mut expected, "filename");
             strip_member(&mut actual, "filename");
             strip_member(&mut expected, "line");

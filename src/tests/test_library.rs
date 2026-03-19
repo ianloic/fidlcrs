@@ -394,7 +394,8 @@ resource_definition handle : uint32 {
     pub fn check_compile(&'a self) -> bool {
         let _ = self.compile();
         let diagnostics = self.reporter.diagnostics();
-        let actual_messages: HashSet<String> = diagnostics.iter().map(|d| d.message.clone()).collect();
+        let actual_messages: HashSet<String> =
+            diagnostics.iter().map(|d| d.message.clone()).collect();
         if self.expected_diagnostics != actual_messages {
             println!("Diagnostics mismatch:");
             println!("Expected:");

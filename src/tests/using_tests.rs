@@ -356,8 +356,11 @@ fn bad_too_many_provided_libraries() {
 fn test_composed_openness() {
     let mut lib = crate::tests::test_library::TestLibrary::new();
     lib.add_dependency_file("dep.fidl", "library dep; closed protocol Readable { strict Read(); }; open protocol Writable { strict Write(); }; ajar protocol Ajarable { strict Ajar(); };");
-    lib.add_source_file("main.fidl", "library main; using dep; closed protocol Device { compose dep.Readable; };");
-    
+    lib.add_source_file(
+        "main.fidl",
+        "library main; using dep; closed protocol Device { compose dep.Readable; };",
+    );
+
     // Test if 'dep.Readable' correctly resolves to 'Closed' and succeeds
     let is_ok = lib.check_compile();
     if !is_ok {

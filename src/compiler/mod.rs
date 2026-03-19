@@ -1814,6 +1814,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Struct(s),
                             );
+                            self.anonymous_structs.insert(OwnedQualifiedName::from(full_name.clone()));
                         }
                         raw_ast::Layout::Enum(e) => {
                             let compiled = self.compile_enum(
@@ -1829,6 +1830,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Enum(e),
                             );
+                            self.anonymous_structs.insert(OwnedQualifiedName::from(full_name.clone()));
                         }
                         raw_ast::Layout::Bits(b) => {
                             let compiled = self.compile_bits(
@@ -1844,6 +1846,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Bits(b),
                             );
+                            self.anonymous_structs.insert(OwnedQualifiedName::from(full_name.clone()));
                         }
                         raw_ast::Layout::Union(u) => {
                             let compiled = self.compile_union(
@@ -1863,6 +1866,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Union(u),
                             );
+                            self.anonymous_structs.insert(OwnedQualifiedName::from(full_name.clone()));
                         }
                         raw_ast::Layout::Table(t) => {
                             let compiled = self.compile_table(
@@ -1878,6 +1882,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 OwnedQualifiedName::from(full_name.clone()),
                                 RawDecl::Table(t),
                             );
+                            self.anonymous_structs.insert(OwnedQualifiedName::from(full_name.clone()));
                         }
                         _ => {}
                     }

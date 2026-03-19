@@ -64,6 +64,7 @@ pub struct Root {
 #[derive(Clone, Debug)]
 pub struct DependencyDeclaration {
     pub kind: DeclarationKind,
+    pub resource: Option<bool>,
     pub type_shape: Option<TypeShape>,
 }
 

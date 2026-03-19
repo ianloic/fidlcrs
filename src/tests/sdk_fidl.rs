@@ -642,6 +642,8 @@ mod tests {
     ];
 
     const COMPARE_DENYLIST: &[&str] = &[
+        // expected discrepancy: optimization of unused unions
+        "fuchsia.fonts",
         "fdf",
         "fuchsia.accessibility.gesture",
         "fuchsia.accessibility.scene",

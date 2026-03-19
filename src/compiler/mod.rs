@@ -1096,6 +1096,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let obj = DependencyDeclaration {
                 kind: DeclarationKind::ExperimentalResource,
                 type_shape: None,
+                resource: None,
             };
             self.dependency_declarations
                 .entry(OwnedLibraryName::new("zx".to_string()))
@@ -1359,6 +1360,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 DependencyDeclaration {
                     kind: DeclarationKind::ExperimentalResource,
                     type_shape: None,
+                    resource: None,
                 }
             } else {
                 let type_shape = match kind {
@@ -1368,8 +1370,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     | DeclarationKind::Service => None,
                     _ => self.shapes.get::<str>(name).cloned(),
                 };
+                
+                let resource = self.declarations.decls().find_map(|d| {
+                    match d {
+                        Decl::Struct(s) if s.name.as_string() == *name => Some(s.resource),
+                        Decl::Table(t) if t.name.as_string() == *name => Some(t.resource),
+                        Decl::Union(u) if u.name.as_string() == *name => Some(u.resource),
+                        Decl::Overlay(o) if o.name.as_string() == *name => Some(o.resource),
+                        _ => None,
+                    }
+                });
 
-                DependencyDeclaration { kind, type_shape }
+                DependencyDeclaration { kind, type_shape, resource }
             };
 
             self.dependency_declarations

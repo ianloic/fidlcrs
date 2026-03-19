@@ -48,6 +48,8 @@ pub struct JsonRoot {
 #[derive(Serialize, Clone, Debug)]
 pub struct DependencyDeclaration {
     pub kind: DeclarationKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource: Option<bool>,
     #[serde(rename = "type_shape_v2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub type_shape: Option<TypeShape>,
@@ -163,6 +165,8 @@ pub struct ConstDeclaration {
     pub maybe_attributes: Vec<Attribute>,
     #[serde(rename = "type")]
     pub type_: Type,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub experimental_maybe_from_alias: Option<ExperimentalMaybeFromAlias>,
     pub value: Constant,
 }
 #[derive(Serialize, Clone, Debug)]
@@ -268,10 +272,10 @@ pub struct ProtocolMethod {
     pub location: Location,
     pub deprecated: bool,
     pub has_request: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_request_payload: Option<Type>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub maybe_attributes: Vec<Attribute>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maybe_request_payload: Option<Type>,
     pub has_response: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maybe_response_payload: Option<Type>,
@@ -538,6 +542,7 @@ impl From<&flat_ast::Type> for Type {
 
 impl From<&flat_ast::Root> for JsonRoot {
     fn from(ast: &flat_ast::Root) -> Self {
+        let prefix = format!("{}/", ast.name);
         Self {
             name: ast.name.to_string(),
             platform: ast.platform.clone(),
@@ -545,32 +550,37 @@ impl From<&flat_ast::Root> for JsonRoot {
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             experiments: ast.experiments.clone(),
             library_dependencies: ast.library_dependencies.iter().map(Into::into).collect(),
-            bits_declarations: ast.bits_declarations.iter().map(Into::into).collect(),
-            const_declarations: ast.const_declarations.iter().map(Into::into).collect(),
-            enum_declarations: ast.enum_declarations.iter().map(Into::into).collect(),
-            experimental_resource_declarations: ast
-                .experimental_resource_declarations
-                .iter()
-                .map(Into::into)
-                .collect(),
-            protocol_declarations: ast.protocol_declarations.iter().map(Into::into).collect(),
-            service_declarations: ast.service_declarations.iter().map(Into::into).collect(),
-            struct_declarations: ast.struct_declarations.iter().map(Into::into).collect(),
+            bits_declarations: { let mut v: Vec<_> = ast.bits_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &BitsDeclaration, b| a.name.cmp(&b.name)); v },
+            const_declarations: { let mut v: Vec<_> = ast.const_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &ConstDeclaration, b| a.name.cmp(&b.name)); v },
+            enum_declarations: { let mut v: Vec<_> = ast.enum_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &EnumDeclaration, b| a.name.cmp(&b.name)); v },
+            experimental_resource_declarations: {
+                let mut v: Vec<_> = ast
+                    .experimental_resource_declarations
+                    .iter()
+                    .filter(|d| d.name.library() == ast.name.as_str())
+                    .map(Into::into)
+                    .collect();
+                v.sort_by(|a: &ExperimentalResourceDeclaration, b| a.name.cmp(&b.name));
+                v
+            },
+            protocol_declarations: { let mut v: Vec<_> = ast.protocol_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &ProtocolDeclaration, b| a.name.cmp(&b.name)); v },
+            service_declarations: { let mut v: Vec<_> = ast.service_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &ServiceDeclaration, b| a.name.cmp(&b.name)); v },
+            struct_declarations: { let mut v: Vec<_> = ast.struct_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &StructDeclaration, b| a.name.cmp(&b.name)); v },
             external_struct_declarations: ast
                 .external_struct_declarations
                 .iter()
                 .map(Into::into)
                 .collect(),
-            table_declarations: ast.table_declarations.iter().map(Into::into).collect(),
-            union_declarations: ast.union_declarations.iter().map(Into::into).collect(),
+            table_declarations: { let mut v: Vec<_> = ast.table_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &TableDeclaration, b| a.name.cmp(&b.name)); v },
+            union_declarations: { let mut v: Vec<_> = ast.union_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &UnionDeclaration, b| a.name.cmp(&b.name)); v },
             overlay_declarations: ast
                 .overlay_declarations
                 .as_ref()
-                .map(|v| v.iter().map(Into::into).collect()),
-            alias_declarations: ast.alias_declarations.iter().map(Into::into).collect(),
-            new_type_declarations: ast.new_type_declarations.iter().map(Into::into).collect(),
+                .map(|ov| { let mut v: Vec<_> = ov.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &UnionDeclaration, b| a.name.cmp(&b.name)); v }),
+            alias_declarations: { let mut v: Vec<_> = ast.alias_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &AliasDeclaration, b| a.name.cmp(&b.name)); v },
+            new_type_declarations: { let mut v: Vec<_> = ast.new_type_declarations.iter().filter(|d| d.name.library() == ast.name.as_str()).map(Into::into).collect(); v.sort_by(|a: &NewTypeDeclaration, b| a.name.cmp(&b.name)); v },
             declaration_order: {
-                let mut order = ast.declaration_order.clone();
+                let mut order: Vec<String> = ast.declaration_order.iter().filter(|x| x.starts_with(&prefix)).cloned().collect();
                 if let Some(pos) = order.iter().position(|x| x == "test.anonymous/BitsMember") {
                     let item = order.remove(pos);
                     order.insert(0, item);
@@ -580,45 +590,69 @@ impl From<&flat_ast::Root> for JsonRoot {
             declarations: {
                 let mut all_decls = Vec::new();
                 for decl in &ast.experimental_resource_declarations {
-                    all_decls.push((
-                        decl.name.clone(),
-                        flat_ast::DeclarationKind::ExperimentalResource,
-                    ));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((
+                            decl.name.clone(),
+                            flat_ast::DeclarationKind::ExperimentalResource,
+                        ));
+                    }
                 }
                 for decl in &ast.bits_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Bits));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Bits));
+                    }
                 }
                 for decl in &ast.const_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Const));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Const));
+                    }
                 }
                 for decl in &ast.enum_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Enum));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Enum));
+                    }
                 }
                 for decl in &ast.protocol_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Protocol));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Protocol));
+                    }
                 }
                 for decl in &ast.service_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Service));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Service));
+                    }
                 }
                 for decl in &ast.struct_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Struct));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Struct));
+                    }
                 }
                 for decl in &ast.table_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Table));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Table));
+                    }
                 }
                 for decl in &ast.union_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Union));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Union));
+                    }
                 }
                 if let Some(overlay_declarations) = &ast.overlay_declarations {
                     for decl in overlay_declarations {
-                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Overlay));
+                        if decl.name.library() == ast.name.as_str() {
+                            all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Overlay));
+                        }
                     }
                 }
                 for decl in &ast.alias_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Alias));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::Alias));
+                    }
                 }
                 for decl in &ast.new_type_declarations {
-                    all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::NewType));
+                    if decl.name.library() == ast.name.as_str() {
+                        all_decls.push((decl.name.clone(), flat_ast::DeclarationKind::NewType));
+                    }
                 }
 
                 all_decls.sort_by(|a, b| a.0.cmp(&b.0));
@@ -656,6 +690,7 @@ impl From<&flat_ast::DependencyDeclaration> for DependencyDeclaration {
     fn from(ast: &flat_ast::DependencyDeclaration) -> Self {
         Self {
             kind: (&ast.kind).into(),
+            resource: ast.resource,
             type_shape: ast.type_shape.as_ref().map(Into::into),
         }
     }
@@ -804,6 +839,7 @@ impl From<&flat_ast::ConstDeclaration> for ConstDeclaration {
             deprecated: ast.deprecated,
             maybe_attributes: ast.maybe_attributes.iter().map(Into::into).collect(),
             type_: (&ast.type_).into(),
+            experimental_maybe_from_alias: ast.type_.experimental_maybe_from_alias.as_ref().map(Into::into),
             value: (&ast.value).into(),
         }
     }

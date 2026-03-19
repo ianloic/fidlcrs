@@ -205,7 +205,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Try to parse value as u32 (assuming enum is uint32-compatible for now)
                 // TODO: Handle signed enums and other types correctly.
                 if let Some(literal) = &compiled_value.literal
-                    && let Ok(val) = literal.value.trim_matches('"').parse::<u32>()
+                    && let Ok(val) = literal.value.trim_matches('"').parse::<u64>()
                 {
                     maybe_unknown_value = Some(val);
                 }
@@ -271,11 +271,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if !strict && maybe_unknown_value.is_none() {
             maybe_unknown_value = match subtype_name.as_str() {
-                "uint8" => Some(u8::MAX as u32),
-                "uint16" => Some(u16::MAX as u32),
-                "uint32" => Some(u32::MAX),
+                "int8" => Some(((1u64 << 7) - 1) as u64),
+                "uint8" => Some(u8::MAX as u64),
+                "int16" => Some(((1u64 << 15) - 1) as u64),
+                "uint16" => Some(u16::MAX as u64),
+                "int32" => Some(((1u64 << 31) - 1) as u64),
+                "uint32" => Some(u32::MAX as u64),
                 // TODO: Handle u64 and signed types correctly (requires changing EnumDeclaration to support u64/i64)
-                _ => Some(u32::MAX),
+                "int64" => Some(((1u64 << 63) - 1) as u64),
+                _ => Some(u64::MAX),
             };
         }
 

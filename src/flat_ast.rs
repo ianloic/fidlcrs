@@ -999,7 +999,7 @@ pub struct EnumDeclaration {
     pub type_: String,
     pub members: Vec<EnumMember>,
     pub strict: bool,
-    pub maybe_unknown_value: Option<u32>,
+    pub maybe_unknown_value: Option<u64>,
 }
 
 impl EnumDeclaration {
@@ -1013,7 +1013,7 @@ impl EnumDeclaration {
         type_: String,
         members: Vec<EnumMember>,
         strict: bool,
-        maybe_unknown_value: Option<u32>,
+        maybe_unknown_value: Option<u64>,
     ) -> Self {
         Self {
             base: DeclBase {

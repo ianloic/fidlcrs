@@ -182,7 +182,7 @@ pub struct EnumDeclaration {
     pub members: Vec<EnumMember>,
     pub strict: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub maybe_unknown_value: Option<u32>,
+    pub maybe_unknown_value: Option<u64>,
 }
 #[derive(Serialize, Clone, Debug)]
 pub struct EnumMember {

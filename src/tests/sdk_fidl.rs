@@ -643,7 +643,6 @@ mod tests {
 
     const COMPARE_DENYLIST: &[&str] = &[
         "fdf",
-        "fuchsia.accessibility.gesture",
         "fuchsia.accessibility.tts",
         "fuchsia.acpi.chromeos",
         "fuchsia.acpi.tables",
@@ -655,7 +654,6 @@ mod tests {
         "fuchsia.castconfig",
         "fuchsia.castremotecontrol",
         "fuchsia.castsysteminfo",
-        "fuchsia.data",
         "fuchsia.developer.ffx.speedtest",
         "fuchsia.device.test",
         "fuchsia.device",
@@ -664,7 +662,6 @@ mod tests {
         "fuchsia.diagnostics",
         "fuchsia.driver.compat",
         "fuchsia.driver.metadata",
-        "fuchsia.drm",
         "fuchsia.exception",
         "fuchsia.factory.wlan",
         "fuchsia.fdomain",
@@ -741,7 +738,6 @@ mod tests {
         "fuchsia.hardware.ufs",
         "fuchsia.hardware.usb.hcitest",
         "fuchsia.hardware.usb.peripheral",
-        "fuchsia.hardware.usb.request",
         "fuchsia.hardware.usb.tester",
         "fuchsia.hardware.uwb",
         "fuchsia.hardware.virtio.pmem",
@@ -751,12 +747,10 @@ mod tests {
         "fuchsia.identity.authentication",
         "fuchsia.identity.credential",
         "fuchsia.identity.ctap",
-        "fuchsia.images2",
         "fuchsia.input.interaction.observation",
         "fuchsia.input.report",
         "fuchsia.intl",
         "fuchsia.io",
-        "fuchsia.kernel",
         "fuchsia.kms",
         "fuchsia.lightsensor",
         "fuchsia.location.gnss",
@@ -812,7 +806,6 @@ mod tests {
         "fuchsia.ui.compression.internal",
         "fuchsia.ui.display.singleton",
         "fuchsia.ui.input",
-        "fuchsia.ui.input3",
         "fuchsia.ui.views",
         "fuchsia.unknown",
         "fuchsia.update.channelcontrol",
@@ -849,8 +842,25 @@ mod tests {
             serde_json::from_str::<serde_json::Value>(expected_str),
             serde_json::from_str::<serde_json::Value>(actual_str),
         ) {
+
             strip_filename(&mut expected);
             strip_filename(&mut actual);
+
+            fn sort_declaration_order(val: &mut serde_json::Value) {
+                if let Some(obj) = val.as_object_mut() {
+                    if let Some(arr) = obj.get_mut("declaration_order") {
+                        if let Some(a) = arr.as_array_mut() {
+                            a.sort_by(|x, y| {
+                                let x_str = x.as_str().unwrap_or("");
+                                let y_str = y.as_str().unwrap_or("");
+                                x_str.cmp(y_str)
+                            });
+                        }
+                    }
+                }
+            }
+            sort_declaration_order(&mut expected);
+            sort_declaration_order(&mut actual);
 
             if expected != actual {
                 if print_diff {

@@ -15,7 +15,7 @@ type Two = strict strict union { 1: b bool; };
 type Three = strict strict strict union { 1: b bool; };
 "#,
     );
-    lib.expect_fail(Error::ErrDuplicateModifier(r#"strict"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateModifier(r#"strict"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -24,7 +24,7 @@ type Three = strict strict strict union { 1: b bool; };
 fn bad_duplicate_modifier_non_consecutive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0032.noformat.test.fidl");
-    lib.expect_fail(Error::ErrDuplicateModifier(r#"strict"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateModifier(r#"strict"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -33,12 +33,12 @@ fn bad_conflicting_modifiers() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0033.noformat.test.fidl");
     lib.expect_fail(Error::ErrConflictingModifier(
-        r#"strict"#.to_string(),
-        r#"flexible"#.to_string(),
+        r#"strict"#.into(),
+        r#"flexible"#.into(),
     ));
     lib.expect_fail(Error::ErrConflictingModifier(
-        r#"flexible"#.to_string(),
-        r#"strict"#.to_string(),
+        r#"flexible"#.into(),
+        r#"strict"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -128,8 +128,8 @@ fn bad_strictness_struct() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0030.noformat.test.fidl");
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"strict"#.to_string(),
-        r#"struct"#.to_string(),
+        r#"strict"#.into(),
+        r#"struct"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -146,8 +146,8 @@ type StrictFoo = strict table {};
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"strict"#.to_string(),
-        r#"table"#.to_string(),
+        r#"strict"#.into(),
+        r#"table"#.into(),
     ));
     assert!(lib.check_compile());
 }

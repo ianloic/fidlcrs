@@ -20,7 +20,7 @@ type S = struct {
 fn bad_zero_size_array() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0161.test.fidl");
-    lib.expect_fail(Error::ErrMustHaveNonZeroSize(r#"array"#.to_string()));
+    lib.expect_fail(Error::ErrMustHaveNonZeroSize(r#"array"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -38,9 +38,9 @@ type S = struct {
 "#,
     );
     lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
-        r#"array"#.to_string(),
-        r#"2"#.to_string(),
-        r#"1"#.to_string(),
+        r#"array"#.into(),
+        2,
+        1,
     ));
 
     assert!(lib.check_compile());
@@ -59,9 +59,9 @@ type S = struct {
 "#,
     );
     lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
-        r#"array"#.to_string(),
-        r#"2"#.to_string(),
-        r#"0"#.to_string(),
+        r#"array"#.into(),
+        2,
+        0,
     ));
 
     assert!(lib.check_compile());
@@ -79,13 +79,9 @@ type S = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional(r#"array"#.to_string()));
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"array"#.into()));
 
-    lib.expect_fail(Error::ErrTooManyConstraints(
-        r#"array"#.to_string(),
-        r#"0"#.to_string(),
-        r#"1"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrTooManyConstraints(r#"array"#.into(), 0, 1));
 
     assert!(lib.check_compile());
 }
@@ -102,11 +98,7 @@ type S = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrTooManyConstraints(
-        r#"array"#.to_string(),
-        r#"0"#.to_string(),
-        r#"3"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrTooManyConstraints(r#"array"#.into(), 0, 3));
 
     assert!(lib.check_compile());
 }

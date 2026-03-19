@@ -58,7 +58,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     // Bypass the '_ lifetime issue by recreating the span with 'src
                     let transmuted_span: SourceSpan<'src> = unsafe { std::mem::transmute(span) };
                     self.reporter.fail(
-                        Error::ErrDeprecatedAttribute(format!("{}", &"transitional".to_string())),
+                        Error::ErrDeprecatedAttribute(flyweights::FlyStr::new(
+                            format!("{}", &"transitional".to_string()).into_boxed_str(),
+                        )),
                         transmuted_span,
                     );
                 }

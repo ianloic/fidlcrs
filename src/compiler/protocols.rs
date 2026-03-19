@@ -128,8 +128,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if !composed_has_no_resource {
                     self.reporter.fail(
                         Error::ErrNoResourceForbidsCompose(
-                            format!("{}", &short_name),
-                            format!("{}", &composed_name),
+                            flyweights::FlyStr::new(format!("{}", &short_name)),
+                            flyweights::FlyStr::new(format!("{}", &composed_name)),
                         ),
                         composed.protocol_name.element.span(),
                     );
@@ -170,10 +170,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
             if !valid {
                 self.reporter.fail(
                     Error::ErrComposedProtocolTooOpen(
-                        format!("{}", &openness.to_string()),
-                        format!("{}", &decl.name.data()),
-                        format!("{}", &composed_openness.to_string()),
-                        format!("{}", &full_composed_name),
+                        flyweights::FlyStr::new(format!("{}", &openness.to_string())),
+                        flyweights::FlyStr::new(format!("{}", &decl.name.data())),
+                        flyweights::FlyStr::new(format!("{}", &composed_openness.to_string())),
+                        flyweights::FlyStr::new(format!("{}", &full_composed_name)),
                     ),
                     composed.element.span(),
                 );
@@ -250,8 +250,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => {
                         self.reporter.fail(
                             Error::ErrCannotSpecifyModifier(
-                                format!("{}", &modifier.element.span().data),
-                                format!("{}", &"method"),
+                                flyweights::FlyStr::new(
+                                    format!("{}", &modifier.element.span().data).into_boxed_str(),
+                                ),
+                                flyweights::FlyStr::new(format!("{}", &"method")),
                             ),
                             modifier.element.span(),
                         );
@@ -271,21 +273,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if is_method_flexible && two_way && openness != Openness::Open {
                 self.reporter.fail(
-                    Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(format!(
-                        "{}",
-                        &openness.to_string()
+                    Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(flyweights::FlyStr::new(
+                        format!("{}", &openness.to_string()).into_boxed_str(),
                     )),
                     m.name.element.span(),
                 );
             } else if is_method_flexible && !two_way && openness == Openness::Closed {
                 self.reporter.fail(
-                    Error::ErrFlexibleOneWayMethodInClosedProtocol(format!(
-                        "{}",
-                        &if !m.has_request && m.has_response {
-                            "event"
-                        } else {
-                            "one-way method"
-                        }
+                    Error::ErrFlexibleOneWayMethodInClosedProtocol(flyweights::FlyStr::new(
+                        format!(
+                            "{}",
+                            &if !m.has_request && m.has_response {
+                                "event"
+                            } else {
+                                "one-way method"
+                            }
+                        )
+                        .into_boxed_str(),
                     )),
                     m.name.element.span(),
                 );
@@ -335,9 +339,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                Error::ErrInvalidMethodPayloadLayoutClass(format!(
-                                    "{}",
-                                    &"provided type"
+                                Error::ErrInvalidMethodPayloadLayoutClass(flyweights::FlyStr::new(
+                                    format!("{}", &"provided type").into_boxed_str(),
                                 )),
                                 tc.element.span(),
                             );
@@ -348,7 +351,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                Error::ErrEmptyPayloadStructs(m.name.data().to_string()),
+                                Error::ErrEmptyPayloadStructs(m.name.data().into()),
                                 s.element.span(),
                             );
                         }
@@ -467,9 +470,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => {
                         // primitive or other inline layout
                         self.reporter.fail(
-                            Error::ErrInvalidMethodPayloadLayoutClass(format!(
-                                "{}",
-                                &"provided type"
+                            Error::ErrInvalidMethodPayloadLayoutClass(flyweights::FlyStr::new(
+                                format!("{}", &"provided type").into_boxed_str(),
                             )),
                             m.name.element.span(),
                         );
@@ -525,9 +527,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                Error::ErrInvalidMethodPayloadLayoutClass(format!(
-                                    "{}",
-                                    &"provided type"
+                                Error::ErrInvalidMethodPayloadLayoutClass(flyweights::FlyStr::new(
+                                    format!("{}", &"provided type").into_boxed_str(),
                                 )),
                                 tc.element.span(),
                             );
@@ -538,7 +539,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                Error::ErrEmptyPayloadStructs(m.name.data().to_string()),
+                                Error::ErrEmptyPayloadStructs(m.name.data().into()),
                                 s.element.span(),
                             );
                         }
@@ -711,9 +712,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     _ => {
                         self.reporter.fail(
-                            Error::ErrInvalidMethodPayloadLayoutClass(format!(
-                                "{}",
-                                &"provided type"
+                            Error::ErrInvalidMethodPayloadLayoutClass(flyweights::FlyStr::new(
+                                format!("{}", &"provided type").into_boxed_str(),
                             )),
                             m.name.element.span(),
                         );

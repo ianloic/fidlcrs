@@ -196,7 +196,9 @@ pub fn discoverable_constraint<'node, 'src>(
                     let arg_span: SourceSpan =
                         unsafe { std::mem::transmute(arg.value.element().span()) };
                     compiler.reporter.fail(
-                        Error::ErrInvalidDiscoverableName(format!("{}", &s.to_string())),
+                        Error::ErrInvalidDiscoverableName(flyweights::FlyStr::new(
+                            format!("{}", &s.to_string()).into_boxed_str(),
+                        )),
                         arg_span,
                     );
                     passed = false;
@@ -221,7 +223,9 @@ pub fn discoverable_constraint<'node, 'src>(
                 let arg_span: SourceSpan =
                     unsafe { std::mem::transmute(arg.value.element().span()) };
                 compiler.reporter.fail(
-                    Error::ErrInvalidDiscoverableLocation(format!("{}", &s_val)),
+                    Error::ErrInvalidDiscoverableLocation(flyweights::FlyStr::new(
+                        format!("{}", &s_val).into_boxed_str(),
+                    )),
                     arg_span,
                 );
                 passed = false;
@@ -251,8 +255,11 @@ pub fn transport_constraint<'node, 'src>(
                     unsafe { std::mem::transmute(arg.value.element().span()) };
                 compiler.reporter.fail(
                     Error::ErrInvalidTransportType(
-                        format!("{}", &s.to_string()),
-                        format!("{}", &"Banjo, Channel, Driver, Syscall".to_string()),
+                        flyweights::FlyStr::new(format!("{}", &s.to_string())),
+                        flyweights::FlyStr::new(
+                            format!("{}", &"Banjo, Channel, Driver, Syscall".to_string())
+                                .into_boxed_str(),
+                        ),
                     ),
                     arg_span,
                 );
@@ -373,7 +380,7 @@ pub fn available_constraint<'node, 'src>(
             && added.as_ref().unwrap().0 > deprecated.as_ref().unwrap().0
         {
             compiler.reporter.fail(
-                Error::ErrInvalidAvailabilityOrder("added <= deprecated".to_string()),
+                Error::ErrInvalidAvailabilityOrder("added <= deprecated".into()),
                 *d_span,
             );
             passed = false;
@@ -382,7 +389,7 @@ pub fn available_constraint<'node, 'src>(
             && added.as_ref().unwrap().0 >= removed.as_ref().unwrap().0
         {
             compiler.reporter.fail(
-                Error::ErrInvalidAvailabilityOrder("added < removed".to_string()),
+                Error::ErrInvalidAvailabilityOrder("added < removed".into()),
                 *r_span,
             );
             passed = false;
@@ -391,7 +398,7 @@ pub fn available_constraint<'node, 'src>(
             && added.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0
         {
             compiler.reporter.fail(
-                Error::ErrInvalidAvailabilityOrder("added < replaced".to_string()),
+                Error::ErrInvalidAvailabilityOrder("added < replaced".into()),
                 *r_span,
             );
             passed = false;
@@ -403,7 +410,7 @@ pub fn available_constraint<'node, 'src>(
             && deprecated.as_ref().unwrap().0 >= removed.as_ref().unwrap().0
         {
             compiler.reporter.fail(
-                Error::ErrInvalidAvailabilityOrder("deprecated < removed".to_string()),
+                Error::ErrInvalidAvailabilityOrder("deprecated < removed".into()),
                 *r_span,
             );
             passed = false;
@@ -412,7 +419,7 @@ pub fn available_constraint<'node, 'src>(
             && deprecated.as_ref().unwrap().0 >= replaced.as_ref().unwrap().0
         {
             compiler.reporter.fail(
-                Error::ErrInvalidAvailabilityOrder("deprecated < replaced".to_string()),
+                Error::ErrInvalidAvailabilityOrder("deprecated < replaced".into()),
                 *r_span,
             );
             passed = false;
@@ -702,18 +709,18 @@ impl AttributeSchemaMap {
                 if prev.data == name {
                     compiler.reporter.fail(
                         Error::ErrDuplicateAttribute(
-                            format!("{}", &name.to_string()),
-                            format!("{}", &prev.data.to_string()),
+                            flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                            flyweights::FlyStr::new(format!("{}", &prev.data.to_string())),
                         ),
                         transmuted_span,
                     );
                 } else {
                     compiler.reporter.fail(
                         Error::ErrDuplicateAttributeCanonical(
-                            format!("{}", &name.to_string()),
-                            format!("{}", &prev.data.to_string()),
-                            format!("{}", &prev.data.to_string()),
-                            format!("{}", &canon),
+                            flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                            flyweights::FlyStr::new(format!("{}", &prev.data.to_string())),
+                            flyweights::FlyStr::new(format!("{}", &prev.data.to_string())),
+                            flyweights::FlyStr::new(format!("{}", &canon)),
                         ),
                         transmuted_span,
                     );
@@ -750,20 +757,20 @@ impl AttributeSchemaMap {
                     if prev.data == arg_name {
                         compiler.reporter.fail(
                             Error::ErrDuplicateAttributeArg(
-                                format!("{}", &name.to_string()),
-                                format!("{}", &arg_name.to_string()),
-                                format!("{}", &prev.data.to_string()),
+                                flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &arg_name.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &prev.data.to_string())),
                             ),
                             arg_span,
                         );
                     } else {
                         compiler.reporter.fail(
                             Error::ErrDuplicateAttributeArgCanonical(
-                                format!("{}", &name.to_string()),
-                                format!("{}", &arg_name.to_string()),
-                                format!("{}", &prev.data.to_string()),
-                                format!("{}", &prev.data.to_string()),
-                                format!("{}", &arg_canon),
+                                flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &arg_name.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &prev.data.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &prev.data.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &arg_canon)),
                             ),
                             arg_span,
                         );
@@ -782,8 +789,8 @@ impl AttributeSchemaMap {
                                 unsafe { std::mem::transmute(attr.name.element.span()) };
                             compiler.reporter.fail(
                                 Error::WarnAttributeTypo(
-                                    format!("{}", &name.to_string()),
-                                    format!("{}", &k.to_string()),
+                                    flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                                    flyweights::FlyStr::new(format!("{}", &k.to_string())),
                                 ),
                                 transmuted_span,
                             );
@@ -816,8 +823,14 @@ impl AttributeSchemaMap {
                                             .unwrap_or("value");
                                         compiler.reporter.fail(
                                             Error::ErrCanOnlyUseStringOrBool(
-                                                format!("{}", &arg_name.to_string()),
-                                                format!("{}", &name_str.to_string()),
+                                                flyweights::FlyStr::new(
+                                                    format!("{}", &arg_name.to_string())
+                                                        .into_boxed_str(),
+                                                ),
+                                                flyweights::FlyStr::new(
+                                                    format!("{}", &name_str.to_string())
+                                                        .into_boxed_str(),
+                                                ),
                                             ),
                                             arg_span,
                                         );
@@ -842,7 +855,9 @@ impl AttributeSchemaMap {
 
             if schema.kind == Kind::Deprecated {
                 compiler.reporter.fail(
-                    Error::ErrDeprecatedAttribute(format!("{}", &name.to_string())),
+                    Error::ErrDeprecatedAttribute(flyweights::FlyStr::new(
+                        format!("{}", &name.to_string()).into_boxed_str(),
+                    )),
                     transmuted_span,
                 );
             }
@@ -857,7 +872,9 @@ impl AttributeSchemaMap {
 
             if !valid_placement {
                 compiler.reporter.fail(
-                    Error::ErrInvalidAttributePlacement(format!("{}", &name.to_string())),
+                    Error::ErrInvalidAttributePlacement(flyweights::FlyStr::new(
+                        format!("{}", &name.to_string()).into_boxed_str(),
+                    )),
                     transmuted_span,
                 );
             }
@@ -893,9 +910,12 @@ impl AttributeSchemaMap {
                     if name == "NEXT" || name == "HEAD" {
                         continue;
                     } else {
-                        compiler
-                            .reporter
-                            .fail(Error::ErrInvalidVersion(format!("{}", &name)), arg_span);
+                        compiler.reporter.fail(
+                            Error::ErrInvalidVersion(flyweights::FlyStr::new(
+                                format!("{}", &name).into_boxed_str(),
+                            )),
+                            arg_span,
+                        );
                         continue;
                     }
                 }
@@ -905,8 +925,8 @@ impl AttributeSchemaMap {
                 {
                     compiler.reporter.fail(
                         Error::ErrAttributeArgRequiresLiteral(
-                            format!("{}", &arg_name.to_string()),
-                            format!("{}", &name.to_string()),
+                            flyweights::FlyStr::new(format!("{}", &arg_name.to_string())),
+                            flyweights::FlyStr::new(format!("{}", &name.to_string())),
                         ),
                         arg_span,
                     );
@@ -915,7 +935,9 @@ impl AttributeSchemaMap {
 
                 if schema.arg_schemas.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrAttributeDisallowsArgs(format!("{}", &name.to_string())),
+                        Error::ErrAttributeDisallowsArgs(flyweights::FlyStr::new(
+                            format!("{}", &name.to_string()).into_boxed_str(),
+                        )),
                         transmuted_span,
                     );
                     continue;
@@ -924,8 +946,8 @@ impl AttributeSchemaMap {
                 if !schema.arg_schemas.contains_key(arg_name) {
                     compiler.reporter.fail(
                         Error::ErrUnknownAttributeArg(
-                            format!("{}", &name.to_string()),
-                            format!("{}", &arg_name.to_string()),
+                            flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                            flyweights::FlyStr::new(format!("{}", &arg_name.to_string())),
                         ),
                         transmuted_span,
                     );
@@ -934,7 +956,9 @@ impl AttributeSchemaMap {
 
                 if arg.name.is_none() && schema.arg_schemas.len() > 1 {
                     compiler.reporter.fail(
-                        Error::ErrAttributeArgNotNamed(format!("{}", &name.to_string())),
+                        Error::ErrAttributeArgNotNamed(flyweights::FlyStr::new(
+                            format!("{}", &name.to_string()).into_boxed_str(),
+                        )),
                         transmuted_span,
                     );
                 } else if arg.name.is_some() && schema.arg_schemas.len() == 1 {
@@ -980,9 +1004,14 @@ impl AttributeSchemaMap {
 
                                 compiler.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType(
-                                        format!("{}", &value_str),
-                                        format!("{}", &actual_str.to_string()),
-                                        format!("{}", &expected_str.to_string()),
+                                        flyweights::FlyStr::new(format!("{}", &value_str)),
+                                        flyweights::FlyStr::new(
+                                            format!("{}", &actual_str.to_string()).into_boxed_str(),
+                                        ),
+                                        flyweights::FlyStr::new(
+                                            format!("{}", &expected_str.to_string())
+                                                .into_boxed_str(),
+                                        ),
                                     ),
                                     arg_span,
                                 );
@@ -1066,17 +1095,18 @@ impl AttributeSchemaMap {
                 {
                     if schema.arg_schemas.len() == 1 {
                         compiler.reporter.fail(
-                            Error::ErrMissingRequiredAnonymousAttributeArg(format!(
-                                "{}",
-                                &name.to_string()
-                            )),
+                            Error::ErrMissingRequiredAnonymousAttributeArg(
+                                flyweights::FlyStr::new(
+                                    format!("{}", &name.to_string()).into_boxed_str(),
+                                ),
+                            ),
                             transmuted_span,
                         );
                     } else {
                         compiler.reporter.fail(
                             Error::ErrMissingRequiredAttributeArg(
-                                format!("{}", &name.to_string()),
-                                format!("{}", &req_name.to_string()),
+                                flyweights::FlyStr::new(format!("{}", &name.to_string())),
+                                flyweights::FlyStr::new(format!("{}", &req_name.to_string())),
                             ),
                             transmuted_span,
                         );

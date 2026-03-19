@@ -87,15 +87,15 @@ protocol P {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"zx/Handle"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"zx/Handle"#.into()));
 
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"PMethodRequest"#.to_string(),
-        r#"h"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"PMethodRequest"#.to_string(),
+        r#"struct"#.into(),
+        r#"PMethodRequest"#.into(),
+        r#"h"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"PMethodRequest"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -209,15 +209,15 @@ type MyStruct = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"zx/Handle"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"zx/Handle"#.into()));
 
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"MyStruct"#.to_string(),
-        r#"a"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"MyStruct"#.to_string(),
+        r#"struct"#.into(),
+        r#"MyStruct"#.into(),
+        r#"a"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"MyStruct"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -240,8 +240,8 @@ type MyStruct = struct {
 "#,
     );
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"handle"#.to_string(),
-        r#"example"#.to_string(),
+        r#"handle"#.into(),
+        r#"example"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -343,9 +343,7 @@ type MyStruct = resource struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedConstraint(
-        r#"example/handle"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"example/handle"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -364,8 +362,8 @@ type MyStruct = resource struct {
 "#,
     );
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"handle"#.to_string(),
-        r#"example"#.to_string(),
+        r#"handle"#.into(),
+        r#"example"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -385,8 +383,8 @@ type MyStruct = resource struct {
 "#,
     );
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"handle"#.to_string(),
-        r#"example"#.to_string(),
+        r#"handle"#.into(),
+        r#"example"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -408,14 +406,10 @@ type MyStruct = resource struct {
 "#,
     );
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"handle"#.to_string(),
-        r#"example"#.to_string(),
+        r#"handle"#.into(),
+        r#"example"#.into(),
     ));
-    lib.expect_fail(Error::ErrTooManyConstraints(
-        r#"my_handle"#.to_string(),
-        r#"0"#.to_string(),
-        r#"1"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrTooManyConstraints(r#"my_handle"#.into(), 0, 1));
 
     assert!(lib.check_compile());
 }

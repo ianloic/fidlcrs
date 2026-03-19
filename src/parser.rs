@@ -43,8 +43,8 @@ impl<'a, 'b> Parser<'a, 'b> {
             };
             self.reporter.fail(
                 Error::ErrUnexpectedIdentifier(
-                    format!("{}", &got_str),
-                    format!("{}", &"library".to_string()),
+                    flyweights::FlyStr::new(format!("{}", &got_str)),
+                    flyweights::FlyStr::new(format!("{}", &"library".to_string())),
                 ),
                 self.last_token.span,
             );
@@ -78,8 +78,13 @@ impl<'a, 'b> Parser<'a, 'b> {
                 for m in &mods {
                     self.reporter.fail(
                         Error::ErrCannotSpecifyModifier(
-                            format!("{}", &m.element.span().data.to_string()),
-                            format!("{}", &self.last_token.span.data.to_string()),
+                            flyweights::FlyStr::new(
+                                format!("{}", &m.element.span().data.to_string()).into_boxed_str(),
+                            ),
+                            flyweights::FlyStr::new(
+                                format!("{}", &self.last_token.span.data.to_string())
+                                    .into_boxed_str(),
+                            ),
                         ),
                         m.element.span(),
                     );
@@ -92,8 +97,11 @@ impl<'a, 'b> Parser<'a, 'b> {
                     if m.subkind == TokenSubkind::Resource {
                         self.reporter.fail(
                             Error::ErrCannotSpecifyModifier(
-                                format!("{}", &"resource".to_string()),
-                                format!("{}", &self.last_token.span.data.to_string()),
+                                flyweights::FlyStr::new(format!("{}", &"resource".to_string())),
+                                flyweights::FlyStr::new(
+                                    format!("{}", &self.last_token.span.data.to_string())
+                                        .into_boxed_str(),
+                                ),
                             ),
                             m.element.span(),
                         );
@@ -188,7 +196,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                 }
             } else {
                 self.reporter.fail(
-                    Error::ErrExpectedDeclaration(self.last_token.span.data.to_string()),
+                    Error::ErrExpectedDeclaration(self.last_token.span.data.into()),
                     self.last_token.span,
                 );
                 self.last_token = self.lexer.lex();
@@ -229,7 +237,9 @@ impl<'a, 'b> Parser<'a, 'b> {
             if comp.element.span().data.contains('_') {
                 let s = comp.element.span().data;
                 self.reporter.fail(
-                    Error::ErrInvalidLibraryNameComponent(format!("{}", &s)),
+                    Error::ErrInvalidLibraryNameComponent(flyweights::FlyStr::new(
+                        format!("{}", &s).into_boxed_str(),
+                    )),
                     comp.element.span(),
                 );
             }
@@ -350,7 +360,9 @@ impl<'a, 'b> Parser<'a, 'b> {
                     if id_const.identifier.components.len() != 1 {
                         let s = id_const.element.span().data;
                         self.reporter.fail(
-                            Error::ErrInvalidIdentifier(format!("{}", &s)),
+                            Error::ErrInvalidIdentifier(flyweights::FlyStr::new(
+                                format!("{}", &s).into_boxed_str(),
+                            )),
                             id_const.element.span(),
                         );
                         return None;
@@ -596,8 +608,8 @@ impl<'a, 'b> Parser<'a, 'b> {
         if self.last_token.kind == TokenKind::Equal {
             self.reporter.fail(
                 Error::ErrUnexpectedTokenOfKind(
-                    format!("{}", &"=".to_string()),
-                    format!("{}", &";".to_string()),
+                    flyweights::FlyStr::new(format!("{}", &"=".to_string())),
+                    flyweights::FlyStr::new(format!("{}", &";".to_string())),
                 ),
                 self.last_token.span,
             );
@@ -1175,8 +1187,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                 if !mods.is_empty() {
                     self.reporter.fail(
                         Error::ErrCannotSpecifyModifier(
-                            format!("{}", &"strict"),
-                            format!("{}", &"compose"),
+                            flyweights::FlyStr::new(format!("{}", &"strict")),
+                            flyweights::FlyStr::new(format!("{}", &"compose")),
                         ),
                         mods[0].element.span(),
                     );
@@ -1553,7 +1565,10 @@ impl<'a, 'b> Parser<'a, 'b> {
             let expected = format!("{:?}", subkind);
             let actual = format!("{:?}", self.last_token.subkind);
             self.reporter.fail(
-                Error::ErrUnexpectedTokenOfKind(format!("{}", &actual), format!("{}", &expected)),
+                Error::ErrUnexpectedTokenOfKind(
+                    flyweights::FlyStr::new(format!("{}", &actual)),
+                    flyweights::FlyStr::new(format!("{}", &expected)),
+                ),
                 self.last_token.span,
             );
             None
@@ -1588,7 +1603,10 @@ impl<'a, 'b> Parser<'a, 'b> {
             let expected = format!("{:?}", kind);
             let actual = format!("{:?}", self.last_token.kind);
             self.reporter.fail(
-                Error::ErrUnexpectedTokenOfKind(format!("{}", &actual), format!("{}", &expected)),
+                Error::ErrUnexpectedTokenOfKind(
+                    flyweights::FlyStr::new(format!("{}", &actual)),
+                    flyweights::FlyStr::new(format!("{}", &expected)),
+                ),
                 self.last_token.span,
             );
             None

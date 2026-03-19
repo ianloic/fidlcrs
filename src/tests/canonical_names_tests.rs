@@ -7,12 +7,12 @@ fn bad_collision() {
     library.add_errcat_file("bad/fi-0035.test.fidl");
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"const"#.to_string(),
-        r#"COLOR"#.to_string(),
-        r#"protocol"#.to_string(),
-        r#"Color"#.to_string(),
-        r#"bad/fi-0035.test.fidl:8:1"#.to_string(),
-        r#"color"#.to_string(),
+        r#"const"#.into(),
+        r#"COLOR"#.into(),
+        r#"protocol"#.into(),
+        r#"Color"#.into(),
+        r#"bad/fi-0035.test.fidl:8:1"#.into(),
+        r#"color"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -363,10 +363,10 @@ fn bad_attributes() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrDuplicateAttributeCanonical(
-        r#"FooBar"#.to_string(),
-        r#"fooBar"#.to_string(),
-        r#"fooBar"#.to_string(),
-        r#"foo_bar"#.to_string(),
+        r#"FooBar"#.into(),
+        r#"fooBar"#.into(),
+        r#"fooBar"#.into(),
+        r#"foo_bar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -387,11 +387,11 @@ fn bad_attribute_arguments() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrDuplicateAttributeArgCanonical(
-        r#"some_attribute"#.to_string(),
-        r#"FooBar"#.to_string(),
-        r#"fooBar="""#.to_string(),
-        r#"fooBar="""#.to_string(),
-        r#"foo_bar"#.to_string(),
+        r#"some_attribute"#.into(),
+        r#"FooBar"#.into(),
+        r#"fooBar="""#.into(),
+        r#"fooBar="""#.into(),
+        r#"foo_bar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -413,12 +413,12 @@ fn bad_struct_members() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"struct member"#.to_string(),
-        r#"MyStructMember"#.to_string(),
-        r#"struct member"#.to_string(),
-        r#"myStructMember"#.to_string(),
-        r#"example.fidl:4:13"#.to_string(),
-        r#"my_struct_member"#.to_string(),
+        r#"struct member"#.into(),
+        r#"MyStructMember"#.into(),
+        r#"struct member"#.into(),
+        r#"myStructMember"#.into(),
+        r#"example.fidl:4:13"#.into(),
+        r#"my_struct_member"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -440,12 +440,12 @@ fn bad_table_members() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"table field"#.to_string(),
-        r#"MyField"#.to_string(),
-        r#"table field"#.to_string(),
-        r#"myField"#.to_string(),
-        r#"example.fidl:4:16"#.to_string(),
-        r#"my_field"#.to_string(),
+        r#"table field"#.into(),
+        r#"MyField"#.into(),
+        r#"table field"#.into(),
+        r#"myField"#.into(),
+        r#"example.fidl:4:16"#.into(),
+        r#"my_field"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -467,12 +467,12 @@ fn bad_union_members() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"union member"#.to_string(),
-        r#"MyVariant"#.to_string(),
-        r#"union member"#.to_string(),
-        r#"myVariant"#.to_string(),
-        r#"example.fidl:4:16"#.to_string(),
-        r#"my_variant"#.to_string(),
+        r#"union member"#.into(),
+        r#"MyVariant"#.into(),
+        r#"union member"#.into(),
+        r#"myVariant"#.into(),
+        r#"example.fidl:4:16"#.into(),
+        r#"my_variant"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -494,12 +494,12 @@ fn bad_enum_members() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"member"#.to_string(),
-        r#"FooBar"#.to_string(),
-        r#"member"#.to_string(),
-        r#"fooBar"#.to_string(),
-        r#"example.fidl:4:9"#.to_string(),
-        r#"foo_bar"#.to_string(),
+        r#"member"#.into(),
+        r#"FooBar"#.into(),
+        r#"member"#.into(),
+        r#"fooBar"#.into(),
+        r#"example.fidl:4:9"#.into(),
+        r#"foo_bar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -521,12 +521,12 @@ fn bad_bits_members() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"member"#.to_string(),
-        r#"FooBar"#.to_string(),
-        r#"member"#.to_string(),
-        r#"fooBar"#.to_string(),
-        r#"example.fidl:4:13"#.to_string(),
-        r#"foo_bar"#.to_string(),
+        r#"member"#.into(),
+        r#"FooBar"#.into(),
+        r#"member"#.into(),
+        r#"fooBar"#.into(),
+        r#"example.fidl:4:13"#.into(),
+        r#"foo_bar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -548,12 +548,12 @@ fn bad_protocol_methods() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"method"#.to_string(),
-        r#"MyMethod"#.to_string(),
-        r#"method"#.to_string(),
-        r#"myMethod"#.to_string(),
-        r#"example.fidl:4:20"#.to_string(),
-        r#"my_method"#.to_string(),
+        r#"method"#.into(),
+        r#"MyMethod"#.into(),
+        r#"method"#.into(),
+        r#"myMethod"#.into(),
+        r#"example.fidl:4:20"#.into(),
+        r#"my_method"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -574,12 +574,12 @@ fn bad_method_parameters() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"struct member"#.to_string(),
-        r#"FooBar"#.to_string(),
-        r#"struct member"#.to_string(),
-        r#"fooBar"#.to_string(),
-        r#"example.fidl:4:26"#.to_string(),
-        r#"foo_bar"#.to_string(),
+        r#"struct member"#.into(),
+        r#"FooBar"#.into(),
+        r#"struct member"#.into(),
+        r#"fooBar"#.into(),
+        r#"example.fidl:4:26"#.into(),
+        r#"foo_bar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -600,12 +600,12 @@ fn bad_method_results() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"struct member"#.to_string(),
-        r#"FooBar"#.to_string(),
-        r#"struct member"#.to_string(),
-        r#"fooBar"#.to_string(),
-        r#"example.fidl:4:32"#.to_string(),
-        r#"foo_bar"#.to_string(),
+        r#"struct member"#.into(),
+        r#"FooBar"#.into(),
+        r#"struct member"#.into(),
+        r#"fooBar"#.into(),
+        r#"example.fidl:4:32"#.into(),
+        r#"foo_bar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -628,12 +628,12 @@ fn bad_service_members() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"service member"#.to_string(),
-        r#"MyServiceMember"#.to_string(),
-        r#"service member"#.to_string(),
-        r#"myServiceMember"#.to_string(),
-        r#"example.fidl:5:13"#.to_string(),
-        r#"my_service_member"#.to_string(),
+        r#"service member"#.into(),
+        r#"MyServiceMember"#.into(),
+        r#"service member"#.into(),
+        r#"myServiceMember"#.into(),
+        r#"example.fidl:5:13"#.into(),
+        r#"my_service_member"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -658,12 +658,12 @@ fn bad_resource_properties() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"resource property"#.to_string(),
-        r#"Rights"#.to_string(),
-        r#"resource property"#.to_string(),
-        r#"rights"#.to_string(),
-        r#"example.fidl:6:21"#.to_string(),
-        r#"rights"#.to_string(),
+        r#"resource property"#.into(),
+        r#"Rights"#.into(),
+        r#"resource property"#.into(),
+        r#"rights"#.into(),
+        r#"example.fidl:6:21"#.into(),
+        r#"rights"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -675,7 +675,7 @@ fn bad_member_values() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0054.test.fidl");
     // EXPECT FAIL
-    library.expect_fail(Error::ErrCouldNotResolveMember(r#"enum"#.to_string()));
+    library.expect_fail(Error::ErrCouldNotResolveMember(r#"enum"#.into()));
 
     assert!(library.check_compile());
 }
@@ -694,12 +694,12 @@ fn bad_upper_acronym() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"type"#.to_string(),
-        r#"HttpServer"#.to_string(),
-        r#"type"#.to_string(),
-        r#"HTTPServer"#.to_string(),
-        r#"example.fidl:3:5"#.to_string(),
-        r#"http_server"#.to_string(),
+        r#"type"#.into(),
+        r#"HttpServer"#.into(),
+        r#"type"#.into(),
+        r#"HTTPServer"#.into(),
+        r#"example.fidl:3:5"#.into(),
+        r#"http_server"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -731,8 +731,8 @@ fn bad_dependent_library() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrDeclNameConflictsWithLibraryImportCanonical(
-        r#"FOOBAR"#.to_string(),
-        r#"foobar"#.to_string(),
+        r#"FOOBAR"#.into(),
+        r#"foobar"#.into(),
     ));
 
     assert!(library.check_compile());
@@ -758,12 +758,12 @@ fn bad_consecutive_underscores() {
     );
     // EXPECT FAIL
     library.expect_fail(Error::ErrNameCollisionCanonical(
-        r#"type"#.to_string(),
-        r#"it__is___the____same"#.to_string(),
-        r#"type"#.to_string(),
-        r#"it_is_the_same"#.to_string(),
-        r#"example.fidl:3:5"#.to_string(),
-        r#"it_is_the_same"#.to_string(),
+        r#"type"#.into(),
+        r#"it__is___the____same"#.into(),
+        r#"type"#.into(),
+        r#"it_is_the_same"#.into(),
+        r#"example.fidl:3:5"#.into(),
+        r#"it_is_the_same"#.into(),
     ));
 
     assert!(library.check_compile());

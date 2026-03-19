@@ -105,9 +105,9 @@ fn test_compare_generation() {
 
         let output_json = goldens_dir.join(format!("{}.json", name));
 
-        let mut experimental = vec!["output_index_json".to_string()];
+        let mut experimental = vec!["output_index_json"];
         for flag in &tc.experimental_flags {
-            experimental.push(flag.to_string());
+            experimental.push(flag);
         }
 
         let mut available_args = Vec::new();
@@ -118,26 +118,29 @@ fn test_compare_generation() {
             available_args.push("test:HEAD".to_string());
         }
 
-        let vdso1 = "vdso-fidl/rights.fidl".to_string();
-        let vdso2 = "vdso-fidl/zx_common.fidl".to_string();
-        let vdso3 = "vdso-fidl/overview.fidl".to_string();
+        let vdso1 = "vdso-fidl/rights.fidl";
+        let vdso2 = "vdso-fidl/zx_common.fidl";
+        let vdso3 = "vdso-fidl/overview.fidl";
         let main_file = format!("fidlc/testdata/{}", file);
 
         let cli = Cli {
             json: Some(output_json.to_string_lossy().to_string()),
             available: available_args,
-            experimental,
+            experimental: experimental.into_iter().map(|s| s.to_string()).collect(),
             files: vec![
-                vdso1.clone(),
-                vdso2.clone(),
-                vdso3.clone(),
+                vdso1.to_string(),
+                vdso2.to_string(),
+                vdso3.to_string(),
                 main_file.clone(),
             ],
             format: "text".to_string(),
             ..Default::default()
         };
 
-        let mut source_managers = vec![vec![vdso1, vdso2, vdso3], vec![main_file]];
+        let mut source_managers = vec![
+            vec![vdso1.to_string(), vdso2.to_string(), vdso3.to_string()],
+            vec![main_file],
+        ];
         if !tc.public_deps.is_empty() {
             source_managers.insert(0, tc.public_deps.iter().map(|s| s.to_string()).collect());
         }

@@ -138,10 +138,10 @@ resource_definition SomeResource : uint32 {
 "#,
     );
     lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
-        r#"None"#.to_string(),
-        r#"Properties"#.to_string(),
+        r#"None"#.into(),
+        r#"Properties"#.into(),
     ));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -175,10 +175,10 @@ resource_definition MyResource : uint32 {
 "#,
     );
     lib.expect_fail(Error::ErrNameCollision(
-        r#"resource property"#.to_string(),
-        r#"rights"#.to_string(),
-        r#"resource property"#.to_string(),
-        r#"example.fidl:7:9"#.to_string(),
+        r#"resource property"#.into(),
+        r#"rights"#.into(),
+        r#"resource property"#.into(),
+        r#"example.fidl:7:9"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -190,7 +190,7 @@ fn bad_not_uint32() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0172.test.fidl");
     lib.expect_fail(Error::ErrResourceMustBeUint32Derived(
-        r#"MyResource"#.to_string(),
+        r#"MyResource"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -202,7 +202,7 @@ fn bad_missing_subtype_property_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0173.test.fidl");
     lib.expect_fail(Error::ErrResourceMissingSubtypeProperty(
-        r#"MyResource"#.to_string(),
+        r#"MyResource"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -214,7 +214,7 @@ fn bad_subtype_not_enum() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0175.test.fidl");
     lib.expect_fail(Error::ErrResourceSubtypePropertyMustReferToEnum(
-        r#"MyResource"#.to_string(),
+        r#"MyResource"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -237,7 +237,7 @@ resource_definition handle : uint32 {
 "#,
     );
     lib.expect_fail(Error::ErrResourceSubtypePropertyMustReferToEnum(
-        r#"handle"#.to_string(),
+        r#"handle"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -249,7 +249,7 @@ fn bad_non_bits_rights() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0177.test.fidl");
     lib.expect_fail(Error::ErrResourceRightsPropertyMustReferToBits(
-        r#"MyResource"#.to_string(),
+        r#"MyResource"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -272,11 +272,11 @@ resource_definition handle : uint32 {
 "#,
     );
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"resource 'handle' -> resource 'handle'"#.to_string(),
+        r#"resource 'handle' -> resource 'handle'"#.into(),
     ));
 
     lib.expect_fail(Error::ErrResourceSubtypePropertyMustReferToEnum(
-        r#"handle"#.to_string(),
+        r#"handle"#.into(),
     ));
 
     assert!(lib.check_compile());

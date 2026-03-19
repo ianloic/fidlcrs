@@ -77,8 +77,8 @@ fn bad_missing_using() {
 type Foo = struct { dep dependent.Bar; };",
     );
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"dependent"#.to_string(),
-        r#"example"#.to_string(),
+        r#"dependent"#.into(),
+        r#"example"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -87,10 +87,10 @@ type Foo = struct { dep dependent.Bar; };",
 fn bad_unknown_using() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0046.test.fidl");
-    lib.expect_fail(Error::ErrUnknownLibrary(r#"dependent"#.to_string()));
+    lib.expect_fail(Error::ErrUnknownLibrary(r#"dependent"#.into()));
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"dependent"#.to_string(),
-        r#"test.bad.fi0046"#.to_string(),
+        r#"dependent"#.into(),
+        r#"test.bad.fi0046"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -109,8 +109,8 @@ fn bad_using_alias_ref_through_fqn() {
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_source_file("example.fidl", "library example;\nusing dependent as the_alias;\ntype Foo = struct { dep1 dependent.Bar; };");
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"dependent"#.to_string(),
-        r#"example"#.to_string(),
+        r#"dependent"#.into(),
+        r#"example"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -126,7 +126,7 @@ fn bad_duplicate_using_no_alias() {
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0042-b.test.fidl");
     lib.expect_fail(Error::ErrDuplicateLibraryImport(
-        r#"test.bad.fi0042a"#.to_string(),
+        r#"test.bad.fi0042a"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -144,7 +144,7 @@ fn bad_duplicate_using_first_alias() {
         "example.fidl",
         "library example;\nusing dependent as alias;\nusing dependent;",
     );
-    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -161,7 +161,7 @@ fn bad_duplicate_using_second_alias() {
         "example.fidl",
         "library example;\nusing dependent;\nusing dependent as alias;",
     );
-    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -178,7 +178,7 @@ fn bad_duplicate_using_same_library_same_alias() {
         "example.fidl",
         "library example;\nusing dependent as alias;\nusing dependent as alias;",
     );
-    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -195,7 +195,7 @@ fn bad_duplicate_using_same_library_different_alias() {
         "example.fidl",
         "library example;\nusing dependent as alias1;\nusing dependent as alias2;",
     );
-    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateLibraryImport(r#"dependent"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -216,8 +216,8 @@ fn bad_conflicting_using_library_and_alias() {
         "library example;\nusing dependent1;\nusing dependent2 as dependent1;",
     );
     lib.expect_fail(Error::ErrConflictingLibraryImportAlias(
-        r#"dependent2"#.to_string(),
-        r#"dependent1"#.to_string(),
+        r#"dependent2"#.into(),
+        r#"dependent1"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -235,10 +235,10 @@ fn bad_conflicting_using_alias_and_library() {
     }
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0043-c.test.fidl");
-    lib.expect_fail(Error::ErrConflictingLibraryImport(r#"fi0043b"#.to_string()));
+    lib.expect_fail(Error::ErrConflictingLibraryImport(r#"fi0043b"#.into()));
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"test.bad.fi0043a/Baz"#.to_string(),
-        r#"test.bad.fi0043c"#.to_string(),
+        r#"test.bad.fi0043a/Baz"#.into(),
+        r#"test.bad.fi0043c"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -257,12 +257,12 @@ fn bad_conflicting_using_alias_and_alias() {
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0044-c.test.fidl");
     lib.expect_fail(Error::ErrConflictingLibraryImportAlias(
-        r#"test.bad.fi0044b"#.to_string(),
-        r#"dep"#.to_string(),
+        r#"test.bad.fi0044b"#.into(),
+        r#"dep"#.into(),
     ));
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"test.bad.fi0044a/Baz"#.to_string(),
-        r#"test.bad.fi0044c"#.to_string(),
+        r#"test.bad.fi0044a/Baz"#.into(),
+        r#"test.bad.fi0044c"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -278,8 +278,8 @@ fn bad_unused_using() {
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0178.test.fidl");
     lib.expect_fail(Error::ErrUnusedImport(
-        r#"test.bad.fi0178"#.to_string(),
-        r#"dependent"#.to_string(),
+        r#"test.bad.fi0178"#.into(),
+        r#"dependent"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -289,8 +289,8 @@ fn bad_unknown_dependent_library() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0051.test.fidl");
     lib.expect_fail(Error::ErrUnknownDependentLibrary(
-        r#"unknown.dependent.library"#.to_string(),
-        r#"unknown.dependent"#.to_string(),
+        r#"unknown.dependent.library"#.into(),
+        r#"unknown.dependent"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -306,7 +306,7 @@ fn bad_library_declaration_name_collision() {
     let mut lib = TestLibrary::with_shared(&mut shared);
     lib.add_errcat_file("bad/fi-0038-b.test.fidl");
     lib.expect_fail(Error::ErrDeclNameConflictsWithLibraryImport(
-        r#"dependency"#.to_string(),
+        r#"dependency"#.into(),
     ));
     lib.expect_fail(Error::ErrCannotResolveConstantValue);
     assert!(lib.check_compile());
@@ -325,13 +325,8 @@ fn bad_aliased_library_declaration_name_collision() {
         "lib.fidl",
         "library lib;\nusing dep as x;\ntype x = struct{};\ntype B = struct{a dep.A;};",
     );
-    lib.expect_fail(Error::ErrDeclNameConflictsWithLibraryImport(
-        r#"x"#.to_string(),
-    ));
-    lib.expect_fail(Error::ErrNameNotFound(
-        r#"dep"#.to_string(),
-        r#"lib"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrDeclNameConflictsWithLibraryImport(r#"x"#.into()));
+    lib.expect_fail(Error::ErrNameNotFound(r#"dep"#.into(), r#"lib"#.into()));
     assert!(lib.check_compile());
 }
 

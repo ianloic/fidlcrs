@@ -120,10 +120,10 @@ open Empty {};
 "#,
     );
 
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#"Empty"#.to_string()));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#"{"#.to_string()));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"Empty"#.into()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.into()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"{"#.into()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -241,10 +241,10 @@ closed protocol Composing {
 "#,
     );
     lib.expect_fail(Error::ErrComposedProtocolTooOpen(
-        r#"closed"#.to_string(),
-        r#"Composing"#.to_string(),
-        r#"open"#.to_string(),
-        r#"example/Composed"#.to_string(),
+        r#"closed"#.into(),
+        r#"Composing"#.into(),
+        r#"open"#.into(),
+        r#"example/Composed"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -265,8 +265,8 @@ protocol B {
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"strict"#.to_string(),
-        r#"compose"#.to_string(),
+        r#"strict"#.into(),
+        r#"compose"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -323,10 +323,10 @@ protocol MyProtocol {
 "#,
     );
     lib.expect_fail(Error::ErrNameCollision(
-        r#"method"#.to_string(),
-        r#"MyMethod"#.to_string(),
-        r#"method"#.to_string(),
-        r#"example.fidl:4:5"#.to_string(),
+        r#"method"#.into(),
+        r#"MyMethod"#.into(),
+        r#"method"#.into(),
+        r#"example.fidl:4:5"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -337,7 +337,7 @@ fn bad_request_must_be_protocol() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0157.test.fidl");
     lib.expect_fail(Error::ErrMustBeAProtocol(
-        r#"test.bad.fi0157/MyStruct"#.to_string(),
+        r#"test.bad.fi0157/MyStruct"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -348,9 +348,9 @@ fn bad_request_must_be_parameterized() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0168.test.fidl");
     lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
-        r#"client_end/server_end"#.to_string(),
-        r#"1"#.to_string(),
-        r#"0"#.to_string(),
+        r#"client_end/server_end"#.into(),
+        1,
+        0,
     ));
     assert!(lib.check_compile());
 }
@@ -418,7 +418,7 @@ fn bad_method_empty_payload_struct() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0077-a.test.fidl");
 
-    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"MyMethod"#.to_string()));
+    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"MyMethod"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -544,16 +544,16 @@ protocol MyProtocol {
 "#,
     );
     lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
-        r#"Identifier"#.to_string(),
-        r#"RightCurly"#.to_string(),
+        r#"Identifier"#.into(),
+        r#"RightCurly"#.into(),
     ));
     lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
-        r#"Identifier"#.to_string(),
-        r#"Semicolon"#.to_string(),
+        r#"Identifier"#.into(),
+        r#"Semicolon"#.into(),
     ));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#"int32"#.to_string()));
-    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.into()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"int32"#.into()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -564,7 +564,7 @@ fn bad_disallowed_request_type() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0075.test.fidl");
     lib.expect_fail(Error::ErrInvalidMethodPayloadLayoutClass(
-        r#"provided type"#.to_string(),
+        r#"provided type"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -583,7 +583,7 @@ protocol MyProtocol {
 "#,
     );
     lib.expect_fail(Error::ErrInvalidMethodPayloadLayoutClass(
-        r#"provided type"#.to_string(),
+        r#"provided type"#.into(),
     ));
     assert!(lib.check_compile());
 }

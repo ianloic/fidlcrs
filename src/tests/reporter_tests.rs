@@ -11,7 +11,7 @@ fn report_error_format_params() {
     let span = SourceSpan::new("span text", &file);
 
     // Reporter::fail requires positional replacement to match C++ '{0}'. We use a random Error.
-    reporter.fail(Error::ErrInvalidCharacter("param1".to_string()), span);
+    reporter.fail(Error::ErrInvalidCharacter("param1".into()), span);
 
     let errors = reporter.diagnostics();
     assert_eq!(errors.len(), 1);
@@ -30,7 +30,7 @@ fn make_error_then_report_it() {
     // Diagnostics in fidlcrs are generally constructed and pushed directly via Reporter::fail.
     // MakeError -> Report() is not directly implemented with factory functions yet in rust port.
     reporter.fail(
-        Error::ErrCannotSpecifyModifier("param1".to_string(), "param2".to_string()),
+        Error::ErrCannotSpecifyModifier("param1".into(), "param2".into()),
         span,
     );
 
@@ -50,7 +50,7 @@ fn report_warning_format_params() {
     // warnings() filtering and Warn() are not completely mapped in fidlcrs Reporter yet.
     // using a WarningDef representation instead.
     reporter.fail(
-        Error::WarnAttributeTypo("param1".to_string(), "param2".to_string()),
+        Error::WarnAttributeTypo("param1".into(), "param2".into()),
         span,
     );
 
@@ -69,7 +69,7 @@ fn make_warning_then_report_it() {
 
     // Reporter::Warn equivalent handling.
     reporter.fail(
-        Error::WarnAttributeTypo("param1".to_string(), "param2".to_string()),
+        Error::WarnAttributeTypo("param1".into(), "param2".into()),
         span,
     );
 
@@ -86,7 +86,7 @@ fn report_error_with_reused_format_params() {
     let span = SourceSpan::new("span text", &file);
 
     // fidlcrs doesn't string-index positional args like '{1}' and '{0}' currently.
-    reporter.fail(Error::ErrInvalidCharacter("param1".to_string()), span);
+    reporter.fail(Error::ErrInvalidCharacter("param1".into()), span);
 
     let errors = reporter.diagnostics();
     assert_eq!(errors.len(), 1);

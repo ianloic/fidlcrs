@@ -65,7 +65,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if !is_uint32 {
             self.reporter.fail(
-                Error::ErrResourceMustBeUint32Derived(format!("{}", &name)),
+                Error::ErrResourceMustBeUint32Derived(flyweights::FlyStr::new(
+                    format!("{}", &name).into_boxed_str(),
+                )),
                 decl.name.element.span(),
             );
         }
@@ -109,7 +111,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
                 if !is_enum {
                     self.reporter.fail(
-                        Error::ErrResourceSubtypePropertyMustReferToEnum(format!("{}", &name)),
+                        Error::ErrResourceSubtypePropertyMustReferToEnum(flyweights::FlyStr::new(
+                            format!("{}", &name).into_boxed_str(),
+                        )),
                         prop.name.element.span(),
                     );
                 }
@@ -161,7 +165,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 if !is_bits && !is_uint32_prop {
                     self.reporter.fail(
-                        Error::ErrResourceRightsPropertyMustReferToBits(format!("{}", &name)),
+                        Error::ErrResourceRightsPropertyMustReferToBits(flyweights::FlyStr::new(
+                            format!("{}", &name).into_boxed_str(),
+                        )),
                         prop.name.element.span(),
                     );
                 }
@@ -177,7 +183,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if !has_subtype && !decl.properties.is_empty() {
             self.reporter.fail(
-                Error::ErrResourceMissingSubtypeProperty(format!("{}", &name)),
+                Error::ErrResourceMissingSubtypeProperty(flyweights::FlyStr::new(
+                    format!("{}", &name).into_boxed_str(),
+                )),
                 decl.name.element.span(),
             );
         }

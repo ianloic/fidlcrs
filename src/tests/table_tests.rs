@@ -99,10 +99,10 @@ type MyTable = table {
 "#,
     );
     lib.expect_fail(Error::ErrNameCollision(
-        r#"table field"#.to_string(),
-        r#"my_field"#.to_string(),
-        r#"table field"#.to_string(),
-        r#"example.fidl:5:8"#.to_string(),
+        r#"table field"#.into(),
+        r#"my_field"#.into(),
+        r#"table field"#.into(),
+        r#"example.fidl:5:8"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -112,7 +112,7 @@ fn bad_duplicate_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0094.test.fidl");
     lib.expect_fail(Error::ErrDuplicateTableFieldOrdinal(
-        r#"bad/fi-0094.test.fidl:7:8"#.to_string(),
+        r#"bad/fi-0094.test.fidl:7:8"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -195,7 +195,7 @@ type OptionalTableContainer = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional(r#"Foo"#.to_string()));
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"Foo"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -216,11 +216,7 @@ type OptionalTableContainer = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrTooManyConstraints(
-        r#"Foo"#.to_string(),
-        r#"0"#.to_string(),
-        r#"3"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrTooManyConstraints(r#"Foo"#.into(), 0, 3));
     assert!(lib.check_compile());
 }
 
@@ -241,7 +237,7 @@ type OptionalTableContainer = union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional(r#"Foo"#.to_string()));
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"Foo"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -307,7 +303,7 @@ type Foo = table {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional(r#"int64"#.to_string()));
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"int64"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -325,8 +321,8 @@ type Foo = table {
 "#,
     );
     lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
-        r#"="#.to_string(),
-        r#";"#.to_string(),
+        r#"="#.into(),
+        r#";"#.into(),
     ));
     lib.expect_fail(Error::ErrMissingOrdinalBeforeMember);
     assert!(lib.check_compile());
@@ -475,7 +471,7 @@ fn bad_recursion_disallowed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-d.test.fidl");
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"table 'MySelf' -> table 'MySelf'"#.to_string(),
+        r#"table 'MySelf' -> table 'MySelf'"#.into(),
     ));
     assert!(lib.check_compile());
 }

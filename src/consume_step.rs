@@ -70,9 +70,10 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     .unwrap_or_else(|| path.clone());
 
                 if !dependent_library_names.contains(&path) && path != main_library_name {
-                    compiler
-                        .reporter
-                        .fail(Error::ErrUnknownLibrary(format!("{}", &path)), span);
+                    compiler.reporter.fail(
+                        Error::ErrUnknownLibrary(flyweights::FlyStr::new(path.to_string())),
+                        span,
+                    );
                     continue;
                 }
 
@@ -89,25 +90,32 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             )
                         });
                     compiler.reporter.fail(
-                        Error::ErrDeclNameConflictsWithLibraryImport(format!("{}", &local_name)),
+                        Error::ErrDeclNameConflictsWithLibraryImport(flyweights::FlyStr::new(
+                            local_name.to_string().into_boxed_str(),
+                        )),
                         err_span,
                     );
                 } else if file_import_paths.contains(&path) {
-                    compiler
-                        .reporter
-                        .fail(Error::ErrDuplicateLibraryImport(format!("{}", &path)), span);
+                    compiler.reporter.fail(
+                        Error::ErrDuplicateLibraryImport(flyweights::FlyStr::new(
+                            path.to_string().into_boxed_str(),
+                        )),
+                        span,
+                    );
                 } else if file_imports.contains(&local_name) {
                     if using_decl.maybe_alias.is_some() {
                         compiler.reporter.fail(
                             Error::ErrConflictingLibraryImportAlias(
-                                format!("{}", &path),
-                                format!("{}", &local_name),
+                                flyweights::FlyStr::new(path.to_string()),
+                                flyweights::FlyStr::new(local_name.to_string()),
                             ),
                             span,
                         );
                     } else {
                         compiler.reporter.fail(
-                            Error::ErrConflictingLibraryImport(format!("{}", &path)),
+                            Error::ErrConflictingLibraryImport(flyweights::FlyStr::new(
+                                path.to_string().into_boxed_str(),
+                            )),
                             span,
                         );
                     }
@@ -232,17 +240,21 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                     if prev_kind == "library import" {
                                         errors_to_emit.push((
                                             Error::ErrDeclNameConflictsWithLibraryImport(
-                                                local_decl_name.to_string(),
+                                                flyweights::FlyStr::new(
+                                                    local_decl_name.to_string().into_boxed_str(),
+                                                ),
                                             ),
                                             err_span,
                                         ));
                                     } else {
                                         errors_to_emit.push((
                                             Error::ErrNameCollision(
-                                                decl_kind.to_string(),
-                                                local_decl_name.to_string(),
-                                                prev_kind.to_string(),
-                                                prev_site.clone(),
+                                                flyweights::FlyStr::new(decl_kind.to_string()),
+                                                flyweights::FlyStr::new(
+                                                    local_decl_name.to_string().into_boxed_str(),
+                                                ),
+                                                flyweights::FlyStr::new(prev_kind.to_string()),
+                                                flyweights::FlyStr::new(prev_site.to_string()),
                                             ),
                                             err_span,
                                         ));
@@ -250,20 +262,20 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                 } else if prev_kind == "library import" {
                                     errors_to_emit.push((
                                         Error::ErrDeclNameConflictsWithLibraryImportCanonical(
-                                            local_decl_name.to_string(),
-                                            canon.clone(),
+                                            flyweights::FlyStr::new(local_decl_name.to_string()),
+                                            flyweights::FlyStr::new(canon),
                                         ),
                                         err_span,
                                     ));
                                 } else {
                                     errors_to_emit.push((
                                         Error::ErrNameCollisionCanonical(
-                                            decl_kind.to_string(),
-                                            local_decl_name.to_string(),
-                                            prev_kind.to_string(),
-                                            prev_raw.clone(),
-                                            prev_site.clone(),
-                                            canon.clone(),
+                                            flyweights::FlyStr::new(decl_kind.to_string()),
+                                            flyweights::FlyStr::new(local_decl_name.to_string()),
+                                            flyweights::FlyStr::new(prev_kind.to_string()),
+                                            flyweights::FlyStr::new(prev_raw.to_string()),
+                                            flyweights::FlyStr::new(prev_site.to_string()),
+                                            flyweights::FlyStr::new(canon),
                                         ),
                                         err_span,
                                     ));

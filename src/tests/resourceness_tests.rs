@@ -16,8 +16,8 @@ type Foo = resource bits {
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"resource"#.to_string(),
-        r#"bits"#.to_string(),
+        r#"resource"#.into(),
+        r#"bits"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -35,8 +35,8 @@ type Foo = resource enum {
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"resource"#.to_string(),
-        r#"enum"#.to_string(),
+        r#"resource"#.into(),
+        r#"enum"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -53,8 +53,8 @@ resource const BAR uint32 = 1;
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"resource"#.to_string(),
-        r#"const"#.to_string(),
+        r#"resource"#.into(),
+        r#"const"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -71,8 +71,8 @@ resource protocol Foo {};
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"resource"#.to_string(),
-        r#"protocol"#.to_string(),
+        r#"resource"#.into(),
+        r#"protocol"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -89,8 +89,8 @@ resource alias B = bool;
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"resource"#.to_string(),
-        r#"alias"#.to_string(),
+        r#"resource"#.into(),
+        r#"alias"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -108,7 +108,7 @@ type Two = resource resource struct {};
 type Three = resource resource resource struct {};
 "#,
     );
-    lib.expect_fail(Error::ErrDuplicateModifier(r#"resource"#.to_string()));
+    lib.expect_fail(Error::ErrDuplicateModifier(r#"resource"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -130,12 +130,12 @@ fn bad_resource_modifier_missing() {
     lib.use_library_zx();
     lib.add_source_file("bad/fi-0110.test.fidl", &(content));
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"handle"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"handle"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -208,12 +208,12 @@ fn bad_handles_in_value_struct() {
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
         lib.expect_fail(Error::ErrTypeMustBeResource(
-            r#"struct"#.to_string(),
-            r#"Foo"#.to_string(),
-            r#"bad_member"#.to_string(),
-            r#"struct"#.to_string(),
-            r#"struct"#.to_string(),
-            r#"Foo"#.to_string(),
+            r#"struct"#.into(),
+            r#"Foo"#.into(),
+            r#"bad_member"#.into(),
+            r#"struct"#.into(),
+            r#"struct"#.into(),
+            r#"Foo"#.into(),
         ));
         assert!(lib.check_compile());
     }
@@ -233,12 +233,12 @@ fn bad_handles_in_value_table() {
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
         lib.expect_fail(Error::ErrTypeMustBeResource(
-            r#"table"#.to_string(),
-            r#"Foo"#.to_string(),
-            r#"bad_member"#.to_string(),
-            r#"table"#.to_string(),
-            r#"table"#.to_string(),
-            r#"Foo"#.to_string(),
+            r#"table"#.into(),
+            r#"Foo"#.into(),
+            r#"bad_member"#.into(),
+            r#"table"#.into(),
+            r#"table"#.into(),
+            r#"Foo"#.into(),
         ));
         assert!(lib.check_compile());
     }
@@ -258,12 +258,12 @@ fn bad_handles_in_value_union() {
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
         lib.expect_fail(Error::ErrTypeMustBeResource(
-            r#"union"#.to_string(),
-            r#"Foo"#.to_string(),
-            r#"bad_member"#.to_string(),
-            r#"union"#.to_string(),
-            r#"union"#.to_string(),
-            r#"Foo"#.to_string(),
+            r#"union"#.into(),
+            r#"Foo"#.into(),
+            r#"bad_member"#.into(),
+            r#"union"#.into(),
+            r#"union"#.into(),
+            r#"Foo"#.into(),
         ));
         assert!(lib.check_compile());
     }
@@ -285,12 +285,12 @@ type Foo = struct { bad_member client_end:Protocol; };
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"bad_member"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"bad_member"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -313,12 +313,12 @@ type Foo = struct { bad_member ResourceStruct; };
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"bad_member"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"bad_member"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -349,12 +349,12 @@ type Foo = struct { bad_member HandleAlias; };
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"bad_member"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"bad_member"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -379,12 +379,12 @@ type Foo = struct { bad_member vector<vector<zx.Handle>>; };
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"bad_member"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"bad_member"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -409,28 +409,28 @@ type ResourceStruct = resource struct {};
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"second"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"second"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"third"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"third"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
-        r#"first"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Foo"#.to_string(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
+        r#"first"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Foo"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -473,12 +473,12 @@ type Bottom = resource struct {};
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Middle"#.to_string(),
-        r#"bottom"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Middle"#.to_string(),
+        r#"struct"#.into(),
+        r#"Middle"#.into(),
+        r#"bottom"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Middle"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -541,12 +541,12 @@ type Boros = struct {
 "#,
     );
     lib.expect_fail(Error::ErrTypeMustBeResource(
-        r#"struct"#.to_string(),
-        r#"Boros"#.to_string(),
-        r#"bad_member"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"struct"#.to_string(),
-        r#"Boros"#.to_string(),
+        r#"struct"#.into(),
+        r#"Boros"#.into(),
+        r#"bad_member"#.into(),
+        r#"struct"#.into(),
+        r#"struct"#.into(),
+        r#"Boros"#.into(),
     ));
     assert!(lib.check_compile());
 }

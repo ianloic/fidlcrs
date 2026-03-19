@@ -24,8 +24,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         {
             self.reporter.fail(
                 Error::ErrCannotSpecifyModifier(
-                    format!("{}", &"resource".to_string()),
-                    format!("{}", &"bits".to_string()),
+                    flyweights::FlyStr::new(format!("{}", &"resource".to_string())),
+                    flyweights::FlyStr::new(format!("{}", &"bits".to_string())),
                 ),
                 m.element.span(),
             );
@@ -103,7 +103,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
         if !is_valid_type {
             self.reporter.fail(
-                Error::ErrBitsTypeMustBeUnsignedIntegralPrimitive(format!("{}", &subtype_name)),
+                Error::ErrBitsTypeMustBeUnsignedIntegralPrimitive(flyweights::FlyStr::new(
+                    format!("{}", &subtype_name).into_boxed_str(),
+                )),
                 decl.name
                     .as_ref()
                     .map_or_else(|| decl.element.start_token.span, |id| id.element.span()),
@@ -180,8 +182,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             {
                                 self.reporter.fail(
                                     Error::ErrConstantOverflowsType(
-                                        format!("{}", &val_str),
-                                        format!("{}", &subtype_name),
+                                        flyweights::FlyStr::new(format!("{}", &val_str)),
+                                        flyweights::FlyStr::new(format!("{}", &subtype_name)),
                                     ),
                                     member.value.element().span(),
                                 );
@@ -192,10 +194,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 if (mask & val) != 0 {
                                     self.reporter.fail(
                                         Error::ErrDuplicateMemberValue(
-                                            format!("{}", &"bits"),
-                                            format!("{}", &name_str),
-                                            format!("{}", &"unknown"),
-                                            format!("{}", &name_str),
+                                            flyweights::FlyStr::new(format!("{}", &"bits")),
+                                            flyweights::FlyStr::new(format!("{}", &name_str)),
+                                            flyweights::FlyStr::new(format!("{}", &"unknown")),
+                                            flyweights::FlyStr::new(format!("{}", &name_str)),
                                         ),
                                         member.value.element().span(),
                                     );
@@ -215,8 +217,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             } else {
                                 self.reporter.fail(
                                     Error::ErrConstantOverflowsType(
-                                        format!("{}", &val_str),
-                                        format!("{}", &subtype_name),
+                                        flyweights::FlyStr::new(format!("{}", &val_str)),
+                                        flyweights::FlyStr::new(format!("{}", &subtype_name)),
                                     ),
                                     member.value.element().span(),
                                 );
@@ -237,10 +239,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         } else if (mask & val) != 0 {
                             self.reporter.fail(
                                 Error::ErrDuplicateMemberValue(
-                                    format!("{}", &"bits"),
-                                    format!("{}", &name_str),
-                                    format!("{}", &"unknown"),
-                                    format!("{}", &name_str),
+                                    flyweights::FlyStr::new(format!("{}", &"bits")),
+                                    flyweights::FlyStr::new(format!("{}", &name_str)),
+                                    flyweights::FlyStr::new(format!("{}", &"unknown")),
+                                    flyweights::FlyStr::new(format!("{}", &name_str)),
                                 ),
                                 member.value.element().span(),
                             );

@@ -27,7 +27,7 @@ impl<'a> Reporter<'a> {
 
         self.diagnostics.borrow_mut().push(Diagnostic {
             def,
-            message: msg,
+            message: msg.to_string(),
             span: Some(span),
         });
     }

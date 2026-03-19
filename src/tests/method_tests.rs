@@ -300,7 +300,7 @@ closed protocol Closed {
 "#,
     );
     lib.expect_fail(Error::ErrFlexibleOneWayMethodInClosedProtocol(
-        r#"event"#.to_string(),
+        r#"event"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -312,7 +312,7 @@ fn bad_invalid_strictness_flexible_one_way_method_in_closed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0116.test.fidl");
     lib.expect_fail(Error::ErrFlexibleOneWayMethodInClosedProtocol(
-        r#"one-way method"#.to_string(),
+        r#"one-way method"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -333,7 +333,7 @@ closed protocol Closed {
 "#,
     );
     lib.expect_fail(Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(
-        r#"closed"#.to_string(),
+        r#"closed"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -345,7 +345,7 @@ fn bad_invalid_strictness_flexible_two_way_method_in_ajar() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0115.test.fidl");
     lib.expect_fail(Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(
-        r#"ajar"#.to_string(),
+        r#"ajar"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -366,8 +366,8 @@ protocol BadMethod {
 "#,
     );
     lib.expect_fail(Error::ErrCannotSpecifyModifier(
-        r#"open"#.to_string(),
-        r#"method"#.to_string(),
+        r#"open"#.into(),
+        r#"method"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -407,7 +407,7 @@ open protocol Test {
 "#,
     );
 
-    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.to_string()));
+    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -427,7 +427,7 @@ open protocol Test {
 "#,
     );
 
-    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.to_string()));
+    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -447,7 +447,7 @@ open protocol Test {
 "#,
     );
 
-    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.to_string()));
+    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.into()));
 
     assert!(lib.check_compile());
 }
@@ -467,7 +467,7 @@ open protocol Test {
 "#,
     );
 
-    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.to_string()));
+    lib.expect_fail(Error::ErrEmptyPayloadStructs(r#"Method"#.into()));
 
     assert!(lib.check_compile());
 }

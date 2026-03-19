@@ -24,8 +24,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }) {
             self.reporter.fail(
                 Error::ErrCannotSpecifyModifier(
-                    format!("{}", &m.element.span().data.to_string()),
-                    format!("{}", &"table".to_string()),
+                    flyweights::FlyStr::new(format!("{}", &m.element.span().data.to_string())),
+                    flyweights::FlyStr::new(format!("{}", &"table".to_string())),
                 ),
                 m.element.span(),
             );
@@ -96,7 +96,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         prev.location.filename, prev.location.line, prev.location.column
                     );
                     self.reporter.fail(
-                        Error::ErrDuplicateTableFieldOrdinal(format!("{}", &location_str)),
+                        Error::ErrDuplicateTableFieldOrdinal(flyweights::FlyStr::new(
+                            format!("{}", &location_str).into_boxed_str(),
+                        )),
                         member.ordinal.as_ref().unwrap().element.span(),
                     );
                 }
@@ -167,12 +169,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let n = name.to_string();
                     self.reporter.fail(
                         Error::ErrTypeMustBeResource(
-                            format!("{}", &"table"),
-                            format!("{}", &n),
-                            format!("{}", &member_name),
-                            format!("{}", &"table"),
-                            format!("{}", &"table"),
-                            format!("{}", &n),
+                            flyweights::FlyStr::new(format!("{}", &"table")),
+                            flyweights::FlyStr::new(format!("{}", &n)),
+                            flyweights::FlyStr::new(format!("{}", &member_name)),
+                            flyweights::FlyStr::new(format!("{}", &"table")),
+                            flyweights::FlyStr::new(format!("{}", &"table")),
+                            flyweights::FlyStr::new(format!("{}", &n)),
                         ),
                         type_ctor.element.span(),
                     );

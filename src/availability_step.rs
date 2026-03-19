@@ -47,7 +47,9 @@ impl AvailabilityStep {
                 added = Version::parse(&val_str);
                 if added.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion(format!("{}", &val_str)),
+                        Error::ErrInvalidVersion(flyweights::FlyStr::new(
+                            format!("{}", &val_str).into_boxed_str(),
+                        )),
                         arg.element.span(),
                     );
                 }
@@ -56,14 +58,16 @@ impl AvailabilityStep {
                 deprecated = Version::parse(&val_str);
                 if deprecated.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion(format!("{}", &val_str)),
+                        Error::ErrInvalidVersion(flyweights::FlyStr::new(
+                            format!("{}", &val_str).into_boxed_str(),
+                        )),
                         arg.element.span(),
                     );
                 }
                 deprecated_arg = Some((arg_name, val_str.clone(), arg.element.span()));
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
+                        Error::ErrInvalidModifierAvailableArgument(arg_name.into()),
                         arg.element.span(),
                     );
                 }
@@ -71,7 +75,9 @@ impl AvailabilityStep {
                 removed = Version::parse(&val_str);
                 if removed.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion(format!("{}", &val_str)),
+                        Error::ErrInvalidVersion(flyweights::FlyStr::new(
+                            format!("{}", &val_str).into_boxed_str(),
+                        )),
                         arg.element.span(),
                     );
                 }
@@ -80,13 +86,15 @@ impl AvailabilityStep {
                 replaced = Version::parse(&val_str);
                 if replaced.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion(format!("{}", &val_str)),
+                        Error::ErrInvalidVersion(flyweights::FlyStr::new(
+                            format!("{}", &val_str).into_boxed_str(),
+                        )),
                         arg.element.span(),
                     );
                 }
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
+                        Error::ErrInvalidModifierAvailableArgument(arg_name.into()),
                         arg.element.span(),
                     );
                 }
@@ -104,7 +112,9 @@ impl AvailabilityStep {
                         "alias"
                     }; // just hardcode kind string for now
                     compiler.reporter.fail(
-                        Error::ErrCannotBeRenamed(format!("{}", &kind_str.to_string())),
+                        Error::ErrCannotBeRenamed(flyweights::FlyStr::new(
+                            format!("{}", &kind_str.to_string()).into_boxed_str(),
+                        )),
                         arg.element.span(),
                     );
                 } else {
@@ -112,8 +122,10 @@ impl AvailabilityStep {
                     if unquoted_val == item_name {
                         compiler.reporter.fail(
                             Error::ErrRenamedToSameName(
-                                format!("{}", &unquoted_val.to_string()),
-                                format!("{}", &item_name.to_string()),
+                                flyweights::FlyStr::new(
+                                    format!("{}", &unquoted_val.to_string()).into_boxed_str(),
+                                ),
+                                flyweights::FlyStr::new(format!("{}", &item_name.to_string())),
                             ),
                             arg.element.span(),
                         );
@@ -121,13 +133,13 @@ impl AvailabilityStep {
                 }
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
+                        Error::ErrInvalidModifierAvailableArgument(arg_name.into()),
                         arg.element.span(),
                     );
                 }
             } else if (arg_name == "note" || arg_name == "legacy") && decl_kind == "modifier" {
                 compiler.reporter.fail(
-                    Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
+                    Error::ErrInvalidModifierAvailableArgument(arg_name.into()),
                     arg.element.span(),
                 );
             }
@@ -174,7 +186,7 @@ impl AvailabilityStep {
                 std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(attr.element.span())
             };
             compiler.reporter.fail(
-                Error::ErrInvalidAvailabilityOrder(format!("{}", &msg)),
+                Error::ErrInvalidAvailabilityOrder(flyweights::FlyStr::new(format!("{}", &msg))),
                 span,
             );
             return None;
@@ -207,14 +219,14 @@ impl AvailabilityStep {
                     unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(child_span) };
                 compiler.reporter.fail(
                     Error::ErrAvailabilityConflictsWithParent(
-                        format!("{}", &child_name),
-                        format!("{}", &child_val),
-                        format!("{}", &parent_name),
-                        format!("{}", &parent_val),
-                        format!("{}", &parent_span),
-                        format!("{}", &child_name),
-                        format!("{}", &when),
-                        format!("{}", &parent_what),
+                        flyweights::FlyStr::new(format!("{}", &child_name)),
+                        flyweights::FlyStr::new(format!("{}", &child_val)),
+                        flyweights::FlyStr::new(format!("{}", &parent_name)),
+                        flyweights::FlyStr::new(format!("{}", &parent_val)),
+                        flyweights::FlyStr::new(format!("{}", &parent_span)),
+                        flyweights::FlyStr::new(format!("{}", &child_name)),
+                        flyweights::FlyStr::new(format!("{}", &when)),
+                        flyweights::FlyStr::new(format!("{}", &parent_what)),
                     ),
                     span,
                 );
@@ -422,17 +434,29 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         if avail.set().overlap(&other_avail.set()) {
                             if modifier.subkind == other_mod.subkind {
                                 compiler.reporter.fail(
-                                    Error::ErrDuplicateModifier(format!(
-                                        "{}",
-                                        &modifier.element.span().data.to_string()
+                                    Error::ErrDuplicateModifier(flyweights::FlyStr::new(
+                                        format!("{}", &modifier.element.span().data.to_string())
+                                            .into_boxed_str(),
                                     )),
                                     modifier.element.span(),
                                 );
                             } else {
                                 compiler.reporter.fail(
                                     Error::ErrConflictingModifier(
-                                        format!("{}", &modifier.element.span().data.to_string()),
-                                        format!("{}", &other_mod.element.span().data.to_string()),
+                                        flyweights::FlyStr::new(
+                                            format!(
+                                                "{}",
+                                                &modifier.element.span().data.to_string()
+                                            )
+                                            .into_boxed_str(),
+                                        ),
+                                        flyweights::FlyStr::new(
+                                            format!(
+                                                "{}",
+                                                &other_mod.element.span().data.to_string()
+                                            )
+                                            .into_boxed_str(),
+                                        ),
                                     ),
                                     modifier.element.span(),
                                 );

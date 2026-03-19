@@ -65,10 +65,10 @@ service MyService {
 "#,
     );
     lib.expect_fail(Error::ErrNameCollision(
-        r#"service member"#.to_string(),
-        r#"my_service_member"#.to_string(),
-        r#"service member"#.to_string(),
-        r#"example.fidl:7:5"#.to_string(),
+        r#"service member"#.into(),
+        r#"my_service_member"#.into(),
+        r#"service member"#.into(),
+        r#"example.fidl:7:5"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -139,10 +139,10 @@ fn bad_cannot_use_more_than_one_protocol_transport_kind() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0113.test.fidl");
     lib.expect_fail(Error::ErrMismatchedTransportInServices(
-        r#"b"#.to_string(),
-        r#"Driver"#.to_string(),
-        r#"a"#.to_string(),
-        r#"Channel"#.to_string(),
+        r#"b"#.into(),
+        r#"Driver"#.into(),
+        r#"a"#.into(),
+        r#"Channel"#.into(),
     ));
 
     assert!(lib.check_compile());

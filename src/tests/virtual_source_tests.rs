@@ -2,7 +2,7 @@ use crate::source_file::VirtualSourceFile;
 
 #[test]
 fn add_line() {
-    let file = VirtualSourceFile::new("imaginary-test-file".to_string());
+    let file = VirtualSourceFile::new("imaginary-test-file");
 
     let one = file.add_line("one");
     let two = file.add_line("two");
@@ -15,7 +15,7 @@ fn add_line() {
 
 #[test]
 fn line_containing() {
-    let file = VirtualSourceFile::new("imaginary-test-file".to_string());
+    let file = VirtualSourceFile::new("imaginary-test-file");
 
     file.add_line("one");
     let two = file.add_line("two");

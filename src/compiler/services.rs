@@ -63,10 +63,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if associated_transport != transport {
                     self.reporter.fail(
                         Error::ErrMismatchedTransportInServices(
-                            format!("{}", &member_name),
-                            format!("{}", &transport),
-                            format!("{}", &first_member_with_that_transport.as_str()),
-                            format!("{}", &associated_transport.as_str()),
+                            flyweights::FlyStr::new(format!("{}", &member_name)),
+                            flyweights::FlyStr::new(format!("{}", &transport)),
+                            flyweights::FlyStr::new(
+                                format!("{}", &first_member_with_that_transport.as_str())
+                                    .into_boxed_str(),
+                            ),
+                            flyweights::FlyStr::new(
+                                format!("{}", &associated_transport.as_str()).into_boxed_str(),
+                            ),
                         ),
                         member.name.element.span(),
                     );

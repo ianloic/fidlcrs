@@ -492,7 +492,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     first_decl.element().span()
                 };
 
-                reporter.fail(Error::ErrIncludeCycle(format!("{}", &cycle_str)), span);
+                reporter.fail(
+                    Error::ErrIncludeCycle(flyweights::FlyStr::new(format!("{}", &cycle_str))),
+                    span,
+                );
                 return;
             }
             temp_path.push(name.to_string());

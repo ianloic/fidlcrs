@@ -451,9 +451,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             raw_ast::LiteralKind::String => {
                                 self.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType(
-                                        format!("{}", &"string"),
-                                        format!("{}", &"string"),
-                                        format!("{}", subtype),
+                                        flyweights::FlyStr::new(format!("{}", &"string")),
+                                        flyweights::FlyStr::new(format!("{}", &"string")),
+                                        flyweights::FlyStr::new(format!("{}", subtype)),
                                     ),
                                     span,
                                 );
@@ -462,9 +462,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 if subtype != "bool" {
                                     self.reporter.fail(
                                         Error::ErrTypeCannotBeConvertedToType(
-                                            format!("{}", &"bool"),
-                                            format!("{}", &"bool"),
-                                            format!("{}", subtype),
+                                            flyweights::FlyStr::new(format!("{}", &"bool")),
+                                            flyweights::FlyStr::new(format!("{}", &"bool")),
+                                            flyweights::FlyStr::new(format!("{}", subtype)),
                                         ),
                                         span,
                                     );
@@ -474,9 +474,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 if subtype == "bool" {
                                     self.reporter.fail(
                                         Error::ErrTypeCannotBeConvertedToType(
-                                            format!("{}", &"numeric"),
-                                            format!("{}", &"numeric"),
-                                            format!("{}", subtype),
+                                            flyweights::FlyStr::new(format!("{}", &"numeric")),
+                                            flyweights::FlyStr::new(format!("{}", &"numeric")),
+                                            flyweights::FlyStr::new(format!("{}", subtype)),
                                         ),
                                         span,
                                     );
@@ -486,8 +486,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 if !valid {
                                     self.reporter.fail(
                                         Error::ErrConstantOverflowsType(
-                                            format!("{}", &lit.literal.value),
-                                            format!("{}", subtype),
+                                            flyweights::FlyStr::new(
+                                                format!("{}", &lit.literal.value).into_boxed_str(),
+                                            ),
+                                            flyweights::FlyStr::new(format!("{}", subtype)),
                                         ),
                                         span,
                                     );
@@ -502,9 +504,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         if name == "MAX" {
                             self.reporter.fail(
                                 Error::ErrTypeCannotBeConvertedToType(
-                                    format!("{}", &"MAX"),
-                                    format!("{}", &"MAX"),
-                                    format!("{}", subtype),
+                                    flyweights::FlyStr::new(format!("{}", &"MAX")),
+                                    flyweights::FlyStr::new(format!("{}", &"MAX")),
+                                    flyweights::FlyStr::new(format!("{}", subtype)),
                                 ),
                                 span,
                             );
@@ -564,10 +566,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                 .map(|s| s.element.start_token.span.data);
                                         } else {
                                             self.reporter.fail(
-                                                Error::ErrCouldNotResolveMember(format!(
-                                                    "{}",
-                                                    &"bits"
-                                                )),
+                                                Error::ErrCouldNotResolveMember(
+                                                    flyweights::FlyStr::new(
+                                                        format!("{}", &"bits").into_boxed_str(),
+                                                    ),
+                                                ),
                                                 span,
                                             );
                                             return;
@@ -581,10 +584,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                 .map(|s| s.element.start_token.span.data);
                                         } else {
                                             self.reporter.fail(
-                                                Error::ErrCouldNotResolveMember(format!(
-                                                    "{}",
-                                                    &"enum"
-                                                )),
+                                                Error::ErrCouldNotResolveMember(
+                                                    flyweights::FlyStr::new(
+                                                        format!("{}", &"enum").into_boxed_str(),
+                                                    ),
+                                                ),
                                                 span,
                                             );
                                             return;
@@ -602,10 +606,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                     .map(|s| s.element.start_token.span.data);
                                             } else {
                                                 self.reporter.fail(
-                                                    Error::ErrCouldNotResolveMember(format!(
-                                                        "{}",
-                                                        &"bits"
-                                                    )),
+                                                    Error::ErrCouldNotResolveMember(
+                                                        flyweights::FlyStr::new(
+                                                            format!("{}", &"bits").into_boxed_str(),
+                                                        ),
+                                                    ),
                                                     span,
                                                 );
                                                 return;
@@ -622,10 +627,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                     .map(|s| s.element.start_token.span.data);
                                             } else {
                                                 self.reporter.fail(
-                                                    Error::ErrCouldNotResolveMember(format!(
-                                                        "{}",
-                                                        &"enum"
-                                                    )),
+                                                    Error::ErrCouldNotResolveMember(
+                                                        flyweights::FlyStr::new(
+                                                            format!("{}", &"enum").into_boxed_str(),
+                                                        ),
+                                                    ),
                                                     span,
                                                 );
                                                 return;
@@ -651,8 +657,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             {
                                 self.reporter.fail(
                                     Error::ErrConstantOverflowsType(
-                                        format!("{}", &lit.literal.value),
-                                        format!("{}", subtype),
+                                        flyweights::FlyStr::new(
+                                            format!("{}", &lit.literal.value).into_boxed_str(),
+                                        ),
+                                        flyweights::FlyStr::new(format!("{}", subtype)),
                                     ),
                                     span,
                                 );
@@ -661,9 +669,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             if left_is_bool != right_is_bool || left_is_float != right_is_float {
                                 self.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType(
-                                        format!("{}", &name),
-                                        format!("{}", &c_layout),
-                                        format!("{}", subtype),
+                                        flyweights::FlyStr::new(format!("{}", &name)),
+                                        flyweights::FlyStr::new(format!("{}", &c_layout)),
+                                        flyweights::FlyStr::new(format!("{}", subtype)),
                                     ),
                                     span,
                                 );
@@ -671,9 +679,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         } else if is_other {
                             self.reporter.fail(
                                 Error::ErrTypeCannotBeConvertedToType(
-                                    format!("{}", &full_name),
-                                    format!("{}", &"identifier"),
-                                    format!("{}", subtype),
+                                    flyweights::FlyStr::new(format!("{}", &full_name)),
+                                    flyweights::FlyStr::new(format!("{}", &"identifier")),
+                                    flyweights::FlyStr::new(format!("{}", subtype)),
                                 ),
                                 span,
                             );
@@ -702,9 +710,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     if !matches!(lit.literal.kind, raw_ast::LiteralKind::String) {
                         self.reporter.fail(
                             Error::ErrTypeCannotBeConvertedToType(
-                                format!("{}", &"primitive"),
-                                format!("{}", &"primitive"),
-                                format!("{}", &"string"),
+                                flyweights::FlyStr::new(format!("{}", &"primitive")),
+                                flyweights::FlyStr::new(format!("{}", &"primitive")),
+                                flyweights::FlyStr::new(format!("{}", &"string")),
                             ),
                             span,
                         );
@@ -750,9 +758,17 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             if len > max_len {
                                 self.reporter.fail(
                                     Error::ErrTypeCannotBeConvertedToType(
-                                        format!("{}", &lit.literal.value),
-                                        format!("{}", &format!("string:{}", len)),
-                                        format!("{}", &format!("string:{}", max_len)),
+                                        flyweights::FlyStr::new(
+                                            format!("{}", &lit.literal.value).into_boxed_str(),
+                                        ),
+                                        flyweights::FlyStr::new(
+                                            format!("{}", &format!("string:{}", len))
+                                                .into_boxed_str(),
+                                        ),
+                                        flyweights::FlyStr::new(
+                                            format!("{}", &format!("string:{}", max_len))
+                                                .into_boxed_str(),
+                                        ),
                                     ),
                                     span,
                                 );
@@ -761,9 +777,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         if s.nullable {
                             self.reporter.fail(
                                 Error::ErrTypeCannotBeConvertedToType(
-                                    format!("{}", &lit.literal.value),
-                                    format!("{}", &"string"),
-                                    format!("{}", &"string:optional"),
+                                    flyweights::FlyStr::new(format!("{}", &lit.literal.value)),
+                                    flyweights::FlyStr::new(format!("{}", &"string")),
+                                    flyweights::FlyStr::new(format!("{}", &"string:optional")),
                                 ),
                                 span,
                             );
@@ -795,9 +811,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     if !valid {
                         self.reporter.fail(
                             Error::ErrTypeCannotBeConvertedToType(
-                                format!("{}", &name),
-                                format!("{}", &"identifier"),
-                                format!("{}", &"string"),
+                                flyweights::FlyStr::new(format!("{}", &name)),
+                                flyweights::FlyStr::new(format!("{}", &"identifier")),
+                                flyweights::FlyStr::new(format!("{}", &"string")),
                             ),
                             span,
                         );
@@ -829,9 +845,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         }
                         self.reporter.fail(
                             Error::ErrTypeCannotBeConvertedToType(
-                                format!("{}", &lit.literal.value),
-                                format!("{}", &"literal"),
-                                format!("{}", &expected_name),
+                                flyweights::FlyStr::new(format!("{}", &lit.literal.value)),
+                                flyweights::FlyStr::new(format!("{}", &"literal")),
+                                flyweights::FlyStr::new(format!("{}", &expected_name)),
                             ),
                             span,
                         );
@@ -857,8 +873,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             if type_full_name != expected_name {
                                 self.reporter.fail(
                                     Error::ErrMismatchedNameTypeAssignment(
-                                        format!("{}", &expected_name),
-                                        format!("{}", &type_full_name),
+                                        flyweights::FlyStr::new(format!("{}", &expected_name)),
+                                        flyweights::FlyStr::new(format!("{}", &type_full_name)),
                                     ),
                                     span,
                                 );
@@ -900,9 +916,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 }
                                 if !found_member {
                                     self.reporter.fail(
-                                        Error::ErrCouldNotResolveMember(format!(
-                                            "{}",
-                                            &expected_decl_kind
+                                        Error::ErrCouldNotResolveMember(flyweights::FlyStr::new(
+                                            format!("{}", &expected_decl_kind).into_boxed_str(),
                                         )),
                                         span,
                                     );
@@ -943,16 +958,24 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                     if is_primitive {
                                         self.reporter.fail(
                                             Error::ErrMismatchedNameTypeAssignment(
-                                                format!("{}", &expected_name),
-                                                format!("{}", &"Primitive"),
+                                                flyweights::FlyStr::new(
+                                                    format!("{}", &expected_name).into_boxed_str(),
+                                                ),
+                                                flyweights::FlyStr::new(
+                                                    format!("{}", &"Primitive").into_boxed_str(),
+                                                ),
                                             ),
                                             span,
                                         );
                                     } else if c_layout != expected_name {
                                         self.reporter.fail(
                                             Error::ErrMismatchedNameTypeAssignment(
-                                                format!("{}", &expected_name),
-                                                format!("{}", &c_layout),
+                                                flyweights::FlyStr::new(
+                                                    format!("{}", &expected_name).into_boxed_str(),
+                                                ),
+                                                flyweights::FlyStr::new(
+                                                    format!("{}", &c_layout).into_boxed_str(),
+                                                ),
                                             ),
                                             span,
                                         );
@@ -965,8 +988,10 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 } else {
                                     self.reporter.fail(
                                         Error::ErrMismatchedNameTypeAssignment(
-                                            format!("{}", &expected_name),
-                                            format!("{}", &r),
+                                            flyweights::FlyStr::new(
+                                                format!("{}", &expected_name).into_boxed_str(),
+                                            ),
+                                            flyweights::FlyStr::new(format!("{}", &r)),
                                         ),
                                         span,
                                     );
@@ -996,7 +1021,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         if !self.type_can_be_const(&type_obj) {
             let layout_str = decl.type_ctor.element.start_token.span.data;
             self.reporter.fail(
-                Error::ErrInvalidConstantType(format!("{}", &layout_str)),
+                Error::ErrInvalidConstantType(flyweights::FlyStr::new(
+                    format!("{}", &layout_str).into_boxed_str(),
+                )),
                 decl.name.element.start_token.span,
             );
         }

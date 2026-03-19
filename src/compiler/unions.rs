@@ -77,7 +77,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         prev.location.filename, prev.location.line, prev.location.column
                     );
                     self.reporter.fail(
-                        Error::ErrDuplicateUnionMemberOrdinal(format!("{}", &location_str)),
+                        Error::ErrDuplicateUnionMemberOrdinal(flyweights::FlyStr::new(
+                            format!("{}", &location_str).into_boxed_str(),
+                        )),
                         member.ordinal.as_ref().unwrap().element.span(),
                     );
                 }
@@ -126,12 +128,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let n = name.to_string();
                     self.reporter.fail(
                         Error::ErrTypeMustBeResource(
-                            format!("{}", &"union"),
-                            format!("{}", &n),
-                            format!("{}", &member_name),
-                            format!("{}", &"union"),
-                            format!("{}", &"union"),
-                            format!("{}", &n),
+                            flyweights::FlyStr::new(format!("{}", &"union")),
+                            flyweights::FlyStr::new(format!("{}", &n)),
+                            flyweights::FlyStr::new(format!("{}", &member_name)),
+                            flyweights::FlyStr::new(format!("{}", &"union")),
+                            flyweights::FlyStr::new(format!("{}", &"union")),
+                            flyweights::FlyStr::new(format!("{}", &n)),
                         ),
                         type_ctor.element.span(),
                     );
@@ -164,7 +166,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if attributes.iter().any(|a| a.name == "selector") {
                 self.reporter.fail(
-                    Error::ErrInvalidAttributePlacement(format!("{}", &"selector")),
+                    Error::ErrInvalidAttributePlacement(flyweights::FlyStr::new(
+                        format!("{}", &"selector").into_boxed_str(),
+                    )),
                     member.element.span(),
                 );
             }

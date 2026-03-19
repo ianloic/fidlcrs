@@ -134,8 +134,8 @@ type MyStruct = struct {
 "#,
     );
     lib.expect_fail(Error::ErrMismatchedNameTypeAssignment(
-        r#"example/MyEnum"#.to_string(),
-        r#"example/OtherEnum"#.to_string(),
+        r#"example/MyEnum"#.into(),
+        r#"example/OtherEnum"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -145,9 +145,9 @@ fn bad_default_value_primitive_in_enum() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0103.test.fidl");
     lib.expect_fail(Error::ErrTypeCannotBeConvertedToType(
-        r#"1"#.to_string(),
-        r#"literal"#.to_string(),
-        r#"test.bad.fi0103/MyEnum"#.to_string(),
+        r#"1"#.into(),
+        r#"literal"#.into(),
+        r#"test.bad.fi0103/MyEnum"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -212,8 +212,8 @@ type MyStruct = struct {
 "#,
     );
     lib.expect_fail(Error::ErrMismatchedNameTypeAssignment(
-        r#"example/MyBits"#.to_string(),
-        r#"example/OtherBits"#.to_string(),
+        r#"example/MyBits"#.into(),
+        r#"example/OtherBits"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -235,9 +235,9 @@ type MyStruct = struct {
 "#,
     );
     lib.expect_fail(Error::ErrTypeCannotBeConvertedToType(
-        r#"1"#.to_string(),
-        r#"literal"#.to_string(),
-        r#"example/MyBits"#.to_string(),
+        r#"1"#.into(),
+        r#"literal"#.into(),
+        r#"example/MyBits"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -267,9 +267,9 @@ fn bad_default_value_nullable_string() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0091.test.fidl");
     lib.expect_fail(Error::ErrTypeCannotBeConvertedToType(
-        r#""""#.to_string(),
-        r#"string"#.to_string(),
-        r#"string:optional"#.to_string(),
+        r#""""#.into(),
+        r#"string"#.into(),
+        r#"string:optional"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -289,10 +289,10 @@ type MyStruct = struct {
 "#,
     );
     lib.expect_fail(Error::ErrNameCollision(
-        r#"struct member"#.to_string(),
-        r#"my_struct_member"#.to_string(),
-        r#"struct member"#.to_string(),
-        r#"example.fidl:5:5"#.to_string(),
+        r#"struct member"#.into(),
+        r#"my_struct_member"#.into(),
+        r#"struct member"#.into(),
+        r#"example.fidl:5:5"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -318,9 +318,9 @@ fn bad_inline_size_exceeds_64k() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0111.test.fidl");
     lib.expect_fail(Error::ErrInlineSizeExceedsLimit(
-        r#"MyStruct"#.to_string(),
-        r#"65536"#.to_string(),
-        r#"65535"#.to_string(),
+        r#"MyStruct"#.into(),
+        r#"65536"#.into(),
+        r#"65535"#.into(),
     ));
 
     assert!(lib.check_compile());
@@ -331,7 +331,7 @@ fn bad_mutually_recursive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-a.test.fidl");
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'Yang' -> struct 'Yin' -> struct 'Yang'"#.to_string(),
+        r#"struct 'Yang' -> struct 'Yin' -> struct 'Yang'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -341,7 +341,7 @@ fn bad_self_recursive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-c.test.fidl");
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'MySelf' -> struct 'MySelf'"#.to_string(),
+        r#"struct 'MySelf' -> struct 'MySelf'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -367,7 +367,7 @@ type MySelf = struct {
 "#,
     );
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'MySelf' -> struct 'MySelf'"#.to_string(),
+        r#"struct 'MySelf' -> struct 'MySelf'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -410,7 +410,7 @@ type Leaf = struct {
 "#,
     );
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'Yin' -> struct 'Yang' -> struct 'Yin'"#.to_string(),
+        r#"struct 'Yin' -> struct 'Yang' -> struct 'Yin'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -438,7 +438,7 @@ type Leaf = struct {
 "#,
     );
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'Yang' -> struct 'Yin' -> struct 'Yang'"#.to_string(),
+        r#"struct 'Yang' -> struct 'Yin' -> struct 'Yang'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -466,10 +466,10 @@ type Intersection = struct {
 "#,
     );
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'Intersection' -> struct 'Yang' -> struct 'Intersection'"#.to_string(),
+        r#"struct 'Intersection' -> struct 'Yang' -> struct 'Intersection'"#.into(),
     ));
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"struct 'Intersection' -> struct 'Yin' -> struct 'Intersection'"#.to_string(),
+        r#"struct 'Intersection' -> struct 'Yin' -> struct 'Intersection'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -486,7 +486,7 @@ fn bad_box_cannot_be_optional() {
 fn bad_struct_cannot_be_optional() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0159.test.fidl");
-    lib.expect_fail(Error::ErrStructCannotBeOptional(r#"Date"#.to_string()));
+    lib.expect_fail(Error::ErrStructCannotBeOptional(r#"Date"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -507,7 +507,7 @@ type Foo = resource struct {
     );
     lib.use_library_zx();
     lib.expect_fail(Error::ErrCannotBeBoxedShouldBeOptional(
-        r#"zx.Handle"#.to_string(),
+        r#"zx.Handle"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -516,7 +516,7 @@ type Foo = resource struct {
 fn bad_cannot_box_primitive() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0193.test.fidl");
-    lib.expect_fail(Error::ErrCannotBeBoxedNorOptional(r#"bool"#.to_string()));
+    lib.expect_fail(Error::ErrCannotBeBoxedNorOptional(r#"bool"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -537,9 +537,9 @@ const BAR bool = "not a bool";
 "#,
     );
     lib.expect_fail(Error::ErrTypeCannotBeConvertedToType(
-        r#"string"#.to_string(),
-        r#"string"#.to_string(),
-        r#"bool"#.to_string(),
+        r#"string"#.into(),
+        r#"string"#.into(),
+        r#"bool"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -549,10 +549,10 @@ fn cannot_refer_to_int_member() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0053-a.test.fidl");
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"Person"#.to_string(),
-        r#"test.bad.fi0053a"#.to_string(),
+        r#"Person"#.into(),
+        r#"test.bad.fi0053a"#.into(),
     ));
-    lib.expect_fail(Error::ErrInvalidConstantType(r#"Person"#.to_string()));
+    lib.expect_fail(Error::ErrInvalidConstantType(r#"Person"#.into()));
     assert!(lib.check_compile());
 }
 
@@ -561,8 +561,8 @@ fn cannot_refer_to_struct_member() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0053-b.test.fidl");
     lib.expect_fail(Error::ErrNameNotFound(
-        r#"Person"#.to_string(),
-        r#"test.bad.fi0053b"#.to_string(),
+        r#"Person"#.into(),
+        r#"test.bad.fi0053b"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -591,16 +591,14 @@ type MyStruct = struct {{
         );
         let _b_name = format!("\"{}\"", boxed_name);
         lib.expect_fail(Error::ErrTypeMustBeResource(
-            r#"struct"#.to_string(),
-            r#"MyStruct"#.to_string(),
-            r#"foo"#.to_string(),
-            r#"struct"#.to_string(),
-            r#"struct"#.to_string(),
-            r#"MyStruct"#.to_string(),
+            r#"struct"#.into(),
+            r#"MyStruct"#.into(),
+            r#"foo"#.into(),
+            r#"struct"#.into(),
+            r#"struct"#.into(),
+            r#"MyStruct"#.into(),
         ));
-        lib.expect_fail(Error::ErrCannotBeBoxedShouldBeOptional(
-            boxed_name.to_string(),
-        ));
+        lib.expect_fail(Error::ErrCannotBeBoxedShouldBeOptional(boxed_name.into()));
 
         assert!(lib.check_compile());
     }
@@ -625,7 +623,7 @@ type MyStruct = struct {{
             )),
         );
         let _b_name = format!("\"{}\"", boxed_name);
-        lib.expect_fail(Error::ErrCannotBeBoxedNorOptional(boxed_name.to_string()));
+        lib.expect_fail(Error::ErrCannotBeBoxedNorOptional(boxed_name.into()));
 
         assert!(lib.check_compile());
     }

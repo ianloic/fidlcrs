@@ -23,8 +23,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }) {
             self.reporter.fail(
                 Error::ErrCannotSpecifyModifier(
-                    format!("{}", &m.element.span().data.to_string()),
-                    format!("{}", &"struct".to_string()),
+                    flyweights::FlyStr::new(format!("{}", &m.element.span().data.to_string())),
+                    flyweights::FlyStr::new(format!("{}", &"struct".to_string())),
                 ),
                 m.element.span(),
             );
@@ -76,12 +76,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let n = name.to_string();
                 self.reporter.fail(
                     Error::ErrTypeMustBeResource(
-                        format!("{}", &"struct"),
-                        format!("{}", &n),
-                        format!("{}", &member_name),
-                        format!("{}", &"struct"),
-                        format!("{}", &"struct"),
-                        format!("{}", &n),
+                        flyweights::FlyStr::new(format!("{}", &"struct")),
+                        flyweights::FlyStr::new(format!("{}", &n)),
+                        flyweights::FlyStr::new(format!("{}", &member_name)),
+                        flyweights::FlyStr::new(format!("{}", &"struct")),
+                        flyweights::FlyStr::new(format!("{}", &"struct")),
+                        flyweights::FlyStr::new(format!("{}", &n)),
                     ),
                     member.type_ctor.element.span(),
                 );
@@ -214,9 +214,9 @@ impl<'node, 'src> Compiler<'node, 'src> {
             let span = decl.element.span();
             self.reporter.fail(
                 Error::ErrInlineSizeExceedsLimit(
-                    format!("{}", &name),
-                    format!("{}", &total_size.to_string()),
-                    format!("{}", &"65535".to_string()),
+                    flyweights::FlyStr::new(format!("{}", &name)),
+                    flyweights::FlyStr::new(format!("{}", &total_size.to_string())),
+                    flyweights::FlyStr::new(format!("{}", &"65535".to_string())),
                 ),
                 span,
             );

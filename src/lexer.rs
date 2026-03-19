@@ -138,7 +138,7 @@ impl<'a> Lexer<'a> {
                     // Report error
                     // consume/continue logic
                     self.reporter.fail(
-                        Error::ErrInvalidCharacter(format!("{}", &"/")),
+                        Error::ErrInvalidCharacter(flyweights::FlyStr::new(format!("{}", &"/"))),
                         SourceSpan::new(
                             &self.source_file.data()[self.token_start..self.current],
                             self.source_file,
@@ -156,7 +156,7 @@ impl<'a> Lexer<'a> {
                     self.current = end;
                     let s = &self.source_file.data()[self.token_start..self.current];
                     self.reporter.fail(
-                        Error::ErrInvalidCharacter(format!("{}", &s)),
+                        Error::ErrInvalidCharacter(flyweights::FlyStr::new(format!("{}", &s))),
                         SourceSpan::new(s, self.source_file),
                     );
                     continue;
@@ -193,7 +193,7 @@ impl<'a> Lexer<'a> {
 
         if data.ends_with('_') {
             self.reporter.fail(
-                Error::ErrInvalidIdentifier(format!("{}", &data)), // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
+                Error::ErrInvalidIdentifier(flyweights::FlyStr::new(format!("{}", &data))), // Maybe ErrInvalidIdentifier isn't exactly matched but it's an error test
                 SourceSpan::new(data, self.source_file),
             );
         }

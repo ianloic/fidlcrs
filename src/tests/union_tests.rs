@@ -201,7 +201,7 @@ fn bad_ordinals_must_be_unique() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0097.test.fidl");
     lib.expect_fail(Error::ErrDuplicateUnionMemberOrdinal(
-        r#"bad/fi-0097.test.fidl:7:8"#.to_string(),
+        r#"bad/fi-0097.test.fidl:7:8"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -221,10 +221,10 @@ type MyUnion = strict union {
 "#,
     );
     lib.expect_fail(Error::ErrNameCollision(
-        r#"union member"#.to_string(),
-        r#"my_variant"#.to_string(),
-        r#"union member"#.to_string(),
-        r#"example.fidl:4:8"#.to_string(),
+        r#"union member"#.into(),
+        r#"my_variant"#.into(),
+        r#"union member"#.into(),
+        r#"example.fidl:4:8"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -309,7 +309,7 @@ type Value = strict union {
 "#,
     );
     lib.expect_fail(Error::ErrIncludeCycle(
-        r#"union 'Value' -> union 'Value'"#.to_string(),
+        r#"union 'Value' -> union 'Value'"#.into(),
     ));
     assert!(lib.check_compile());
 }
@@ -383,9 +383,7 @@ type Foo = strict union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrInvalidAttributePlacement(
-        r#"selector"#.to_string(),
-    ));
+    lib.expect_fail(Error::ErrInvalidAttributePlacement(r#"selector"#.into()));
 
     assert!(lib.check_compile());
 }

@@ -422,7 +422,7 @@ fn bad_constraint_only_three_members_on_struct() {
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
         let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span()) };
         compiler.reporter.fail(
-            Error::ErrInvalidAttributePlacement("must_have_three_members".to_string()),
+            Error::ErrInvalidAttributePlacement("must_have_three_members".into()),
             span,
         );
         false
@@ -452,7 +452,7 @@ fn bad_constraint_only_three_members_on_method() {
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
         let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span()) };
         compiler.reporter.fail(
-            Error::ErrInvalidAttributePlacement("must_have_three_members".to_string()),
+            Error::ErrInvalidAttributePlacement("must_have_three_members".into()),
             span,
         );
         false
@@ -478,7 +478,7 @@ fn bad_constraint_only_three_members_on_protocol() {
     fn must_have_three_members(compiler: &Compiler, attr: &raw_ast::Attribute) -> bool {
         let span: SourceSpan = unsafe { std::mem::transmute(attr.element.span()) };
         compiler.reporter.fail(
-            Error::ErrInvalidAttributePlacement("must_have_three_members".to_string()),
+            Error::ErrInvalidAttributePlacement("must_have_three_members".into()),
             span,
         );
         false

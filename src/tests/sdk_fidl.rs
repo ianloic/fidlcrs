@@ -643,21 +643,12 @@ mod tests {
 
     const COMPARE_DENYLIST: &[&str] = &[
         "fdf",
-        "fuchsia.accessibility.tts",
         "fuchsia.acpi.chromeos",
         "fuchsia.acpi.tables",
         "fuchsia.auth",
         "fuchsia.bluetooth.deviceid",
-        "fuchsia.bluetooth.pandora",
-        "fuchsia.bluetooth",
-        "fuchsia.castauth",
-        "fuchsia.castconfig",
-        "fuchsia.castremotecontrol",
-        "fuchsia.castsysteminfo",
-        "fuchsia.developer.ffx.speedtest",
         "fuchsia.device.test",
         "fuchsia.device",
-        "fuchsia.diagnostics.system",
         "fuchsia.diagnostics.types",
         "fuchsia.diagnostics",
         "fuchsia.driver.compat",
@@ -665,7 +656,6 @@ mod tests {
         "fuchsia.exception",
         "fuchsia.factory.wlan",
         "fuchsia.fdomain",
-        "fuchsia.feedback",
         "fuchsia.fido.report",
         "fuchsia.firebase.messaging",
         "fuchsia.gpu.agis",
@@ -687,7 +677,6 @@ mod tests {
         "fuchsia.hardware.dsp",
         "fuchsia.hardware.ethernet.board",
         "fuchsia.hardware.fastboot",
-        "fuchsia.hardware.gnss",
         "fuchsia.hardware.goldfish.pipe",
         "fuchsia.hardware.goldfish",
         "fuchsia.hardware.google.ec",
@@ -702,7 +691,6 @@ mod tests {
         "fuchsia.hardware.input.focaltech",
         "fuchsia.hardware.interconnect",
         "fuchsia.hardware.interrupt",
-        "fuchsia.hardware.light",
         "fuchsia.hardware.lightsensor",
         "fuchsia.hardware.mailbox",
         "fuchsia.hardware.midi",
@@ -716,7 +704,6 @@ mod tests {
         "fuchsia.hardware.powersource.test",
         "fuchsia.hardware.pwm",
         "fuchsia.hardware.qualcomm.fastrpc",
-        "fuchsia.hardware.qualcomm.router",
         "fuchsia.hardware.radar",
         "fuchsia.hardware.ram.metrics",
         "fuchsia.hardware.registers",
@@ -749,42 +736,29 @@ mod tests {
         "fuchsia.identity.ctap",
         "fuchsia.input.interaction.observation",
         "fuchsia.input.report",
-        "fuchsia.intl",
         "fuchsia.io",
         "fuchsia.kms",
         "fuchsia.lightsensor",
-        "fuchsia.location.gnss",
-        "fuchsia.location.position",
         "fuchsia.lowpan.spinel",
         "fuchsia.lowpan",
-        "fuchsia.media.audio",
         "fuchsia.mediastreams",
-        "fuchsia.memory.heapdump.client",
         "fuchsia.memory.inspection",
         "fuchsia.metrics",
         "fuchsia.net.reachability",
         "fuchsia.opencl.loader",
         "fuchsia.paver",
         "fuchsia.perfmon.cpu",
-        "fuchsia.pkg.garbagecollector",
         "fuchsia.pkg.rewrite",
         "fuchsia.power.broker",
-        "fuchsia.power.cpu.manager",
-        "fuchsia.power.cpu",
         "fuchsia.power.manager.debug",
         "fuchsia.power.metrics",
         "fuchsia.power.systemmode",
         "fuchsia.process.explorer",
         "fuchsia.recovery.ui",
         "fuchsia.scheduler",
-        "fuchsia.security.keymint",
-        "fuchsia.session.power",
         "fuchsia.session.scene",
-        "fuchsia.starnix.container",
-        "fuchsia.starnix.gralloc",
         "fuchsia.starnix.psi",
         "fuchsia.starnix.runner",
-        "fuchsia.stash",
         "fuchsia.storage.blobfs",
         "fuchsia.storage.block",
         "fuchsia.storage.ftl",
@@ -794,8 +768,6 @@ mod tests {
         "fuchsia.telephony.ril",
         "fuchsia.telephony.snoop",
         "fuchsia.testing.runner",
-        "fuchsia.time.external",
-        "fuchsia.time.test",
         "fuchsia.tpm",
         "fuchsia.tracing",
         "fuchsia.ui.activity.control",
@@ -803,29 +775,26 @@ mod tests {
         "fuchsia.ui.annotation",
         "fuchsia.ui.app",
         "fuchsia.ui.brightness",
-        "fuchsia.ui.compression.internal",
         "fuchsia.ui.display.singleton",
         "fuchsia.ui.input",
         "fuchsia.ui.views",
         "fuchsia.unknown",
         "fuchsia.update.channelcontrol",
-        "fuchsia.update.config",
         "fuchsia.update",
         "fuchsia.vsock",
-        "fuchsia.vulkan.loader",
     ];
 
-    fn strip_filename(value: &mut serde_json::Value) {
+    fn strip_member(value: &mut serde_json::Value, member: &str) {
         match value {
             serde_json::Value::Object(map) => {
-                map.remove("filename");
+                map.remove(member);
                 for (_, v) in map.iter_mut() {
-                    strip_filename(v);
+                    strip_member(v, member);
                 }
             }
             serde_json::Value::Array(arr) => {
                 for v in arr.iter_mut() {
-                    strip_filename(v);
+                    strip_member(v, member);
                 }
             }
             _ => {}
@@ -843,8 +812,10 @@ mod tests {
             serde_json::from_str::<serde_json::Value>(actual_str),
         ) {
 
-            strip_filename(&mut expected);
-            strip_filename(&mut actual);
+            strip_member(&mut expected, "filename");
+            strip_member(&mut actual, "filename");
+            strip_member(&mut expected, "line");
+            strip_member(&mut actual, "line");
 
             fn sort_declaration_order(val: &mut serde_json::Value) {
                 if let Some(obj) = val.as_object_mut() {

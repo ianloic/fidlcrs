@@ -2,7 +2,7 @@ use regex::Regex;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::diagnostics::{ALL_ERRORS, Error, ErrorKind};
+use crate::diagnostics::{Error, ErrorKind, all_errors};
 
 fn test_file_path(filename: &str) -> PathBuf {
     let fuchsia_dir = std::env::var("FUCHSIA_DIR").expect("FUCHSIA_DIR must be set");
@@ -66,7 +66,8 @@ fn index_is_complete() {
         None => return, // Ignore if missing
     };
 
-    let mut errors_iter = ALL_ERRORS.iter().filter(|e| e.documented()).peekable();
+    let errors_vec = all_errors();
+    let mut errors_iter = errors_vec.iter().filter(|e| e.documented()).peekable();
     let prefix = "<<error-catalog/";
 
     for line in content.lines() {
@@ -101,7 +102,7 @@ fn redirects_are_complete() {
         None => return,
     };
 
-    for def in ALL_ERRORS {
+    for def in all_errors() {
         let id = def.format_id();
         let entry = format!(
             "- from: /fuchsia-src/error/{}\n  to: /fuchsia-src/reference/fidl/language/errcat.md#{}",
@@ -129,7 +130,7 @@ fn redirects_are_complete() {
 #[test]
 #[ignore]
 fn markdown_files_exist() {
-    for def in ALL_ERRORS {
+    for def in all_errors() {
         if !def.documented() {
             continue;
         }
@@ -142,7 +143,7 @@ fn markdown_files_exist() {
 #[test]
 
 fn docs_are_accurate() {
-    for def in ALL_ERRORS {
+    for def in all_errors() {
         if !def.documented() {
             continue;
         }
@@ -191,7 +192,7 @@ fn all_good_files_are_tested() {
         None => return,
     };
 
-    for def in ALL_ERRORS {
+    for def in all_errors() {
         if !def.documented() || def.kind() == ErrorKind::Retired {
             continue;
         }
@@ -199,7 +200,7 @@ fn all_good_files_are_tested() {
             continue; // This error has no examples because it is impossible to test.
         }
 
-        let fidl_paths = match good_fidl_paths(def) {
+        let fidl_paths = match good_fidl_paths(&def) {
             Some(p) => p,
             None => continue,
         };
@@ -225,7 +226,7 @@ fn errors_are_tested_iff_documented_and_not_retired() {
         None => return,
     };
 
-    for def in ALL_ERRORS {
+    for def in all_errors() {
         if def.id() == Error::ErrGeneratedZeroValueOrdinal.id() {
             continue;
         }

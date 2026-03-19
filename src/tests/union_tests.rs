@@ -99,8 +99,8 @@ fn good_strict_union() {
 fn bad_must_have_explicit_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0016-b.noformat.test.fidl");
-    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember, &[]);
-    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember, &[]);
+    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember);
+    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember);
     assert!(lib.check_compile());
 }
 
@@ -174,7 +174,7 @@ type Foo = strict union {
 fn bad_ordinal_out_of_bounds_negative() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0017-b.noformat.test.fidl");
-    lib.expect_fail(Error::ErrOrdinalOutOfBound, &[]);
+    lib.expect_fail(Error::ErrOrdinalOutOfBound);
     assert!(lib.check_compile());
 }
 
@@ -191,7 +191,7 @@ type Foo = union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrOrdinalOutOfBound, &[]);
+    lib.expect_fail(Error::ErrOrdinalOutOfBound);
     assert!(lib.check_compile());
 }
 
@@ -200,10 +200,9 @@ type Foo = union {
 fn bad_ordinals_must_be_unique() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0097.test.fidl");
-    lib.expect_fail(
-        Error::ErrDuplicateUnionMemberOrdinal,
-        &["\"bad/fi-0097.test.fidl:7:8\""],
-    );
+    lib.expect_fail(Error::ErrDuplicateUnionMemberOrdinal(
+        r#"bad/fi-0097.test.fidl:7:8"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -221,15 +220,12 @@ type MyUnion = strict union {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrNameCollision,
-        &[
-            "\"union member\"",
-            "\"my_variant\"",
-            "\"union member\"",
-            "\"example.fidl:4:8\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrNameCollision(
+        r#"union member"#.to_string(),
+        r#"my_variant"#.to_string(),
+        r#"union member"#.to_string(),
+        r#"example.fidl:4:8"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -238,7 +234,7 @@ type MyUnion = strict union {
 fn bad_cannot_start_at_zero() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0018.noformat.test.fidl");
-    lib.expect_fail(Error::ErrOrdinalsMustStartAtOne, &[]);
+    lib.expect_fail(Error::ErrOrdinalsMustStartAtOne);
     assert!(lib.check_compile());
 }
 
@@ -255,7 +251,7 @@ type Foo = strict union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedToken, &[]);
+    lib.expect_fail(Error::ErrUnexpectedToken);
     assert!(lib.check_compile());
 }
 
@@ -295,7 +291,7 @@ type Example = strict union {
 fn bad_no_nullable_members() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0049.test.fidl");
-    lib.expect_fail(Error::ErrOptionalUnionMember, &[]);
+    lib.expect_fail(Error::ErrOptionalUnionMember);
     assert!(lib.check_compile());
 }
 
@@ -312,10 +308,9 @@ type Value = strict union {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrIncludeCycle,
-        &["\"union 'Value' -> union 'Value'\""],
-    );
+    lib.expect_fail(Error::ErrIncludeCycle(
+        r#"union 'Value' -> union 'Value'"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -348,7 +343,7 @@ fn bad_empty_strict_union() {
 type Value = strict union {};
 "#,
     );
-    lib.expect_fail(Error::ErrMustHaveOneMember, &[]);
+    lib.expect_fail(Error::ErrMustHaveOneMember);
     assert!(lib.check_compile());
 }
 
@@ -388,7 +383,9 @@ type Foo = strict union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrInvalidAttributePlacement, &["\"selector\""]);
-    lib.expect_fail(Error::ErrInvalidAttributePlacement, &["\"selector\""]);
+    lib.expect_fail(Error::ErrInvalidAttributePlacement(
+        r#"selector"#.to_string(),
+    ));
+
     assert!(lib.check_compile());
 }

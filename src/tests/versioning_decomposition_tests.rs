@@ -1660,7 +1660,7 @@ type Bar = struct {};
 #[test]
 #[ignore]
 fn equivalent_to_self() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 "#;
@@ -1675,13 +1675,13 @@ library example;
 #[test]
 #[ignore]
 fn unversioned_library() {
-    let unversioned = r#"
+    let _unversioned = r#"
 library example;
 
 type Foo = struct {};
 "#;
 
-    let versioned = r#"
+    let _versioned = r#"
 @available(added=1)
 library example;
 
@@ -1698,26 +1698,26 @@ type Foo = struct {};
 #[test]
 #[ignore]
 fn absent_library_is_empty() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=2, removed=3)
 library example;
 
 type Foo = struct {};
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
 type Foo = struct {};
 "#;
 
-    let v3_onward = r#"
+    let _v3_onward = r#"
 @available(added=3)
 library example;
 "#;
@@ -1733,7 +1733,7 @@ library example;
 #[test]
 #[ignore]
 fn split_by_membership() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -1743,14 +1743,14 @@ type TopLevel = struct {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
 type TopLevel = struct {};
 "#;
 
-    let v2_onward = r#"
+    let _v2_onward = r#"
 @available(added=2)
 library example;
 
@@ -1769,21 +1769,21 @@ type TopLevel = struct {
 #[test]
 #[ignore]
 fn split_by_modifier() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
 type TopLevel = resource(added=2) struct {};
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
 type TopLevel = struct {};
 "#;
 
-    let v2_onward = r#"
+    let _v2_onward = r#"
 @available(added=2)
 library example;
 
@@ -1800,7 +1800,7 @@ type TopLevel = resource struct {};
 #[test]
 #[ignore]
 fn split_by_reference() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -1814,7 +1814,7 @@ type That = struct {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
@@ -1825,7 +1825,7 @@ type This = struct {
 type That = struct {};
 "#;
 
-    let v2_onward = r#"
+    let _v2_onward = r#"
 @available(added=2)
 library example;
 
@@ -1848,7 +1848,7 @@ type That = struct {
 #[test]
 #[ignore]
 fn split_by_two_members() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -1862,7 +1862,7 @@ type This = struct {
 type That = struct {};
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
@@ -1871,7 +1871,7 @@ type This = struct {};
 type That = struct {};
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -1882,7 +1882,7 @@ type This = struct {
 type That = struct {};
 "#;
 
-    let v3_onward = r#"
+    let _v3_onward = r#"
 @available(added=3)
 library example;
 
@@ -1905,7 +1905,7 @@ type That = struct {};
 #[test]
 #[ignore]
 fn mutual_recursion() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -1930,12 +1930,12 @@ type Bar = table {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -1950,7 +1950,7 @@ type Bar = table {
 };
 "#;
 
-    let v3 = r#"
+    let _v3 = r#"
 @available(added=3, removed=4)
 library example;
 
@@ -1966,7 +1966,7 @@ type Bar = table {
 };
 "#;
 
-    let v4 = r#"
+    let _v4 = r#"
 @available(added=4, removed=5)
 library example;
 
@@ -1983,7 +1983,7 @@ type Bar = table {
 };
 "#;
 
-    let v5_onward = r#"
+    let _v5_onward = r#"
 @available(added=5)
 library example;
 
@@ -1997,7 +1997,7 @@ type Bar = table {
 };
 "#;
 
-    let all_versions = r#"
+    let _all_versions = r#"
 library example;
 
 type Foo = table {
@@ -2025,7 +2025,7 @@ type Bar = table {
 #[test]
 #[ignore]
 fn misaligned_swapping() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2043,14 +2043,14 @@ type Foo = table {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
 const LEN uint64 = 16;
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -2060,7 +2060,7 @@ type Foo = table {
 };
 "#;
 
-    let v3 = r#"
+    let _v3 = r#"
 @available(added=3, removed=4)
 library example;
 
@@ -2070,7 +2070,7 @@ type Foo = table {
 };
 "#;
 
-    let v4_onward = r#"
+    let _v4_onward = r#"
 @available(added=4)
 library example;
 
@@ -2092,7 +2092,7 @@ type Foo = table {
 #[test]
 #[ignore]
 fn strict_to_flexible() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2105,14 +2105,14 @@ type X = struct {
 type Y = strict(removed=3) flexible(added=3) enum { A = 1; };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
 type X = struct {};
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -2123,7 +2123,7 @@ type X = struct {
 type Y = strict enum { A = 1; };
 "#;
 
-    let v3 = r#"
+    let _v3 = r#"
 @available(added=3, removed=4)
 library example;
 
@@ -2134,7 +2134,7 @@ type X = struct {
 type Y = flexible enum { A = 1; };
 "#;
 
-    let v4_onward = r#"
+    let _v4_onward = r#"
 @available(added=4)
 library example;
 
@@ -2143,7 +2143,7 @@ type X = struct {};
 type Y = flexible enum { A = 1; };
 "#;
 
-    let all_versions = r#"
+    let _all_versions = r#"
 library example;
 
 type X = struct {
@@ -2164,7 +2164,7 @@ type Y = flexible enum { A = 1; };
 #[test]
 #[ignore]
 fn name_reuse() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2183,14 +2183,14 @@ type Bar = struct {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
 type Bar = struct {};
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -2200,14 +2200,14 @@ type Foo = struct {
 type Bar = struct {};
 "#;
 
-    let v3 = r#"
+    let _v3 = r#"
 @available(added=3, removed=4)
 library example;
 
 type Bar = struct {};
 "#;
 
-    let v4_to_5 = r#"
+    let _v4_to_5 = r#"
 @available(added=4, removed=6)
 library example;
 
@@ -2217,14 +2217,14 @@ type Bar = struct {
 };
 "#;
 
-    let v6 = r#"
+    let _v6 = r#"
 @available(added=6, removed=7)
 library example;
 
 type Foo = struct {};
 "#;
 
-    let v7_onward = r#"
+    let _v7_onward = r#"
 @available(added=7)
 library example;
 "#;
@@ -2243,7 +2243,7 @@ library example;
 #[test]
 #[ignore]
 fn consts_and_constraints() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2265,7 +2265,7 @@ type Bar = struct {};
 type Bar = table {};
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
@@ -2276,7 +2276,7 @@ type Foo = table {
 type Bar = struct {};
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -2287,7 +2287,7 @@ type Foo = table {
 type Bar = table {};
 "#;
 
-    let v3 = r#"
+    let _v3 = r#"
 @available(added=3, removed=4)
 library example;
 
@@ -2298,7 +2298,7 @@ type Foo = table {
 type Bar = table {};
 "#;
 
-    let v4 = r#"
+    let _v4 = r#"
 @available(added=4, removed=5)
 library example;
 
@@ -2308,7 +2308,7 @@ type Foo = table {
 type Bar = table {};
 "#;
 
-    let v5_onward = r#"
+    let _v5_onward = r#"
 @available(added=5)
 library example;
 
@@ -2316,7 +2316,7 @@ type Foo = table {};
 type Bar = table {};
 "#;
 
-    let all_versions = r#"
+    let _all_versions = r#"
 library example;
 
 const LEN uint64 = 10;
@@ -2340,7 +2340,7 @@ type Bar = table {};
 #[test]
 #[ignore]
 fn all_elements_split_by_membership() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2413,12 +2413,12 @@ resource_definition Resource : uint32 {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 "#;
 
-    let v2 = r#"
+    let _v2 = r#"
 @available(added=2, removed=3)
 library example;
 
@@ -2461,7 +2461,7 @@ resource_definition Resource : uint32 {
 };
 "#;
 
-    let v3 = r#"
+    let _v3 = r#"
 @available(added=3, removed=4)
 library example;
 
@@ -2515,7 +2515,7 @@ resource_definition Resource : uint32 {
 };
 "#;
 
-    let v4 = r#"
+    let _v4 = r#"
 @available(added=4, removed=5)
 library example;
 
@@ -2559,7 +2559,7 @@ resource_definition Resource : uint32 {
 };
 "#;
 
-    let v5_onward = r#"
+    let _v5_onward = r#"
 @available(added=5)
 library example;
 "#;
@@ -2755,9 +2755,9 @@ protocol AnonymousLayoutsInProtocol {
 };
 "#;
 
-    let fidl = String::from(fidl_prefix) + common_suffix;
-    let v1 = String::from(v1_prefix) + common_suffix;
-    let v2_onward = String::from(v2_onward_prefix) + common_suffix;
+    let _fidl = String::from(fidl_prefix) + common_suffix;
+    let _v1 = String::from(v1_prefix) + common_suffix;
+    let _v2_onward = String::from(v2_onward_prefix) + common_suffix;
 
     // test check
     // test check
@@ -2768,7 +2768,7 @@ protocol AnonymousLayoutsInProtocol {
 #[test]
 #[ignore]
 fn convert_named_to_anonymous() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2786,7 +2786,7 @@ type Foo = struct {
 };
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
@@ -2797,7 +2797,7 @@ type Foo = struct {
 type Bar = struct {};
 "#;
 
-    let v2_onward = r#"
+    let _v2_onward = r#"
 @available(added=2)
 library example;
 
@@ -2815,7 +2815,7 @@ type Foo = struct {
 #[test]
 #[ignore]
 fn convert_anonymous_to_named() {
-    let fidl = r#"
+    let _fidl = r#"
 @available(added=1)
 library example;
 
@@ -2833,7 +2833,7 @@ type Foo = struct {
 type Bar = struct {};
 "#;
 
-    let v1 = r#"
+    let _v1 = r#"
 @available(added=1, removed=2)
 library example;
 
@@ -2842,7 +2842,7 @@ type Foo = struct {
 };
 "#;
 
-    let v2_onward = r#"
+    let _v2_onward = r#"
 @available(added=2)
 library example;
 

@@ -37,11 +37,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => Err(()),
                 }
             } else {
-                self.reporter.fail(
-                    Error::ErrMissingOrdinalBeforeMember,
-                    member.element.span(),
-                    &[],
-                );
+                self.reporter
+                    .fail(Error::ErrMissingOrdinalBeforeMember, member.element.span());
                 Ok(0)
             };
 
@@ -50,11 +47,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if o == 0
                         && let Some(ord) = &member.ordinal
                     {
-                        self.reporter.fail(
-                            Error::ErrOrdinalsMustStartAtOne,
-                            ord.element.span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrOrdinalsMustStartAtOne, ord.element.span());
                     }
                     o
                 }
@@ -62,7 +56,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.reporter.fail(
                         Error::ErrOrdinalOutOfBound,
                         member.ordinal.as_ref().unwrap().element.span(),
-                        &[],
                     );
                     0
                 }
@@ -84,9 +77,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         prev.location.filename, prev.location.line, prev.location.column
                     );
                     self.reporter.fail(
-                        Error::ErrDuplicateUnionMemberOrdinal,
+                        Error::ErrDuplicateUnionMemberOrdinal(format!("{}", &location_str)),
                         member.ordinal.as_ref().unwrap().element.span(),
-                        &[&location_str],
                     );
                 }
             }
@@ -133,9 +125,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let member_name = member.name.as_ref().unwrap().data().to_string();
                     let n = name.to_string();
                     self.reporter.fail(
-                        Error::ErrTypeMustBeResource,
+                        Error::ErrTypeMustBeResource(
+                            format!("{}", &"union"),
+                            format!("{}", &n),
+                            format!("{}", &member_name),
+                            format!("{}", &"union"),
+                            format!("{}", &"union"),
+                            format!("{}", &n),
+                        ),
                         type_ctor.element.span(),
-                        &[&"union", &n, &member_name, &"union", &"union", &n],
                     );
                 }
                 let mut alias = type_obj.outer_alias.take();
@@ -148,11 +146,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     alias = type_obj.experimental_maybe_from_alias.take();
                 }
                 if type_obj.nullable() {
-                    self.reporter.fail(
-                        Error::ErrOptionalUnionMember,
-                        type_ctor.element.span(),
-                        &[],
-                    );
+                    self.reporter
+                        .fail(Error::ErrOptionalUnionMember, type_ctor.element.span());
                 }
                 let name = member.name.as_ref().unwrap().data().to_string();
                 (Some(type_obj), Some(name), None, alias)
@@ -164,14 +159,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if let Some(def) = &member.default_value {
                 self.reporter
-                    .fail(Error::ErrUnexpectedToken, def.element().span(), &[]);
+                    .fail(Error::ErrUnexpectedToken, def.element().span());
             }
 
             if attributes.iter().any(|a| a.name == "selector") {
                 self.reporter.fail(
-                    Error::ErrInvalidAttributePlacement,
+                    Error::ErrInvalidAttributePlacement(format!("{}", &"selector")),
                     member.element.span(),
-                    &[&"selector"],
                 );
             }
 
@@ -206,7 +200,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if strict && members.is_empty() {
             self.reporter
-                .fail(Error::ErrMustHaveOneMember, decl.element.span(), &[]);
+                .fail(Error::ErrMustHaveOneMember, decl.element.span());
         }
 
         // Sort members by ordinal

@@ -55,7 +55,7 @@ type Foo = table {};
 fn bad_missing_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0016-a.noformat.test.fidl");
-    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember, &[]);
+    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember);
     assert!(lib.check_compile());
 }
 
@@ -63,7 +63,7 @@ fn bad_missing_ordinals() {
 fn bad_ordinal_out_of_bounds_negative() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0017-a.noformat.test.fidl");
-    lib.expect_fail(Error::ErrOrdinalOutOfBound, &[]);
+    lib.expect_fail(Error::ErrOrdinalOutOfBound);
     assert!(lib.check_compile());
 }
 
@@ -80,7 +80,7 @@ type Foo = union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrOrdinalOutOfBound, &[]);
+    lib.expect_fail(Error::ErrOrdinalOutOfBound);
     assert!(lib.check_compile());
 }
 
@@ -98,15 +98,12 @@ type MyTable = table {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrNameCollision,
-        &[
-            "\"table field\"",
-            "\"my_field\"",
-            "\"table field\"",
-            "\"example.fidl:5:8\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrNameCollision(
+        r#"table field"#.to_string(),
+        r#"my_field"#.to_string(),
+        r#"table field"#.to_string(),
+        r#"example.fidl:5:8"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -114,10 +111,9 @@ type MyTable = table {
 fn bad_duplicate_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0094.test.fidl");
-    lib.expect_fail(
-        Error::ErrDuplicateTableFieldOrdinal,
-        &["\"bad/fi-0094.test.fidl:7:8\""],
-    );
+    lib.expect_fail(Error::ErrDuplicateTableFieldOrdinal(
+        r#"bad/fi-0094.test.fidl:7:8"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -199,7 +195,7 @@ type OptionalTableContainer = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional, &["\"Foo\""]);
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"Foo"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -220,7 +216,11 @@ type OptionalTableContainer = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrTooManyConstraints, &["\"Foo\"", "0", "3"]);
+    lib.expect_fail(Error::ErrTooManyConstraints(
+        r#"Foo"#.to_string(),
+        r#"0"#.to_string(),
+        r#"3"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -241,7 +241,7 @@ type OptionalTableContainer = union {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional, &["\"Foo\""]);
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"Foo"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -289,7 +289,7 @@ type OptionalTableContainer = flexible union {
 fn bad_optional_table_member() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0048.test.fidl");
-    lib.expect_fail(Error::ErrOptionalTableMember, &[]);
+    lib.expect_fail(Error::ErrOptionalTableMember);
     assert!(lib.check_compile());
 }
 
@@ -307,7 +307,7 @@ type Foo = table {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotBeOptional, &["\"int64\""]);
+    lib.expect_fail(Error::ErrCannotBeOptional(r#"int64"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -324,8 +324,11 @@ type Foo = table {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedTokenOfKind, &["\"=\"", "\";\""]);
-    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember, &[]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"="#.to_string(),
+        r#";"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrMissingOrdinalBeforeMember);
     assert!(lib.check_compile());
 }
 
@@ -373,7 +376,7 @@ fn good64_ordinals_max_is_table() {
 fn bad_max_ordinal_not_table() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0093.test.fidl");
-    lib.expect_fail(Error::ErrMaxOrdinalNotTable, &[]);
+    lib.expect_fail(Error::ErrMaxOrdinalNotTable);
     assert!(lib.check_compile());
 }
 
@@ -455,7 +458,7 @@ type Example = table {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrMaxOrdinalNotTable, &[]);
+    lib.expect_fail(Error::ErrMaxOrdinalNotTable);
     assert!(lib.check_compile());
 }
 
@@ -463,7 +466,7 @@ type Example = table {
 fn bad_too_many_ordinals() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0092.test.fidl");
-    lib.expect_fail(Error::ErrTableOrdinalTooLarge, &[]);
+    lib.expect_fail(Error::ErrTableOrdinalTooLarge);
     assert!(lib.check_compile());
 }
 
@@ -471,9 +474,8 @@ fn bad_too_many_ordinals() {
 fn bad_recursion_disallowed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0057-d.test.fidl");
-    lib.expect_fail(
-        Error::ErrIncludeCycle,
-        &["\"table 'MySelf' -> table 'MySelf'\""],
-    );
+    lib.expect_fail(Error::ErrIncludeCycle(
+        r#"table 'MySelf' -> table 'MySelf'"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }

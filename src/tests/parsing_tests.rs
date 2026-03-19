@@ -6,14 +6,14 @@ use crate::tests::test_library::TestLibrary;
 fn bad_compound_identifier_test() {
     let mut lib = TestLibrary::new();
     lib.add_source_file("example.fidl", "library 0fidl.test.badcompoundidentifier;");
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"NumericLiteral\"", "\"Identifier\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"NumericLiteral"#.to_string(),
+        r#"Identifier"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(
+        r#"0fidl.test.badcompoundidentifier"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -23,10 +23,9 @@ fn bad_compound_identifier_test() {
 fn bad_library_name_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0011.noformat.test.fidl");
-    lib.expect_fail(
-        Error::ErrInvalidLibraryNameComponent,
-        &["\"name_with_underscores\""],
-    );
+    lib.expect_fail(Error::ErrInvalidLibraryNameComponent(
+        r#"name_with_underscores"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -500,7 +499,7 @@ type Test = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrInvalidCharacter, &["\"#\""]);
+    lib.expect_fail(Error::ErrInvalidCharacter(r#"#"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -519,7 +518,7 @@ type Test = struct / {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrInvalidCharacter, &["\"/\""]);
+    lib.expect_fail(Error::ErrInvalidCharacter(r#"/"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -529,7 +528,7 @@ type Test = struct / {
 fn bad_identifier_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0010-a.noformat.test.fidl");
-    lib.expect_fail(Error::ErrInvalidIdentifier, &["\"Foo_\""]);
+    lib.expect_fail(Error::ErrInvalidIdentifier(r#"Foo_"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -539,7 +538,7 @@ fn bad_identifier_test() {
 fn bad_invalid_character_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0001.noformat.test.fidl");
-    lib.expect_fail(Error::ErrInvalidCharacter, &["\"ß\""]);
+    lib.expect_fail(Error::ErrInvalidCharacter(r#"ß"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -563,15 +562,12 @@ type Empty = struct {};
 fn bad_error_on_alias_before_imports() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0025.noformat.test.fidl");
-    lib.expect_fail(Error::ErrUnknownLibrary, &["\"dependent\""]);
+    lib.expect_fail(Error::ErrUnknownLibrary(r#"dependent"#.to_string()));
 
-    lib.expect_fail(
-        Error::ErrNameNotFound,
-        &[
-            "\"dependent\"",
-            "OwnedLibraryName { name: \"test.bad.fi0025\" }",
-        ],
-    );
+    lib.expect_fail(Error::ErrNameNotFound(
+        r#"dependent"#.to_string(),
+        r#"test.bad.fi0025"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -604,21 +600,13 @@ fn good_attribute_value_has_correct_contents() {
 fn bad_attribute_with_dotted_identifier() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0010-b.noformat.test.fidl");
-    lib.expect_fail(Error::ErrInvalidIdentifier, &["\"bar.baz\""]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrInvalidIdentifier(r#"bar.baz"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#","#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#""Zoom""#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"="#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"zork"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#""Bar""#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#")"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -698,7 +686,7 @@ type Empty = struct {};
 fn bad_doc_comment_not_allowed_on_params() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0024.noformat.test.fidl");
-    lib.expect_fail(Error::ErrDocCommentOnParameters, &[]);
+    lib.expect_fail(Error::ErrDocCommentOnParameters);
 
     assert!(lib.check_compile());
 }
@@ -758,20 +746,14 @@ type Empty = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedToken, &[]);
-
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Equal\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Equal"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrUnexpectedToken);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"int8"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -791,10 +773,10 @@ type Struct = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"RightCurly\"", "\"Semicolon\""],
-    );
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"RightCurly"#.to_string(),
+        r#"Semicolon"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -815,7 +797,7 @@ type Struct = struct {
    // error: want "}", got EOF
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedToken, &[]);
+    lib.expect_fail(Error::ErrUnexpectedToken);
 
     assert!(lib.check_compile());
 }
@@ -834,23 +816,17 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Comma\"", "\"Semicolon\""],
-    );
-
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Comma\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Comma"#.to_string(),
+        r#"Semicolon"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"optional"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Comma"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -860,23 +836,17 @@ type Foo = struct {
 fn bad_multiple_constraint_definition_double_colon() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0163.noformat.test.fidl");
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Colon\"", "\"Semicolon\""],
-    );
-
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Colon\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"optional"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Colon"#.to_string(),
+        r#"Semicolon"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Colon"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -898,45 +868,26 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Colon\"", "\"Semicolon\""],
-    );
-
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Colon\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#":"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"optional"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(
+        r#"bad_double_colon_bracketed"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"LENGTH"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Colon"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"string"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Colon"#.to_string(),
+        r#"Semicolon"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#","#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#">"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"<"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -963,18 +914,14 @@ type Foo = struct {
 fn bad_subtype_constructor() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0031.noformat.test.fidl");
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Colon\"", "\"LeftCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Colon"#.to_string(),
+        r#"LeftCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"uint32"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"{"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -984,14 +931,12 @@ fn bad_subtype_constructor() {
 fn bad_layout_class() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0012.noformat.test.fidl");
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"LeftCurly\"", "\"Semicolon\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"LeftCurly"#.to_string(),
+        r#"Semicolon"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -1010,16 +955,12 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Identifier\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Identifier"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -1040,20 +981,14 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Identifier\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#":"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Identifier"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"optional"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -1071,7 +1006,10 @@ type t1 = union { 1: foo uint8; };
 type t2 = strict t1;
 "#,
     );
-    lib.expect_fail(Error::ErrNewTypesNotAllowed, &["\"t2\"", "\"t1\""]);
+    lib.expect_fail(Error::ErrNewTypesNotAllowed(
+        r#"t2"#.to_string(),
+        r#"t1"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -1081,16 +1019,12 @@ type t2 = strict t1;
 fn bad_identifier_attributes() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0022.noformat.test.fidl");
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Identifier\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Identifier"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -1111,20 +1045,14 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Identifier\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Identifier"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"optional"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#":"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -1134,7 +1062,7 @@ type Foo = struct {
 fn bad_type_declaration_of_enum_layout_with_invalid_subtype() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0013.noformat.test.fidl");
-    lib.expect_fail(Error::ErrInvalidWrappedType, &[]);
+    lib.expect_fail(Error::ErrInvalidWrappedType);
 
     assert!(lib.check_compile());
 }
@@ -1153,23 +1081,17 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"NumericLiteral\"", "\"RightAngle\""],
-    );
-
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"NumericLiteral\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"NumericLiteral"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#">"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"NumericLiteral"#.to_string(),
+        r#"RightAngle"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -1179,19 +1101,16 @@ type Foo = struct {
 fn bad_missing_equals_value_enum() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0008.noformat.test.fidl");
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Semicolon\"", "\"Equal\""],
-    );
-
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Semicolon\"", "\"RightCurly\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Semicolon"#.to_string(),
+        r#"Equal"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Semicolon"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -1201,7 +1120,7 @@ fn bad_missing_equals_value_enum() {
 fn bad_reserved_field_not_allowed() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0209.noformat.test.fidl");
-    lib.expect_fail(Error::ErrReservedNotAllowed, &[]);
+    lib.expect_fail(Error::ErrReservedNotAllowed);
 
     assert!(lib.check_compile());
 }

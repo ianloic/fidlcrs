@@ -23,9 +23,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && self.is_active(m.attributes.as_ref())
         }) {
             self.reporter.fail(
-                Error::ErrCannotSpecifyModifier,
+                Error::ErrCannotSpecifyModifier(
+                    format!("{}", &m.element.span().data.to_string()),
+                    format!("{}", &"table".to_string()),
+                ),
                 m.element.span(),
-                &[&m.element.span().data.to_string(), &"table".to_string()],
             );
         }
 
@@ -48,22 +50,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => 0,
                 }
             } else {
-                self.reporter.fail(
-                    Error::ErrMissingOrdinalBeforeMember,
-                    member.element.span(),
-                    &[],
-                );
+                self.reporter
+                    .fail(Error::ErrMissingOrdinalBeforeMember, member.element.span());
                 0
             };
 
             let ordinal = match ordinal {
                 0 => {
                     if let Some(ord) = &member.ordinal {
-                        self.reporter.fail(
-                            Error::ErrOrdinalsMustStartAtOne,
-                            ord.element.span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrOrdinalsMustStartAtOne, ord.element.span());
                     }
                     0
                 }
@@ -71,7 +67,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.reporter.fail(
                         Error::ErrOrdinalOutOfBound,
                         member.ordinal.as_ref().unwrap().element.span(),
-                        &[],
                     );
                     0
                 }
@@ -79,7 +74,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.reporter.fail(
                         Error::ErrTableOrdinalTooLarge,
                         member.ordinal.as_ref().unwrap().element.span(),
-                        &[],
                     );
                     o as u32
                 }
@@ -102,9 +96,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         prev.location.filename, prev.location.line, prev.location.column
                     );
                     self.reporter.fail(
-                        Error::ErrDuplicateTableFieldOrdinal,
+                        Error::ErrDuplicateTableFieldOrdinal(format!("{}", &location_str)),
                         member.ordinal.as_ref().unwrap().element.span(),
-                        &[&location_str],
                     );
                 }
             }
@@ -143,11 +136,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
                 let mut type_obj = self.resolve_type(type_ctor, library_name, Some(member_ctx));
                 if type_obj.nullable() {
-                    self.reporter.fail(
-                        Error::ErrOptionalTableMember,
-                        type_ctor.element.span(),
-                        &[],
-                    );
+                    self.reporter
+                        .fail(Error::ErrOptionalTableMember, type_ctor.element.span());
                 }
                 if ordinal == 64 {
                     let is_table = if let Some(decl) =
@@ -164,11 +154,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
 
                     if !is_table {
-                        self.reporter.fail(
-                            Error::ErrMaxOrdinalNotTable,
-                            type_ctor.element.span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrMaxOrdinalNotTable, type_ctor.element.span());
                     }
                 }
                 if type_obj.resource
@@ -179,9 +166,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     let member_name = member.name.as_ref().unwrap().data().to_string();
                     let n = name.to_string();
                     self.reporter.fail(
-                        Error::ErrTypeMustBeResource,
+                        Error::ErrTypeMustBeResource(
+                            format!("{}", &"table"),
+                            format!("{}", &n),
+                            format!("{}", &member_name),
+                            format!("{}", &"table"),
+                            format!("{}", &"table"),
+                            format!("{}", &n),
+                        ),
                         type_ctor.element.span(),
-                        &[&"table", &n, &member_name, &"table", &"table", &n],
                     );
                 }
                 let mut alias = type_obj.outer_alias.take();

@@ -249,9 +249,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     )
                 };
                 self.reporter.fail(
-                    Error::ErrUnusedImport,
+                    Error::ErrUnusedImport(
+                        format!("{}", &self.library_name),
+                        format!("{}", &decl.using_path.to_string()),
+                    ),
                     span,
-                    &[&self.library_name, &decl.using_path.to_string()],
                 );
             }
         }
@@ -795,9 +797,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref()) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
-                            Error::ErrTypeShapeIntegerOverflow,
+                            Error::ErrTypeShapeIntegerOverflow(
+                                format!("{}", &offset),
+                                format!("{}", &"+"),
+                                format!("{}", &padding_before),
+                            ),
                             span,
-                            &[&offset, &"+", &padding_before],
                         );
                     }
                 }
@@ -811,9 +816,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref()) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
-                            Error::ErrTypeShapeIntegerOverflow,
+                            Error::ErrTypeShapeIntegerOverflow(
+                                format!("{}", &offset),
+                                format!("{}", &"+"),
+                                format!("{}", &size),
+                            ),
                             span,
-                            &[&offset, &"+", &size],
                         );
                     }
                 }
@@ -832,9 +840,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(raw_decl) = self.raw_decls.get::<str>(decl.base.name.as_ref()) {
                         let span = raw_decl.element().span();
                         self.reporter.fail(
-                            Error::ErrTypeShapeIntegerOverflow,
+                            Error::ErrTypeShapeIntegerOverflow(
+                                format!("{}", &offset),
+                                format!("{}", &"+"),
+                                format!("{}", &final_padding),
+                            ),
                             span,
-                            &[&offset, &"+", &final_padding],
                         );
                     }
                 }
@@ -872,9 +883,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let decl_fqn = decl.name.clone();
                 let display_name = decl_fqn.declaration();
                 self.reporter.fail(
-                    Error::ErrInlineSizeExceedsLimit,
+                    Error::ErrInlineSizeExceedsLimit(
+                        format!("{}", &display_name),
+                        format!("{}", &total_size),
+                        format!("{}", &65535u32),
+                    ),
                     span,
-                    &[&display_name, &total_size, &65535u32],
                 );
             }
             shapes.insert(
@@ -1293,9 +1307,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .is_enabled(ExperimentalFlag::AllowNewTypes)
                     {
                         self.reporter.fail(
-                            Error::ErrNewTypesNotAllowed,
+                            Error::ErrNewTypesNotAllowed(
+                                format!("{}", &t.name.data()),
+                                format!("{}", &existing_type_name),
+                            ),
                             t.name.element.span(),
-                            &[&t.name.data(), &existing_type_name],
                         );
                     }
                     let mut typ = self.resolve_type(tc, &library_name, None);
@@ -1506,23 +1522,26 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if is_exact {
                 self.reporter.fail(
-                    Error::ErrNameCollision,
+                    Error::ErrNameCollision(
+                        format!("{}", &kind_str),
+                        format!("{}", &raw_name),
+                        format!("{}", &prev_kind_str),
+                        format!("{}", &prev_site_str),
+                    ),
                     span,
-                    &[&kind_str, &raw_name, &prev_kind_str, &prev_site_str],
                 );
             } else {
                 let canon = attribute_schema::canonicalize(&raw_name);
                 self.reporter.fail(
-                    Error::ErrNameCollisionCanonical,
+                    Error::ErrNameCollisionCanonical(
+                        format!("{}", &kind_str),
+                        format!("{}", &raw_name),
+                        format!("{}", &prev_kind_str),
+                        format!("{}", &prev_raw),
+                        format!("{}", &prev_site_str),
+                        format!("{}", &canon),
+                    ),
                     span,
-                    &[
-                        &kind_str,
-                        &raw_name,
-                        &prev_kind_str,
-                        &prev_raw,
-                        &prev_site_str,
-                        &canon,
-                    ],
                 );
             }
         }
@@ -1561,15 +1580,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if id.components.len() > 2 {
                                 let fallback_lib = parts[..parts.len() - 1].join(".");
                                 self.reporter.fail(
-                                    Error::ErrUnknownDependentLibrary,
+                                    Error::ErrUnknownDependentLibrary(
+                                        format!("{}", &local_lib_name),
+                                        format!("{}", &fallback_lib),
+                                    ),
                                     span_safe,
-                                    &[&local_lib_name, &fallback_lib],
                                 );
                             } else {
                                 self.reporter.fail(
-                                    Error::ErrNameNotFound,
+                                    Error::ErrNameNotFound(
+                                        format!("{}", &local_lib_name),
+                                        format!("{}", &self.library_name),
+                                    ),
                                     span_safe,
-                                    &[&local_lib_name, &self.library_name],
                                 );
                             }
                             return Type::unknown();
@@ -1587,7 +1610,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             }
             raw_ast::LayoutParameter::Literal(_) => {
                 self.reporter
-                    .fail(Error::ErrExpectedType, type_ctor.element.span(), &[]);
+                    .fail(Error::ErrExpectedType, type_ctor.element.span());
                 return Type::unknown();
             }
             raw_ast::LayoutParameter::Type(_) => {
@@ -1680,11 +1703,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         if !is_valid {
                             let span_transmuted: SourceSpan =
                                 unsafe { std::mem::transmute(arg.value.element().span()) };
-                            self.reporter.fail(
-                                Error::ErrInvalidGeneratedName,
-                                span_transmuted,
-                                &[&val],
-                            );
+                            self.reporter
+                                .fail(Error::ErrInvalidGeneratedName, span_transmuted);
                         }
                     }
                 }
@@ -1708,13 +1728,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if !type_ctor.parameters.is_empty() {
                     self.reporter.fail(
-                        Error::ErrWrongNumberOfLayoutParameters,
+                        Error::ErrWrongNumberOfLayoutParameters(
+                            format!("{}", &generated_name.as_deref().unwrap_or(default_name)),
+                            format!("{}", &0_usize),
+                            format!("{}", &type_ctor.parameters.len()),
+                        ),
                         type_ctor.element.start_token.span,
-                        &[
-                            &generated_name.as_deref().unwrap_or(default_name),
-                            &0_usize,
-                            &type_ctor.parameters.len(),
-                        ],
                     );
                 }
 
@@ -1763,37 +1782,34 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             let gen_span_transmuted: SourceSpan =
                                 unsafe { std::mem::transmute(gen_attr.element.span()) };
                             self.reporter.fail(
-                                Error::ErrNameCollision,
+                                Error::ErrNameCollision(
+                                    format!("{}", &kind.to_string()),
+                                    format!("{}", &final_short_name.to_string()),
+                                    format!("{}", &prev_kind.to_string()),
+                                    format!("{}", &prev_site),
+                                ),
                                 gen_span_transmuted,
-                                &[
-                                    &kind.to_string(),
-                                    &final_short_name.to_string(),
-                                    &prev_kind.to_string(),
-                                    &prev_site,
-                                ],
                             );
                         } else {
                             self.reporter.fail(
-                                Error::ErrNameCollision,
+                                Error::ErrNameCollision(
+                                    format!("{}", &kind.to_string()),
+                                    format!("{}", &final_short_name.to_string()),
+                                    format!("{}", &prev_kind.to_string()),
+                                    format!("{}", &prev_site),
+                                ),
                                 span_transmuted,
-                                &[
-                                    &kind.to_string(),
-                                    &final_short_name.to_string(),
-                                    &prev_kind.to_string(),
-                                    &prev_site,
-                                ],
                             );
                         }
                     } else {
                         self.reporter.fail(
-                            Error::ErrNameCollision,
+                            Error::ErrNameCollision(
+                                format!("{}", &kind.to_string()),
+                                format!("{}", &final_short_name.to_string()),
+                                format!("{}", &prev_kind.to_string()),
+                                format!("{}", &prev_site),
+                            ),
                             span_transmuted,
-                            &[
-                                &kind.to_string(),
-                                &final_short_name.to_string(),
-                                &prev_kind.to_string(),
-                                &prev_site,
-                            ],
                         );
                     }
                 }
@@ -1973,25 +1989,30 @@ impl<'node, 'src> Compiler<'node, 'src> {
             {
                 if !type_ctor.parameters.is_empty() {
                     self.reporter.fail(
-                        Error::ErrWrongNumberOfLayoutParameters,
+                        Error::ErrWrongNumberOfLayoutParameters(
+                            format!("{}", &resolved_name),
+                            format!("{}", &0_usize),
+                            format!("{}", &type_ctor.parameters.len()),
+                        ),
                         type_ctor.element.start_token.span,
-                        &[&resolved_name, &0_usize, &type_ctor.parameters.len()],
                     );
                 }
 
                 if nullable {
                     self.reporter.fail(
-                        Error::ErrCannotBeOptional,
+                        Error::ErrCannotBeOptional(format!("{}", &resolved_name)),
                         type_ctor.element.start_token.span,
-                        &[&resolved_name],
                     );
                 }
 
                 if !actual_constraints.is_empty() {
                     self.reporter.fail(
-                        Error::ErrTooManyConstraints,
+                        Error::ErrTooManyConstraints(
+                            format!("{}", &resolved_name),
+                            format!("{}", &0_usize),
+                            format!("{}", &actual_constraints.len()),
+                        ),
                         type_ctor.element.start_token.span,
-                        &[&resolved_name, &0_usize, &actual_constraints.len()],
                     );
                 }
 
@@ -2001,9 +2022,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         .is_enabled(ExperimentalFlag::ZxCTypes)
                 {
                     self.reporter.fail(
-                        Error::ErrExperimentalZxCTypesDisallowed,
+                        Error::ErrExperimentalZxCTypesDisallowed(format!("{}", &resolved_name)),
                         type_ctor.element.start_token.span,
-                        &[&resolved_name],
                     );
                 }
 
@@ -2015,9 +2035,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     .is_enabled(ExperimentalFlag::ZxCTypes)
                 {
                     self.reporter.fail(
-                        Error::ErrExperimentalZxCTypesDisallowed,
+                        Error::ErrExperimentalZxCTypesDisallowed(format!("{}", &resolved_name)),
                         type_ctor.element.start_token.span,
-                        &[&resolved_name],
                     );
                 }
 
@@ -2035,9 +2054,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "string" => {
                 if actual_constraints.len() > 1 {
                     self.reporter.fail(
-                        Error::ErrTooManyConstraints,
+                        Error::ErrTooManyConstraints(
+                            format!("{}", &resolved_name),
+                            format!("{}", &1_usize),
+                            format!("{}", &actual_constraints.len()),
+                        ),
                         type_ctor.element.start_token.span,
-                        &[&resolved_name, &1_usize, &actual_constraints.len()],
                     );
                 }
                 let mut max_len = u32::MAX;
@@ -2057,15 +2079,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .unwrap_or("identifier".into())
                             .to_string();
                         self.reporter.fail(
-                            Error::ErrTypeCannotBeConvertedToType,
+                            Error::ErrTypeCannotBeConvertedToType(
+                                format!("{}", &val_str),
+                                format!("{}", &from_type),
+                                format!("{}", &"uint32"),
+                            ),
                             c.element().span(),
-                            &[&val_str, &from_type, &"uint32"],
                         );
-                        self.reporter.fail(
-                            Error::ErrCouldNotResolveSizeBound,
-                            c.element().span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrCouldNotResolveSizeBound, c.element().span());
                     }
                 }
                 Type::string(
@@ -2100,9 +2122,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let is_bytes = resolved_name == "bytes";
                 if actual_constraints.len() > 1 {
                     self.reporter.fail(
-                        Error::ErrUnexpectedConstraint,
+                        Error::ErrUnexpectedConstraint(format!("{}", &resolved_name)),
                         actual_constraints[1].element().span(),
-                        &[&resolved_name],
                     );
                 }
                 let inner = if is_bytes || type_ctor.parameters.is_empty() {
@@ -2139,15 +2160,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             .unwrap_or("identifier".into())
                             .to_string();
                         self.reporter.fail(
-                            Error::ErrTypeCannotBeConvertedToType,
+                            Error::ErrTypeCannotBeConvertedToType(
+                                format!("{}", &val_str),
+                                format!("{}", &from_type),
+                                format!("{}", &"uint32"),
+                            ),
                             c.element().span(),
-                            &[&val_str, &from_type, &"uint32"],
                         );
-                        self.reporter.fail(
-                            Error::ErrCouldNotResolveSizeBound,
-                            c.element().span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrCouldNotResolveSizeBound, c.element().span());
                     }
                 }
 
@@ -2169,9 +2190,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "array" => {
                 if type_ctor.parameters.len() < 2 {
                     self.reporter.fail(
-                        Error::ErrWrongNumberOfLayoutParameters,
+                        Error::ErrWrongNumberOfLayoutParameters(
+                            "array".to_string(),
+                            "2".to_string(),
+                            type_ctor.parameters.len().to_string(),
+                        ),
                         type_ctor.element.start_token.span,
-                        &[],
                     );
                     return Type::unknown();
                 }
@@ -2182,9 +2206,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check for optional array: array<T, N>:optional is invalid
                 if nullable {
                     self.reporter.fail(
-                        Error::ErrCannotBeOptional,
+                        Error::ErrCannotBeOptional(format!("{}", &"array")),
                         type_ctor.element.start_token.span,
-                        &[&"array"],
                     );
                 }
 
@@ -2194,9 +2217,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if let Some(val) = self.eval_type_constant_usize(count_param) {
                     if val == 0 {
                         self.reporter.fail(
-                            Error::ErrMustHaveNonZeroSize,
+                            Error::ErrMustHaveNonZeroSize(format!("{}", &"array")),
                             count_param.element.start_token.span,
-                            &[&"array"],
                         );
                     }
                     count = val as u32;
@@ -2259,15 +2281,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             _ => "unknown".to_string(),
                         };
                         self.reporter.fail(
-                            Error::ErrExpectedValueButGotType,
+                            Error::ErrExpectedValueButGotType(format!("{}", &name_str)),
                             count_param.element.span(),
-                            &[&name_str],
                         );
                     } else {
                         self.reporter.fail(
-                            Error::ErrNameNotFound,
+                            Error::ErrNameNotFound(
+                                format!("{}", &"unknown"),
+                                format!("{}", &library_name),
+                            ),
                             count_param.element.span(),
-                            &[&"unknown", &library_name],
                         ); // To fix argument count
                     }
                 }
@@ -2275,9 +2298,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check constraints
                 if !type_ctor.constraints.is_empty() {
                     self.reporter.fail(
-                        Error::ErrTooManyConstraints,
+                        Error::ErrTooManyConstraints(
+                            format!("{}", &"array"),
+                            format!("{}", &0_usize),
+                            format!("{}", &type_ctor.constraints.len()),
+                        ),
                         type_ctor.element.start_token.span,
-                        &[&"array", &0_usize, &type_ctor.constraints.len()],
                     );
                 }
 
@@ -2347,9 +2373,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                 } else {
                     self.reporter.fail(
-                        Error::ErrWrongNumberOfLayoutParameters,
+                        Error::ErrWrongNumberOfLayoutParameters(
+                            format!("{}", &"client_end/server_end"),
+                            format!("{}", &1_usize),
+                            format!("{}", &0_usize),
+                        ),
                         type_ctor.element.span(),
-                        &[&"client_end/server_end", &1_usize, &0_usize],
                     );
                 }
 
@@ -2401,9 +2430,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                     if !is_protocol {
                         self.reporter.fail(
-                            Error::ErrMustBeAProtocol,
+                            Error::ErrMustBeAProtocol(format!("{}", &protocol)),
                             type_ctor.element.span(),
-                            &[&protocol],
                         );
                     }
                 }
@@ -2421,11 +2449,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.skip_eager_compile = prev;
 
                 if nullable {
-                    self.reporter.fail(
-                        Error::ErrBoxCannotBeOptional,
-                        type_ctor.element.span(),
-                        &[],
-                    );
+                    self.reporter
+                        .fail(Error::ErrBoxCannotBeOptional, type_ctor.element.span());
                 }
 
                 if inner_type.kind() != TypeKind::Struct {
@@ -2456,15 +2481,19 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if !is_struct {
                         if is_nor_opt {
                             self.reporter.fail(
-                                Error::ErrCannotBeBoxedNorOptional,
+                                Error::ErrCannotBeBoxedNorOptional(format!(
+                                    "{}",
+                                    &inner.element.span().data
+                                )),
                                 inner.element.span(),
-                                &[&inner.element.span().data],
                             );
                         } else {
                             self.reporter.fail(
-                                Error::ErrCannotBeBoxedShouldBeOptional,
+                                Error::ErrCannotBeBoxedShouldBeOptional(format!(
+                                    "{}",
+                                    &inner.element.span().data
+                                )),
                                 inner.element.span(),
-                                &[&inner.element.span().data],
                             );
                         }
                     }
@@ -2526,9 +2555,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                     if filtered_constraints.len() > res_decl.properties.len() {
                         self.reporter.fail(
-                            Error::ErrTooManyConstraints,
+                            Error::ErrTooManyConstraints(
+                                format!("{}", &full_name),
+                                format!("{}", &0_usize),
+                                format!("{}", &res_decl.properties.len()),
+                            ),
                             type_ctor.element.start_token.span,
-                            &[&full_name, &0_usize, &res_decl.properties.len()],
                         );
                     } else {
                         for (i, constraint) in filtered_constraints.iter().enumerate() {
@@ -2584,16 +2616,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                     }
                                     if !found {
                                         self.reporter.fail(
-                                            Error::ErrUnexpectedConstraint,
+                                            Error::ErrUnexpectedConstraint(format!(
+                                                "{}",
+                                                &full_name
+                                            )),
                                             type_ctor.element.start_token.span,
-                                            &[&full_name],
                                         );
                                     }
                                 } else {
                                     self.reporter.fail(
                                         Error::ErrExpectedType,
                                         type_ctor.element.start_token.span,
-                                        &[],
                                     );
                                 }
                             } else if prop_name == "rights" {
@@ -2654,9 +2687,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 }
                                 if !found {
                                     self.reporter.fail(
-                                        Error::ErrUnexpectedConstraint,
+                                        Error::ErrUnexpectedConstraint(format!("{}", &full_name)),
                                         type_ctor.element.start_token.span,
-                                        &[&full_name],
                                     );
                                 }
                             }
@@ -2713,9 +2745,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             });
                             if has_non_optional {
                                 self.reporter.fail(
-                                    Error::ErrTooManyConstraints,
+                                    Error::ErrTooManyConstraints(
+                                        format!("{}", &name),
+                                        format!("{}", &0_usize),
+                                        format!("{}", &type_ctor.constraints.len()),
+                                    ),
                                     type_ctor.element.start_token.span,
-                                    &[&name, &0_usize, &type_ctor.constraints.len()],
                                 );
                             }
                         }
@@ -2730,9 +2765,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                     if is_struct {
                         self.reporter.fail(
-                            Error::ErrStructCannotBeOptional,
+                            Error::ErrStructCannotBeOptional(format!("{}", &name)),
                             type_ctor.element.span(),
-                            &[&name],
                         );
                         nullable = false;
                     }
@@ -2743,9 +2777,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                     if is_table {
                         self.reporter.fail(
-                            Error::ErrCannotBeOptional,
+                            Error::ErrCannotBeOptional(format!("{}", &name)),
                             type_ctor.element.span(),
-                            &[&name],
                         );
                         nullable = false;
                     }
@@ -2759,9 +2792,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     };
                     if is_enum_or_bits_or_service {
                         self.reporter.fail(
-                            Error::ErrCannotBeOptional,
+                            Error::ErrCannotBeOptional(format!("{}", &name)),
                             type_ctor.element.span(),
-                            &[&name],
                         );
                         nullable = false;
                     }
@@ -2813,9 +2845,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else if let Some(decl) = self.raw_decls.get::<str>(full_name.as_ref()) {
                     if !type_ctor.parameters.is_empty() {
                         self.reporter.fail(
-                            Error::ErrWrongNumberOfLayoutParameters,
+                            Error::ErrWrongNumberOfLayoutParameters(
+                                format!("{}", &name),
+                                format!("{}", &0_usize),
+                                format!("{}", &type_ctor.parameters.len()),
+                            ),
                             type_ctor.element.start_token.span,
-                            &[&name, &0_usize, &type_ctor.parameters.len()],
                         );
                     }
                     if let RawDecl::Alias(a) = decl {
@@ -2824,9 +2859,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !actual_constraints.is_empty() && !a_constraints.is_empty() {
                             self.reporter.fail(
-                                Error::ErrCannotConstrainTwice,
+                                Error::ErrCannotConstrainTwice(format!("{}", &name)),
                                 type_ctor.element.start_token.span,
-                                &[&name],
                             );
                             has_err = true;
                         }
@@ -2834,9 +2868,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         let a_nullable = a.type_ctor.constraints.iter().any(|c| matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")) || a.type_ctor.nullable;
                         if nullable && a_nullable {
                             self.reporter.fail(
-                                Error::ErrCannotIndicateOptionalTwice,
+                                Error::ErrCannotIndicateOptionalTwice(format!("{}", &name)),
                                 type_ctor.element.start_token.span,
-                                &[&name],
                             );
                             has_err = true;
                         }
@@ -2856,9 +2889,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                             let id_str =
                                                 resolved_type.identifier().unwrap_or_default();
                                             self.reporter.fail(
-                                                Error::ErrMustHaveNonZeroSize,
+                                                Error::ErrMustHaveNonZeroSize(format!(
+                                                    "{}",
+                                                    &id_str
+                                                )),
                                                 type_ctor.element.start_token.span,
-                                                &[&id_str],
                                             );
                                             has_err = true;
                                         } else if resolved_type.kind() == TypeKind::Vector {
@@ -2879,18 +2914,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                         }
                                     } else {
                                         self.reporter.fail(
-                                            Error::ErrUnexpectedConstraint,
+                                            Error::ErrUnexpectedConstraint(format!("{}", &name)),
                                             type_ctor.element.start_token.span,
-                                            &[&name],
                                         );
                                         has_err = true;
                                     }
                                 }
                             } else if !has_err {
                                 self.reporter.fail(
-                                    Error::ErrTooManyConstraints,
+                                    Error::ErrTooManyConstraints(
+                                        format!("{}", &name),
+                                        format!("{}", &0_usize),
+                                        format!("{}", &actual_constraints.len()),
+                                    ),
                                     type_ctor.element.start_token.span,
-                                    &[&name, &0_usize, &actual_constraints.len()],
                                 );
                                 has_err = true;
                             }
@@ -2912,7 +2949,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     if let RawDecl::Service(_) = decl {
                         self.reporter
-                            .fail(Error::ErrExpectedType, type_ctor.element.span(), &[]);
+                            .fail(Error::ErrExpectedType, type_ctor.element.span());
                         return Type::unknown();
                     }
                     let is_union_or_table = match decl {
@@ -2963,9 +3000,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     )
                 } else {
                     self.reporter.fail(
-                        Error::ErrNameNotFound,
+                        Error::ErrNameNotFound(format!("{}", &name), format!("{}", &library_name)),
                         type_ctor.element.span(),
-                        &[&name, &library_name],
                     );
                     Type::unknown()
                 }

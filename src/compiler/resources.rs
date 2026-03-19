@@ -65,15 +65,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if !is_uint32 {
             self.reporter.fail(
-                Error::ErrResourceMustBeUint32Derived,
+                Error::ErrResourceMustBeUint32Derived(format!("{}", &name)),
                 decl.name.element.span(),
-                &[&name],
             );
         }
 
         if decl.properties.is_empty() {
             self.reporter
-                .fail(Error::ErrMustHaveOneProperty, decl.element.span(), &[]);
+                .fail(Error::ErrMustHaveOneProperty, decl.element.span());
         }
 
         let mut has_subtype = false;
@@ -110,9 +109,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 };
                 if !is_enum {
                     self.reporter.fail(
-                        Error::ErrResourceSubtypePropertyMustReferToEnum,
+                        Error::ErrResourceSubtypePropertyMustReferToEnum(format!("{}", &name)),
                         prop.name.element.span(),
-                        &[&name],
                     );
                 }
             } else if prop_name == "rights" {
@@ -163,9 +161,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 if !is_bits && !is_uint32_prop {
                     self.reporter.fail(
-                        Error::ErrResourceRightsPropertyMustReferToBits,
+                        Error::ErrResourceRightsPropertyMustReferToBits(format!("{}", &name)),
                         prop.name.element.span(),
-                        &[&name],
                     );
                 }
             }
@@ -180,9 +177,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if !has_subtype && !decl.properties.is_empty() {
             self.reporter.fail(
-                Error::ErrResourceMissingSubtypeProperty,
+                Error::ErrResourceMissingSubtypeProperty(format!("{}", &name)),
                 decl.name.element.span(),
-                &[&name],
             );
         }
 

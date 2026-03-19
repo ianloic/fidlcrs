@@ -375,20 +375,12 @@ resource_definition handle : uint32 {
         &self.reporter
     }
 
-    pub fn expect_fail(&mut self, def: Error, args: &[&str]) {
-        let mut msg = def.msg().to_string();
-        for arg in args {
-            msg = msg.replacen("{}", arg, 1);
-        }
-        self.expected_diagnostics.insert(msg);
+    pub fn expect_fail(&mut self, def: Error) {
+        self.expected_diagnostics.insert(def.msg().to_string());
     }
 
-    pub fn expect_warn(&mut self, def: Error, args: &[&str]) {
-        let mut msg = def.msg().to_string();
-        for arg in args {
-            msg = msg.replacen("{}", arg, 1);
-        }
-        self.expected_diagnostics.insert(msg);
+    pub fn expect_warn(&mut self, def: Error) {
+        self.expected_diagnostics.insert(def.msg().to_string());
     }
 
     pub fn check_compile(&'a self) -> bool {

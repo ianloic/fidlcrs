@@ -137,12 +137,11 @@ resource_definition SomeResource : uint32 {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"None\"", "\"Properties\""],
-    );
-
-    lib.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    lib.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"None"#.to_string(),
+        r#"Properties"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
 
     assert!(lib.check_compile());
 }
@@ -152,7 +151,7 @@ resource_definition SomeResource : uint32 {
 fn bad_no_properties() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0029.noformat.test.fidl");
-    lib.expect_fail(Error::ErrMustHaveOneProperty, &[]);
+    lib.expect_fail(Error::ErrMustHaveOneProperty);
 
     assert!(lib.check_compile());
 }
@@ -175,15 +174,12 @@ resource_definition MyResource : uint32 {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrNameCollision,
-        &[
-            "\"resource property\"",
-            "\"rights\"",
-            "\"resource property\"",
-            "\"example.fidl:7:9\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrNameCollision(
+        r#"resource property"#.to_string(),
+        r#"rights"#.to_string(),
+        r#"resource property"#.to_string(),
+        r#"example.fidl:7:9"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -193,7 +189,9 @@ resource_definition MyResource : uint32 {
 fn bad_not_uint32() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0172.test.fidl");
-    lib.expect_fail(Error::ErrResourceMustBeUint32Derived, &["\"MyResource\""]);
+    lib.expect_fail(Error::ErrResourceMustBeUint32Derived(
+        r#"MyResource"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -203,10 +201,9 @@ fn bad_not_uint32() {
 fn bad_missing_subtype_property_test() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0173.test.fidl");
-    lib.expect_fail(
-        Error::ErrResourceMissingSubtypeProperty,
-        &["\"MyResource\""],
-    );
+    lib.expect_fail(Error::ErrResourceMissingSubtypeProperty(
+        r#"MyResource"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -216,10 +213,9 @@ fn bad_missing_subtype_property_test() {
 fn bad_subtype_not_enum() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0175.test.fidl");
-    lib.expect_fail(
-        Error::ErrResourceSubtypePropertyMustReferToEnum,
-        &["\"MyResource\""],
-    );
+    lib.expect_fail(Error::ErrResourceSubtypePropertyMustReferToEnum(
+        r#"MyResource"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -240,10 +236,9 @@ resource_definition handle : uint32 {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrResourceSubtypePropertyMustReferToEnum,
-        &["\"handle\""],
-    );
+    lib.expect_fail(Error::ErrResourceSubtypePropertyMustReferToEnum(
+        r#"handle"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -253,10 +248,9 @@ resource_definition handle : uint32 {
 fn bad_non_bits_rights() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0177.test.fidl");
-    lib.expect_fail(
-        Error::ErrResourceRightsPropertyMustReferToBits,
-        &["\"MyResource\""],
-    );
+    lib.expect_fail(Error::ErrResourceRightsPropertyMustReferToBits(
+        r#"MyResource"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -277,15 +271,13 @@ resource_definition handle : uint32 {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrIncludeCycle,
-        &["\"resource 'handle' -> resource 'handle'\""],
-    );
+    lib.expect_fail(Error::ErrIncludeCycle(
+        r#"resource 'handle' -> resource 'handle'"#.to_string(),
+    ));
 
-    lib.expect_fail(
-        Error::ErrResourceSubtypePropertyMustReferToEnum,
-        &["\"handle\""],
-    );
+    lib.expect_fail(Error::ErrResourceSubtypePropertyMustReferToEnum(
+        r#"handle"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }

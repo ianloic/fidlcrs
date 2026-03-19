@@ -49,11 +49,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .any(|m| m.subkind == TokenSubkind::Flexible && self.is_active(m.attributes.as_ref()));
         if is_strict && decl.methods.is_empty() {
             self.reporter
-                .fail(Error::ErrMustHaveOneMember, decl.name.element.span(), &[]);
+                .fail(Error::ErrMustHaveOneMember, decl.name.element.span());
         }
         if is_flexible && decl.methods.is_empty() {
             self.reporter
-                .fail(Error::ErrMustHaveOneMember, decl.name.element.span(), &[]);
+                .fail(Error::ErrMustHaveOneMember, decl.name.element.span());
         }
 
         let mut methods = vec![];
@@ -127,9 +127,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 if !composed_has_no_resource {
                     self.reporter.fail(
-                        Error::ErrNoResourceForbidsCompose,
+                        Error::ErrNoResourceForbidsCompose(
+                            format!("{}", &short_name),
+                            format!("{}", &composed_name),
+                        ),
                         composed.protocol_name.element.span(),
-                        &[&short_name, &composed_name],
                     );
                 }
             }
@@ -167,14 +169,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if !valid {
                 self.reporter.fail(
-                    Error::ErrComposedProtocolTooOpen,
+                    Error::ErrComposedProtocolTooOpen(
+                        format!("{}", &openness.to_string()),
+                        format!("{}", &decl.name.data()),
+                        format!("{}", &composed_openness.to_string()),
+                        format!("{}", &full_composed_name),
+                    ),
                     composed.element.span(),
-                    &[
-                        &openness.to_string(),
-                        &decl.name.data(),
-                        &composed_openness.to_string(),
-                        &full_composed_name,
-                    ],
                 );
             }
 
@@ -231,11 +232,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         && let Some(res_mod) =
                             mods.iter().find(|mo| mo.subkind == TokenSubkind::Resource)
                     {
-                        self.reporter.fail(
-                            Error::ErrResourceForbiddenHere,
-                            res_mod.element.span(),
-                            &[],
-                        );
+                        self.reporter
+                            .fail(Error::ErrResourceForbiddenHere, res_mod.element.span());
                     }
                 }
             }
@@ -251,9 +249,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     TokenSubkind::Flexible => has_explicit_flexible = true,
                     _ => {
                         self.reporter.fail(
-                            Error::ErrCannotSpecifyModifier,
+                            Error::ErrCannotSpecifyModifier(
+                                format!("{}", &modifier.element.span().data),
+                                format!("{}", &"method"),
+                            ),
                             modifier.element.span(),
-                            &[&modifier.element.span().data, &"method"],
                         );
                     }
                 }
@@ -271,19 +271,23 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             if is_method_flexible && two_way && openness != Openness::Open {
                 self.reporter.fail(
-                    Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
+                    Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(format!(
+                        "{}",
+                        &openness.to_string()
+                    )),
                     m.name.element.span(),
-                    &[&openness.to_string()],
                 );
             } else if is_method_flexible && !two_way && openness == Openness::Closed {
                 self.reporter.fail(
-                    Error::ErrFlexibleOneWayMethodInClosedProtocol,
+                    Error::ErrFlexibleOneWayMethodInClosedProtocol(format!(
+                        "{}",
+                        &if !m.has_request && m.has_response {
+                            "event"
+                        } else {
+                            "one-way method"
+                        }
+                    )),
                     m.name.element.span(),
-                    &[&if !m.has_request && m.has_response {
-                        "event"
-                    } else {
-                        "one-way method"
-                    }],
                 );
             }
 
@@ -301,7 +305,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             );
             if m.has_error && !m.has_response && m.has_request {
                 self.reporter
-                    .fail(Error::ErrUnexpectedToken, m.name.element.span(), &[]);
+                    .fail(Error::ErrUnexpectedToken, m.name.element.span());
             }
             let has_request = m.has_request;
             let maybe_request_payload = if let Some(ref l) = m.request_payload {
@@ -331,9 +335,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                Error::ErrInvalidMethodPayloadLayoutClass,
+                                Error::ErrInvalidMethodPayloadLayoutClass(format!(
+                                    "{}",
+                                    &"provided type"
+                                )),
                                 tc.element.span(),
-                                &[&"provided type"],
                             );
                         }
 
@@ -342,9 +348,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                Error::ErrEmptyPayloadStructs,
+                                Error::ErrEmptyPayloadStructs(m.name.data().to_string()),
                                 s.element.span(),
-                                &[],
                             );
                         }
                         for sm in &s.members {
@@ -352,7 +357,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 self.reporter.fail(
                                     Error::ErrPayloadStructHasDefaultMembers,
                                     sm.name.element.span(),
-                                    &[&sm.name.data()],
                                 );
                             }
                         }
@@ -463,9 +467,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     _ => {
                         // primitive or other inline layout
                         self.reporter.fail(
-                            Error::ErrInvalidMethodPayloadLayoutClass,
+                            Error::ErrInvalidMethodPayloadLayoutClass(format!(
+                                "{}",
+                                &"provided type"
+                            )),
                             m.name.element.span(),
-                            &[&"provided type"],
                         );
                         None
                     }
@@ -519,9 +525,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                         if !is_allowed {
                             self.reporter.fail(
-                                Error::ErrInvalidMethodPayloadLayoutClass,
+                                Error::ErrInvalidMethodPayloadLayoutClass(format!(
+                                    "{}",
+                                    &"provided type"
+                                )),
                                 tc.element.span(),
-                                &[&"provided type"],
                             );
                         }
 
@@ -530,9 +538,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     raw_ast::Layout::Struct(s) => {
                         if s.members.is_empty() {
                             self.reporter.fail(
-                                Error::ErrEmptyPayloadStructs,
+                                Error::ErrEmptyPayloadStructs(m.name.data().to_string()),
                                 s.element.span(),
-                                &[],
                             );
                         }
                         for sm in &s.members {
@@ -540,7 +547,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 self.reporter.fail(
                                     Error::ErrPayloadStructHasDefaultMembers,
                                     sm.name.element.span(),
-                                    &[&sm.name.data()],
                                 );
                             }
                         }
@@ -705,9 +711,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     }
                     _ => {
                         self.reporter.fail(
-                            Error::ErrInvalidMethodPayloadLayoutClass,
+                            Error::ErrInvalidMethodPayloadLayoutClass(format!(
+                                "{}",
+                                &"provided type"
+                            )),
                             m.name.element.span(),
-                            &[&"provided type"],
                         );
                         None
                     }
@@ -764,7 +772,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 .is_enabled(ExperimentalFlag::AllowArbitraryErrorTypes)
                         {
                             self.reporter
-                                .fail(Error::ErrInvalidErrorType, tc.element.span(), &[]);
+                                .fail(Error::ErrInvalidErrorType, tc.element.span());
                         }
 
                         Some(err_type_resolved)

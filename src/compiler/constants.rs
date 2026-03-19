@@ -450,35 +450,46 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         match &lit.literal.kind {
                             raw_ast::LiteralKind::String => {
                                 self.reporter.fail(
-                                    Error::ErrTypeCannotBeConvertedToType,
+                                    Error::ErrTypeCannotBeConvertedToType(
+                                        format!("{}", &"string"),
+                                        format!("{}", &"string"),
+                                        format!("{}", subtype),
+                                    ),
                                     span,
-                                    &[&"string", &"string", subtype],
                                 );
                             }
                             raw_ast::LiteralKind::Bool(_) => {
                                 if subtype != "bool" {
                                     self.reporter.fail(
-                                        Error::ErrTypeCannotBeConvertedToType,
+                                        Error::ErrTypeCannotBeConvertedToType(
+                                            format!("{}", &"bool"),
+                                            format!("{}", &"bool"),
+                                            format!("{}", subtype),
+                                        ),
                                         span,
-                                        &[&"bool", &"bool", subtype],
                                     );
                                 }
                             }
                             raw_ast::LiteralKind::Numeric => {
                                 if subtype == "bool" {
                                     self.reporter.fail(
-                                        Error::ErrTypeCannotBeConvertedToType,
+                                        Error::ErrTypeCannotBeConvertedToType(
+                                            format!("{}", &"numeric"),
+                                            format!("{}", &"numeric"),
+                                            format!("{}", subtype),
+                                        ),
                                         span,
-                                        &[&"numeric", &"numeric", subtype],
                                     );
                                     return;
                                 }
                                 let valid = self.check_numeric_bounds(&lit.literal.value, subtype);
                                 if !valid {
                                     self.reporter.fail(
-                                        Error::ErrConstantOverflowsType,
+                                        Error::ErrConstantOverflowsType(
+                                            format!("{}", &lit.literal.value),
+                                            format!("{}", subtype),
+                                        ),
                                         span,
-                                        &[&lit.literal.value, subtype],
                                     );
                                 }
                             }
@@ -490,9 +501,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         let name = id.identifier.to_string();
                         if name == "MAX" {
                             self.reporter.fail(
-                                Error::ErrTypeCannotBeConvertedToType,
+                                Error::ErrTypeCannotBeConvertedToType(
+                                    format!("{}", &"MAX"),
+                                    format!("{}", &"MAX"),
+                                    format!("{}", subtype),
+                                ),
                                 span,
-                                &[&"MAX", &"MAX", subtype],
                             );
                             return;
                         }
@@ -550,9 +564,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                 .map(|s| s.element.start_token.span.data);
                                         } else {
                                             self.reporter.fail(
-                                                Error::ErrCouldNotResolveMember,
+                                                Error::ErrCouldNotResolveMember(format!(
+                                                    "{}",
+                                                    &"bits"
+                                                )),
                                                 span,
-                                                &[&"bits"],
                                             );
                                             return;
                                         }
@@ -565,9 +581,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                 .map(|s| s.element.start_token.span.data);
                                         } else {
                                             self.reporter.fail(
-                                                Error::ErrCouldNotResolveMember,
+                                                Error::ErrCouldNotResolveMember(format!(
+                                                    "{}",
+                                                    &"enum"
+                                                )),
                                                 span,
-                                                &[&"enum"],
                                             );
                                             return;
                                         }
@@ -584,9 +602,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                     .map(|s| s.element.start_token.span.data);
                                             } else {
                                                 self.reporter.fail(
-                                                    Error::ErrCouldNotResolveMember,
+                                                    Error::ErrCouldNotResolveMember(format!(
+                                                        "{}",
+                                                        &"bits"
+                                                    )),
                                                     span,
-                                                    &[&"bits"],
                                                 );
                                                 return;
                                             }
@@ -602,9 +622,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                                     .map(|s| s.element.start_token.span.data);
                                             } else {
                                                 self.reporter.fail(
-                                                    Error::ErrCouldNotResolveMember,
+                                                    Error::ErrCouldNotResolveMember(format!(
+                                                        "{}",
+                                                        &"enum"
+                                                    )),
                                                     span,
-                                                    &[&"enum"],
                                                 );
                                                 return;
                                             }
@@ -628,28 +650,36 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 && !self.check_numeric_bounds(&lit.literal.value, subtype)
                             {
                                 self.reporter.fail(
-                                    Error::ErrConstantOverflowsType,
+                                    Error::ErrConstantOverflowsType(
+                                        format!("{}", &lit.literal.value),
+                                        format!("{}", subtype),
+                                    ),
                                     span,
-                                    &[&lit.literal.value, subtype],
                                 );
                             }
 
                             if left_is_bool != right_is_bool || left_is_float != right_is_float {
                                 self.reporter.fail(
-                                    Error::ErrTypeCannotBeConvertedToType,
+                                    Error::ErrTypeCannotBeConvertedToType(
+                                        format!("{}", &name),
+                                        format!("{}", &c_layout),
+                                        format!("{}", subtype),
+                                    ),
                                     span,
-                                    &[&name, &c_layout, subtype],
                                 );
                             }
                         } else if is_other {
                             self.reporter.fail(
-                                Error::ErrTypeCannotBeConvertedToType,
+                                Error::ErrTypeCannotBeConvertedToType(
+                                    format!("{}", &full_name),
+                                    format!("{}", &"identifier"),
+                                    format!("{}", subtype),
+                                ),
                                 span,
-                                &[&full_name, &"identifier", subtype],
                             );
                         } else {
                             self.reporter
-                                .fail(Error::ErrCannotResolveConstantValue, span, &[]);
+                                .fail(Error::ErrCannotResolveConstantValue, span);
                         }
                     }
                     raw_ast::Constant::BinaryOperator(binop) => {
@@ -658,7 +688,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         let r_type = self.infer_constant_type(&binop.right);
                         if l_type.unwrap_or("") != "numeric" || r_type.unwrap_or("") != "numeric" {
                             self.reporter
-                                .fail(Error::ErrOrOperatorOnNonPrimitiveValue, span, &[]);
+                                .fail(Error::ErrOrOperatorOnNonPrimitiveValue, span);
                             return;
                         }
                         self.validate_constant(&binop.left, expected_type);
@@ -671,9 +701,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let span = lit.literal.element.start_token.span;
                     if !matches!(lit.literal.kind, raw_ast::LiteralKind::String) {
                         self.reporter.fail(
-                            Error::ErrTypeCannotBeConvertedToType,
+                            Error::ErrTypeCannotBeConvertedToType(
+                                format!("{}", &"primitive"),
+                                format!("{}", &"primitive"),
+                                format!("{}", &"string"),
+                            ),
                             span,
-                            &[&"primitive", &"primitive", &"string"],
                         );
                     } else {
                         if let Some(c) = s.maybe_element_count.as_ref() {
@@ -716,21 +749,23 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             }
                             if len > max_len {
                                 self.reporter.fail(
-                                    Error::ErrTypeCannotBeConvertedToType,
+                                    Error::ErrTypeCannotBeConvertedToType(
+                                        format!("{}", &lit.literal.value),
+                                        format!("{}", &format!("string:{}", len)),
+                                        format!("{}", &format!("string:{}", max_len)),
+                                    ),
                                     span,
-                                    &[
-                                        &lit.literal.value,
-                                        &format!("string:{}", len),
-                                        &format!("string:{}", max_len),
-                                    ],
                                 );
                             }
                         }
                         if s.nullable {
                             self.reporter.fail(
-                                Error::ErrTypeCannotBeConvertedToType,
+                                Error::ErrTypeCannotBeConvertedToType(
+                                    format!("{}", &lit.literal.value),
+                                    format!("{}", &"string"),
+                                    format!("{}", &"string:optional"),
+                                ),
                                 span,
-                                &[&lit.literal.value, &"string", &"string:optional"],
                             );
                         }
                     }
@@ -759,9 +794,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     }
                     if !valid {
                         self.reporter.fail(
-                            Error::ErrTypeCannotBeConvertedToType,
+                            Error::ErrTypeCannotBeConvertedToType(
+                                format!("{}", &name),
+                                format!("{}", &"identifier"),
+                                format!("{}", &"string"),
+                            ),
                             span,
-                            &[&name, &"identifier", &"string"],
                         );
                     }
                 }
@@ -769,7 +807,6 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     self.reporter.fail(
                         Error::ErrOrOperatorOnNonPrimitiveValue,
                         binop.element.start_token.span,
-                        &[],
                     );
                 }
             },
@@ -791,9 +828,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             return;
                         }
                         self.reporter.fail(
-                            Error::ErrTypeCannotBeConvertedToType,
+                            Error::ErrTypeCannotBeConvertedToType(
+                                format!("{}", &lit.literal.value),
+                                format!("{}", &"literal"),
+                                format!("{}", &expected_name),
+                            ),
                             span,
-                            &[&lit.literal.value, &"literal", &expected_name],
                         );
                     }
                     raw_ast::Constant::Identifier(id) => {
@@ -816,9 +856,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         if !type_full_name.is_empty() {
                             if type_full_name != expected_name {
                                 self.reporter.fail(
-                                    Error::ErrMismatchedNameTypeAssignment,
+                                    Error::ErrMismatchedNameTypeAssignment(
+                                        format!("{}", &expected_name),
+                                        format!("{}", &type_full_name),
+                                    ),
                                     span,
-                                    &[&expected_name, &type_full_name],
                                 );
                             } else {
                                 let mut found_member = false;
@@ -858,9 +900,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 }
                                 if !found_member {
                                     self.reporter.fail(
-                                        Error::ErrCouldNotResolveMember,
+                                        Error::ErrCouldNotResolveMember(format!(
+                                            "{}",
+                                            &expected_decl_kind
+                                        )),
                                         span,
-                                        &[&expected_decl_kind],
                                     );
                                 }
                             }
@@ -898,30 +942,33 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                         || c_layout.starts_with("float");
                                     if is_primitive {
                                         self.reporter.fail(
-                                            Error::ErrMismatchedNameTypeAssignment,
+                                            Error::ErrMismatchedNameTypeAssignment(
+                                                format!("{}", &expected_name),
+                                                format!("{}", &"Primitive"),
+                                            ),
                                             span,
-                                            &[&expected_name, &"Primitive"],
                                         );
                                     } else if c_layout != expected_name {
                                         self.reporter.fail(
-                                            Error::ErrMismatchedNameTypeAssignment,
+                                            Error::ErrMismatchedNameTypeAssignment(
+                                                format!("{}", &expected_name),
+                                                format!("{}", &c_layout),
+                                            ),
                                             span,
-                                            &[&expected_name, &c_layout],
                                         );
                                     }
                                 }
                             } else if let Some(r) = err_reason {
                                 if r == "Unknown" {
-                                    self.reporter.fail(
-                                        Error::ErrCannotResolveConstantValue,
-                                        span,
-                                        &[],
-                                    );
+                                    self.reporter
+                                        .fail(Error::ErrCannotResolveConstantValue, span);
                                 } else {
                                     self.reporter.fail(
-                                        Error::ErrMismatchedNameTypeAssignment,
+                                        Error::ErrMismatchedNameTypeAssignment(
+                                            format!("{}", &expected_name),
+                                            format!("{}", &r),
+                                        ),
                                         span,
-                                        &[&expected_name, &r],
                                     );
                                 }
                             }
@@ -949,9 +996,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         if !self.type_can_be_const(&type_obj) {
             let layout_str = decl.type_ctor.element.start_token.span.data;
             self.reporter.fail(
-                Error::ErrInvalidConstantType,
+                Error::ErrInvalidConstantType(format!("{}", &layout_str)),
                 decl.name.element.start_token.span,
-                &[&layout_str],
             );
         }
         self.validate_constant(&decl.value, &type_obj);

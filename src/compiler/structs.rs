@@ -22,9 +22,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 && self.is_active(m.attributes.as_ref())
         }) {
             self.reporter.fail(
-                Error::ErrCannotSpecifyModifier,
+                Error::ErrCannotSpecifyModifier(
+                    format!("{}", &m.element.span().data.to_string()),
+                    format!("{}", &"struct".to_string()),
+                ),
                 m.element.span(),
-                &[&m.element.span().data.to_string(), &"struct".to_string()],
             );
         }
 
@@ -73,9 +75,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 let member_name = member.name.data().to_string();
                 let n = name.to_string();
                 self.reporter.fail(
-                    Error::ErrTypeMustBeResource,
+                    Error::ErrTypeMustBeResource(
+                        format!("{}", &"struct"),
+                        format!("{}", &n),
+                        format!("{}", &member_name),
+                        format!("{}", &"struct"),
+                        format!("{}", &"struct"),
+                        format!("{}", &n),
+                    ),
                     member.type_ctor.element.span(),
-                    &[&"struct", &n, &member_name, &"struct", &"struct", &n],
                 );
             }
             let mut alias = type_obj.outer_alias.take();
@@ -119,7 +127,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.reporter.fail(
                     Error::ErrDeprecatedStructDefaults,
                     member.name.element.span(),
-                    &[],
                 );
             }
 
@@ -206,9 +213,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if total_size > 65535 {
             let span = decl.element.span();
             self.reporter.fail(
-                Error::ErrInlineSizeExceedsLimit,
+                Error::ErrInlineSizeExceedsLimit(
+                    format!("{}", &name),
+                    format!("{}", &total_size.to_string()),
+                    format!("{}", &"65535".to_string()),
+                ),
                 span,
-                &[&name, &total_size.to_string(), &"65535".to_string()],
             );
         }
 

@@ -1014,7 +1014,7 @@ fn bad_const_test_assign_type_simple() {
 #[test]
 #[ignore]
 fn bad_const_test_assign_type_name() {
-    for type_declaration in [
+    for _type_declaration in [
         "type Example = struct {};",
         "type Example = table {};",
         "service Example {};",
@@ -1046,7 +1046,7 @@ fn bad_const_test_assign_builtin_simple() {
 #[test]
 #[ignore]
 fn bad_const_test_assign_builtin_type() {
-    for builtin in ["bool", "uint32", "box", "vector", "byte"] {
+    for _builtin in ["bool", "uint32", "box", "vector", "byte"] {
         let mut library = TestLibrary::new();
         library.add_errcat_file("dummy.fidl");
         // TODO(https://fxbug.dev/42182133): Should have a better error message.
@@ -1058,7 +1058,7 @@ fn bad_const_test_assign_builtin_type() {
 #[test]
 #[ignore]
 fn bad_const_test_assign_builtin_non_type() {
-    for builtin in ["MAX", "optional", "NEXT", "HEAD"] {
+    for _builtin in ["MAX", "optional", "NEXT", "HEAD"] {
         let mut library = TestLibrary::new();
         library.add_errcat_file("dummy.fidl");
         // TODO(https://fxbug.dev/42182133): Should have a better error message.

@@ -22,19 +22,8 @@ impl<'a> Reporter<'a> {
         }
     }
 
-    pub fn fail(&self, def: Error, span: SourceSpan<'a>, args: &[&dyn std::fmt::Debug]) {
-        // Simple formatting for now.
-        // We handle {} placeholders.
-        let mut msg = def.msg().to_string();
-        for arg in args {
-            // Debug fmt
-            msg = msg.replacen("{}", &format!("{:?}", arg), 1);
-        }
-        // Handle {:x} or similar?
-        // Rust's format! is macro based, difficult to use with dyn args and templates at runtime.
-        // For now, let's just append args if message has placeholders, or rely on simple replacement.
-        // The C++ code uses fmt::format which supports positional args.
-        // Here we can use a simpler approach for the initial port.
+    pub fn fail(&self, def: Error, span: SourceSpan<'a>) {
+        let msg = def.msg();
 
         self.diagnostics.borrow_mut().push(Diagnostic {
             def,

@@ -44,7 +44,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                     };
                     compiler
                         .reporter
-                        .fail(Error::ErrFilesDisagreeOnLibraryName, span, &[]);
+                        .fail(Error::ErrFilesDisagreeOnLibraryName, span);
                     return;
                 }
             }
@@ -57,11 +57,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 };
 
                 if using_decl.attributes.is_some() {
-                    compiler.reporter.fail(
-                        Error::ErrAttributesNotAllowedOnLibraryImport,
-                        span,
-                        &[],
-                    );
+                    compiler
+                        .reporter
+                        .fail(Error::ErrAttributesNotAllowedOnLibraryImport, span);
                 }
 
                 let path = using_decl.using_path.to_string();
@@ -74,7 +72,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                 if !dependent_library_names.contains(&path) && path != main_library_name {
                     compiler
                         .reporter
-                        .fail(Error::ErrUnknownLibrary, span, &[&path]);
+                        .fail(Error::ErrUnknownLibrary(format!("{}", &path)), span);
                     continue;
                 }
 
@@ -91,25 +89,27 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                             )
                         });
                     compiler.reporter.fail(
-                        Error::ErrDeclNameConflictsWithLibraryImport,
+                        Error::ErrDeclNameConflictsWithLibraryImport(format!("{}", &local_name)),
                         err_span,
-                        &[&local_name],
                     );
                 } else if file_import_paths.contains(&path) {
                     compiler
                         .reporter
-                        .fail(Error::ErrDuplicateLibraryImport, span, &[&path]);
+                        .fail(Error::ErrDuplicateLibraryImport(format!("{}", &path)), span);
                 } else if file_imports.contains(&local_name) {
                     if using_decl.maybe_alias.is_some() {
                         compiler.reporter.fail(
-                            Error::ErrConflictingLibraryImportAlias,
+                            Error::ErrConflictingLibraryImportAlias(
+                                format!("{}", &path),
+                                format!("{}", &local_name),
+                            ),
                             span,
-                            &[&path, &local_name],
                         );
                     } else {
-                        compiler
-                            .reporter
-                            .fail(Error::ErrConflictingLibraryImport, span, &[&path]);
+                        compiler.reporter.fail(
+                            Error::ErrConflictingLibraryImport(format!("{}", &path)),
+                            span,
+                        );
                     }
                 } else {
                     file_imports.insert(local_name.clone());
@@ -163,7 +163,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             );
         }
 
-        let mut errors_to_emit: Vec<(Error, SourceSpan<'src>, Vec<String>)> = Vec::new();
+        let mut errors_to_emit: Vec<(Error, SourceSpan<'src>)> = Vec::new();
 
         let all_files = self.dependency_files.iter().chain(self.main_files.iter());
 
@@ -185,7 +185,7 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                  decl: RawDecl<'node, 'src>,
                  decl_kind: &'static str,
                  is_anonymous: bool,
-                 errors_to_emit: &mut Vec<(Error, SourceSpan<'src>, Vec<String>)>| {
+                 errors_to_emit: &mut Vec<(Error, SourceSpan<'src>)>| {
                     if !compiler.is_active(decl.attributes()) {
                         return;
                     }
@@ -231,40 +231,41 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                 } else if prev_raw == local_decl_name {
                                     if prev_kind == "library import" {
                                         errors_to_emit.push((
-                                            Error::ErrDeclNameConflictsWithLibraryImport,
+                                            Error::ErrDeclNameConflictsWithLibraryImport(
+                                                local_decl_name.to_string(),
+                                            ),
                                             err_span,
-                                            vec![local_decl_name.to_string()],
                                         ));
                                     } else {
                                         errors_to_emit.push((
-                                            Error::ErrNameCollision,
-                                            err_span,
-                                            vec![
+                                            Error::ErrNameCollision(
                                                 decl_kind.to_string(),
                                                 local_decl_name.to_string(),
                                                 prev_kind.to_string(),
                                                 prev_site.clone(),
-                                            ],
+                                            ),
+                                            err_span,
                                         ));
                                     }
                                 } else if prev_kind == "library import" {
                                     errors_to_emit.push((
-                                        Error::ErrDeclNameConflictsWithLibraryImportCanonical,
+                                        Error::ErrDeclNameConflictsWithLibraryImportCanonical(
+                                            local_decl_name.to_string(),
+                                            canon.clone(),
+                                        ),
                                         err_span,
-                                        vec![local_decl_name.to_string(), canon.clone()],
                                     ));
                                 } else {
                                     errors_to_emit.push((
-                                        Error::ErrNameCollisionCanonical,
-                                        err_span,
-                                        vec![
+                                        Error::ErrNameCollisionCanonical(
                                             decl_kind.to_string(),
                                             local_decl_name.to_string(),
                                             prev_kind.to_string(),
                                             prev_raw.clone(),
                                             prev_site.clone(),
                                             canon.clone(),
-                                        ],
+                                        ),
+                                        err_span,
                                     ));
                                 }
                             } else {
@@ -472,13 +473,9 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
                                 && method.modifiers[0].attributes.is_some());
                         if has_complex_modifiers {
                             let span = method.modifiers.first().unwrap().element.span();
-                            errors_to_emit.push((
-                                Error::ErrCannotChangeMethodStrictness,
-                                unsafe {
-                                    std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span)
-                                },
-                                vec![],
-                            ));
+                            errors_to_emit.push((Error::ErrCannotChangeMethodStrictness, unsafe {
+                                std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(span)
+                            }));
                         }
                     }
 
@@ -576,10 +573,8 @@ impl<'node, 'src> Step<'node, 'src> for ConsumeStep<'node, 'src> {
             }
         }
 
-        for (err, span, args) in errors_to_emit {
-            let ref_args: Vec<&dyn std::fmt::Debug> =
-                args.iter().map(|s| s as &dyn std::fmt::Debug).collect();
-            compiler.reporter.fail(err, span, &ref_args);
+        for (err, span) in errors_to_emit {
+            compiler.reporter.fail(err, span);
         }
     }
 }

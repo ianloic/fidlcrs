@@ -15,10 +15,10 @@ type Foo = resource bits {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrCannotSpecifyModifier,
-        &["\"resource\"", "\"bits\""],
-    );
+    lib.expect_fail(Error::ErrCannotSpecifyModifier(
+        r#"resource"#.to_string(),
+        r#"bits"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -34,10 +34,10 @@ type Foo = resource enum {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrCannotSpecifyModifier,
-        &["\"resource\"", "\"enum\""],
-    );
+    lib.expect_fail(Error::ErrCannotSpecifyModifier(
+        r#"resource"#.to_string(),
+        r#"enum"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -52,10 +52,10 @@ library example;
 resource const BAR uint32 = 1;
 "#,
     );
-    lib.expect_fail(
-        Error::ErrCannotSpecifyModifier,
-        &["\"resource\"", "\"const\""],
-    );
+    lib.expect_fail(Error::ErrCannotSpecifyModifier(
+        r#"resource"#.to_string(),
+        r#"const"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -70,10 +70,10 @@ library example;
 resource protocol Foo {};
 "#,
     );
-    lib.expect_fail(
-        Error::ErrCannotSpecifyModifier,
-        &["\"resource\"", "\"protocol\""],
-    );
+    lib.expect_fail(Error::ErrCannotSpecifyModifier(
+        r#"resource"#.to_string(),
+        r#"protocol"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -88,10 +88,10 @@ library example;
 resource alias B = bool;
 "#,
     );
-    lib.expect_fail(
-        Error::ErrCannotSpecifyModifier,
-        &["\"resource\"", "\"alias\""],
-    );
+    lib.expect_fail(Error::ErrCannotSpecifyModifier(
+        r#"resource"#.to_string(),
+        r#"alias"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -108,9 +108,8 @@ type Two = resource resource struct {};
 type Three = resource resource resource struct {};
 "#,
     );
-    lib.expect_fail(Error::ErrDuplicateModifier, &["\"resource\""]);
-    lib.expect_fail(Error::ErrDuplicateModifier, &["\"resource\""]);
-    lib.expect_fail(Error::ErrDuplicateModifier, &["\"resource\""]);
+    lib.expect_fail(Error::ErrDuplicateModifier(r#"resource"#.to_string()));
+
     assert!(lib.check_compile());
 }
 
@@ -130,17 +129,14 @@ fn bad_resource_modifier_missing() {
     let mut lib = TestLibrary::new();
     lib.use_library_zx();
     lib.add_source_file("bad/fi-0110.test.fidl", &(content));
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"handle\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"handle"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 #[test]
@@ -211,17 +207,14 @@ fn bad_handles_in_value_struct() {
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
-        lib.expect_fail(
-            Error::ErrTypeMustBeResource,
-            &[
-                "\"struct\"",
-                "\"Foo\"",
-                "\"bad_member\"",
-                "\"struct\"",
-                "\"struct\"",
-                "\"Foo\"",
-            ],
-        );
+        lib.expect_fail(Error::ErrTypeMustBeResource(
+            r#"struct"#.to_string(),
+            r#"Foo"#.to_string(),
+            r#"bad_member"#.to_string(),
+            r#"struct"#.to_string(),
+            r#"struct"#.to_string(),
+            r#"Foo"#.to_string(),
+        ));
         assert!(lib.check_compile());
     }
 }
@@ -239,17 +232,14 @@ fn bad_handles_in_value_table() {
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
-        lib.expect_fail(
-            Error::ErrTypeMustBeResource,
-            &[
-                "\"table\"",
-                "\"Foo\"",
-                "\"bad_member\"",
-                "\"table\"",
-                "\"table\"",
-                "\"Foo\"",
-            ],
-        );
+        lib.expect_fail(Error::ErrTypeMustBeResource(
+            r#"table"#.to_string(),
+            r#"Foo"#.to_string(),
+            r#"bad_member"#.to_string(),
+            r#"table"#.to_string(),
+            r#"table"#.to_string(),
+            r#"Foo"#.to_string(),
+        ));
         assert!(lib.check_compile());
     }
 }
@@ -267,17 +257,14 @@ fn bad_handles_in_value_union() {
         let mut lib = TestLibrary::new();
         lib.use_library_zx();
         lib.add_source_file("example.fidl", &(fidl_library));
-        lib.expect_fail(
-            Error::ErrTypeMustBeResource,
-            &[
-                "\"union\"",
-                "\"Foo\"",
-                "\"bad_member\"",
-                "\"union\"",
-                "\"union\"",
-                "\"Foo\"",
-            ],
-        );
+        lib.expect_fail(Error::ErrTypeMustBeResource(
+            r#"union"#.to_string(),
+            r#"Foo"#.to_string(),
+            r#"bad_member"#.to_string(),
+            r#"union"#.to_string(),
+            r#"union"#.to_string(),
+            r#"Foo"#.to_string(),
+        ));
         assert!(lib.check_compile());
     }
 }
@@ -297,17 +284,14 @@ type Foo = struct { bad_member client_end:Protocol; };
 
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"bad_member\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"bad_member"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -328,17 +312,14 @@ type Foo = struct { bad_member ResourceStruct; };
 
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"bad_member\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"bad_member"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -367,17 +348,14 @@ type Foo = struct { bad_member HandleAlias; };
 
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"bad_member\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"bad_member"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -400,17 +378,14 @@ type Foo = struct { bad_member vector<vector<zx.Handle>>; };
 
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"bad_member\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"bad_member"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -433,39 +408,30 @@ type Foo = struct {
 type ResourceStruct = resource struct {};
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"first\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"second\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Foo\"",
-            "\"third\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Foo\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"second"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"third"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+        r#"first"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Foo"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -506,17 +472,14 @@ type Middle = struct {
 type Bottom = resource struct {};
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Middle\"",
-            "\"bottom\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Middle\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Middle"#.to_string(),
+        r#"bottom"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Middle"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -577,17 +540,14 @@ type Boros = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeMustBeResource,
-        &[
-            "\"struct\"",
-            "\"Boros\"",
-            "\"bad_member\"",
-            "\"struct\"",
-            "\"struct\"",
-            "\"Boros\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrTypeMustBeResource(
+        r#"struct"#.to_string(),
+        r#"Boros"#.to_string(),
+        r#"bad_member"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"struct"#.to_string(),
+        r#"Boros"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 

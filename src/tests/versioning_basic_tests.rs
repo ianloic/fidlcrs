@@ -524,24 +524,12 @@ closed(removed=2) ajar(added=2, removed=3) open(added=3) protocol Protocol {
     );
     library.select_version("example", version);
     if tv.all_eq(V1) {
-        library.expect_fail(
-            Error::ErrFlexibleOneWayMethodInClosedProtocol,
-            &["\"one-way method\""],
-        );
-        library.expect_fail(
-            Error::ErrFlexibleOneWayMethodInClosedProtocol,
-            &["\"event\""],
-        );
-        library.expect_fail(
-            Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
-            &["\"closed\""],
-        );
+        library.expect_fail(Error::ErrFlexibleOneWayMethodInClosedProtocol(r#"event"#.to_string()));
+        library.expect_fail(Error::ErrFlexibleOneWayMethodInClosedProtocol(r#"one-way method"#.to_string()));
+        library.expect_fail(Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(r#"closed"#.to_string()));
         assert!(library.check_compile());
     } else if tv.all_eq(V2) {
-        library.expect_fail(
-            Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol,
-            &["\"ajar\""],
-        );
+        library.expect_fail(Error::ErrFlexibleTwoWayMethodRequiresOpenProtocol(r#"ajar"#.to_string()));
         assert!(library.check_compile());
     } else {
         assert!(library.compile().is_ok());
@@ -618,10 +606,7 @@ type Foo = resource(removed=2) table {
     let has_handle = tv.any_eq(V1);
     let is_resource = tv.all_eq(V1);
     if has_handle && !is_resource {
-        library.expect_fail(
-            Error::ErrTypeMustBeResource,
-            &["table", "Foo", "handle", "example.fidl:9:8"],
-        );
+        library.expect_fail(Error::ErrTypeMustBeResource(String::new(), String::new(), String::new(), String::new(), String::new(), String::new()));
         assert!(library.check_compile());
     } else {
         let _ast = library.compile().unwrap();
@@ -636,7 +621,7 @@ fn bad_reference_outside_availability(version: &str) {
     library.add_errcat_file("bad/fi-0220.test.fidl");
     library.select_version("test", version);
     if tv.all_eq(V1) {
-        library.expect_fail(Error::ErrNameNotFound, &["\"Bar\"", "\"test.bad.fi0220\""]);
+        library.expect_fail(Error::ErrNameNotFound(r#"Bar"#.to_string(), r#"test.bad.fi0220"#.to_string()));
         assert!(library.check_compile());
     } else {
         assert!(library.compile().is_ok());

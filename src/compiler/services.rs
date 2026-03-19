@@ -42,7 +42,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 self.reporter.fail(
                     Error::ErrOnlyClientEndsInServices,
                     member.name.element.span(),
-                    &[],
                 );
             } else if let Type::Endpoint(e) = &type_obj {
                 if let Some(role) = &e.role
@@ -51,15 +50,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.reporter.fail(
                         Error::ErrOnlyClientEndsInServices,
                         member.name.element.span(),
-                        &[],
                     );
                 }
                 if e.nullable {
-                    self.reporter.fail(
-                        Error::ErrOptionalServiceMember,
-                        member.name.element.span(),
-                        &[],
-                    );
+                    self.reporter
+                        .fail(Error::ErrOptionalServiceMember, member.name.element.span());
                 }
                 let transport = e.protocol_transport.as_deref().unwrap_or("Channel");
                 if associated_transport.is_empty() {
@@ -67,14 +62,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     first_member_with_that_transport = member_name.clone();
                 } else if associated_transport != transport {
                     self.reporter.fail(
-                        Error::ErrMismatchedTransportInServices,
+                        Error::ErrMismatchedTransportInServices(
+                            format!("{}", &member_name),
+                            format!("{}", &transport),
+                            format!("{}", &first_member_with_that_transport.as_str()),
+                            format!("{}", &associated_transport.as_str()),
+                        ),
                         member.name.element.span(),
-                        &[
-                            &member_name,
-                            &transport,
-                            &first_member_with_that_transport.as_str(),
-                            &associated_transport.as_str(),
-                        ],
                     );
                 }
             }

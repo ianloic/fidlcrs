@@ -402,7 +402,6 @@ mod tests {
     const COMPILE_DENYLIST: &[&str] = &[
         // TODO: get back to making fuchsia.hardware.pty compile.
         "fuchsia.hardware.pty",
-
         // and then the rest
         "fuchsia.accessibility.semantics",
         "fuchsia.audio.controller",

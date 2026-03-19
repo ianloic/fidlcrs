@@ -24,9 +24,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .find(|m| m.subkind == TokenSubkind::Resource && self.is_active(m.attributes.as_ref()))
         {
             self.reporter.fail(
-                Error::ErrCannotSpecifyModifier,
+                Error::ErrCannotSpecifyModifier(
+                    format!("{}", &"resource".to_string()),
+                    format!("{}", &"enum".to_string()),
+                ),
                 m.element.span(),
-                &[&"resource".to_string(), &"enum".to_string()],
             );
         }
 
@@ -44,7 +46,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 id.to_string()
             } else {
                 self.reporter
-                    .fail(Error::ErrInvalidWrappedType, sc.element.span(), &[]);
+                    .fail(Error::ErrInvalidWrappedType, sc.element.span());
                 "uint32".to_string()
             }
         } else {
@@ -102,13 +104,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
         if !valid_subtypes.contains(&resolved_subtype.as_str()) {
             self.reporter.fail(
-                Error::ErrEnumTypeMustBeIntegralPrimitive,
+                Error::ErrEnumTypeMustBeIntegralPrimitive(format!("{}", &subtype_name)),
                 if let Some(sc) = &decl.subtype {
                     sc.element.start_token.span
                 } else {
                     decl.name.as_ref().unwrap().element.span()
                 },
-                &[&subtype_name],
             );
         }
 
@@ -170,9 +171,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 if let Some(prev_name) = member_values.insert(eval_val, name_str.clone()) {
                     self.reporter.fail(
-                        Error::ErrDuplicateMemberValue,
+                        Error::ErrDuplicateMemberValue(
+                            format!("{}", &"enum"),
+                            format!("{}", &name_str),
+                            format!("{}", &prev_name),
+                            format!("{}", &prev_name),
+                        ),
                         member.name.element.span(),
-                        &[&"enum", &name_str, &prev_name, &prev_name],
                     );
                 }
             }
@@ -185,7 +190,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     self.reporter.fail(
                         Error::ErrUnknownAttributeOnMultipleEnumMembers,
                         transmuted_dup,
-                        &[],
                     );
                 } else {
                     let first_span = member.name.element.span();
@@ -197,7 +201,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.reporter.fail(
                             Error::ErrUnknownAttributeOnStrictEnumMember,
                             transmuted_first,
-                            &[],
                         );
                     }
                 }
@@ -227,9 +230,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if !strict && unknown_member_span.is_none() {
             for span in &max_val_spans {
                 self.reporter.fail(
-                    Error::ErrFlexibleEnumMemberWithMaxValue,
+                    Error::ErrFlexibleEnumMemberWithMaxValue(format!(
+                        "{}",
+                        &max_val_u64.to_string()
+                    )),
                     *span,
-                    &[&max_val_u64.to_string()],
                 );
             }
         }
@@ -265,7 +270,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 } else {
                     decl.element.span()
                 },
-                &[],
             );
         }
 

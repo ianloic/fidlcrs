@@ -42,9 +42,11 @@ impl<'a, 'b> Parser<'a, 'b> {
                 format!("{:?}", self.last_token.kind)
             };
             self.reporter.fail(
-                Error::ErrUnexpectedIdentifier,
+                Error::ErrUnexpectedIdentifier(
+                    format!("{}", &got_str),
+                    format!("{}", &"library".to_string()),
+                ),
                 self.last_token.span,
-                &[&got_str, &"library".to_string()],
             );
             None
         };
@@ -75,12 +77,11 @@ impl<'a, 'b> Parser<'a, 'b> {
             {
                 for m in &mods {
                     self.reporter.fail(
-                        Error::ErrCannotSpecifyModifier,
+                        Error::ErrCannotSpecifyModifier(
+                            format!("{}", &m.element.span().data.to_string()),
+                            format!("{}", &self.last_token.span.data.to_string()),
+                        ),
                         m.element.span(),
-                        &[
-                            &m.element.span().data.to_string(),
-                            &self.last_token.span.data.to_string(),
-                        ],
                     );
                 }
             } else if self.last_token.subkind == TokenSubkind::Protocol
@@ -90,12 +91,11 @@ impl<'a, 'b> Parser<'a, 'b> {
                 for m in &mods {
                     if m.subkind == TokenSubkind::Resource {
                         self.reporter.fail(
-                            Error::ErrCannotSpecifyModifier,
+                            Error::ErrCannotSpecifyModifier(
+                                format!("{}", &"resource".to_string()),
+                                format!("{}", &self.last_token.span.data.to_string()),
+                            ),
                             m.element.span(),
-                            &[
-                                &"resource".to_string(),
-                                &self.last_token.span.data.to_string(),
-                            ],
                         );
                     }
                 }
@@ -187,8 +187,10 @@ impl<'a, 'b> Parser<'a, 'b> {
                     self.last_token = self.lexer.lex();
                 }
             } else {
-                self.reporter
-                    .fail(Error::ErrExpectedDeclaration, self.last_token.span, &[]);
+                self.reporter.fail(
+                    Error::ErrExpectedDeclaration(self.last_token.span.data.to_string()),
+                    self.last_token.span,
+                );
                 self.last_token = self.lexer.lex();
             }
         }
@@ -227,9 +229,8 @@ impl<'a, 'b> Parser<'a, 'b> {
             if comp.element.span().data.contains('_') {
                 let s = comp.element.span().data;
                 self.reporter.fail(
-                    Error::ErrInvalidLibraryNameComponent,
+                    Error::ErrInvalidLibraryNameComponent(format!("{}", &s)),
                     comp.element.span(),
-                    &[&s],
                 );
             }
         }
@@ -335,11 +336,8 @@ impl<'a, 'b> Parser<'a, 'b> {
         if self.last_token.kind == TokenKind::LeftParen {
             self.consume_token(TokenKind::LeftParen)?;
             if self.last_token.kind == TokenKind::RightParen {
-                self.reporter.fail(
-                    Error::ErrAttributeWithEmptyParens,
-                    self.last_token.span,
-                    &[],
-                );
+                self.reporter
+                    .fail(Error::ErrAttributeWithEmptyParens, self.last_token.span);
                 return None;
             }
 
@@ -352,9 +350,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                     if id_const.identifier.components.len() != 1 {
                         let s = id_const.element.span().data;
                         self.reporter.fail(
-                            Error::ErrInvalidIdentifier,
+                            Error::ErrInvalidIdentifier(format!("{}", &s)),
                             id_const.element.span(),
-                            &[&s],
                         );
                         return None;
                     }
@@ -385,7 +382,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else if self.last_token.kind == TokenKind::Comma {
                 // Multiple arguments, but the first one is unnamed
                 self.reporter
-                    .fail(Error::ErrAttributeArgsMustAllBeNamed, start_arg.span, &[]);
+                    .fail(Error::ErrAttributeArgsMustAllBeNamed, start_arg.span);
                 return None;
             } else {
                 return None;
@@ -403,7 +400,7 @@ impl<'a, 'b> Parser<'a, 'b> {
                     || self.last_token.kind == TokenKind::RightParen
                 {
                     self.reporter
-                        .fail(Error::ErrAttributeArgsMustAllBeNamed, start_arg.span, &[]);
+                        .fail(Error::ErrAttributeArgsMustAllBeNamed, start_arg.span);
                     return None;
                 }
 
@@ -581,7 +578,6 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.reporter.fail(
                 Error::ErrReservedNotAllowed,
                 name_or_reserved.element.span(),
-                &[],
             );
             self.consume_token(TokenKind::Semicolon)?;
             let end = self.previous_token.as_ref().unwrap().clone();
@@ -599,15 +595,14 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         if self.last_token.kind == TokenKind::Equal {
             self.reporter.fail(
-                Error::ErrUnexpectedTokenOfKind,
+                Error::ErrUnexpectedTokenOfKind(
+                    format!("{}", &"=".to_string()),
+                    format!("{}", &";".to_string()),
+                ),
                 self.last_token.span,
-                &[&"=".to_string(), &";".to_string()],
             );
-            self.reporter.fail(
-                Error::ErrMissingOrdinalBeforeMember,
-                self.last_token.span,
-                &[],
-            );
+            self.reporter
+                .fail(Error::ErrMissingOrdinalBeforeMember, self.last_token.span);
             self.last_token = self.lexer.lex(); // Consume equal
             self.parse_literal(); // Attempt to consume the default value
         }
@@ -748,7 +743,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             }))
         } else {
             self.reporter
-                .fail(Error::ErrUnexpectedToken, self.last_token.span, &[]);
+                .fail(Error::ErrUnexpectedToken, self.last_token.span);
             None
         }
     }
@@ -1179,9 +1174,11 @@ impl<'a, 'b> Parser<'a, 'b> {
                     .unwrap_or_else(|| self.last_token.clone());
                 if !mods.is_empty() {
                     self.reporter.fail(
-                        Error::ErrCannotSpecifyModifier,
+                        Error::ErrCannotSpecifyModifier(
+                            format!("{}", &"strict"),
+                            format!("{}", &"compose"),
+                        ),
                         mods[0].element.span(),
-                        &[&"strict", &"compose"],
                     );
                 }
 
@@ -1203,7 +1200,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             } else {
                 if self.last_token.kind == TokenKind::Semicolon {
                     self.reporter
-                        .fail(Error::ErrInvalidProtocolMember, self.last_token.span, &[]);
+                        .fail(Error::ErrInvalidProtocolMember, self.last_token.span);
                     self.consume_token(TokenKind::Semicolon);
                     continue;
                 }
@@ -1257,7 +1254,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             if self.last_token.kind != TokenKind::RightParen {
                 while self.last_token.kind == TokenKind::DocComment {
                     self.reporter
-                        .fail(Error::ErrDocCommentOnParameters, self.last_token.span, &[]);
+                        .fail(Error::ErrDocCommentOnParameters, self.last_token.span);
                     let _ = self.consume_token(TokenKind::DocComment);
                 }
 
@@ -1304,7 +1301,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             if self.last_token.kind != TokenKind::RightParen {
                 while self.last_token.kind == TokenKind::DocComment {
                     self.reporter
-                        .fail(Error::ErrDocCommentOnParameters, self.last_token.span, &[]);
+                        .fail(Error::ErrDocCommentOnParameters, self.last_token.span);
                     let _ = self.consume_token(TokenKind::DocComment);
                 }
 
@@ -1474,11 +1471,8 @@ impl<'a, 'b> Parser<'a, 'b> {
                 _ => false,
             };
             if has_attrs {
-                self.reporter.fail(
-                    Error::ErrAttributeInsideTypeDeclaration,
-                    tc.element.span(),
-                    &[],
-                );
+                self.reporter
+                    .fail(Error::ErrAttributeInsideTypeDeclaration, tc.element.span());
             }
         }
 
@@ -1559,9 +1553,8 @@ impl<'a, 'b> Parser<'a, 'b> {
             let expected = format!("{:?}", subkind);
             let actual = format!("{:?}", self.last_token.subkind);
             self.reporter.fail(
-                Error::ErrUnexpectedTokenOfKind,
+                Error::ErrUnexpectedTokenOfKind(format!("{}", &actual), format!("{}", &expected)),
                 self.last_token.span,
-                &[&actual, &expected],
             );
             None
         }
@@ -1595,9 +1588,8 @@ impl<'a, 'b> Parser<'a, 'b> {
             let expected = format!("{:?}", kind);
             let actual = format!("{:?}", self.last_token.kind);
             self.reporter.fail(
-                Error::ErrUnexpectedTokenOfKind,
+                Error::ErrUnexpectedTokenOfKind(format!("{}", &actual), format!("{}", &expected)),
                 self.last_token.span,
-                &[&actual, &expected],
             );
             None
         }

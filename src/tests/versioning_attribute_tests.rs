@@ -24,7 +24,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrDuplicateAttribute);
+    assert!(matches!(errors[0].def, Error::ErrDuplicateAttribute(..)));
 }
 
 #[test]
@@ -50,7 +50,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrDuplicateAttribute);
+    assert!(matches!(errors[0].def, Error::ErrDuplicateAttribute(..)));
 }
 
 #[test]
@@ -76,7 +76,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrDuplicateAttribute);
+    assert!(matches!(errors[0].def, Error::ErrDuplicateAttribute(..)));
 }
 
 #[test]
@@ -166,7 +166,10 @@ type Foo = @available(added=2) struct {};
     );
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrAttributeInsideTypeDeclaration);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrAttributeInsideTypeDeclaration
+    ));
 }
 
 #[test]
@@ -190,7 +193,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -240,7 +243,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -258,7 +261,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -340,7 +343,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -358,7 +361,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -376,7 +379,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -394,7 +397,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidVersion);
+    assert!(matches!(errors[0].def, Error::ErrInvalidVersion(..)));
 }
 
 #[test]
@@ -409,7 +412,7 @@ fn bad_no_arguments() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrAvailableMissingArguments);
+    assert!(matches!(errors[0].def, Error::ErrAvailableMissingArguments));
 }
 
 #[test]
@@ -424,7 +427,10 @@ fn bad_library_missing_added_only_removed() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrLibraryAvailabilityMissingAdded);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrLibraryAvailabilityMissingAdded
+    ));
 }
 
 #[test]
@@ -439,7 +445,10 @@ fn bad_library_missing_added_only_platform() {
     library.select_version("foo", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrLibraryAvailabilityMissingAdded);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrLibraryAvailabilityMissingAdded
+    ));
 }
 
 #[test]
@@ -454,7 +463,7 @@ fn bad_library_replaced() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrLibraryReplaced);
+    assert!(matches!(errors[0].def, Error::ErrLibraryReplaced));
 }
 
 #[test]
@@ -472,7 +481,7 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrCannotBeRenamed);
+    assert!(matches!(errors[0].def, Error::ErrCannotBeRenamed(..)));
 }
 
 #[test]
@@ -487,7 +496,7 @@ fn bad_decl_renamed() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrCannotBeRenamed);
+    assert!(matches!(errors[0].def, Error::ErrCannotBeRenamed(..)));
 }
 
 #[test]
@@ -549,7 +558,10 @@ fn bad_note_without_deprecation_removed_or_replaced() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrNoteWithoutDeprecationOrRemoval);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrNoteWithoutDeprecationOrRemoval
+    ));
 }
 
 #[test]
@@ -564,7 +576,10 @@ fn bad_renamed_without_replaced() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrRenamedWithoutReplacedOrRemoved);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrRenamedWithoutReplacedOrRemoved
+    ));
 }
 
 #[test]
@@ -579,7 +594,7 @@ fn bad_renamed_to_same_name() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrRenamedToSameName);
+    assert!(matches!(errors[0].def, Error::ErrRenamedToSameName(..)));
 }
 
 #[test]
@@ -594,7 +609,7 @@ fn bad_removed_and_replaced() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrRemovedAndReplaced);
+    assert!(matches!(errors[0].def, Error::ErrRemovedAndReplaced));
 }
 
 #[test]
@@ -615,7 +630,7 @@ type Foo = struct {};
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrPlatformNotOnLibrary);
+    assert!(matches!(errors[0].def, Error::ErrPlatformNotOnLibrary));
 }
 
 #[test]
@@ -630,7 +645,10 @@ fn bad_invalid_argument_on_modifier() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidModifierAvailableArgument);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidModifierAvailableArgument(..)
+    ));
 }
 
 #[test]
@@ -645,7 +663,10 @@ fn bad_strictness_two_way_method_without_error() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrCannotChangeMethodStrictness);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrCannotChangeMethodStrictness
+    ));
 }
 
 #[test]
@@ -660,7 +681,10 @@ fn bad_use_in_unversioned_library() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrMissingLibraryAvailability);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrMissingLibraryAvailability
+    ));
 }
 
 #[test]
@@ -681,7 +705,10 @@ fn bad_added_equals_removed() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -702,7 +729,10 @@ type Foo = struct {};
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -720,7 +750,10 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -741,7 +774,10 @@ type Foo = struct {};
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -775,7 +811,10 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -790,7 +829,10 @@ fn bad_deprecated_equals_removed() {
     library.select_version("test", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -811,7 +853,10 @@ type Foo = struct {};
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -829,7 +874,10 @@ library example;
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }
 
 #[test]
@@ -850,5 +898,8 @@ type Foo = struct {};
     library.select_version("example", "HEAD");
     assert!(library.compile().is_err());
     let errors = library.reporter().diagnostics();
-    assert_eq!(errors[0].def, Error::ErrInvalidAvailabilityOrder);
+    assert!(matches!(
+        errors[0].def,
+        Error::ErrInvalidAvailabilityOrder(..)
+    ));
 }

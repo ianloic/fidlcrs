@@ -133,11 +133,11 @@ type ErrorType = enum : int32 {
 fn bad_error_unknown_identifier() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0052.test.fidl");
-    library.expect_fail(
-        Error::ErrNameNotFound,
-        &["\"ParsingError\"", "\"test.bad.fi0052\""],
-    );
-    library.expect_fail(Error::ErrInvalidErrorType, &[]);
+    library.expect_fail(Error::ErrNameNotFound(
+        r#"ParsingError"#.to_string(),
+        r#"test.bad.fi0052"#.to_string(),
+    ));
+    library.expect_fail(Error::ErrInvalidErrorType);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrNameNotFound"
@@ -148,7 +148,7 @@ fn bad_error_unknown_identifier() {
 fn bad_error_wrong_primitive() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0141.test.fidl");
-    library.expect_fail(Error::ErrInvalidErrorType, &[]);
+    library.expect_fail(Error::ErrInvalidErrorType);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrInvalidErrorType"
@@ -169,12 +169,14 @@ protocol Example {
 };
 "#,
     );
-    library.expect_fail(Error::ErrUnexpectedToken, &[]);
-    library.expect_fail(Error::ErrNameNotFound, &["\"flub\"", "\"example\""]);
-    library.expect_fail(
-        Error::ErrInvalidMethodPayloadLayoutClass,
-        &["\"provided type\""],
-    );
+    library.expect_fail(Error::ErrUnexpectedToken);
+    library.expect_fail(Error::ErrNameNotFound(
+        r#"flub"#.to_string(),
+        r#"example"#.to_string(),
+    ));
+    library.expect_fail(Error::ErrInvalidMethodPayloadLayoutClass(
+        r#"provided type"#.to_string(),
+    ));
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedToken"
@@ -195,13 +197,15 @@ protocol Example {
 };
 "#,
     );
-    library.expect_fail(Error::ErrNameNotFound, &["\"flub\"", "\"example\""]);
-    library.expect_fail(
-        Error::ErrInvalidMethodPayloadLayoutClass,
-        &["\"provided type\""],
-    );
-    library.expect_fail(Error::ErrExpectedType, &[]);
-    library.expect_fail(Error::ErrInvalidErrorType, &[]);
+    library.expect_fail(Error::ErrNameNotFound(
+        r#"flub"#.to_string(),
+        r#"example"#.to_string(),
+    ));
+    library.expect_fail(Error::ErrInvalidMethodPayloadLayoutClass(
+        r#"provided type"#.to_string(),
+    ));
+    library.expect_fail(Error::ErrExpectedType);
+    library.expect_fail(Error::ErrInvalidErrorType);
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrExpectedType"
@@ -222,18 +226,18 @@ protocol Example {
 };
 "#,
     );
-    library.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Identifier\"", "\"LeftParen\""],
-    );
-    library.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"Identifier\"", "\"RightCurly\""],
-    );
-    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
-    library.expect_fail(Error::ErrExpectedDeclaration, &["{}"]);
+    library.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Identifier"#.to_string(),
+        r#"RightCurly"#.to_string(),
+    ));
+    library.expect_fail(Error::ErrExpectedDeclaration(r#"int32"#.to_string()));
+    library.expect_fail(Error::ErrExpectedDeclaration(r#";"#.to_string()));
+    library.expect_fail(Error::ErrExpectedDeclaration(r#"}"#.to_string()));
+    library.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"Identifier"#.to_string(),
+        r#"LeftParen"#.to_string(),
+    ));
+
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedTokenOfKind"
@@ -252,10 +256,10 @@ library example;
 type ForgotTheSemicolon = table {}
 "#,
     );
-    library.expect_fail(
-        Error::ErrUnexpectedTokenOfKind,
-        &["\"EndOfFile\"", "\"Semicolon\""],
-    );
+    library.expect_fail(Error::ErrUnexpectedTokenOfKind(
+        r#"EndOfFile"#.to_string(),
+        r#"Semicolon"#.to_string(),
+    ));
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedTokenOfKind"
@@ -266,11 +270,11 @@ type ForgotTheSemicolon = table {}
 fn bad_incorrect_identifier() {
     let mut library = TestLibrary::new();
     library.add_errcat_file("bad/fi-0009.noformat.test.fidl");
-    library.expect_fail(
-        Error::ErrUnexpectedIdentifier,
-        &["\"using\"", "\"library\""],
-    );
-    library.expect_fail(Error::ErrUnknownLibrary, &["\"test.bad.fi0009\""]);
+    library.expect_fail(Error::ErrUnexpectedIdentifier(
+        r#"using"#.to_string(),
+        r#"library"#.to_string(),
+    ));
+    library.expect_fail(Error::ErrUnknownLibrary(r#"test.bad.fi0009"#.to_string()));
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedIdentifier"
@@ -282,10 +286,10 @@ fn bad_error_empty_file() {
     let mut library = TestLibrary::new();
 
     library.add_source_file("example0.fidl", "");
-    library.expect_fail(
-        Error::ErrUnexpectedIdentifier,
-        &["\"end of file\"", "\"library\""],
-    );
+    library.expect_fail(Error::ErrUnexpectedIdentifier(
+        r#"end of file"#.to_string(),
+        r#"library"#.to_string(),
+    ));
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrUnexpectedIdentifier"
@@ -337,8 +341,8 @@ protocol Example {
 };
 "#,
     );
-    library.expect_fail(Error::ErrDeprecatedAttribute, &["\"transitional\""]);
-    library.expect_fail(Error::ErrDeprecatedAttribute, &["\"transitional\""]);
+    library.expect_fail(Error::ErrDeprecatedAttribute(r#"transitional"#.to_string()));
+
     assert!(
         library.check_compile(),
         "expected compilation to fail with ErrDeprecatedAttribute"

@@ -47,9 +47,8 @@ impl AvailabilityStep {
                 added = Version::parse(&val_str);
                 if added.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion(format!("{}", &val_str)),
                         arg.element.span(),
-                        &[&val_str],
                     );
                 }
                 added_arg = Some((arg_name, val_str.clone(), arg.element.span()));
@@ -57,26 +56,23 @@ impl AvailabilityStep {
                 deprecated = Version::parse(&val_str);
                 if deprecated.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion(format!("{}", &val_str)),
                         arg.element.span(),
-                        &[&val_str],
                     );
                 }
                 deprecated_arg = Some((arg_name, val_str.clone(), arg.element.span()));
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        Error::ErrInvalidModifierAvailableArgument,
+                        Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
                         arg.element.span(),
-                        &[],
                     );
                 }
             } else if arg_name == "removed" {
                 removed = Version::parse(&val_str);
                 if removed.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion(format!("{}", &val_str)),
                         arg.element.span(),
-                        &[&val_str],
                     );
                 }
                 removed_arg = Some((arg_name, val_str.clone(), arg.element.span()));
@@ -84,23 +80,21 @@ impl AvailabilityStep {
                 replaced = Version::parse(&val_str);
                 if replaced.is_none() && !val_str.is_empty() {
                     compiler.reporter.fail(
-                        Error::ErrInvalidVersion,
+                        Error::ErrInvalidVersion(format!("{}", &val_str)),
                         arg.element.span(),
-                        &[&val_str],
                     );
                 }
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        Error::ErrInvalidModifierAvailableArgument,
+                        Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
                         arg.element.span(),
-                        &[],
                     );
                 }
             } else if arg_name == "platform" {
                 if decl_kind != "library" {
                     compiler
                         .reporter
-                        .fail(Error::ErrPlatformNotOnLibrary, arg.element.span(), &[]);
+                        .fail(Error::ErrPlatformNotOnLibrary, arg.element.span());
                 }
             } else if arg_name == "renamed" {
                 if decl_kind == "library" || decl_kind == "declaration" {
@@ -110,32 +104,31 @@ impl AvailabilityStep {
                         "alias"
                     }; // just hardcode kind string for now
                     compiler.reporter.fail(
-                        Error::ErrCannotBeRenamed,
+                        Error::ErrCannotBeRenamed(format!("{}", &kind_str.to_string())),
                         arg.element.span(),
-                        &[&kind_str.to_string()],
                     );
                 } else {
                     let unquoted_val = val_str.trim_matches('"');
                     if unquoted_val == item_name {
                         compiler.reporter.fail(
-                            Error::ErrRenamedToSameName,
+                            Error::ErrRenamedToSameName(
+                                format!("{}", &unquoted_val.to_string()),
+                                format!("{}", &item_name.to_string()),
+                            ),
                             arg.element.span(),
-                            &[&unquoted_val.to_string(), &item_name.to_string()],
                         );
                     }
                 }
                 if decl_kind == "modifier" {
                     compiler.reporter.fail(
-                        Error::ErrInvalidModifierAvailableArgument,
+                        Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
                         arg.element.span(),
-                        &[],
                     );
                 }
             } else if (arg_name == "note" || arg_name == "legacy") && decl_kind == "modifier" {
                 compiler.reporter.fail(
-                    Error::ErrInvalidModifierAvailableArgument,
+                    Error::ErrInvalidModifierAvailableArgument(arg_name.to_string()),
                     arg.element.span(),
-                    &[],
                 );
             }
         }
@@ -144,13 +137,12 @@ impl AvailabilityStep {
             if replaced.is_some() {
                 compiler
                     .reporter
-                    .fail(Error::ErrLibraryReplaced, attr.element.span(), &[]);
+                    .fail(Error::ErrLibraryReplaced, attr.element.span());
             }
             if added.is_none() {
                 compiler.reporter.fail(
                     Error::ErrLibraryAvailabilityMissingAdded,
                     attr.element.span(),
-                    &[],
                 );
             }
         }
@@ -181,9 +173,10 @@ impl AvailabilityStep {
             let span = unsafe {
                 std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(attr.element.span())
             };
-            compiler
-                .reporter
-                .fail(Error::ErrInvalidAvailabilityOrder, span, &[&msg]);
+            compiler.reporter.fail(
+                Error::ErrInvalidAvailabilityOrder(format!("{}", &msg)),
+                span,
+            );
             return None;
         }
 
@@ -213,18 +206,17 @@ impl AvailabilityStep {
                 let span =
                     unsafe { std::mem::transmute::<SourceSpan<'_>, SourceSpan<'_>>(child_span) };
                 compiler.reporter.fail(
-                    Error::ErrAvailabilityConflictsWithParent,
+                    Error::ErrAvailabilityConflictsWithParent(
+                        format!("{}", &child_name),
+                        format!("{}", &child_val),
+                        format!("{}", &parent_name),
+                        format!("{}", &parent_val),
+                        format!("{}", &parent_span),
+                        format!("{}", &child_name),
+                        format!("{}", &when),
+                        format!("{}", &parent_what),
+                    ),
                     span,
-                    &[
-                        &child_name,
-                        &child_val,
-                        &parent_name,
-                        &parent_val,
-                        &parent_span,
-                        &child_name,
-                        &when,
-                        &parent_what,
-                    ],
                 );
             }
         };
@@ -254,11 +246,9 @@ impl AvailabilityStep {
                         && attr.name.data() == "available"
                         && decl_kind != "library"
                     {
-                        compiler.reporter.fail(
-                            Error::ErrMissingLibraryAvailability,
-                            attr.element.span(),
-                            &[],
-                        );
+                        compiler
+                            .reporter
+                            .fail(Error::ErrMissingLibraryAvailability, attr.element.span());
                         // Continue to avoid multiple errors
                     }
                     if let Some(parsed) =
@@ -432,18 +422,19 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         if avail.set().overlap(&other_avail.set()) {
                             if modifier.subkind == other_mod.subkind {
                                 compiler.reporter.fail(
-                                    Error::ErrDuplicateModifier,
+                                    Error::ErrDuplicateModifier(format!(
+                                        "{}",
+                                        &modifier.element.span().data.to_string()
+                                    )),
                                     modifier.element.span(),
-                                    &[&modifier.element.span().data.to_string()],
                                 );
                             } else {
                                 compiler.reporter.fail(
-                                    Error::ErrConflictingModifier,
+                                    Error::ErrConflictingModifier(
+                                        format!("{}", &modifier.element.span().data.to_string()),
+                                        format!("{}", &other_mod.element.span().data.to_string()),
+                                    ),
                                     modifier.element.span(),
-                                    &[
-                                        &modifier.element.span().data.to_string(),
-                                        &other_mod.element.span().data.to_string(),
-                                    ],
                                 );
                             }
                             break;

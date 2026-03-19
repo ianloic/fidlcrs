@@ -104,7 +104,10 @@ type TypeDecl = struct {
 fn bad_type_decl_of_new_type_errors() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0062.test.fidl");
-    lib.expect_fail(Error::ErrNewTypesNotAllowed, &["\"Matrix\"", "\"array\""]);
+    lib.expect_fail(Error::ErrNewTypesNotAllowed(
+        r#"Matrix"#.to_string(),
+        r#"array"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -247,10 +250,11 @@ type TypeDecl = resource struct {
 fn bad_too_many_layout_parameters() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0162-b.test.fidl");
-    lib.expect_fail(
-        Error::ErrWrongNumberOfLayoutParameters,
-        &["\"uint8\"", "0", "1"],
-    );
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
+        r#"uint8"#.to_string(),
+        r#"0"#.to_string(),
+        r#"1"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -267,7 +271,11 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters, &[]);
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
+        r#"array"#.to_string(),
+        r#"2"#.to_string(),
+        r#"0"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -275,7 +283,11 @@ type Foo = struct {
 fn bad_not_enough_parameters() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0162-a.test.fidl");
-    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters, &[]);
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
+        r#"array"#.to_string(),
+        r#"2"#.to_string(),
+        r#"1"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -283,7 +295,11 @@ fn bad_not_enough_parameters() {
 fn bad_too_many_constraints() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0164.test.fidl");
-    lib.expect_fail(Error::ErrTooManyConstraints, &["\"string\"", "1", "3"]);
+    lib.expect_fail(Error::ErrTooManyConstraints(
+        r#"string"#.to_string(),
+        r#"1"#.to_string(),
+        r#"3"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -300,10 +316,11 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrWrongNumberOfLayoutParameters,
-        &["\"inline_struct\"", "0", "1"],
-    );
+    lib.expect_fail(Error::ErrWrongNumberOfLayoutParameters(
+        r#"inline_struct"#.to_string(),
+        r#"0"#.to_string(),
+        r#"1"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -325,7 +342,7 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrCannotConstrainTwice, &["\"MyVmo\""]);
+    lib.expect_fail(Error::ErrCannotConstrainTwice(r#"MyVmo"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -354,7 +371,7 @@ type Foo = resource struct {
 fn bad_want_type_layout_parameter() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0165.test.fidl");
-    lib.expect_fail(Error::ErrExpectedType, &[]);
+    lib.expect_fail(Error::ErrExpectedType);
     assert!(lib.check_compile());
 }
 
@@ -371,7 +388,7 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrExpectedValueButGotType, &["\"uint8\""]);
+    lib.expect_fail(Error::ErrExpectedValueButGotType(r#"uint8"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -379,7 +396,7 @@ type Foo = struct {
 fn bad_unresolvable_constraint() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0166.test.fidl");
-    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"vector\""]);
+    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"vector"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -398,7 +415,7 @@ type Foo = resource struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrUnexpectedConstraint, &["\"vector\""]);
+    lib.expect_fail(Error::ErrUnexpectedConstraint(r#"vector"#.to_string()));
     assert!(lib.check_compile());
 }
 
@@ -415,11 +432,12 @@ type Foo = resource struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrTypeCannotBeConvertedToType,
-        &["\"\\\"hello\\\"\"", "\"string\"", "\"uint32\""],
-    );
-    lib.expect_fail(Error::ErrCouldNotResolveSizeBound, &[]);
+    lib.expect_fail(Error::ErrTypeCannotBeConvertedToType(
+        r#""hello""#.to_string(),
+        r#"string"#.to_string(),
+        r#"uint32"#.to_string(),
+    ));
+    lib.expect_fail(Error::ErrCouldNotResolveSizeBound);
     assert!(lib.check_compile());
 }
 
@@ -436,7 +454,10 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrNameNotFound, &["\"FrameworkErr\"", "\"example\""]);
+    lib.expect_fail(Error::ErrNameNotFound(
+        r#"FrameworkErr"#.to_string(),
+        r#"example"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -453,10 +474,10 @@ type Foo = struct {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrNameNotFound,
-        &["\"fidl/FrameworkErr\"", "\"example\""],
-    );
+    lib.expect_fail(Error::ErrNameNotFound(
+        r#"fidl/FrameworkErr"#.to_string(),
+        r#"example"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -464,7 +485,9 @@ type Foo = struct {
 fn bad_usize64_without_flag() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0180.test.fidl");
-    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed, &["\"usize64\""]);
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed(
+        r#"usize64"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -472,7 +495,9 @@ fn bad_usize64_without_flag() {
 fn bad_uintptr64_without_flag() {
     let mut lib = TestLibrary::new();
     lib.add_source_file("example.fidl", r#"library example; alias T = uintptr64;"#);
-    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed, &["\"uintptr64\""]);
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed(
+        r#"uintptr64"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -480,7 +505,9 @@ fn bad_uintptr64_without_flag() {
 fn bad_uchar_without_flag() {
     let mut lib = TestLibrary::new();
     lib.add_source_file("example.fidl", r#"library example; alias T = uchar;"#);
-    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed, &["\"uchar\""]);
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed(
+        r#"uchar"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 
@@ -491,10 +518,9 @@ fn bad_experimental_pointer_without_flag() {
         "example.fidl",
         r#"library example; alias T = experimental_pointer<uint32>;"#,
     );
-    lib.expect_fail(
-        Error::ErrExperimentalZxCTypesDisallowed,
-        &["\"experimental_pointer\""],
-    );
+    lib.expect_fail(Error::ErrExperimentalZxCTypesDisallowed(
+        r#"experimental_pointer"#.to_string(),
+    ));
     assert!(lib.check_compile());
 }
 

@@ -64,15 +64,12 @@ service MyService {
 };
 "#,
     );
-    lib.expect_fail(
-        Error::ErrNameCollision,
-        &[
-            "\"service member\"",
-            "\"my_service_member\"",
-            "\"service member\"",
-            "\"example.fidl:7:5\"",
-        ],
-    );
+    lib.expect_fail(Error::ErrNameCollision(
+        r#"service member"#.to_string(),
+        r#"my_service_member"#.to_string(),
+        r#"service member"#.to_string(),
+        r#"example.fidl:7:5"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }
@@ -81,9 +78,9 @@ service MyService {
 fn bad_no_nullable_protocol_members() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0088.test.fidl");
-    lib.expect_fail(Error::ErrOptionalServiceMember, &[]);
+    lib.expect_fail(Error::ErrOptionalServiceMember);
 
-    lib.expect_fail(Error::ErrOptionalServiceMember, &[]);
+    lib.expect_fail(Error::ErrOptionalServiceMember);
 
     assert!(lib.check_compile());
 }
@@ -103,7 +100,7 @@ service SomeService {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrOnlyClientEndsInServices, &[]);
+    lib.expect_fail(Error::ErrOnlyClientEndsInServices);
 
     assert!(lib.check_compile());
 }
@@ -112,7 +109,7 @@ service SomeService {
 fn bad_no_server_ends() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0112.test.fidl");
-    lib.expect_fail(Error::ErrOnlyClientEndsInServices, &[]);
+    lib.expect_fail(Error::ErrOnlyClientEndsInServices);
 
     assert!(lib.check_compile());
 }
@@ -132,7 +129,7 @@ type CannotUseService = struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrExpectedType, &[]);
+    lib.expect_fail(Error::ErrExpectedType);
 
     assert!(lib.check_compile());
 }
@@ -141,10 +138,12 @@ type CannotUseService = struct {
 fn bad_cannot_use_more_than_one_protocol_transport_kind() {
     let mut lib = TestLibrary::new();
     lib.add_errcat_file("bad/fi-0113.test.fidl");
-    lib.expect_fail(
-        Error::ErrMismatchedTransportInServices,
-        &["\"b\"", "\"Driver\"", "\"a\"", "\"Channel\""],
-    );
+    lib.expect_fail(Error::ErrMismatchedTransportInServices(
+        r#"b"#.to_string(),
+        r#"Driver"#.to_string(),
+        r#"a"#.to_string(),
+        r#"Channel"#.to_string(),
+    ));
 
     assert!(lib.check_compile());
 }

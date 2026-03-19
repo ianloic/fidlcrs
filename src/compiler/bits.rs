@@ -23,9 +23,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
             .find(|m| m.subkind == TokenSubkind::Resource)
         {
             self.reporter.fail(
-                Error::ErrCannotSpecifyModifier,
+                Error::ErrCannotSpecifyModifier(
+                    format!("{}", &"resource".to_string()),
+                    format!("{}", &"bits".to_string()),
+                ),
                 m.element.span(),
-                &[&"resource".to_string(), &"bits".to_string()],
             );
         }
 
@@ -91,7 +93,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
             } else {
                 self.reporter
-                    .fail(Error::ErrInvalidWrappedType, sc.element.span(), &[]);
+                    .fail(Error::ErrInvalidWrappedType, sc.element.span());
             }
         }
 
@@ -101,11 +103,10 @@ impl<'node, 'src> Compiler<'node, 'src> {
         );
         if !is_valid_type {
             self.reporter.fail(
-                Error::ErrBitsTypeMustBeUnsignedIntegralPrimitive,
+                Error::ErrBitsTypeMustBeUnsignedIntegralPrimitive(format!("{}", &subtype_name)),
                 decl.name
                     .as_ref()
                     .map_or_else(|| decl.element.start_token.span, |id| id.element.span()),
-                &[&subtype_name],
             );
         }
 
@@ -121,7 +122,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.name
                     .as_ref()
                     .map_or_else(|| decl.element.start_token.span, |id| id.element.span()),
-                &[],
             );
         }
 
@@ -161,7 +161,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 self.reporter.fail(
                                     Error::ErrBitsMemberMustBePowerOfTwo,
                                     member.value.element().span(),
-                                    &[],
                                 );
                                 valid_value = false;
                             }
@@ -180,9 +179,11 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 && bits < 64
                             {
                                 self.reporter.fail(
-                                    Error::ErrConstantOverflowsType,
+                                    Error::ErrConstantOverflowsType(
+                                        format!("{}", &val_str),
+                                        format!("{}", &subtype_name),
+                                    ),
                                     member.value.element().span(),
-                                    &[&val_str, &subtype_name],
                                 );
                                 valid_value = false;
                             }
@@ -190,9 +191,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             if valid_value {
                                 if (mask & val) != 0 {
                                     self.reporter.fail(
-                                        Error::ErrDuplicateMemberValue,
+                                        Error::ErrDuplicateMemberValue(
+                                            format!("{}", &"bits"),
+                                            format!("{}", &name_str),
+                                            format!("{}", &"unknown"),
+                                            format!("{}", &name_str),
+                                        ),
                                         member.value.element().span(),
-                                        &[&"bits", &name_str, &"unknown", &name_str],
                                     );
                                 } else {
                                     mask |= val;
@@ -206,13 +211,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 self.reporter.fail(
                                     Error::ErrCannotResolveConstantValue,
                                     member.value.element().span(),
-                                    &[],
                                 );
                             } else {
                                 self.reporter.fail(
-                                    Error::ErrConstantOverflowsType,
+                                    Error::ErrConstantOverflowsType(
+                                        format!("{}", &val_str),
+                                        format!("{}", &subtype_name),
+                                    ),
                                     member.value.element().span(),
-                                    &[&val_str, &subtype_name],
                                 );
                             }
                         }
@@ -227,13 +233,16 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.reporter.fail(
                                 Error::ErrBitsMemberMustBePowerOfTwo,
                                 member.value.element().span(),
-                                &[],
                             );
                         } else if (mask & val) != 0 {
                             self.reporter.fail(
-                                Error::ErrDuplicateMemberValue,
+                                Error::ErrDuplicateMemberValue(
+                                    format!("{}", &"bits"),
+                                    format!("{}", &name_str),
+                                    format!("{}", &"unknown"),
+                                    format!("{}", &name_str),
+                                ),
                                 member.value.element().span(),
-                                &[&"bits", &name_str, &"unknown", &name_str],
                             );
                         } else {
                             mask |= val;
@@ -244,7 +253,6 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         self.reporter.fail(
                             Error::ErrCannotResolveConstantValue,
                             member.value.element().span(),
-                            &[],
                         );
                     }
                 } // No other Constant variants

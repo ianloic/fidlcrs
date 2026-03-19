@@ -11,7 +11,7 @@ fn report_error_format_params() {
     let span = SourceSpan::new("span text", &file);
 
     // Reporter::fail requires positional replacement to match C++ '{0}'. We use a random Error.
-    reporter.fail(Error::ErrInvalidCharacter, span, &[&"param1"]);
+    reporter.fail(Error::ErrInvalidCharacter("param1".to_string()), span);
 
     let errors = reporter.diagnostics();
     assert_eq!(errors.len(), 1);
@@ -30,9 +30,8 @@ fn make_error_then_report_it() {
     // Diagnostics in fidlcrs are generally constructed and pushed directly via Reporter::fail.
     // MakeError -> Report() is not directly implemented with factory functions yet in rust port.
     reporter.fail(
-        Error::ErrCannotSpecifyModifier,
+        Error::ErrCannotSpecifyModifier("param1".to_string(), "param2".to_string()),
         span,
-        &[&"param1", &"param2"],
     );
 
     let errors = reporter.diagnostics();
@@ -50,7 +49,10 @@ fn report_warning_format_params() {
 
     // warnings() filtering and Warn() are not completely mapped in fidlcrs Reporter yet.
     // using a WarningDef representation instead.
-    reporter.fail(Error::WarnAttributeTypo, span, &[&"param1", &"param2"]);
+    reporter.fail(
+        Error::WarnAttributeTypo("param1".to_string(), "param2".to_string()),
+        span,
+    );
 
     let warnings = reporter.diagnostics();
     assert_eq!(warnings.len(), 1);
@@ -66,7 +68,10 @@ fn make_warning_then_report_it() {
     let span = SourceSpan::new("span text", &file);
 
     // Reporter::Warn equivalent handling.
-    reporter.fail(Error::WarnAttributeTypo, span, &[&"param1", &"param2"]);
+    reporter.fail(
+        Error::WarnAttributeTypo("param1".to_string(), "param2".to_string()),
+        span,
+    );
 
     let warnings = reporter.diagnostics();
     assert_eq!(warnings.len(), 1);
@@ -81,7 +86,7 @@ fn report_error_with_reused_format_params() {
     let span = SourceSpan::new("span text", &file);
 
     // fidlcrs doesn't string-index positional args like '{1}' and '{0}' currently.
-    reporter.fail(Error::ErrInvalidCharacter, span, &[&"param1", &"param2"]);
+    reporter.fail(Error::ErrInvalidCharacter("param1".to_string()), span);
 
     let errors = reporter.diagnostics();
     assert_eq!(errors.len(), 1);

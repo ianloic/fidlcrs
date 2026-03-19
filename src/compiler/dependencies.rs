@@ -492,7 +492,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     first_decl.element().span()
                 };
 
-                reporter.fail(Error::ErrIncludeCycle, span, &[&cycle_str]);
+                reporter.fail(Error::ErrIncludeCycle(format!("{}", &cycle_str)), span);
                 return;
             }
             temp_path.push(name.to_string());

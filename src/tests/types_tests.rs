@@ -415,7 +415,10 @@ type Foo = resource struct {
 };
 "#,
     );
-    lib.expect_fail(Error::ErrTypeCannotBeConvertedToType, &[]);
+    lib.expect_fail(
+        Error::ErrTypeCannotBeConvertedToType,
+        &["\"\\\"hello\\\"\"", "\"string\"", "\"uint32\""],
+    );
     lib.expect_fail(Error::ErrCouldNotResolveSizeBound, &[]);
     assert!(lib.check_compile());
 }

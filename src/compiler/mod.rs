@@ -2045,10 +2045,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(val) = self.eval_constant_usize(c) {
                         max_len = val as u32;
                     } else {
+                        let val_str = match c {
+                            raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                            raw_ast::Constant::Literal(l) => l.literal.value.to_string(),
+                            raw_ast::Constant::BinaryOperator(b) => {
+                                b.element.span().data.to_string()
+                            }
+                        };
+                        let from_type = self
+                            .infer_constant_type(c)
+                            .unwrap_or("identifier".into())
+                            .to_string();
                         self.reporter.fail(
                             Error::ErrTypeCannotBeConvertedToType,
                             c.element().span(),
-                            &[],
+                            &[&val_str, &from_type, &"uint32"],
                         );
                         self.reporter.fail(
                             Error::ErrCouldNotResolveSizeBound,
@@ -2116,10 +2127,21 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let Some(val) = self.eval_constant_usize(c) {
                         max_count = val as u32;
                     } else {
+                        let val_str = match c {
+                            raw_ast::Constant::Identifier(id) => id.identifier.to_string(),
+                            raw_ast::Constant::Literal(l) => l.literal.value.to_string(),
+                            raw_ast::Constant::BinaryOperator(b) => {
+                                b.element.span().data.to_string()
+                            }
+                        };
+                        let from_type = self
+                            .infer_constant_type(c)
+                            .unwrap_or("identifier".into())
+                            .to_string();
                         self.reporter.fail(
                             Error::ErrTypeCannotBeConvertedToType,
                             c.element().span(),
-                            &[],
+                            &[&val_str, &from_type, &"uint32"],
                         );
                         self.reporter.fail(
                             Error::ErrCouldNotResolveSizeBound,

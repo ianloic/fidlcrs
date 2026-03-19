@@ -47,3 +47,4 @@ mod versioning_inheritance_tests;
 mod versioning_interleaving_tests;
 mod versioning_overlap_tests;
 mod versioning_platform_tests;
+mod versioning_replacement_tests;

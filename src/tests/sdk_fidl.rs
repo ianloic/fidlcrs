@@ -512,7 +512,6 @@ mod tests {
         "fuchsia.images",
         "fuchsia.input.injection",
         "fuchsia.inspect",
-        "fuchsia.io.test",
         "fuchsia.location.sensor",
         "fuchsia.logger",
         "fuchsia.lowpan.device",

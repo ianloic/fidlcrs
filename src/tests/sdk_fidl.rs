@@ -278,7 +278,7 @@ pub fn parse_build_gn(base_dir: &std::path::Path, content: &str) -> Option<FidlB
                 } else {
                     continue;
                 }
-                sources = parse_string_list(&mut iter);
+                sources.extend(parse_string_list(&mut iter));
             }
             Token::Ident("public_deps") => {
                 if let Some(Token::Punct('=')) = iter.next() {
@@ -289,7 +289,7 @@ pub fn parse_build_gn(base_dir: &std::path::Path, content: &str) -> Option<FidlB
                 } else {
                     continue;
                 }
-                public_deps = parse_string_list(&mut iter);
+                public_deps.extend(parse_string_list(&mut iter));
             }
             Token::Ident("experimental_flags") => {
                 if let Some(Token::Punct('=')) = iter.next() {
@@ -300,7 +300,7 @@ pub fn parse_build_gn(base_dir: &std::path::Path, content: &str) -> Option<FidlB
                 } else {
                     continue;
                 }
-                experimental_flags = parse_string_list(&mut iter);
+                experimental_flags.extend(parse_string_list(&mut iter));
             }
             _ => {}
         }

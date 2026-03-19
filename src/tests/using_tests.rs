@@ -352,3 +352,16 @@ fn bad_too_many_provided_libraries() {
     // Rust harness doesn't report Unused libraries inside a simple compilation if they are just provided dependencies
     // so this test just verifies we can compile properly in this case.
 }
+#[test]
+fn test_composed_openness() {
+    let mut lib = crate::tests::test_library::TestLibrary::new();
+    lib.add_dependency_file("dep.fidl", "library dep; closed protocol Readable { strict Read(); }; open protocol Writable { strict Write(); }; ajar protocol Ajarable { strict Ajar(); };");
+    lib.add_source_file("main.fidl", "library main; using dep; closed protocol Device { compose dep.Readable; };");
+    
+    // Test if 'dep.Readable' correctly resolves to 'Closed' and succeeds
+    let is_ok = lib.check_compile();
+    if !is_ok {
+        println!("Failed! Diagnostics: {:?}", lib.reporter().diagnostics());
+    }
+    assert!(is_ok);
+}

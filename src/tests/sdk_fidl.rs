@@ -487,7 +487,6 @@ mod tests {
         "fuchsia.hardware.pinimpl",
         "fuchsia.hardware.platform.bus",
         "fuchsia.hardware.platform.device",
-        "fuchsia.hardware.pty",
         "fuchsia.hardware.qcom.hvdcpopti",
         "fuchsia.hardware.ramdisk",
         "fuchsia.hardware.sdhci",

@@ -38,6 +38,7 @@ pub mod string_array_tests;
 pub mod structs_tests;
 pub mod table_tests;
 pub mod test_library;
+pub mod transport_tests;
 pub mod types_tests;
 pub mod typeshape_tests;
 pub mod union_tests;

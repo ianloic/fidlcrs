@@ -518,14 +518,17 @@ impl<'node, 'src> Compiler<'node, 'src> {
             name: self.library_name.to_string(),
             platform,
             available: Some(self.version_selection.as_available_map()),
-            maybe_attributes: main_files
-                .iter()
-                .filter(|f| {
-                    f.library_decl.as_ref().map(|l| l.path.to_string())
-                        == Some(self.library_name.to_string())
-                })
-                .find_map(|f| f.library_decl.as_ref())
-                .map_or(vec![], |decl| self.compile_attribute_list(&decl.attributes)),
+            maybe_attributes: {
+                let mut attrs = vec![];
+                for f in main_files {
+                    if let Some(decl) = f.library_decl.as_ref() {
+                        if decl.path.to_string() == self.library_name.to_string() {
+                            attrs.extend(self.compile_attribute_list(&decl.attributes));
+                        }
+                    }
+                }
+                attrs
+            },
             experiments: {
                 let mut exps = vec![];
                 exps.extend(self.experimental_flags.clone().into_vec());

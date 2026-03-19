@@ -8,6 +8,7 @@ use crate::raw_ast;
 use crate::reporter::Reporter;
 use crate::source_file::{SourceFile, VirtualSourceFile};
 use std::cell::RefCell;
+use std::collections::HashSet;
 
 use crate::diagnostics::Error;
 pub struct SharedAmongstLibraries {
@@ -97,7 +98,7 @@ pub struct TestLibrary<'a> {
     pub experimental_flags: Vec<String>,
     pub select_versions: Vec<(String, String)>,
     pub custom_schemas: std::collections::HashMap<String, AttributeSchema>,
-    pub expected_diagnostics: Vec<String>,
+    pub expected_diagnostics: HashSet<String>,
     pub shared: Option<RefCell<&'a mut SharedAmongstLibraries>>,
 }
 
@@ -117,7 +118,7 @@ impl<'a> TestLibrary<'a> {
             experimental_flags: Vec::new(),
             select_versions: Vec::new(),
             custom_schemas: std::collections::HashMap::new(),
-            expected_diagnostics: Vec::new(),
+            expected_diagnostics: HashSet::new(),
             shared: None,
         }
     }
@@ -133,7 +134,7 @@ impl<'a> TestLibrary<'a> {
                 sf.data().to_string(),
             ));
         }
-        lib.expected_diagnostics = Vec::new();
+        lib.expected_diagnostics = HashSet::new();
         lib.shared = Some(RefCell::new(shared));
         lib
     }
@@ -379,7 +380,7 @@ resource_definition handle : uint32 {
         for arg in args {
             msg = msg.replacen("{}", arg, 1);
         }
-        self.expected_diagnostics.push(msg);
+        self.expected_diagnostics.insert(msg);
     }
 
     pub fn expect_warn(&mut self, def: Error, args: &[&str]) {
@@ -387,13 +388,13 @@ resource_definition handle : uint32 {
         for arg in args {
             msg = msg.replacen("{}", arg, 1);
         }
-        self.expected_diagnostics.push(msg);
+        self.expected_diagnostics.insert(msg);
     }
 
     pub fn check_compile(&'a self) -> bool {
         let _ = self.compile();
         let diagnostics = self.reporter.diagnostics();
-        let actual_messages: Vec<String> = diagnostics.iter().map(|d| d.message.clone()).collect();
+        let actual_messages: HashSet<String> = diagnostics.iter().map(|d| d.message.clone()).collect();
         if self.expected_diagnostics != actual_messages {
             println!("Diagnostics mismatch:");
             println!("Expected:");

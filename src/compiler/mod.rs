@@ -533,7 +533,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             },
             library_dependencies,
             bits_declarations: self.declarations.bits().cloned().collect(),
-            const_declarations: self.declarations.consts().cloned().collect(),
+            const_declarations: self.declarations.consts().filter(|d| d.name.as_string().starts_with(&format!("{}/", self.library_name))).cloned().collect(),
             enum_declarations: self
                 .declarations
                 .enums()
@@ -559,7 +559,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 })
                 .cloned()
                 .collect(),
-            service_declarations: self.declarations.services().cloned().collect(),
+            service_declarations: self.declarations.services().filter(|d| d.name.as_string().starts_with(&format!("{}/", self.library_name))).cloned().collect(),
             struct_declarations: self
                 .declarations
                 .structs()
@@ -596,18 +596,28 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     external_names.contains(&d.name.as_string())
                 }).cloned().collect()
             },
-            table_declarations: self.declarations.tables().cloned().collect(),
-            union_declarations: self.declarations.unions().cloned().collect(),
+            table_declarations: self.declarations.tables().filter(|d| {
+                d.name.as_string().starts_with(&format!("{}/", self.library_name))
+            }).cloned().collect(),
+            union_declarations: self.declarations.unions().filter(|d| {
+                d.name.as_string().starts_with(&format!("{}/", self.library_name))
+            }).cloned().collect(),
             overlay_declarations: if self
                 .experimental_flags
                 .is_enabled(ExperimentalFlag::ZxCTypes)
             {
-                Some(self.declarations.overlays().cloned().collect())
+                Some(self.declarations.overlays().filter(|d| {
+                    d.name.as_string().starts_with(&format!("{}/", self.library_name))
+                }).cloned().collect())
             } else {
                 None
             },
-            alias_declarations: self.declarations.aliases().cloned().collect(),
-            new_type_declarations: self.declarations.new_types().cloned().collect(),
+            alias_declarations: self.declarations.aliases().filter(|d| {
+                d.name.as_string().starts_with(&format!("{}/", self.library_name))
+            }).cloned().collect(),
+            new_type_declarations: self.declarations.new_types().filter(|d| {
+                d.name.as_string().starts_with(&format!("{}/", self.library_name))
+            }).cloned().collect(),
             declaration_order: self.declaration_order.clone(),
         };
 
@@ -630,7 +640,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
     }
 
     fn patch_member_shapes(&mut self) {
-        let shapes = self.shapes.clone();
+        let mut shapes = self.shapes.clone();
         let mut struct_names = HashSet::new();
 
         for (name, decl) in &self.raw_decls {
@@ -793,6 +803,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     &[&display_name, &total_size, &65535u32],
                 );
             }
+            shapes.insert(OwnedQualifiedName::from(decl.name.as_string()), decl.type_shape.clone());
         }
         for decl in self.declarations.unions_mut() {
             let mut max_ool = 0u32;
@@ -845,6 +856,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 decl.type_shape.has_padding = has_padding;
                 decl.type_shape.has_flexible_envelope = true;
             }
+            shapes.insert(OwnedQualifiedName::from(decl.name.as_string()), decl.type_shape.clone());
         }
         for decl in self.declarations.aliases_mut() {
             Self::update_type_shape(&mut decl.type_, &shapes, &struct_names);
@@ -1166,9 +1178,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
                         self.declarations.push(Decl::Bits(compiled));
-                    }
                 } else if let raw_ast::Layout::Table(ref ta) = t.layout {
                     let compiled = self.compile_table(
                         t.name.data(),
@@ -1178,9 +1188,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
                         self.declarations.push(Decl::Table(compiled));
-                    }
                 } else if let raw_ast::Layout::Union(ref u) = t.layout {
                     let compiled = self.compile_union(
                         t.name.data(),
@@ -1223,9 +1231,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         typ,
                         alias,
                     );
-                    if is_main_library {
                         self.declarations.push(Decl::NewType(compiled));
-                    }
                 }
             }
             RawDecl::Struct(s) => {
@@ -1264,9 +1270,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         b.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
                         self.declarations.push(Decl::Bits(compiled));
-                    }
                 }
             }
             RawDecl::Union(u) => {
@@ -1296,9 +1300,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                         t.attributes.as_deref(),
                         None,
                     );
-                    if is_main_library {
                         self.declarations.push(Decl::Table(compiled));
-                    }
                 }
             }
             RawDecl::Protocol(p) => {
@@ -1341,28 +1343,20 @@ impl<'node, 'src> Compiler<'node, 'src> {
             RawDecl::Service(s) => {
                 let short_name = s.name.data();
                 let compiled = self.compile_service(short_name, s, &library_name);
-                if is_main_library {
                     self.declarations.push(Decl::Service(compiled));
-                }
             }
             RawDecl::Resource(r) => {
                 let short_name = r.name.data();
                 let compiled = self.compile_resource(short_name, r, &library_name);
-                if is_main_library {
                     self.declarations.push(Decl::ExperimentalResource(compiled));
-                }
             }
             RawDecl::Const(c) => {
                 let compiled = self.compile_const(c, &library_name);
-                if is_main_library {
                     self.declarations.push(Decl::Const(compiled));
-                }
             }
             RawDecl::Alias(a) => {
                 let compiled = self.compile_alias(a, &library_name);
-                if is_main_library {
                     self.declarations.push(Decl::Alias(compiled));
-                }
             }
         }
 

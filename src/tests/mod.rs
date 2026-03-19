@@ -22,6 +22,7 @@ pub mod library_tests;
 pub mod method_tests;
 pub mod new_type_tests;
 pub mod ordinals_tests;
+pub mod overlay_tests;
 pub mod parsing_tests;
 pub mod protocol_tests;
 pub mod recoverable_compilation_tests;

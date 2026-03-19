@@ -2,7 +2,7 @@ use crate::compiler::{CanonicalNames, Compiler, DeclarationKind, MemberKind};
 use crate::diagnostics::Error;
 use crate::experimental_flags::ExperimentalFlag;
 use crate::flat_ast::{
-    Decl, DeclBase, EnumDeclaration, Openness, PrimitiveSubtype, ProtocolCompose,
+    Decl, DeclBase, DependencyDeclaration, EnumDeclaration, Openness, PrimitiveSubtype, ProtocolCompose,
     ProtocolDeclaration, ProtocolMethod, StructDeclaration, Type, TypeKind, TypeShape,
     UnionDeclaration, UnionMember,
 };
@@ -836,6 +836,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             self.declaration_order.push(full_synth.clone());
                             self.compiled_decls
                                 .insert(OwnedQualifiedName::from(full_synth.clone()));
+                        } else {
+                            self.dependency_declarations
+                                .entry(crate::names::OwnedLibraryName::new(library_name.to_string()))
+                                .or_default()
+                                .insert(
+                                    full_synth.clone(),
+                                    DependencyDeclaration {
+                                        kind: crate::flat_ast::DeclarationKind::Struct,
+                                        type_shape: Some(shape.clone()),
+                                        resource: Some(false),
+                                    },
+                                );
                         }
                         self.shapes
                             .insert(OwnedQualifiedName::from(full_synth.clone()), shape.clone());
@@ -976,6 +988,18 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 if library_name == self.library_name.to_string() {
                     self.compiled_decls
                         .insert(OwnedQualifiedName::from(full_synth_union.clone()));
+                } else {
+                    self.dependency_declarations
+                        .entry(crate::names::OwnedLibraryName::new(library_name.to_string()))
+                        .or_default()
+                        .insert(
+                            full_synth_union.clone(),
+                            DependencyDeclaration {
+                                kind: crate::flat_ast::DeclarationKind::Union,
+                                type_shape: Some(union_shape.clone()),
+                                resource: Some(union_handles > 0),
+                            },
+                        );
                 }
 
                 Some(Type::identifier_type(

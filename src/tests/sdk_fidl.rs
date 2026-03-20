@@ -2,6 +2,8 @@ use crate::cli::Cli;
 use crate::cli::run;
 use std::path::PathBuf;
 
+pub const SDK_DIRS: &[&str] = &["sdk-fidl", "fxfs-fidl"];
+
 #[derive(Debug, PartialEq)]
 pub struct FidlBuild {
     pub base_dir: PathBuf,
@@ -31,14 +33,11 @@ impl Default for SdkFidl {
 impl SdkFidl {
     pub fn new() -> Self {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let sdk_dirs = [
-            manifest_dir.join("sdk-fidl"),
-            manifest_dir.join("fxfs-fidl"),
-        ];
 
         let mut libs = std::collections::HashMap::new();
 
-        for sdk_dir in sdk_dirs {
+        for sdk_dir_name in SDK_DIRS {
+            let sdk_dir = manifest_dir.join(sdk_dir_name);
             if let Ok(entries) = std::fs::read_dir(&sdk_dir) {
                 for entry in entries {
                     let entry = entry.unwrap();
@@ -374,12 +373,9 @@ mod tests {
     #[test]
     fn test_parse_all_sdk_build_files() {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let sdk_dirs = [
-            manifest_dir.join("sdk-fidl"),
-            manifest_dir.join("fxfs-fidl"),
-        ];
 
-        for sdk_dir in sdk_dirs {
+        for sdk_dir_name in super::SDK_DIRS {
+            let sdk_dir = manifest_dir.join(sdk_dir_name);
             let entries = std::fs::read_dir(sdk_dir).unwrap();
             for entry in entries {
                 let entry = entry.unwrap();

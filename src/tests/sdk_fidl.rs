@@ -31,21 +31,26 @@ impl Default for SdkFidl {
 impl SdkFidl {
     pub fn new() -> Self {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let sdk_fidl_dir = manifest_dir.join("sdk-fidl");
+        let sdk_dirs = [
+            manifest_dir.join("sdk-fidl"),
+            manifest_dir.join("fxfs-fidl"),
+        ];
 
         let mut libs = std::collections::HashMap::new();
 
-        if let Ok(entries) = std::fs::read_dir(&sdk_fidl_dir) {
-            for entry in entries {
-                let entry = entry.unwrap();
-                let path = entry.path();
-                if path.is_dir() {
-                    let build_gn_path = path.join("BUILD.gn");
-                    if build_gn_path.exists() {
-                        let content = std::fs::read_to_string(&build_gn_path).unwrap();
-                        if let Some(parsed) = parse_build_gn(&path, &content) {
-                            let name = path.file_name().unwrap().to_str().unwrap().to_string();
-                            libs.insert(name, parsed);
+        for sdk_dir in sdk_dirs {
+            if let Ok(entries) = std::fs::read_dir(&sdk_dir) {
+                for entry in entries {
+                    let entry = entry.unwrap();
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let build_gn_path = path.join("BUILD.gn");
+                        if build_gn_path.exists() {
+                            let content = std::fs::read_to_string(&build_gn_path).unwrap();
+                            if let Some(parsed) = parse_build_gn(&path, &content) {
+                                let name = path.file_name().unwrap().to_str().unwrap().to_string();
+                                libs.insert(name, parsed);
+                            }
                         }
                     }
                 }
@@ -97,7 +102,7 @@ impl SdkFidl {
                     all_experimental.insert(flag.clone());
                 }
                 for dep in &p.public_deps {
-                    let dep_name = dep.trim_start_matches("//sdk/fidl/").to_string();
+                    let dep_name = dep.trim_start_matches("//sdk/fidl/").trim_start_matches("//src/storage/fxfs/fidl/").to_string();
                     if dep_name == "//zircon/vdso/zx" {
                         continue;
                     }
@@ -116,7 +121,7 @@ impl SdkFidl {
         }
 
         for dep in &parsed.public_deps {
-            let dep_name = dep.trim_start_matches("//sdk/fidl/").to_string();
+            let dep_name = dep.trim_start_matches("//sdk/fidl/").trim_start_matches("//src/storage/fxfs/fidl/").to_string();
             if dep_name == "//zircon/vdso/zx" {
                 continue;
             }
@@ -369,31 +374,36 @@ mod tests {
     #[test]
     fn test_parse_all_sdk_build_files() {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let sdk_fidl_dir = manifest_dir.join("sdk-fidl");
+        let sdk_dirs = [
+            manifest_dir.join("sdk-fidl"),
+            manifest_dir.join("fxfs-fidl"),
+        ];
 
-        let entries = std::fs::read_dir(sdk_fidl_dir).unwrap();
-        for entry in entries {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_dir()
-                && let Some(name) = path.file_name().and_then(|n| n.to_str())
-                && name.starts_with("fuchsia.")
-            {
-                let build_gn_path = path.join("BUILD.gn");
-                if build_gn_path.exists() {
-                    let content = std::fs::read_to_string(&build_gn_path).unwrap();
-                    let parsed = parse_build_gn(&path, &content);
-                    assert!(
-                        parsed.is_some(),
-                        "Failed to parse BUILD.gn at {:?}",
-                        build_gn_path
-                    );
-                    let parsed = parsed.unwrap();
-                    assert!(
-                        !parsed.sources.is_empty() || content.contains("sources = []"),
-                        "Parsed no sources for {:?} (or ensure it's manually empty)",
-                        build_gn_path
-                    );
+        for sdk_dir in sdk_dirs {
+            let entries = std::fs::read_dir(sdk_dir).unwrap();
+            for entry in entries {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.is_dir()
+                    && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                    && name.starts_with("fuchsia.")
+                {
+                    let build_gn_path = path.join("BUILD.gn");
+                    if build_gn_path.exists() {
+                        let content = std::fs::read_to_string(&build_gn_path).unwrap();
+                        let parsed = parse_build_gn(&path, &content);
+                        assert!(
+                            parsed.is_some(),
+                            "Failed to parse BUILD.gn at {:?}",
+                            build_gn_path
+                        );
+                        let parsed = parsed.unwrap();
+                        assert!(
+                            !parsed.sources.is_empty() || content.contains("sources = []"),
+                            "Parsed no sources for {:?} (or ensure it's manually empty)",
+                            build_gn_path
+                        );
+                    }
                 }
             }
         }
@@ -412,7 +422,6 @@ mod tests {
         "fuchsia.driver.playground",
         "fuchsia.factory.lowpan",
         "fuchsia.firmware.crash",
-        "fuchsia.fshost",
         "fuchsia.hardware.display",
         "fuchsia.hardware.display.engine",
         "fuchsia.hardware.google.nanohub",
@@ -447,8 +456,6 @@ mod tests {
         "fuchsia.net.settings",
         "fuchsia.net.stack",
         "fuchsia.net.virtualization",
-        "fuchsia.pkg",
-        "fuchsia.pkg.http",
         "fuchsia.pkg.resolution",
         "fuchsia.posix.socket",
         "fuchsia.posix.socket.packet",
@@ -485,6 +492,10 @@ mod tests {
 
     const COMPARE_DENYLIST: &[&str] = &[
         "fdf",
+        "fuchsia.fshost",
+        "fuchsia.fxfs",
+        "fuchsia.pkg",
+        "fuchsia.pkg.http",
         "fuchsia.acpi.chromeos",
         "fuchsia.acpi.tables",
         "fuchsia.audio",

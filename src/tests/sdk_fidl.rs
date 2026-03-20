@@ -738,6 +738,7 @@ mod tests {
         "fuchsia.input.interaction.observation",
         "fuchsia.input.report",
         "fuchsia.io",
+        "fuchsia.io.test",
         "fuchsia.kms",
         "fuchsia.lightsensor",
         "fuchsia.lowpan.spinel",

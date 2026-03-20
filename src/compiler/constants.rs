@@ -10,6 +10,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
     pub fn eval_constant_value_as_string(
         &self,
         constant: &raw_ast::Constant<'_>,
+        library_name: &str,
     ) -> Option<String> {
         match constant {
             raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
@@ -60,7 +61,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if let Some((type_full_name, maybe_member)) =
-                    self.resolve_constant_decl(&name.to_string())
+                    self.resolve_constant_decl(&name.to_string(), library_name)
                     && let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref())
                 {
                     if let Some(member_name) = maybe_member {
@@ -69,42 +70,54 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 .members
                                 .iter()
                                 .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                .and_then(|m| {
+                                    self.eval_constant_value_as_string(&m.value, library_name)
+                                }),
                             RawDecl::Enum(e) => e
                                 .members
                                 .iter()
                                 .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                .and_then(|m| {
+                                    self.eval_constant_value_as_string(&m.value, library_name)
+                                }),
                             RawDecl::Type(t) => match &t.layout {
                                 raw_ast::Layout::Bits(b) => b
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
-                                    .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                    .and_then(|m| {
+                                        self.eval_constant_value_as_string(&m.value, library_name)
+                                    }),
                                 raw_ast::Layout::Enum(e) => e
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
-                                    .and_then(|m| self.eval_constant_value_as_string(&m.value)),
+                                    .and_then(|m| {
+                                        self.eval_constant_value_as_string(&m.value, library_name)
+                                    }),
                                 _ => None,
                             },
                             _ => None,
                         };
                     } else if let RawDecl::Const(c) = decl {
-                        return self.eval_constant_value_as_string(&c.value);
+                        return self.eval_constant_value_as_string(&c.value, library_name);
                     }
                 }
 
-                self.eval_constant_value(constant)
+                self.eval_constant_value(constant, library_name)
                     .map(|v| format!("\"{}\"", v))
             }
             raw_ast::Constant::BinaryOperator(_) => self
-                .eval_constant_value(constant)
+                .eval_constant_value(constant, library_name)
                 .map(|v| format!("\"{}\"", v)),
         }
     }
 
-    pub fn infer_constant_type(&self, constant: &raw_ast::Constant<'_>) -> Option<&'static str> {
+    pub fn infer_constant_type(
+        &self,
+        constant: &raw_ast::Constant<'_>,
+        library_name: &str,
+    ) -> Option<&'static str> {
         match constant {
             raw_ast::Constant::Literal(lit) => match lit.literal.kind {
                 raw_ast::LiteralKind::String => Some("string"),
@@ -119,7 +132,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if let Some((type_full_name, maybe_member)) =
-                    self.resolve_constant_decl(&name.to_string())
+                    self.resolve_constant_decl(&name.to_string(), library_name)
                     && let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref())
                 {
                     if maybe_member.is_some() {
@@ -156,7 +169,11 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
     }
 
-    pub fn eval_constant_value(&self, constant: &raw_ast::Constant<'_>) -> Option<u64> {
+    pub fn eval_constant_value(
+        &self,
+        constant: &raw_ast::Constant<'_>,
+        library_name: &str,
+    ) -> Option<u64> {
         match constant {
             raw_ast::Constant::Literal(lit) => match &lit.literal.kind {
                 raw_ast::LiteralKind::Numeric => {
@@ -189,7 +206,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 if let Some((type_full_name, maybe_member)) =
-                    self.resolve_constant_decl(&name.to_string())
+                    self.resolve_constant_decl(&name.to_string(), library_name)
                     && let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref())
                 {
                     if let Some(member_name) = maybe_member {
@@ -198,49 +215,55 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 .members
                                 .iter()
                                 .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value(&m.value)),
+                                .and_then(|m| self.eval_constant_value(&m.value, library_name)),
                             RawDecl::Enum(e) => e
                                 .members
                                 .iter()
                                 .find(|m| m.name.data() == member_name)
-                                .and_then(|m| self.eval_constant_value(&m.value)),
+                                .and_then(|m| self.eval_constant_value(&m.value, library_name)),
                             RawDecl::Type(t) => match &t.layout {
                                 raw_ast::Layout::Bits(b) => b
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
-                                    .and_then(|m| self.eval_constant_value(&m.value)),
+                                    .and_then(|m| self.eval_constant_value(&m.value, library_name)),
                                 raw_ast::Layout::Enum(e) => e
                                     .members
                                     .iter()
                                     .find(|m| m.name.data() == member_name)
-                                    .and_then(|m| self.eval_constant_value(&m.value)),
+                                    .and_then(|m| self.eval_constant_value(&m.value, library_name)),
                                 _ => None,
                             },
                             _ => None,
                         };
                     } else if let RawDecl::Const(c) = decl {
-                        return self.eval_constant_value(&c.value);
+                        return self.eval_constant_value(&c.value, library_name);
                     }
                 }
 
                 None
             }
             raw_ast::Constant::BinaryOperator(binop) => {
-                let left = self.eval_constant_value(&binop.left)?;
-                let right = self.eval_constant_value(&binop.right)?;
+                let left = self.eval_constant_value(&binop.left, library_name)?;
+                let right = self.eval_constant_value(&binop.right, library_name)?;
                 Some(left | right)
             }
         }
     }
 
-    pub(crate) fn eval_constant_usize(&self, constant: &raw_ast::Constant<'_>) -> Option<usize> {
-        self.eval_constant_value(constant).map(|v| v as usize)
+    pub(crate) fn eval_constant_usize(
+        &self,
+        constant: &raw_ast::Constant<'_>,
+        library_name: &str,
+    ) -> Option<usize> {
+        self.eval_constant_value(constant, library_name)
+            .map(|v| v as usize)
     }
 
     pub(crate) fn eval_type_constant_usize(
         &self,
         ty: &raw_ast::TypeConstructor<'_>,
+        library_name: &str,
     ) -> Option<usize> {
         match &ty.layout {
             raw_ast::LayoutParameter::Literal(lit) => match &lit.literal.kind {
@@ -256,14 +279,19 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         element: id.element.clone(),
                         identifier: id.clone(),
                     });
-                    self.eval_constant_value(&const_id).map(|v| v as usize)
+                    self.eval_constant_value(&const_id, library_name)
+                        .map(|v| v as usize)
                 }
             }
             _ => None,
         }
     }
 
-    pub fn compile_constant(&self, constant: &raw_ast::Constant<'_>) -> Constant {
+    pub fn compile_constant(
+        &self,
+        constant: &raw_ast::Constant<'_>,
+        library_name: &str,
+    ) -> Constant {
         match constant {
             raw_ast::Constant::Literal(lit) => {
                 let (kind, value_json, expr_json) = match &lit.literal.kind {
@@ -345,18 +373,20 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 }
 
                 let value = self
-                    .eval_constant_value_as_string(constant)
+                    .eval_constant_value_as_string(constant, library_name)
                     .unwrap_or_else(|| "\"0\"".to_string());
 
                 let mut full_name = id_str.clone();
-                if let Some((type_full_name, maybe_member)) = self.resolve_constant_decl(&id_str) {
+                if let Some((type_full_name, maybe_member)) =
+                    self.resolve_constant_decl(&id_str, library_name)
+                {
                     if let Some(member) = maybe_member {
                         full_name = format!("{}.{}", type_full_name, member);
                     } else {
                         full_name = type_full_name.to_string();
                     }
                 } else if !full_name.contains('/') {
-                    full_name = format!("{}/{}", self.library_name, id_str);
+                    full_name = format!("{}/{}", library_name, id_str);
                 }
 
                 Constant {
@@ -369,7 +399,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
             }
             raw_ast::Constant::BinaryOperator(binop) => {
                 let value = self
-                    .eval_constant_value_as_string(constant)
+                    .eval_constant_value_as_string(constant, library_name)
                     .unwrap_or_else(|| "\"0\"".to_string());
                 Constant {
                     kind: "binary_operator".to_string(),
@@ -440,7 +470,12 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
         }
     }
 
-    pub fn validate_constant(&self, constant: &raw_ast::Constant<'src>, expected_type: &Type) {
+    pub fn validate_constant(
+        &self,
+        constant: &raw_ast::Constant<'src>,
+        expected_type: &Type,
+        library_name: &str,
+    ) {
         match expected_type {
             Type::Primitive(p) => {
                 let subtype = &p.subtype.to_string();
@@ -515,7 +550,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
 
                         let mut full_name = name.clone();
                         if let Some((type_full_name, maybe_member)) =
-                            self.resolve_constant_decl(&name.to_string())
+                            self.resolve_constant_decl(&name.to_string(), library_name)
                         {
                             if let Some(member) = maybe_member {
                                 full_name = format!("{}.{}", type_full_name, member);
@@ -523,7 +558,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                                 full_name = type_full_name.to_string();
                             }
                         } else if !full_name.contains('/') {
-                            full_name = format!("{}/{}", self.library_name, name);
+                            full_name = format!("{}/{}", library_name, name);
                         }
 
                         let decl_info = self
@@ -554,7 +589,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         } else if let Some((type_name, member_name)) = name.rsplit_once('.') {
                             let mut type_full_name = type_name.to_string();
                             if !type_full_name.contains('/') {
-                                type_full_name = format!("{}/{}", self.library_name, type_name);
+                                type_full_name = format!("{}/{}", library_name, type_name);
                             }
                             if let Some(decl) = self.raw_decls.get::<str>(type_full_name.as_ref()) {
                                 match decl {
@@ -692,15 +727,15 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     }
                     raw_ast::Constant::BinaryOperator(binop) => {
                         let span = binop.element.start_token.span;
-                        let l_type = self.infer_constant_type(&binop.left);
-                        let r_type = self.infer_constant_type(&binop.right);
+                        let l_type = self.infer_constant_type(&binop.left, library_name);
+                        let r_type = self.infer_constant_type(&binop.right, library_name);
                         if l_type.unwrap_or("") != "numeric" || r_type.unwrap_or("") != "numeric" {
                             self.reporter
                                 .fail(Error::ErrOrOperatorOnNonPrimitiveValue, span);
                             return;
                         }
-                        self.validate_constant(&binop.left, expected_type);
-                        self.validate_constant(&binop.right, expected_type);
+                        self.validate_constant(&binop.left, expected_type, library_name);
+                        self.validate_constant(&binop.right, expected_type, library_name);
                     }
                 }
             }
@@ -791,7 +826,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                     let name = id.identifier.to_string();
                     let mut full_name = name.clone();
                     if let Some((type_full_name, maybe_member)) =
-                        self.resolve_constant_decl(&name.to_string())
+                        self.resolve_constant_decl(&name.to_string(), library_name)
                     {
                         if let Some(member) = maybe_member {
                             full_name = format!("{}.{}", type_full_name, member);
@@ -799,7 +834,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             full_name = type_full_name.to_string();
                         }
                     } else if !full_name.contains('/') {
-                        full_name = format!("{}/{}", self.library_name, name);
+                        full_name = format!("{}/{}", library_name, name);
                     }
 
                     let mut valid = false;
@@ -858,7 +893,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         let mut type_full_name = "".to_string();
                         let mut member_name_str = "".to_string();
                         if let Some((type_full, maybe_member)) =
-                            self.resolve_constant_decl(&name.to_string())
+                            self.resolve_constant_decl(&name.to_string(), library_name)
                         {
                             type_full_name = type_full.to_string();
                             if let Some(m) = maybe_member {
@@ -926,7 +961,7 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                         } else {
                             let mut full_name = name.clone();
                             if !full_name.contains('/') {
-                                full_name = format!("{}/{}", self.library_name, name);
+                                full_name = format!("{}/{}", library_name, name);
                             }
 
                             let decl_info = self
@@ -1027,9 +1062,9 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                 decl.name.element.start_token.span,
             );
         }
-        self.validate_constant(&decl.value, &type_obj);
+        self.validate_constant(&decl.value, &type_obj, library_name);
 
-        let constant = self.compile_constant(&decl.value);
+        let constant = self.compile_constant(&decl.value, library_name);
 
         ConstDeclaration::new(
             full_name.into(),

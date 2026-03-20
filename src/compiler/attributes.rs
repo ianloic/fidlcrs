@@ -75,7 +75,8 @@ impl<'node, 'src> super::Compiler<'node, 'src> {
                             .as_ref()
                             .map(|n| n.element.start_token.span.data.to_string())
                             .unwrap_or_else(|| "value".to_string());
-                        let value = self.compile_constant(&arg.value);
+                        let value = self
+                            .compile_constant(&arg.value, self.library_name.as_string().as_str());
                         AttributeArg {
                             name: arg_name,
                             type_: if attr.name.element.start_token.span.data == "available" {

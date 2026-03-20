@@ -132,8 +132,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
             let mut maybe_default_value = None;
             if let Some(def_val) = &member.default_value {
-                self.validate_constant(def_val, &type_obj);
-                maybe_default_value = Some(self.compile_constant(def_val));
+                self.validate_constant(def_val, &type_obj, library_name);
+                maybe_default_value = Some(self.compile_constant(def_val, library_name));
             }
 
             members.push(StructMember {

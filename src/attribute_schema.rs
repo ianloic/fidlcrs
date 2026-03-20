@@ -158,7 +158,9 @@ pub fn discoverable_constraint<'node, 'src>(
             .unwrap_or("name");
         if arg_name == "name" {
             // Expecting a string literal for the discoverable name
-            if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+            if let Some(val) = compiler
+                .eval_constant_value_as_string(&arg.value, &compiler.library_name.as_string())
+            {
                 let s = val.trim_matches('"');
                 // Check if it's a valid discoverable name
                 let mut valid = true;
@@ -207,7 +209,9 @@ pub fn discoverable_constraint<'node, 'src>(
         } else if arg_name == "client" || arg_name == "server" {
             let valid;
             let mut s_val = "".to_string();
-            if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+            if let Some(val) = compiler
+                .eval_constant_value_as_string(&arg.value, &compiler.library_name.as_string())
+            {
                 let s = val.trim_matches('"');
                 s_val = s.to_string();
                 if s.is_empty() {
@@ -247,7 +251,8 @@ pub fn transport_constraint<'node, 'src>(
             .map(|n| n.element.start_token.span.data)
             .unwrap_or("value");
         if arg_name == "value"
-            && let Some(val) = compiler.eval_constant_value_as_string(&arg.value)
+            && let Some(val) = compiler
+                .eval_constant_value_as_string(&arg.value, &compiler.library_name.as_string())
         {
             let s = val.trim_matches('"');
             if s != "Banjo" && s != "Channel" && s != "Driver" && s != "Syscall" {
@@ -344,17 +349,23 @@ pub fn available_constraint<'node, 'src>(
                 }
             }
             "renamed" => {
-                if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                if let Some(val) = compiler
+                    .eval_constant_value_as_string(&arg.value, &compiler.library_name.as_string())
+                {
                     renamed = Some((val.trim_matches('"').to_string(), arg_span));
                 }
             }
             "note" => {
-                if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                if let Some(val) = compiler
+                    .eval_constant_value_as_string(&arg.value, &compiler.library_name.as_string())
+                {
                     note = Some((val.trim_matches('"').to_string(), arg_span));
                 }
             }
             "platform" => {
-                if let Some(val) = compiler.eval_constant_value_as_string(&arg.value) {
+                if let Some(val) = compiler
+                    .eval_constant_value_as_string(&arg.value, &compiler.library_name.as_string())
+                {
                     platform = Some((val.trim_matches('"').to_string(), arg_span));
                 }
             }
@@ -809,7 +820,9 @@ impl AttributeSchemaMap {
                         }
                     } else {
                         for arg in &attr.args {
-                            match compiler.infer_constant_type(&arg.value) {
+                            match compiler
+                                .infer_constant_type(&arg.value, &compiler.library_name.as_string())
+                            {
                                 Some(actual_type) => {
                                     if actual_type != "string" && actual_type != "bool" {
                                         let arg_span: SourceSpan = unsafe {
@@ -974,7 +987,9 @@ impl AttributeSchemaMap {
                         _ => "numeric",
                     };
 
-                    match compiler.infer_constant_type(&arg.value) {
+                    match compiler
+                        .infer_constant_type(&arg.value, &compiler.library_name.as_string())
+                    {
                         Some(actual_type) => {
                             if expected_str != actual_type
                                 && arg_schema.arg_type != ArgType::Special(SpecialCase::Version)
@@ -1061,7 +1076,11 @@ impl AttributeSchemaMap {
                                     _ => unreachable!(),
                                 };
                                 let p_type = flat_ast::Type::primitive(subtype);
-                                compiler.validate_constant(&arg.value, &p_type);
+                                compiler.validate_constant(
+                                    &arg.value,
+                                    &p_type,
+                                    &compiler.library_name.as_string(),
+                                );
                             }
                         }
                         None => {

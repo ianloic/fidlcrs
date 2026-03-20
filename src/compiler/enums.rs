@@ -147,8 +147,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 continue;
             }
             let attributes = self.compile_attribute_list(&member.attributes);
-            self.validate_constant(&member.value, &expected_type);
-            let compiled_value = self.compile_constant(&member.value);
+            self.validate_constant(&member.value, &expected_type, library_name);
+            let compiled_value = self.compile_constant(&member.value, library_name);
 
             let name_str = member.name.data().to_string();
             self.check_canonical_insert(
@@ -164,7 +164,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }),
             );
 
-            if let Some(eval_val) = self.eval_constant_value(&member.value) {
+            if let Some(eval_val) = self.eval_constant_value(&member.value, library_name) {
                 if eval_val == max_val_u64 {
                     let span = member.name.element.span();
                     let transmuted_span: SourceSpan<'src> = unsafe { std::mem::transmute(span) };

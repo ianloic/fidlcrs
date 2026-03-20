@@ -136,7 +136,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 continue;
             }
             let attributes = self.compile_attribute_list(&member.attributes);
-            let compiled_value = self.compile_constant(&member.value);
+            let compiled_value = self.compile_constant(&member.value, library_name);
 
             let name_str = member.name.data().to_string();
             self.check_canonical_insert(
@@ -228,7 +228,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 raw_ast::Constant::Identifier(_) | raw_ast::Constant::BinaryOperator(_) => {
                     // out of line var
-                    let val_opt = self.eval_constant_usize(&member.value);
+                    let val_opt = self.eval_constant_usize(&member.value, library_name);
                     if let Some(val) = val_opt {
                         let val = val as u64;
                         if val != 0 && (val & (val - 1)) != 0 {

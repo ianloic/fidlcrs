@@ -176,11 +176,15 @@ impl<'node, 'src> Compiler<'node, 'src> {
         }
     }
 
-    pub fn resolve_constant_decl<'a>(&'a self, name: &'a str) -> Option<(String, Option<String>)> {
+    pub fn resolve_constant_decl<'a>(
+        &'a self,
+        name: &'a str,
+        library_name: &str,
+    ) -> Option<(String, Option<String>)> {
         // returns (full_decl_name, maybe_member_name)
         let mut full_name = name.to_string();
         if !full_name.contains('/') {
-            full_name = format!("{}/{}", self.library_name, name);
+            full_name = format!("{}/{}", library_name, name);
         }
         if self.raw_decls.contains_key::<str>(full_name.as_ref()) {
             return Some((full_name, None));
@@ -189,7 +193,8 @@ impl<'node, 'src> Compiler<'node, 'src> {
         if let Some((type_name, member_name)) = name.rsplit_once('.') {
             let mut type_full_name = type_name.to_string();
             if !type_full_name.contains('/') {
-                let local_fqn = self.library_name.with_declaration(type_name);
+                let local_fqn = crate::names::OwnedLibraryName::new(library_name.to_string())
+                    .with_declaration(type_name);
                 if self.raw_decls.contains_key(&local_fqn) {
                     type_full_name = local_fqn.as_string();
                 } else if let Some((lib_prefix, rest)) = type_name.split_once('.') {
@@ -1109,7 +1114,12 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     .get::<str>(n.as_ref())
                     .or_else(|| self.get_underlying_decl(&n))
                 {
-                    let resolved = self.resolve_type(&a.type_ctor, library_name, None);
+                    let alias_lib = if let Some((lib, _)) = n.rsplit_once('/') {
+                        lib
+                    } else {
+                        library_name
+                    };
+                    let resolved = self.resolve_type(&a.type_ctor, alias_lib, None);
                     if let Type::Primitive(p) = &resolved {
                         n = p.subtype.to_string();
                     }
@@ -1169,7 +1179,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                     if let raw_ast::LayoutParameter::Literal(lit) = &type_ctor.parameters[1].layout
                     {
                         let c = raw_ast::Constant::Literal(lit.clone());
-                        maybe_size = Some(self.compile_constant(&c));
+                        maybe_size = Some(self.compile_constant(&c, library_name));
                     } else if let raw_ast::LayoutParameter::Identifier(id) =
                         &type_ctor.parameters[1].layout
                     {
@@ -1177,14 +1187,14 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             identifier: id.clone(),
                             element: type_ctor.parameters[1].element.clone(),
                         });
-                        maybe_size = Some(self.compile_constant(&c));
+                        maybe_size = Some(self.compile_constant(&c, library_name));
                     }
                 }
             } else if (n == "vector" || n == "string")
                 && let Some(c) = type_ctor.constraints.first()
                 && !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional")
             {
-                maybe_size = Some(self.compile_constant(c));
+                maybe_size = Some(self.compile_constant(c, library_name));
             }
         }
 
@@ -1196,7 +1206,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 .filter(|c| !matches!(c, raw_ast::Constant::Identifier(id) if id.identifier.to_string() == "optional"))
                 .collect();
             if filtered_constraints.len() > 1 {
-                handle_rights = Some(self.compile_constant(filtered_constraints[1]));
+                handle_rights = Some(self.compile_constant(filtered_constraints[1], library_name));
             }
         }
 
@@ -1948,7 +1958,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
         {
             let mut is_nullability = true;
             // If it is in the same scope, it might resolve to a constant.
-            if self.eval_constant_value(c).is_some() {
+            if self.eval_constant_value(c, library_name).is_some() {
                 is_nullability = false;
             }
             if is_nullability {
@@ -2087,7 +2097,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 }
                 let mut max_len = u32::MAX;
                 if let Some(c) = actual_constraints.first() {
-                    if let Some(val) = self.eval_constant_usize(c) {
+                    if let Some(val) = self.eval_constant_usize(c, library_name) {
                         max_len = val as u32;
                     } else {
                         let val_str = match c {
@@ -2098,7 +2108,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         };
                         let from_type = self
-                            .infer_constant_type(c)
+                            .infer_constant_type(c, library_name)
                             .unwrap_or("identifier".into())
                             .to_string();
                         self.reporter.fail(
@@ -2130,7 +2140,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
             "string_array" => {
                 let max_len = if !type_ctor.parameters.is_empty() {
                     let size_param = &type_ctor.parameters[0];
-                    self.eval_type_constant_usize(size_param)
+                    self.eval_type_constant_usize(size_param, library_name)
                         .unwrap_or(u32::MAX as usize) as u32
                 } else {
                     u32::MAX
@@ -2170,7 +2180,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
 
                 let mut max_count = u32::MAX;
                 if let Some(c) = actual_constraints.first() {
-                    if let Some(val) = self.eval_constant_usize(c) {
+                    if let Some(val) = self.eval_constant_usize(c, library_name) {
                         max_count = val as u32;
                     } else {
                         let val_str = match c {
@@ -2181,7 +2191,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             }
                         };
                         let from_type = self
-                            .infer_constant_type(c)
+                            .infer_constant_type(c, library_name)
                             .unwrap_or("identifier".into())
                             .to_string();
                         self.reporter.fail(
@@ -2241,7 +2251,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                 // Check count
                 let mut count: u32 = 0;
 
-                if let Some(val) = self.eval_type_constant_usize(count_param) {
+                if let Some(val) = self.eval_type_constant_usize(count_param, library_name) {
                     if val == 0 {
                         self.reporter.fail(
                             Error::ErrMustHaveNonZeroSize(flyweights::FlyStr::new(
@@ -2918,8 +2928,13 @@ impl<'node, 'src> Compiler<'node, 'src> {
                             has_err = true;
                         }
 
+                        let alias_lib = if let Some((lib, _)) = full_name.rsplit_once('/') {
+                            lib
+                        } else {
+                            library_name
+                        };
                         let mut resolved_type =
-                            self.resolve_type(&a.type_ctor, library_name, naming_context);
+                            self.resolve_type(&a.type_ctor, alias_lib, naming_context);
 
                         let final_nullable = nullable || a_nullable;
 
@@ -2928,7 +2943,7 @@ impl<'node, 'src> Compiler<'node, 'src> {
                                 || resolved_type.kind() == TypeKind::String
                             {
                                 if let Some(c) = actual_constraints.first() {
-                                    if let Some(val) = self.eval_constant_usize(c) {
+                                    if let Some(val) = self.eval_constant_usize(c, library_name) {
                                         if val == 0 {
                                             let id_str =
                                                 resolved_type.identifier().unwrap_or_default();

@@ -412,6 +412,9 @@ mod tests {
     }
 
     const COMPILE_DENYLIST: &[&str] = &[
+        // Actually broken:
+        "fuchsia.device.vsock",
+        // Not yet working:
         "fuchsia.accessibility.semantics",
         "fuchsia.bluetooth.affordances",
         "fuchsia.bluetooth.avrcp.test",
@@ -419,7 +422,6 @@ mod tests {
         "fuchsia.bluetooth.le",
         "fuchsia.developer.console",
         "fuchsia.developer.tiles",
-        "fuchsia.device.vsock",
         "fuchsia.diagnostics.types",
         "fuchsia.driver.playground",
         "fuchsia.factory.lowpan",

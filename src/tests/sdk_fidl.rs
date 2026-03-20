@@ -101,7 +101,10 @@ impl SdkFidl {
                     all_experimental.insert(flag.clone());
                 }
                 for dep in &p.public_deps {
-                    let dep_name = dep.trim_start_matches("//sdk/fidl/").trim_start_matches("//src/storage/fxfs/fidl/").to_string();
+                    let dep_name = dep
+                        .trim_start_matches("//sdk/fidl/")
+                        .trim_start_matches("//src/storage/fxfs/fidl/")
+                        .to_string();
                     if dep_name == "//zircon/vdso/zx" {
                         continue;
                     }
@@ -120,7 +123,10 @@ impl SdkFidl {
         }
 
         for dep in &parsed.public_deps {
-            let dep_name = dep.trim_start_matches("//sdk/fidl/").trim_start_matches("//src/storage/fxfs/fidl/").to_string();
+            let dep_name = dep
+                .trim_start_matches("//sdk/fidl/")
+                .trim_start_matches("//src/storage/fxfs/fidl/")
+                .to_string();
             if dep_name == "//zircon/vdso/zx" {
                 continue;
             }

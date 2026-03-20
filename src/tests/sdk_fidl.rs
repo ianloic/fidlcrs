@@ -76,7 +76,8 @@ impl SdkFidl {
             .to_string_lossy()
             .to_string();
 
-        let mut dep_filenames = vec![vdso1, vdso2, vdso3];
+        let mut dep_libraries = Vec::new();
+        dep_libraries.push(vec![vdso1, vdso2, vdso3]);
 
         let mut visited = std::collections::HashSet::new();
         let mut all_experimental: std::collections::HashSet<String> =
@@ -90,7 +91,7 @@ impl SdkFidl {
             lib_name: &str,
             all_libs: &std::collections::HashMap<String, FidlBuild>,
             visited: &mut std::collections::HashSet<String>,
-            dep_filenames: &mut Vec<String>,
+            dep_libraries: &mut Vec<Vec<String>>,
             all_experimental: &mut std::collections::HashSet<String>,
         ) {
             if !visited.insert(lib_name.to_string()) {
@@ -112,12 +113,16 @@ impl SdkFidl {
                         &dep_name,
                         all_libs,
                         visited,
-                        dep_filenames,
+                        dep_libraries,
                         all_experimental,
                     );
                 }
+                let mut lib_files = Vec::new();
                 for src in p.resolved_sources() {
-                    dep_filenames.push(src.to_string_lossy().to_string());
+                    lib_files.push(src.to_string_lossy().to_string());
+                }
+                if !lib_files.is_empty() {
+                    dep_libraries.push(lib_files);
                 }
             }
         }
@@ -134,7 +139,7 @@ impl SdkFidl {
                 &dep_name,
                 &self.libs,
                 &mut visited,
-                &mut dep_filenames,
+                &mut dep_libraries,
                 &mut all_experimental,
             );
         }
@@ -154,7 +159,8 @@ impl SdkFidl {
             ..Default::default()
         };
 
-        let source_managers = vec![dep_filenames, main_filenames];
+        let mut source_managers = dep_libraries;
+        source_managers.push(main_filenames);
 
         Some((cli, source_managers))
     }
@@ -441,8 +447,6 @@ mod tests {
         "fuchsia.hardware.usb.dci",
         "fuchsia.hardware.usb.function",
         "fuchsia.hardware.usb.hci",
-        "fuchsia.identity.account",
-        "fuchsia.identity.internal",
         "fuchsia.inspect",
         "fuchsia.location.sensor",
         "fuchsia.mediastreams",
@@ -481,7 +485,6 @@ mod tests {
         "fuchsia.ui.test.conformance",
         "fuchsia.ui.test.input",
         "fuchsia.ui.test.scene",
-        "fuchsia.update.usb",
         "fuchsia.virtualaudio",
         "fuchsia.virtualization.hardware",
         "fuchsia.weave",
@@ -661,6 +664,8 @@ mod tests {
         "fuchsia.identity.credential",
         "fuchsia.identity.ctap",
         "fuchsia.images",
+        "fuchsia.identity.account",
+        "fuchsia.identity.internal",
         "fuchsia.input.injection",
         "fuchsia.input.interaction.observation",
         "fuchsia.input.report",
@@ -766,6 +771,7 @@ mod tests {
         "fuchsia.unknown",
         "fuchsia.update",
         "fuchsia.update.channelcontrol",
+        "fuchsia.update.usb",
         "fuchsia.video",
         "fuchsia.virtualconsole",
         "fuchsia.virtualization",

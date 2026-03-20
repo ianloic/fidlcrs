@@ -418,7 +418,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                         modifier.attributes.as_ref(),
                         decl_avail,
                         kind_str,
-                        has_library_avail,
+                        has_library_avail || !decl_is_main,
                         item_name,
                     );
 
@@ -484,7 +484,7 @@ impl<'node, 'src> Step<'node, 'src> for AvailabilityStep {
                     attributes,
                     decl_avail,
                     kind_str,
-                    has_library_avail,
+                    has_library_avail || !decl_is_main,
                     item_name,
                 );
                 let platform = Platform::parse(compiler.library_name.versioning_platform())
